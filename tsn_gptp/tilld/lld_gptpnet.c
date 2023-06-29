@@ -512,7 +512,7 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 	tstout64 = ts64-gpnet->last_ts64;
 	// every 10 seconds, print clock parameters for debug
 	if (tstout64>=10*UB_SEC_NS) {
-		gptpclock_print_clkpara(UBL_INFO);
+		gptpclock_print_clkpara(UBL_INFOV);
 		gpnet->last_ts64 = ts64;
 	}
 

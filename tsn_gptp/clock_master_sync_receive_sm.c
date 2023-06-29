@@ -289,7 +289,7 @@ static int computeGmRateRatio(clock_master_sync_receive_data_t *sm,
 		}
 		gptpclock_setadj(sm->gmadjppb,
 				 sm->ptasg->thisClockIndex, sm->ptasg->domainNumber);
-		UB_LOG(UBL_INFO, "domainNumber=%d, clock_master_sync_receive:"
+		UB_LOG(UBL_INFOV, "domainNumber=%d, clock_master_sync_receive:"
 		       "the master clock rate to %dppb, GMdiff=%"PRIi64"nsec\n",
 		       sm->ptasg->domainNumber, sm->gmadjppb, dts-sm->offsetGM);
 		// the master must be synchronized and the rate becomes 1.0
