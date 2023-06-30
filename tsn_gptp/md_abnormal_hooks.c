@@ -195,7 +195,7 @@ int md_abnormal_deregister_msgtype_events(PTPMsgType msgtype)
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=elen-1;i>=0;i--) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
-		if(event->evd.msgtype==msgtype){
+		if(event && event->evd.msgtype==msgtype){
 			ub_esarray_del_index(gmdabnd->events, i);
 		}
 	}
@@ -217,6 +217,7 @@ md_abn_eventp_t md_abnormal_gptpnet_send_hook(gptpnet_data_t *gpnet, int ndevInd
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=0;i<elen;i++) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
+		if(!event){continue;}
 		if(event->evd.msgtype!=msgtype){continue;}
 		if(event->evd.ndevIndex!=ndevIndex){continue;}
 		switch(msgtype){
@@ -260,6 +261,7 @@ int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber)
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=0;i<elen;i++) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
+		if(!event){continue;}
 		if(event->evd.msgtype!=msgtype){continue;}
 		if(event->evd.ndevIndex!=ndevIndex){continue;}
 		if(event->evd.eventtype!=MD_ABN_EVENT_NOTS){continue;}

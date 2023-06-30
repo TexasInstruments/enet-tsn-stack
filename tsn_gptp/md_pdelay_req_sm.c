@@ -112,11 +112,11 @@ static MDPTPMsgPdelayReq *setPdelayReq(md_pdelay_req_data_t *sm)
 		sm->ptasg->thisClock, sm->ppg->thisPort,
 		sm->thisSM->pdelayReqSequenceId,
 		sm->mdeg->forAllDomain->currentLogPdelayReqInterval);
+	if(!sdata){return NULL;}
 	if(sm->cmlds_mode && sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq!=1){
 		sdata->head.majorSdoId_messageType =
 			(sdata->head.majorSdoId_messageType & 0x0F) | 0x20;
 	}
-	if(!sdata){return NULL;}
 	memcpy(&sm->txPdeayReq, sdata, sizeof(MDPTPMsgPdelayReq));
 	return &sm->txPdeayReq;
 }

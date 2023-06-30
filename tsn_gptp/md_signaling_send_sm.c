@@ -131,11 +131,12 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 		return -1;
 	}
 
-        sdata=md_header_compose(sm->gpnetd, sm->portIndex, SIGNALING, size,
-                                sm->ptasg->thisClock,
-                                sm->ppg->thisPort,
-                                sm->sequenceId,
-                                0x7f);
+	sdata=md_header_compose(sm->gpnetd, sm->portIndex, SIGNALING, size,
+				sm->ptasg->thisClock,
+				sm->ppg->thisPort,
+				sm->sequenceId,
+				0x7f);
+	if(!sdata){return -1;}
 	// 10.6.4.2.1 targetPortIdentity is 0xff
 	memset(((uint8_t*)sdata)+sizeof(MDPTPMsgHeader), 0xff, sizeof(MDPortIdentity));
 	((MDPTPMsgHeader*)sdata)->domainNumber=sm->ptasg->domainNumber;
@@ -151,7 +152,7 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 	default:
 		return -1;
 	}
-        if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, size)==-1){return -2;}
+	if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, size)==-1){return -2;}
 	sm->sequenceId++;
 	if(statp){(*statp)++;}
 	return 0;
@@ -259,9 +260,9 @@ void md_signaling_send_sm_init(md_signaling_send_data_t **sm,
 
 int md_signaling_send_sm_close(md_signaling_send_data_t **sm)
 {
+	if(!*sm){return 0;}
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, (*sm)->domainIndex, (*sm)->portIndex);
-	if(!*sm){return 0;}
 	free(*sm);
 	*sm=NULL;
 	return 0;

@@ -539,8 +539,8 @@ void port_state_selection_sm_init(port_state_selection_data_t **sm,
 		memset((*sm)->thisSM->forAllDomain, 0, sizeof(PortStateSelectionSMforAllDomain));
 		(*sm)->thisSM->forAllDomain->asymmetryMeasurementModeChange = false;
 	}else{
-		if(ub_assert_fatal((*forAllDomainSM!=NULL) &&
-				   ((*forAllDomainSM)->thisSM->forAllDomain!=NULL),
+		if(ub_assert_fatal((*forAllDomainSM!=NULL), __func__, "forAllDomain")){return;}
+		if(ub_assert_fatal(((*forAllDomainSM)->thisSM->forAllDomain!=NULL),
 				   __func__, "forAllDomain")){return;}
 		(*sm)->thisSM->forAllDomain = (*forAllDomainSM)->thisSM->forAllDomain;
 	}

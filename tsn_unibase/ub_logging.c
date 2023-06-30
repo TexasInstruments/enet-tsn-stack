@@ -159,7 +159,7 @@ void ub_log_init(const char *ns)
 	}
 	for(i=1;i<MAX_LOGMSG_CATEGORIES;i++){
 		memcpy(&ubcd.logmsgd[i], &ubcd.logmsgd[0], sizeof(ub_logmsg_data_t));
-		(void)sprintf(defcname, "def%02d", i);
+		(void)snprintf(defcname, sizeof(defcname), "def%02d", i);
 		(void)strcpy(ubcd.logmsgd[i].category_name, defcname);
 	}
 	if(!ns){goto erexit;}

@@ -833,7 +833,7 @@ static int ipc_clock_master_clock_notice(gptpnet_data_t *gpnetd,
 
 	if(ipcd.u.notice.event_flags & GPTPIPC_EVENT_CLOCK_FLAG_GM_CHANGE){
 		memcpy(&ipcd.u.notice.gmIdentity, &tasglb->gmIdentity,
-		       sizeof(UInteger224));
+		       sizeof(ClockIdentity));
 	}
 
 	if(gptpconf_get_intitem(CONF_TSN_SCHEDULE_ON) &&

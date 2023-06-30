@@ -204,8 +204,8 @@ void gm_stable_sm_init(gm_stable_data_t **sm,
 
 int gm_stable_sm_close(gm_stable_data_t **sm)
 {
-	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, (*sm)->domainIndex);
 	if(!*sm){return 0;}
+	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, (*sm)->domainIndex);
 	free(*sm);
 	*sm=NULL;
 	return 0;

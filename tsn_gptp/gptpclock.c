@@ -390,7 +390,7 @@ static oneclock_data_t *get_clockod(int clockIndex, uint8_t domainNumber)
 	oneclock_data_t *od;
 	for(i=0;i<ub_esarray_ele_nums(gcd.clds);i++){
 		od = (oneclock_data_t *)ub_esarray_get_ele(gcd.clds, i);
-		if(od->clockIndex != clockIndex || od->pp->domainNumber != domainNumber){continue;}
+		if(!od || od->clockIndex != clockIndex || od->pp->domainNumber != domainNumber){continue;}
 		return od;
 	}
 	return NULL;
@@ -452,13 +452,18 @@ int gptpclock_add_clock(int clockIndex, char *ptpdev, int domainIndex,
 	if(!gcd.clds){return -1;}
 	for(i=0;i<ub_esarray_ele_nums(gcd.clds);i++){
 		od = (oneclock_data_t *)ub_esarray_get_ele(gcd.clds, i);
-		if(od->clockIndex == clockIndex && od->pp->domainNumber == domainNumber){
+		if(od && od->clockIndex == clockIndex && od->pp->domainNumber == domainNumber){
 			UB_LOG(UBL_ERROR,"%s:already exists, clockIndex=%d, domainNumber=%d\n",
 			       __func__, clockIndex, domainNumber);
 			return -1;
 		}
 	}
 	od = (oneclock_data_t *)ub_esarray_get_newele(gcd.clds);
+	if(!od) {
+		UB_LOG(UBL_ERROR, "%s:clockIndex=%d, ptpdev=%s failed to alloc memory\n",
+		       __func__, clockIndex, ptpdev);
+		return -1;
+	}
 	memset(od, 0, sizeof(oneclock_data_t));
 	if(clockIndex!=0){
 		od->pp=&od->ppe;
@@ -667,6 +672,11 @@ int gptpclock_setadj(int adjvppb, int clockIndex, uint8_t domainNumber)
 		od0=get_clockod(0, domainNumber);
 		// od0->pp->adjrate is in the shared memory
 		// it is different from od0->adjrate,
+		if(!od){
+			UB_LOG(UBL_ERROR, "%s:failed to get clock data, clockIndex=%d, domainNumber=%d\n",
+			       __func__, clockIndex, domainNumber);
+			return -1;
+		}
 		od0->pp->adjrate = od->adjrate;
 		break;
 	}
@@ -711,6 +721,11 @@ int gptpclock_mode_master(int clockIndex, uint8_t domainNumber)
 {
 	oneclock_data_t *od;
 	GPTPCLOCK_FN_ENTRY(od, clockIndex, domainNumber);
+	if(!od) {
+		UB_LOG(UBL_ERROR,"%s:failed to get clock data, clockIndex=%d, domainNumber=%d\n",
+		       __func__, clockIndex, domainNumber);
+		return -1;
+	}
 	od->mode=PTPCLOCK_MASTER;
 	return 0;
 }

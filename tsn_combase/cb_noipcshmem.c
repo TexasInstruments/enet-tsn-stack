@@ -85,7 +85,7 @@ static shared_mem_table_t *find_shared_mem(const char *shmname)
 	if(!shmem_table){return NULL;}
 	for(i=0;i<ub_esarray_ele_nums(shmem_table);i++){
 		memt=(shared_mem_table_t *)ub_esarray_get_ele(shmem_table, i);
-		if(!strcmp(shmname, memt->name)){return memt;}
+		if(!memt && !strcmp(shmname, memt->name)){return memt;}
 	}
 	return NULL;
 }
@@ -111,9 +111,11 @@ void *cb_get_shared_mem(int *memfd, const char *shmname, size_t size, int flag)
 			return NULL;
 		}
 		memt=(shared_mem_table_t *)ub_esarray_get_newele(shmem_table);
-		strncpy(memt->name, shmname, 31);
-		memt->mem=UB_SD_GETMEM(CB_NOIPCSHMEM_DMEM, size);
-		if(!memt->mem) {
+		if(memt) {
+			strncpy(memt->name, shmname, 31);
+			memt->mem=UB_SD_GETMEM(CB_NOIPCSHMEM_DMEM, size);
+		}
+		if(!memt || !memt->mem) {
 			UB_LOG(UBL_ERROR,"%s:malloc error for size=%zu, %s\n",__func__,
 				   size, strerror(errno));
 			cb_close_shared_mem(NULL, 0, shmname, 0, true);
