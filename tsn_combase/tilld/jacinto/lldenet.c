@@ -240,12 +240,16 @@ static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t 
 	int32_t status;
 
 	memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
-	setPolicerEntryInArgs.policerMatch.policerMatchEnMask =
-		CPSW_ALE_POLICER_MATCH_MACDST;
+	setPolicerEntryInArgs.policerMatch.policerMatchEnMask = CPSW_ALE_POLICER_MATCH_MACDST;
 	setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.portNum = 0U;
 	setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = vlanId;
 	memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
 		   &dstMacAddr[0U], ENET_MAC_ADDR_LEN);
+
+	/* Set policer params for ARP EtherType matching */
+	setPolicerEntryInArgs.policerMatch.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_ETHERTYPE;
+	setPolicerEntryInArgs.policerMatch.etherType = 0x88F7U;
+	setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
 
 	setPolicerEntryInArgs.threadIdEn = true;
 	setPolicerEntryInArgs.threadId = hLLDma->rxFlowIdx;
