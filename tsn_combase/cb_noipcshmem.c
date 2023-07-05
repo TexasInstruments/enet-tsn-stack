@@ -85,7 +85,7 @@ static shared_mem_table_t *find_shared_mem(const char *shmname)
 	if(!shmem_table){return NULL;}
 	for(i=0;i<ub_esarray_ele_nums(shmem_table);i++){
 		memt=(shared_mem_table_t *)ub_esarray_get_ele(shmem_table, i);
-		if(!memt && !strcmp(shmname, memt->name)){return memt;}
+		if(memt && !strcmp(shmname, memt->name)){return memt;}
 	}
 	return NULL;
 }

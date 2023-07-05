@@ -672,7 +672,7 @@ int gptpclock_setadj(int adjvppb, int clockIndex, uint8_t domainNumber)
 		od0=get_clockod(0, domainNumber);
 		// od0->pp->adjrate is in the shared memory
 		// it is different from od0->adjrate,
-		if(!od){
+		if(!od0){
 			UB_LOG(UBL_ERROR, "%s:failed to get clock data, clockIndex=%d, domainNumber=%d\n",
 			       __func__, clockIndex, domainNumber);
 			return -1;
@@ -738,7 +738,7 @@ int gptpclock_mode_slave_main(int clockIndex, uint8_t domainNumber)
 
 	for(i=0;i<ub_esarray_ele_nums(gcd.clds);i++){
 		od1 = (oneclock_data_t *)ub_esarray_get_ele(gcd.clds, i);
-		if(od1->clockIndex != od->clockIndex ||
+		if(!od1 || od1->clockIndex != od->clockIndex ||
 		   od1->pp->domainNumber == od->pp->domainNumber){continue;}
 		if(od1->mode==PTPCLOCK_SLAVE_MAIN){
 			UB_LOG(UBL_INFO, "%s:domainNumer=%d already in SLAVE_MAIN\n",

@@ -217,9 +217,9 @@ void md_signaling_receive_sm_init(md_signaling_receive_data_t **sm,
 
 int md_signaling_receive_sm_close(md_signaling_receive_data_t **sm)
 {
+	if(!*sm){return 0;}
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, (*sm)->domainIndex, (*sm)->portIndex);
-	if(!*sm){return 0;}
 	free(*sm);
 	*sm=NULL;
 	return 0;

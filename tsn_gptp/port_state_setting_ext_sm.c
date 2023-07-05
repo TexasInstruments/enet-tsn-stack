@@ -309,8 +309,7 @@ void port_state_setting_ext_sm_init(port_state_setting_ext_data_t **sm,
 		memset((*sm)->thisSM->forAllDomain, 0, sizeof(PortStateSettingExtSMforAllDomain));
 		(*sm)->thisSM->forAllDomain->asymmetryMeasurementModeChangeThisPort = false;
 	}else{
-		if(ub_assert_fatal((*forAllDomainSM!=NULL), __func__, "forAllDomain")){return;}
-		if(ub_assert_fatal(((*forAllDomainSM)->thisSM->forAllDomain),
+		if(ub_assert_fatal(*forAllDomainSM && ((*forAllDomainSM)->thisSM->forAllDomain),
 				   __func__, "forAllDomain")){return;}
 		(*sm)->thisSM->forAllDomain = (*forAllDomainSM)->thisSM->forAllDomain;
 	}
