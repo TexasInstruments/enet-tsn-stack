@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup crc crc functions
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup crc CRC functions
  * @{
  * @file cb_crc.h
  *
- * @brief crc implementation
+ * @brief CRC implementation
  */
 
 #ifndef CB_CRC_H_

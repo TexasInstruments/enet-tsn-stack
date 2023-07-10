@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup  TSN_COMBASE_MODULE
  * @defgroup ip_network IP network functions binding
  * @{
  * @file cb_inet.h
  *
- * @brief bindings to posix network IP layer functions
+ * @brief Bindings to POSIX network IP layer functions
  */
 
 #ifndef CB_INET_H_

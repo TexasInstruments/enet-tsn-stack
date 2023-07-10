@@ -48,7 +48,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup unibase general types and functions
+ * @ingroup TSN_UNIBASE_MODULE
+ * @defgroup unibase General types and functions
  * @{
  * @file unibase.h
  *

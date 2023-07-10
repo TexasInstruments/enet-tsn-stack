@@ -48,10 +48,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_UNIBASE_MODULE
  * @defgroup unibase_macros utility macros
  * @{
  * @file unibase_macros.h
- * @brief utility macros for convenience
+ * @brief Utility macros for convenience
  *
  */
 #ifndef UNIBASE_MARCORS_H_

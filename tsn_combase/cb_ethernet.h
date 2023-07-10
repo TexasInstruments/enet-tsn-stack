@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup network network functions binding
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup network Network functions binding
  * @{
  * @file cb_ethernet.h
  *
- * @brief bindings to posix network functions
+ * @brief Bindings to POSIX network functions
  */
 
 #ifndef CB_ETHERNET_H_

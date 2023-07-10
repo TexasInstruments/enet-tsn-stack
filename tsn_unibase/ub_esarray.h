@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_UNIBASE_MODULE
  * @defgroup esarray Expand and Shrink Array
  * @{
  * @file ub_esarray.h
  *
- * @brief allocated memory array which is expanded or shrinked automatically
+ * @brief Allocated memory array which is expanded or shrinked automatically
  *
  * How it expands and shrinks is defined by 'ub_esarray_init' call.
  * The first allocation happens at the call of 'ub_esarray_init'.

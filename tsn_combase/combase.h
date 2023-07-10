@@ -48,7 +48,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup combase general types and functions
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup combase General types and functions
  * @{
  * @file combase.h
  *

@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup timer timer and events utility functions
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup timer Timer and events utility functions
  * @{
  * @file cb_tmevent.h
  *
- * @brief timer and events utility functions
+ * @brief Timer and events utility functions
  */
 
 #ifndef CB_EVENT_H_

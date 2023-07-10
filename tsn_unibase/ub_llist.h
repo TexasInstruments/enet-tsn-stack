@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_UNIBASE_MODULE
  * @defgroup llist Doubly Linked List
  * @{
  * @file ub_llist.h
  *
- * @brief doubly linked list
+ * @brief Doubly linked list
  */
 
 #ifndef LUB_LIST_UTILS_H_

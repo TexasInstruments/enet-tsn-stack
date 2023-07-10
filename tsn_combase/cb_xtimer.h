@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup xtimer xtimer utility functions
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup xtimer xTimer utility functions
  * @{
  * @file cb_xtimer.h
  *
- * @brief xtimer utility functions
+ * @brief xTimer utility functions
  */
 
 #ifndef CB_XTIMER_H_

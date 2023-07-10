@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_UNIBASE_MODULE
  * @defgroup strutils String Utilities
  * @{
  * @file ub_strutils.h
  *
- * @brief utility functions for strings
+ * @brief Utility functions for strings
  *
  */
 

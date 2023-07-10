@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup IPC_shm shared memory IPC utility functions
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup IPC_shm Shared memory IPC utility functions
  * @{
  * @file cb_ipcshmem.h
  *
- * @brief shared memory IPC utility functions
+ * @brief Shared memory IPC utility functions
  */
 
 #ifndef CB_IPCSHMEM_H_

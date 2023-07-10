@@ -48,7 +48,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup unibase_binding bind unibase to a specific platform
+ * @ingroup TSN_UNIBASE_MODULE
+ * @defgroup unibase_binding Bind unibase to a specific platform
  * @{
  * @file unibase_binding.h
  *

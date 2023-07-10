@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup thread thread functions binding
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup thread Thread functions binding
  * @{
  * @file cb_thread.h
  *
- * @brief bindings to posix thread, mutex and semaphore functions
+ * @brief Bindings to POSIX thread, mutex and semaphore functions
  */
 
 #ifndef CB_THREAD_H_

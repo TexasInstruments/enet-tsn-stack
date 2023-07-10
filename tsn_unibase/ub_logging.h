@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_UNIBASE_MODULE
  * @defgroup logging Control logging
  * @{
  * @file ub_logging.h
  *
- * @brief control logging by levels and categories.
+ * @brief Control logging by levels and categories.
  *
  * The logging is controlled by 8 levels which is from UBL_NONE to UBL_DEBUGV.
  * The levels are used, one is for regular console output,

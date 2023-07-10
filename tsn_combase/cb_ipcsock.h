@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
- * @defgroup IPC_sock socket IPC utility functions
+ * @ingroup  TSN_COMBASE_MODULE
+ * @defgroup IPC_sock Socket IPC utility functions
  * @{
  * @file cb_ipcsock.h
  *
- * @brief socket IPC utility functions
+ * @brief Socket IPC utility functions
  */
 
 #ifndef CB_IPCSOCK_H_
