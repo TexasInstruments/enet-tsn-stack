@@ -61,7 +61,7 @@
 /**
  * @brief initialize to get gptp clock from gptp2 daemon.
  * if previously initialized, it will simply return 0.
- * @param shemem_name	shared memory node name. set NULL to use the default
+ * @param shmem_name	shared memory node name. set NULL to use the default
  * @return -1 on error, 0 on Successful initialization.
  * @note   argument 'shmem_name' will not be used in platforms that recommends against
  * using shared memory (e.g GHS INTEGRITY). Pass NULL is such case.
@@ -121,7 +121,6 @@ int gptpmasterclock_gmchange_ind(void);
 
 /**
  * @brief get maximum number of domains
- * @param void
  * @return returns availabe number of domains.
  */
 int gptpmasterclock_get_max_domains(void);

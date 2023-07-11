@@ -149,9 +149,9 @@ int ub_str2bytearray(uint8_t* dest, const char* input, uint8_t base);
  * @brief convert a byte array to a string type
  *   byte array('01,00,1e,00,00,03,....02,00,01')
  * @return  the converted byte array.
- * @param   input byte array to be converted
  * @param   dest  the converted byte array in string format; lower case hex
  *	    The caller is responsible to reserve enough size of memory with 'dest'.
+ * @param   bytes byte array to be converted
  * @param   len  number of bytes to be converted to string
  * @note    the conversion is stopped when the value of len is reached
  */

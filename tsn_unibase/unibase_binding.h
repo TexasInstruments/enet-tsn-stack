@@ -122,7 +122,7 @@ int ubb_memory_out_lastline(char **str, int *size);
 
 /**
  * @brief return the all written line data in the buffer
- * @param str	allocated pointer of the returned data
+ * @param rstr	allocated pointer of the returned data
  * @param size	size of the returned data
  * @return 0 on success, -1 on error
  * @note returned pointer in *str must be freed by the caller.

@@ -238,7 +238,7 @@ typedef struct ExtendedTimestamp {
 #define VALUE_ENABLED 1
 
 /**
- * @breif the type of source of time used by a ClockMaster(802.1AS, 8.6.2.7 timeSource)
+ * @brief the type of source of time used by a ClockMaster(802.1AS, 8.6.2.7 timeSource)
  */
 typedef enum {
         ATOMIC_CLOCK         = 0x10,

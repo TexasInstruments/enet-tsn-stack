@@ -63,7 +63,7 @@
  */
 
 /*!
- * \defgroup TSN_GPTP_MODULE gPTP stack
+ * \defgroup gptp gPTP stack
  * \ingroup  TSN_STACK_MODULE
  */
 

@@ -127,8 +127,9 @@ typedef enum {
 
 /**
  * @brief output to console out and debug out by selection
- * @param console	select output to consol
+ * @param console	select output to console
  * @param debug	select output to debug memory
+ * @param astr	a string to print
  */
 void ub_console_debug_select_print(bool console, bool debug, const char *astr);
 

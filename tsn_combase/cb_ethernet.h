@@ -296,6 +296,7 @@ int cb_sock_set_priority(CB_SOCKET_T fd, int priority);
 /**
  * @brief expand mtusize
  * @param fd	descriptor of the opened socket
+ * @param dev	ethernet device name like eth0
  * @param mtusize	new mtusize, return a new mtu size in *mtusize
  * @return 0 on success, -1 on error.
  */
