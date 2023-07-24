@@ -52,23 +52,13 @@
  */
 #include "combase_private.h"
 #include "cb_ethernet.h"
+#include "lld_ethernet_private.h"
 
 #define MAC_VALID(mac) (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
 
-struct lld_socket {
-	LLDEnet_t *lldenet;
-	uint16_t vlanid;
-	char devname[IFNAMSIZ];
-	uint8_t alloc_srcmac[ETH_ALEN];
-};
-
-typedef struct {
-	char netdev[IFNAMSIZ];
-	uint8_t srcmac[ETH_ALEN];
-	uint8_t macport;
-} netdev_map_t;
-
 static netdev_map_t s_ndevmap_table[MAX_NUMBER_ENET_DEVS];
+static CB_THREAD_MUTEX_T s_ndevmap_table_lock;
+static CB_THREAD_MUTEX_T alloc_mac_lock;
 static int s_num_devs;
 static uint32_t s_enet_type;
 static uint32_t s_instance_id;
@@ -89,7 +79,7 @@ static cb_socket_lldcfg_update_cb_t s_socket_lldcfg_update_cb;
 UB_SD_GETMEM_DEF(CB_LLDSOCKET_MMEM, (int)sizeof(lld_socket_t),
 		 CB_LLDSOCKET_INSTNUM);
 
-static netdev_map_t* find_netdev_map(char *netdev);
+static netdev_map_t* find_netdev_map(const char *netdev);
 
 static int ovip_socket_open(CB_SOCKET_T *sfd, cb_rawsock_ovip_para_t *ovipp)
 {
@@ -134,7 +124,78 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg)
 	if (update_cfg.dmaRxChId >= 0) {
 		ecfg->dmaRxChId = update_cfg.dmaRxChId;
 	}
+	ecfg->unusedDma = update_cfg.unusedDma;
+
 	return 0;
+}
+
+static void cb_update_mac_addr(CB_SOCKET_T sfd,
+			       const char *dev, ub_macaddr_t bmac)
+{
+	int i;
+	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
+	for (i = 0; i < s_num_devs; i++) {
+		if (!strncmp(dev, s_ndevmap_table[i].netdev, strlen(dev))) {
+			memcpy(s_ndevmap_table[i].srcmac, bmac, ETH_ALEN);
+			break;
+		}
+	}
+	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
+}
+
+static int find_mac_addr_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bmac)
+{
+	int res = LLDENET_E_PARAM;
+	netdev_map_t *ndevmap = find_netdev_map((char *)dev);
+
+	if (ndevmap == NULL) {
+		UB_LOG(UBL_ERROR, "%s:no srcmac for netdev %s\n", __func__, dev);
+		return res;
+	}
+
+	/**
+	 * Note: The find_netdev_map locks and unlocks the s_ndevmap_table_lock
+	 * but since the find_netdev_map returns address of an element 
+	 * from the global table, we have to lock that mutex again here to ensure
+	 * no other threads modify the table while we are copying mac address.
+	 */
+	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
+	if (!MAC_VALID(ndevmap->srcmac)) {
+		res = LLDENET_E_NOAVAIL;
+	} else {
+		memcpy(bmac, ndevmap->srcmac, ETH_ALEN);
+		res = LLDENET_E_OK;
+	}
+	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
+
+	return res;
+}
+
+static int cb_alloc_mac_addr(const char *ifname,
+			     lld_socket_t *sock, ub_macaddr_t bmac)
+{
+	int res = -1;
+
+	CB_THREAD_MUTEX_LOCK(&alloc_mac_lock);
+	if ((res = find_mac_addr_bydev(sock, ifname, bmac)) != LLDENET_E_NOAVAIL) {
+		UB_LOG(UBL_INFO, "Mac addr has not been allocated\n");
+		CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
+		return (res == LLDENET_E_OK? 0: -1);
+	}
+
+	/* user does not init dev with src mac, we will alloc it */
+	if (LLDEnetAllocMac(sock->lldenet, sock->alloc_srcmac) != LLDENET_E_OK) {
+		UB_LOG(UBL_ERROR, "Failed to alloc MAC address! \n");
+	} else {
+		memcpy(bmac, sock->alloc_srcmac, ETH_ALEN);
+		/* Update this macaddr to a global table to share mac address
+		   with other socket instance which is openned on the same port */
+		cb_update_mac_addr(sock, ifname, bmac);
+		res = 0;
+	}
+	CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
+
+	return res;
 }
 
 int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_T *addr,
@@ -165,7 +226,7 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	if (update_enet_cfg(llrawp, &ecfg) < 0) {
 		goto error;
 	}
-
+	ecfg.unusedDma = (llrawp->proto == ETH_P_NETLINK)? true: false;
 	UB_LOG(UBL_INFO,"%s:dmaTxChId=%d dmaRxChId=%d nTxPkts=%u nRxPkts=%u pktSize=%u\n",
 		   __func__, ecfg.dmaTxChId, ecfg.dmaRxChId,
 		   ecfg.nTxPkts, ecfg.nRxPkts, ecfg.pktSize);
@@ -175,18 +236,10 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 		goto error;
 	}
 	sock->vlanid = llrawp->vlanid;
-	strncpy(sock->devname, llrawp->dev, IFNAMSIZ-1);
-	if (cb_get_mac_bydev(sock, llrawp->dev, bmac) < 0) {
+	if (cb_alloc_mac_addr(llrawp->dev, sock, bmac)) {
 		goto error;
 	}
-	/* user does not init dev with src mac, we will alloc it */
-	if (MAC_VALID(bmac) == false) {
-		if (LLDEnetAllocMac(sock->lldenet, sock->alloc_srcmac) != LLDENET_E_OK) {
-			goto error;
-		}
-		memcpy(bmac, sock->alloc_srcmac, ETH_ALEN);
-	}
-
+	strncpy(sock->devname, llrawp->dev, IFNAMSIZ-1);
 	if (addr != NULL) {
 		memcpy(addr->sll_addr, bmac, ETH_ALEN);
 		addr->macport = cb_lld_netdev_to_macport((char *)llrawp->dev);
@@ -232,17 +285,8 @@ int cb_set_promiscuous_mode(CB_SOCKET_T sfd, const char *dev, bool enable)
 
 int cb_get_mac_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bmac)
 {
-	netdev_map_t *ndevmap = find_netdev_map((char*)dev);
-	if (ndevmap == NULL) {
-		UB_LOG(UBL_ERROR, "%s:no srcmac for netdev %s\n", __func__, dev);
-		return -1;
-	}
-
-	memcpy(bmac, ndevmap->srcmac, ETH_ALEN);
-	if (MAC_VALID(bmac) == false) {
-		memcpy(bmac, sfd->alloc_srcmac, ETH_ALEN);
-	}
-	return 0;
+	int res = find_mac_addr_bydev(sfd, dev, bmac);
+	return (res == LLDENET_E_OK? 0: -1);
 }
 
 int cb_get_ip_bydev(CB_SOCKET_T sfd, const char *dev, CB_IN_ADDR_T *inp)
@@ -338,7 +382,7 @@ int cb_lld_get_link_state(CB_SOCKET_T cfd, const char *dev, uint32_t *linkstate)
 	}
 	up = LLDEnetIsPortUp(cfd->lldenet, macport);
 	*linkstate = up ? 1 : 0;
-	return -1;
+	return 0;
 }
 
 int cb_get_netdev_from_ptpdev(char *ptpdev, char *netdev)
@@ -379,7 +423,17 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 	if (ndevs > MAX_NUMBER_ENET_DEVS) {
 		ndevs = MAX_NUMBER_ENET_DEVS;
 	}
-
+	if (!s_ndevmap_table_lock) {
+		if (CB_THREAD_MUTEX_INIT(&s_ndevmap_table_lock, NULL)) {
+			return -1;
+		}
+	}
+	if (!alloc_mac_lock) {
+		if (CB_THREAD_MUTEX_INIT(&alloc_mac_lock, NULL)) {
+			CB_THREAD_MUTEX_DESTROY(&s_ndevmap_table_lock);
+			return -1;
+		}
+	}
 	for (i = 0; i < ndevs; i++) {
 		if ((ethdevs[i].netdev == NULL) || (ethdevs[i].netdev[0] == 0)) {
 			continue;
@@ -399,7 +453,7 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 	return 0;
 }
 
-static netdev_map_t* find_netdev_map(char *netdev)
+static netdev_map_t* find_netdev_map(const char *netdev)
 {
 	int i;
 
@@ -407,35 +461,37 @@ static netdev_map_t* find_netdev_map(char *netdev)
 		return NULL;
 	}
 
+	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		if (strcmp(s_ndevmap_table[i].netdev, netdev) == 0) {
+			CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 			return &s_ndevmap_table[i];
 		}
 	}
+	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
+
 	return NULL;
 }
 
-// This is a specific API to get all virtual network interfaces
-// which were defined for the TI platform.
-char** const cb_lld_get_netdevs(void)
+int cb_lld_get_netdevs(char* netdevs[], int *len)
 {
 	int i;
-	static char *netdevs[MAX_NUMBER_ENET_DEVS+1];
 
 	if (s_num_devs == 0) {
 		UB_LOG(UBL_ERROR, "%s:the cb_lld_init_devs_table() must be called first\n",
 		       __func__);
-		return NULL;
+		return -1;
 	}
+	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		netdevs[i] = s_ndevmap_table[i].netdev;
 	}
-	netdevs[i] = NULL;
-
-	return netdevs;
+	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
+	*len = i;
+	return 0;
 }
 
-int cb_lld_netdev_to_macport(char *netdev)
+int cb_lld_netdev_to_macport(const char *netdev)
 {
 	netdev_map_t *ndevmap = find_netdev_map(netdev);
 	if (ndevmap == NULL) {

@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GPTPMAN_H_
-#define __GPTPMAN_H_
+#ifndef GPTPMAN_H_
+#define GPTPMAN_H_
 
 #ifdef GHINTEGRITY
 extern Semaphore g_gptpd_ready_semaphore;
@@ -59,7 +59,8 @@ extern Semaphore g_gptpd_ready_semaphore;
 
 typedef struct gptpman_data gptpman_data_t;
 
-int gptpman_run(char *netdevs[], int max_ports, int max_domains, char *inittm);
+int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
+		int max_ports, int max_domains, char *inittm, bool *stopgptp);
 void gptpman_stop(void);
 
 #endif

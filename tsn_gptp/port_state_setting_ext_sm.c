@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_state_setting_ext_sm.h"
+#include "gptpcommon.h"
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define PATH_TRACE	    sm->bptasg->pathTrace
@@ -86,13 +88,13 @@ void resetStateDisabledTree(port_state_setting_ext_data_t *sm)
 	bool slavePortAvail = false;
 	SELECTED_STATE[sm->portIndex] = DisabledPort;
 	for(i=0;i<sm->max_ports;i++){
-		if (SELECTED_STATE[i]==SlavePort){
+		if (SELECTED_STATE[i]==(uint8_t)SlavePort){
 			slavePortAvail = true;
 			break;
 		}
 	}
 	if(!slavePortAvail){
-		memset(PATH_TRACE, 0, sizeof(ClockIdentity) * MAX_PATH_TRACE_N);
+		(void)memset(PATH_TRACE, 0, sizeof(ClockIdentity) * (uint8_t)MAX_PATH_TRACE_N);
 		memcpy(&PATH_TRACE[0], sm->ptasg->thisClock, sizeof(ClockIdentity));
 	}
 }
@@ -102,7 +104,7 @@ void updtPortState(port_state_setting_ext_data_t *sm)
 	int i,slaveIndex=-1;
 	bool slavePortAvail = false;
 	for(i=1;i<sm->max_ports;i++){
-		if (SELECTED_STATE[i]==SlavePort){
+		if (SELECTED_STATE[i]==(uint8_t)SlavePort){
 			slavePortAvail = true;
 			slaveIndex=i;
 			break;
@@ -121,7 +123,7 @@ void updtPortState(port_state_setting_ext_data_t *sm)
 
 		sm->bptasg->masterStepsRemoved = sm->bppgl[slaveIndex]->portStepsRemoved;
 
-		if(sm->messagePriority.rootSystemIdentity.priority1 < 255){
+		if(sm->messagePriority.rootSystemIdentity.priority1 < 255u){
 			sm->ptasg->gmPresent = true;
 
 			memcpy(sm->ptasg->gmIdentity,
@@ -144,7 +146,7 @@ void updtPortState(port_state_setting_ext_data_t *sm)
 
 		sm->bptasg->masterStepsRemoved = 0;
 
-		if(sm->bptasg->systemPriority.rootSystemIdentity.priority1 < 255){
+		if(sm->bptasg->systemPriority.rootSystemIdentity.priority1 < 255u){
 			sm->ptasg->gmPresent = true;
 
 			memcpy(sm->ptasg->gmIdentity,
@@ -167,14 +169,14 @@ void updtPortState(port_state_setting_ext_data_t *sm)
 	       __func__, sm->portIndex, SELECTED_STATE[sm->portIndex]);
 
 	// assign portState for port 0
-	if(SELECTED_STATE[sm->portIndex]==SlavePort){
+	if(SELECTED_STATE[sm->portIndex]==(uint8_t)SlavePort){
 		SELECTED_STATE[0] = PassivePort;
 	}else if(!slavePortAvail){
 		SELECTED_STATE[0] = SlavePort;
-	}
+	}else{}
 
 	// compute gmPriority Vector
-	if(SELECTED_STATE[sm->portIndex]==SlavePort){
+	if(SELECTED_STATE[sm->portIndex]==(uint8_t)SlavePort){
 		memcpy(&GM_PRIORITY, &sm->messagePriority, sizeof(UInteger224));
 	}
 	if(!slavePortAvail){
@@ -187,13 +189,14 @@ void updtPortState(port_state_setting_ext_data_t *sm)
 	memcpy(&sm->bppgl[sm->portIndex]->masterPriority, &GM_PRIORITY, sizeof(UInteger224));
 	memcpy(&sm->bppgl[sm->portIndex]->masterPriority.sourcePortIdentity.clockIdentity,
 	       &sm->ptasg->thisClock, sizeof(ClockIdentity));
-	sm->bppgl[sm->portIndex]->masterPriority.sourcePortIdentity.portNumber =
+	sm->bppgl[sm->portIndex]->masterPriority.sourcePortIdentity.portIndex =
 		sm->ppgl[sm->portIndex]->thisPort;
-	sm->bppgl[sm->portIndex]->masterPriority.portNumber = sm->ppgl[sm->portIndex]->thisPort;
+	sm->bppgl[sm->portIndex]->masterPriority.portNumber =
+		md_port_index2number(sm->ppgl[sm->portIndex]->thisPort);
 
 	// set pathTrace
 	if(!slavePortAvail){
-		memset(PATH_TRACE, 0, sizeof(ClockIdentity) * MAX_PATH_TRACE_N);
+		(void)memset(PATH_TRACE, 0, sizeof(ClockIdentity) * (uint8_t)MAX_PATH_TRACE_N);
 		memcpy(&PATH_TRACE[0], sm->ptasg->thisClock, sizeof(ClockIdentity));
 	}
 
@@ -271,9 +274,10 @@ void *port_state_setting_ext_sm(port_state_setting_ext_data_t *sm, uint64_t cts6
 			sm->state = state_setting_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -290,7 +294,8 @@ void port_state_setting_ext_sm_init(port_state_setting_ext_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_state_setting_ext_data_t, PortStateSettingExtSM, sm)){return;}
+	INIT_SM_DATA(port_state_setting_ext_data_t, PortStateSettingExtSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppgl = ppgl;
 	(*sm)->bptasg = bptasg;
@@ -298,15 +303,15 @@ void port_state_setting_ext_sm_init(port_state_setting_ext_data_t **sm,
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
 	(*sm)->max_ports = max_ports;
-	memset(&(*sm)->messagePriority, 0xFF, sizeof(UInteger224));
+	(void)memset(&(*sm)->messagePriority, 0xFF, sizeof(UInteger224));
 
 	if(domainIndex==0){
 		if(ub_assert_fatal((*sm)==(*forAllDomainSM), __func__, NULL)){return;}
 		//initialize forAllDomain
-		(*sm)->thisSM->forAllDomain=(PortStateSettingExtSMforAllDomain*)
-			malloc(sizeof(PortStateSettingExtSMforAllDomain));
+		(*sm)->thisSM->forAllDomain=(PortStateSettingExtSMforAllDomain*)UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+							 sizeof(PortStateSettingExtSMforAllDomain));
 		if(ub_assert_fatal((*sm)->thisSM->forAllDomain, __func__, "malloc")){return;}
-		memset((*sm)->thisSM->forAllDomain, 0, sizeof(PortStateSettingExtSMforAllDomain));
+		(void)memset((*sm)->thisSM->forAllDomain, 0, sizeof(PortStateSettingExtSMforAllDomain));
 		(*sm)->thisSM->forAllDomain->asymmetryMeasurementModeChangeThisPort = false;
 	}else{
 		if(ub_assert_fatal(*forAllDomainSM && ((*forAllDomainSM)->thisSM->forAllDomain),
@@ -319,7 +324,7 @@ int port_state_setting_ext_sm_close(port_state_setting_ext_data_t **sm)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, (*sm)->domainIndex, (*sm)->portIndex);
-	if((*sm)->domainIndex==0){free((*sm)->thisSM->forAllDomain);}
+	if((*sm)->domainIndex==0){UB_SD_RELMEM(GPTP_SMALL_ALLOC, (*sm)->thisSM->forAllDomain);}
 	CLOSE_SM_DATA(sm);
 	return 0;
 }

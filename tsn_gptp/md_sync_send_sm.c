@@ -47,6 +47,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
@@ -54,6 +55,7 @@
 #include "md_sync_send_sm.h"
 #include "md_abnormal_hooks.h"
 #include <math.h>
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -94,6 +96,7 @@ struct md_sync_send_data{
 #define ONESTEP_TX_OPER sm->mdeg->oneStepTxOper
 #define SYNC_SEQUENCE_ID sm->mdeg->syncSequenceId
 #define RCVD_MDTIMESTAMP_RECEIVE sm->thisSM->rcvdMDTimestampReceive
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static int setSyncTwoStep_txSync(md_sync_send_data_t *sm, uint64_t cts64)
 {
@@ -102,22 +105,23 @@ static int setSyncTwoStep_txSync(md_sync_send_data_t *sm, uint64_t cts64)
 	int64_t dts;
 	int res;
 
-	sdata=(MDPTPMsgSync *)md_header_compose(sm->gpnetd, sm->portIndex, SYNC, ssize,
+	sdata=(MDPTPMsgSync *)md_header_compose(GPTPINSTNUM, sm->gpnetd, sm->portIndex, SYNC, ssize,
 				RCVD_MDSYNC_PTR->sourcePortIdentity.clockIdentity,
-				RCVD_MDSYNC_PTR->sourcePortIdentity.portNumber,
+				RCVD_MDSYNC_PTR->sourcePortIdentity.portIndex,
 				SYNC_SEQUENCE_ID, sm->ppg->currentLogSyncInterval);
 	if(!sdata){return -1;}
 	sdata->head.logMessageInterval=RCVD_MDSYNC_PTR->logMessageInterval;
-	sdata->head.domainNumber=RCVD_MDSYNC_PTR->domainNumber;
+	sdata->head.domainNumber=
+		md_domain_index2number(RCVD_MDSYNC_PTR->domainIndex);
 	UB_LOG(UBL_DEBUGV, "md_sync_send:txSync domainIndex=%d, portIndex=%d\n",
 	       sm->domainIndex, sm->portIndex);
 
-	if(sm->pgap_ts==0){sm->pgap_ts=cts64;}
+	if(sm->pgap_ts==0u){sm->pgap_ts=cts64;}
 	res=gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, ssize);
 	if(res==-1){return res;}
 	if(res<0) {
-		sm->mock_txts64=gptpclock_getts64(sm->ptasg->thisClockIndex,
-						  sm->ptasg->domainNumber);
+		sm->mock_txts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex,
+						  sm->ptasg->domainIndex);
 		res=-res;
 	}
 	sm->statd.sync_send++;
@@ -140,7 +144,7 @@ static int setSyncTwoStep_txSync(md_sync_send_data_t *sm, uint64_t cts64)
 
 static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 {
-	MDPTPMsgFollowUp *sdata;
+	uint8_t *sdata;
 	int ssize=sizeof(MDPTPMsgFollowUp);
 	PTPMsgHeader head;
 	int64_t dts;
@@ -148,39 +152,44 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 	uint32_t tsns, tslsb;
 	uint16_t tsmsb;
 
-	sdata=(MDPTPMsgFollowUp *)gptpnet_get_sendbuf(sm->gpnetd, sm->portIndex-1);
-	memset(sdata, 0, ssize);
-	md_header_template(&head, FOLLOW_UP, ssize,
+	sdata=gptpnet_get_sendbuf(sm->gpnetd, sm->portIndex-1);
+	(void)memset(sdata, 0, ssize);
+	md_header_template(GPTPINSTNUM, &head, FOLLOW_UP, ssize,
 			   &RCVD_MDSYNC_PTR->sourcePortIdentity, SYNC_SEQUENCE_ID,
 			   sm->ppg->currentLogSyncInterval);
-	if(gptpclock_we_are_gm(sm->domainIndex)){
+	if(gptpclock_we_are_gm(GPTPINSTNUM, sm->domainIndex)){
 		head.correctionField=0;
 		cf = sm->sync_ts - RCVD_MDSYNC_PTR->upstreamTxTime.nsec;
 		// we assume cf<1sec
 	}else{
-		head.correctionField = (RCVD_MDSYNC_PTR->followUpCorrectionField.nsec<<16);
+		head.correctionField = ((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.nsec<<16u);
 		head.correctionField += (RCVD_MDSYNC_PTR->rateRatio *
 					 ((sm->sync_ts -
 					   RCVD_MDSYNC_PTR->upstreamTxTime.nsec)<<16));
 		cf=0;
 	}
 
-	head.domainNumber = RCVD_MDSYNC_PTR->domainNumber;
+	head.domainIndex = RCVD_MDSYNC_PTR->domainIndex;
 
-	md_compose_head(&head, (MDPTPMsgHeader *)sdata);
+	md_compose_head(&head, sdata);
 
 	tsmsb=RCVD_MDSYNC_PTR->preciseOriginTimestamp.seconds.msb;
 	tslsb=RCVD_MDSYNC_PTR->preciseOriginTimestamp.seconds.lsb;
-	tsns=RCVD_MDSYNC_PTR->preciseOriginTimestamp.nanoseconds+cf;
-	if(tsns>=UB_SEC_NS){
-		tsns-=UB_SEC_NS;
+	tsns=RCVD_MDSYNC_PTR->preciseOriginTimestamp.nanoseconds+(uint64_t)cf;
+	if(tsns>=(uint32_t)UB_SEC_NS){
+		tsns-=(uint32_t)UB_SEC_NS;
 		if(++tslsb==0){tsmsb++;}
 	}
-	sdata->preciseOriginTimestamp.seconds_msb_ns = htons(tsmsb);
-	sdata->preciseOriginTimestamp.seconds_lsb_nl = htonl(tslsb);
-	sdata->preciseOriginTimestamp.nanoseconds_nl = htonl(tsns);
+	uint16_t sd;
+	uint32_t ud;
+	sd=htons(tsmsb);
+	memcpy(&sdata[MDPTPMSG_PRECISEORIGINTIMESTAMP], &sd, 2);
+	ud=htonl(tslsb);
+	memcpy(&sdata[MDPTPMSG_PRECISEORIGINTIMESTAMP+2], &ud, 4);
+	ud=htonl(tsns);
+	memcpy(&sdata[MDPTPMSG_PRECISEORIGINTIMESTAMP+6], &ud, 4);
 
-	md_followup_information_tlv_compose(&sdata->FUpInfoTLV,
+	md_followup_information_tlv_compose(&sdata[MDPTPMSG_FUPINFOTLV],
 					    RCVD_MDSYNC_PTR->rateRatio,
 					    RCVD_MDSYNC_PTR->gmTimeBaseIndicator,
 					    RCVD_MDSYNC_PTR->lastGmPhaseChange,
@@ -250,13 +259,13 @@ static int send_sync_two_step_proc(md_sync_send_data_t *sm, uint64_t cts64)
 static md_sync_send_state_t send_sync_two_step_condition(md_sync_send_data_t *sm, uint64_t cts64)
 {
 	if(RCVD_MDTIMESTAMP_RECEIVE){return SEND_FOLLOW_UP;}
-	if(sm->mock_txts64){
+	if(sm->mock_txts64!=0u){
 		sm->sync_ts=sm->mock_txts64;
 		sm->mock_txts64=0;
 		return SEND_FOLLOW_UP;
 	}
-	if((cts64 - sm->txSync_time >=
-	    gptpnet_txtslost_time(sm->gpnetd, sm->portIndex-1))){
+	if((cts64 - sm->txSync_time) >=
+	    gptpnet_txtslost_time(sm->gpnetd, sm->portIndex-1)){
 		UB_TLOG(UBL_WARN,"%s:missing TxTS, domainIndex=%d, portIndex=%d, seqID=%d\n",
 			 __func__, sm->domainIndex, sm->portIndex, SYNC_SEQUENCE_ID);
 		// send SYNC with the same SequenceID again
@@ -271,8 +280,8 @@ static int send_follow_up_proc(md_sync_send_data_t *sm, uint64_t cts64)
 	UB_LOG(UBL_DEBUGV, "md_sync_send:%s:domainIndex=%d, portIndex=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex);
 	RCVD_MDTIMESTAMP_RECEIVE = false;
-	if(setFollowUp_txFollowUp(sm, cts64)){return -1;}
-	SYNC_SEQUENCE_ID += 1;
+	if(setFollowUp_txFollowUp(sm, cts64)!=0){return -1;}
+	SYNC_SEQUENCE_ID += 1u;
 	return 0;
 }
 
@@ -294,7 +303,7 @@ static void *send_sync_one_step_proc(md_sync_send_data_t *sm)
 	RCVD_MDSYNC = false;
 	//txSyncPtr = setSyncOneStep ();
 	//txSync (txSyncPtr);
-	SYNC_SEQUENCE_ID += 1;
+	SYNC_SEQUENCE_ID += 1u;
 	return NULL;
 }
 
@@ -340,7 +349,7 @@ int md_sync_send_sm(md_sync_send_data_t *sm, uint64_t cts64)
 			sm->state = INITIALIZING;
 			break;
 		case INITIALIZING:
-			if(state_change){initializing_proc(sm);}
+			if(state_change){(void)initializing_proc(sm);}
 			sm->state = initializing_condition(sm);
 			break;
 		case SEND_SYNC_TWO_STEP:
@@ -364,14 +373,15 @@ int md_sync_send_sm(md_sync_send_data_t *sm, uint64_t cts64)
 			sm->state = send_follow_up_condition(sm);
 			break;
 		case SEND_SYNC_ONE_STEP:
-			if(state_change){send_sync_one_step_proc(sm);}
+			if(state_change){(void)send_sync_one_step_proc(sm);}
 			sm->state = send_sync_one_step_condition(sm);
 			break;
 		case SET_CORRECTION_FIELD:
-			if(state_change){set_correction_field_proc(sm);}
+			if(state_change){(void)set_correction_field_proc(sm);}
 			sm->state = set_correction_field_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
 		if(sm->last_state == sm->state){break;}
@@ -388,14 +398,15 @@ void md_sync_send_sm_init(md_sync_send_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 	       __func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(md_sync_send_data_t, MDSyncSendSM, sm)){return;}
+	INIT_SM_DATA(md_sync_send_data_t, MDSyncSendSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->gpnetd = gpnetd;
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->mdeg = mdeg;
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
-	md_sync_send_sm((*sm),0);
+	(void)md_sync_send_sm((*sm),0);
 }
 
 int md_sync_send_sm_close(md_sync_send_data_t **sm)
@@ -422,18 +433,20 @@ void md_sync_send_sm_txts(md_sync_send_data_t *sm, event_data_txts_t *edtxts,
 	int pi;
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d, seqID=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex, edtxts->seqid);
-	if(md_abnormal_timestamp(SYNC, sm->portIndex-1, sm->ptasg->domainNumber)){return;}
+	if(md_abnormal_timestamp(SYNC, sm->portIndex-1, sm->ptasg->domainIndex)!=0){return;}
 	RCVD_MDTIMESTAMP_RECEIVE = true;
-	pi=gptpconf_get_intitem(CONF_SINGLE_CLOCK_MODE)?1:sm->portIndex;
-	gptpclock_tsconv(&edtxts->ts64, pi, 0,
-			 sm->ptasg->thisClockIndex, sm->ptasg->domainNumber);
+	pi=gptpgcfg_get_intitem(
+		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_SINGLE_CLOCK_MODE,
+		YDBI_CONFIG)?1:sm->portIndex;
+	(void)gptpclock_tsconv(GPTPINSTNUM, &edtxts->ts64, pi, 0,
+			 sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
 	sm->sync_ts=edtxts->ts64;
-	md_sync_send_sm(sm, cts64);
+	(void)md_sync_send_sm(sm, cts64);
 }
 
 void md_sync_send_stat_reset(md_sync_send_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_sync_send_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_sync_send_stat_data_t));
 }
 
 md_sync_send_stat_data_t *md_sync_send_get_stat(md_sync_send_data_t *sm)

@@ -47,60 +47,97 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mdeth.h"
-#include "gptp_config.h"
+#include "gptpconf/gptpgcfg.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
+#include "gptpcommon.h"
 #include <math.h>
 
-void md_compose_head(PTPMsgHeader *head, MDPTPMsgHeader *phead)
+/*
+ * in the current implementation domainNumver=domainIndex
+ * When a different number is used, we need a mapping funtion here
+ */
+uint8_t md_domain_index2number(uint8_t index)
 {
-	phead->majorSdoId_messageType = (head->majorSdoId << 4) | head->messageType;
-	phead->minorVersionPTP_versionPTP = (head->minorVersionPTP << 4) |
+	return index;
+}
+uint8_t md_domain_number2index(uint8_t number)
+{
+	return number;
+}
+
+/*
+ * in the current implementation portNumver=portIndex
+ * When a different number is used, we need a mapping funtion here
+ */
+uint16_t md_port_index2number(uint16_t index)
+{
+	return index;
+}
+uint16_t md_port_number2index(uint16_t number)
+{
+	return number;
+}
+
+void md_compose_head(PTPMsgHeader *head, uint8_t *phead)
+{
+	uint16_t sd;
+	uint64_t ld;
+	phead[MDPTPMSG_MAJORSDOID_MESSAGETYPE] = (head->majorSdoId << 4) | head->messageType;
+	phead[MDPTPMSG_MINORVERSIONPTP_VERSIONPTP] = (head->minorVersionPTP << 4) |
 		head->versionPTP;
-	phead->messageLength_ns = htons(head->messageLength);
-	phead->domainNumber = head->domainNumber;
-	phead->minorSdoId = head->minorSdoId;
-	memcpy(phead->flags, head->flags, 2);
-	phead->correctionField_nll = UB_HTONLL((uint64_t)head->correctionField);
-	memcpy(phead->messageTypeSpecific, head->messageTypeSpecific, 4);
-	memcpy(phead->sourcePortIdentity.clockIdentity, head->sourcePortIdentity.clockIdentity,
-	       sizeof(ClockIdentity));
-	phead->sourcePortIdentity.portNumber_ns = htons(head->sourcePortIdentity.portNumber);
-	phead->sequenceId_ns = htons(head->sequenceId);
-	phead->control = head->control;
-	phead->logMessageInterval = head->logMessageInterval;
+	sd=htons(head->messageLength);
+	(void)memcpy(&phead[MDPTPMSG_MESSAGELENGTH_NS], &sd, 2);
+	phead[MDPTPMSG_DOMAINNUMBER] = md_domain_index2number(head->domainIndex);
+	phead[MDPTPMSG_MINORSDOID] = head->minorSdoId;
+	(void)memcpy(&phead[MDPTPMSG_FLAGS], head->flags, 2);
+	ld=UB_HTONLL((uint64_t)head->correctionField);
+	(void)memcpy(&phead[MDPTPMSG_CORRECTIONFIELD_NLL], &ld, 8);
+	(void)memcpy(&phead[MDPTPMSG_MESSAGETYPESPECIFIC], head->messageTypeSpecific, 4);
+	(void)memcpy(&phead[MDPTPMSG_SOURCEPORTIDENTITY], head->sourcePortIdentity.clockIdentity, 8);
+	sd=htons(md_port_index2number(head->sourcePortIdentity.portIndex));
+	(void)memcpy(&phead[MDPTPMSG_SOURCEPORTIDENTITY+8], &sd, 2);
+	sd=htons(head->sequenceId);
+	(void)memcpy(&phead[MDPTPMSG_SEQUENCEID_NS], &sd, 2);
+	phead[MDPTPMSG_CONTROL] = head->control;
+	phead[MDPTPMSG_LOGMESSAGEINTERVAL] = head->logMessageInterval;
 }
 
 void md_decompose_head(MDPTPMsgHeader *phead, PTPMsgHeader *head)
 {
-	head->majorSdoId = (phead->majorSdoId_messageType >> 4) & 0xf;
-	head->messageType = phead->majorSdoId_messageType & 0xf;
-	head->minorVersionPTP = (phead->minorVersionPTP_versionPTP >> 4) & 0xf;
-	head->versionPTP = phead->minorVersionPTP_versionPTP & 0xf;
+	head->majorSdoId = (phead->majorSdoId_messageType >> 4u) & 0xfu;
+	head->messageType = phead->majorSdoId_messageType & 0xfu;
+	head->minorVersionPTP = (phead->minorVersionPTP_versionPTP >> 4u) & 0xfu;
+	head->versionPTP = phead->minorVersionPTP_versionPTP & 0xfu;
 	head->messageLength = ntohs(phead->messageLength_ns);
-	head->domainNumber = phead->domainNumber;
+	head->domainIndex = md_domain_number2index(phead->domainNumber);
 	head->minorSdoId = phead->minorSdoId;
-	memcpy(head->flags, phead->flags, 2);
+	(void)memcpy(head->flags, phead->flags, 2);
 	head->correctionField = UB_NTOHLL((uint64_t)phead->correctionField_nll);
-	memcpy(head->messageTypeSpecific, phead->messageTypeSpecific, 4);
-	memcpy(head->sourcePortIdentity.clockIdentity, phead->sourcePortIdentity.clockIdentity,
-	       sizeof(ClockIdentity));
-	head->sourcePortIdentity.portNumber = ntohs(phead->sourcePortIdentity.portNumber_ns);
+	(void)memcpy(head->messageTypeSpecific, phead->messageTypeSpecific, 4);
+	(void)memcpy(head->sourcePortIdentity.clockIdentity,
+		     phead->sourcePortIdentity.clockIdentity, sizeof(ClockIdentity));
+	head->sourcePortIdentity.portIndex =
+		md_port_number2index(ntohs(phead->sourcePortIdentity.portNumber_ns));
 	head->sequenceId = ntohs(phead->sequenceId_ns);
 	head->control = phead->control;
 	head->logMessageInterval = phead->logMessageInterval;
 }
 
-void md_header_template(PTPMsgHeader *head, PTPMsgType msgtype, uint16_t len,
+void md_header_template(uint8_t gptpInstanceIndex, PTPMsgHeader *head,
+			PTPMsgType msgtype, uint16_t len,
 			PortIdentity *portId, uint16_t seqid, int8_t logMessageInterval)
 {
 	head->majorSdoId=1; // for CMLDS, this must be changed to '2'
 	head->messageType=msgtype;
-	head->minorVersionPTP=gptpconf_get_intitem(CONF_MINOR_VERSION_PTP);
+	head->minorVersionPTP=gptpgcfg_get_yang_portds_intitem(
+		gptpInstanceIndex, IEEE1588_PTP_MINOR_VERSION_NUMBER,
+		0, 0, YDBI_STATUS); // use the data of port=0,domain=0
 	head->versionPTP=2;
 	head->messageLength=len;
-	head->domainNumber=0;
+	head->domainIndex=0;
 	head->minorSdoId=0;
 	switch(msgtype){
 		case SYNC: /* fall-through */
@@ -112,10 +149,14 @@ void md_header_template(PTPMsgHeader *head, PTPMsgType msgtype, uint16_t len,
 			head->flags[0]=0x0;
 			break;
 	}
-	head->flags[1]=0x0|((gptpconf_get_intitem(CONF_TIMESCALE_PTP)&0x1)<<3);
+	// IEEE1588_PTP_PTP_TIMESCALE
+	head->flags[1]=0x0u|(((uint32_t)gptpgcfg_get_yang_intitem(
+				     gptpInstanceIndex, IEEE1588_PTP_DEFAULT_DS,
+				     IEEE1588_PTP_PTP_TIMESCALE, 255,
+				     0, YDBI_STATUS)&0x1u)<<3u);
 	head->correctionField=0;
-	memset(head->messageTypeSpecific,0,4);
-	memcpy(&head->sourcePortIdentity, portId, sizeof(PortIdentity));
+	(void)memset(head->messageTypeSpecific,0,4);
+	(void)memcpy(&head->sourcePortIdentity, portId, sizeof(PortIdentity));
 	head->sequenceId=seqid;
 	switch(msgtype){
 	case SYNC:
@@ -131,7 +172,8 @@ void md_header_template(PTPMsgHeader *head, PTPMsgType msgtype, uint16_t len,
 	head->logMessageInterval=logMessageInterval;
 }
 
-void *md_header_compose(gptpnet_data_t *gpnetd, int portIndex, PTPMsgType msgtype,
+void *md_header_compose(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnetd,
+			int portIndex, PTPMsgType msgtype,
 			uint16_t ssize, ClockIdentity thisClock, uint16_t thisPort,
 			uint16_t seqid, int8_t logMessageInterval)
 {
@@ -144,66 +186,100 @@ void *md_header_compose(gptpnet_data_t *gpnetd, int portIndex, PTPMsgType msgtyp
 		return NULL;
 	}
 	sdata=gptpnet_get_sendbuf(gpnetd, portIndex-1);
-	memset(sdata, 0, ssize);
+	(void)memset(sdata, 0, ssize);
 
-	memcpy(portId.clockIdentity, thisClock, sizeof(ClockIdentity));
-	portId.portNumber = thisPort;
-	md_header_template(&head, msgtype, ssize, &portId, seqid, logMessageInterval);
-	md_compose_head(&head, (MDPTPMsgHeader *)sdata);
+	(void)memcpy(portId.clockIdentity, thisClock, sizeof(ClockIdentity));
+	portId.portIndex = thisPort;
+	md_header_template(gptpInstanceIndex, &head, msgtype,
+			   ssize, &portId, seqid, logMessageInterval);
+	md_compose_head(&head, sdata);
 	return sdata;
 }
 
-void md_followup_information_tlv_compose(MDFollowUpInformationTLV *tlv,
+void md_followup_information_tlv_compose(uint8_t *tlv,
 					 double rateRatio, uint16_t gmTimeBaseIndicator,
 					 ScaledNs lastGmPhaseChange, double lastGmFreqChange)
 {
+	uint16_t sd;
+	uint32_t ud;
+	uint64_t ld;
+
 	// 11.4.4.3 Follow_Up information TLV
-	tlv->tlvType_ns = htons(0x3);
-	tlv->lengthField_ns = htons(28);
-	tlv->organizationId[0] = 0x00;
-	tlv->organizationId[1] = 0x80;
-	tlv->organizationId[2] = 0xC2;
-	tlv->organizationSubType_nb[0] = 0;
-	tlv->organizationSubType_nb[1] = 0;
-	tlv->organizationSubType_nb[2] = 1;
-	tlv->cumulativeScaledRateOffset_nl = htonl((int32_t)ldexp((rateRatio - 1.0), 41));
-	tlv->gmTimeBaseIndicator_ns = htons(gmTimeBaseIndicator);
-	tlv->lastGmPhaseChange.nsec_msb = htons(lastGmPhaseChange.nsec_msb);
-	tlv->lastGmPhaseChange.nsec_nll = UB_HTONLL((uint64_t)lastGmPhaseChange.nsec);
-	tlv->lastGmPhaseChange.subns_ns = htons(lastGmPhaseChange.subns);
-	tlv->scaledLastGmFreqChange_nl = htonl((int32_t)ldexp(lastGmFreqChange, 41));
+	sd=htons(0x3);
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_TLVTYPE_NS], &sd, 2);
+	sd=htons(28);
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_LENGTHFIELD_NS], &sd, 2);
+	tlv[MDFOLLOWUPTLV_ORGANIZATIONID+0] = 0x00;
+	tlv[MDFOLLOWUPTLV_ORGANIZATIONID+1] = 0x80;
+	tlv[MDFOLLOWUPTLV_ORGANIZATIONID+2] = 0xC2;
+
+	tlv[MDFOLLOWUPTLV_ORGANIZATIONSUBTYPE_NB+0] = 0;
+	tlv[MDFOLLOWUPTLV_ORGANIZATIONSUBTYPE_NB+1] = 0;
+	tlv[MDFOLLOWUPTLV_ORGANIZATIONSUBTYPE_NB+2] = 1;
+
+	ud=htonl((int32_t)ldexp((rateRatio - 1.0), 41));
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_CUMULATIVESCALEDRATEOFFSET_NL], &ud, 4);
+	sd=htons(gmTimeBaseIndicator);
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_GMTIMEBASEINDICATOR_NS], &sd, 2);
+	sd=htons(lastGmPhaseChange.nsec_msb);
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_LASTGMPHASECHANGE], &sd, 2);
+	ld=UB_HTONLL((uint64_t)lastGmPhaseChange.nsec);
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_LASTGMPHASECHANGE+2], &ld, 4);
+	sd=htons(lastGmPhaseChange.subns);
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_LASTGMPHASECHANGE+6], &sd, 2);
+	ud=htonl((int32_t)ldexp(lastGmFreqChange, 41));
+	(void)memcpy(&tlv[MDFOLLOWUPTLV_SCALEDLASTGMFREQCHANGE_NL], &ud, 4);
 }
 
-void md_entity_glb_init(MDEntityGlobal **mdeglb, MDEntityGlobalForAllDomain *forAllDomain)
+void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
+			MDEntityGlobalForAllDomain *forAllDomain)
 {
 	if(!*mdeglb){
-		*mdeglb=(MDEntityGlobal *)malloc(sizeof(MDEntityGlobal));
+		*mdeglb=(MDEntityGlobal *)UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(MDEntityGlobal));
 		if(ub_assert_fatal(*mdeglb, __func__, "malloc error")){return;}
 	}
-	memset(*mdeglb, 0, sizeof(MDEntityGlobal));
-	if(forAllDomain){
+	(void)memset(*mdeglb, 0, sizeof(MDEntityGlobal));
+	if(forAllDomain!=NULL){
 		(*mdeglb)->forAllDomain = forAllDomain;
 	}else{
-		(*mdeglb)->forAllDomain =
-			(MDEntityGlobalForAllDomain *)malloc(sizeof(MDEntityGlobalForAllDomain));
+		(*mdeglb)->forAllDomain = UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
+						       sizeof(MDEntityGlobalForAllDomain));
 		if(ub_assert_fatal((*mdeglb)->forAllDomain, __func__, "malloc error")){return;}
-		memset((*mdeglb)->forAllDomain, 0, sizeof(MDEntityGlobalForAllDomain));
+		(void)memset((*mdeglb)->forAllDomain, 0, sizeof(MDEntityGlobalForAllDomain));
 		(*mdeglb)->forAllDomain->currentLogPdelayReqInterval =
-			gptpconf_get_intitem(CONF_LOG_PDELAYREQ_INTERVAL);
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_CURRENT_LOG_PDELAY_REQ_INTERVAL,
+				0, 0, YDBI_STATUS); // use the data of port=0,domain=0
 		(*mdeglb)->forAllDomain->initialLogPdelayReqInterval =
-			gptpconf_get_intitem(CONF_LOG_PDELAYREQ_INTERVAL);
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_INITIAL_LOG_PDELAY_REQ_INTERVAL,
+				0, 0, YDBI_CONFIG); // use the data of port=0,domain=0
 		(*mdeglb)->forAllDomain->pdelayReqInterval.nsec =
-			LOG_TO_NSEC(gptpconf_get_intitem(CONF_LOG_PDELAYREQ_INTERVAL));
+			LOG_TO_NSEC((*mdeglb)->forAllDomain->initialLogPdelayReqInterval);
 		(*mdeglb)->forAllDomain->allowedLostResponses =
-			gptpconf_get_intitem(CONF_ALLOWED_LOST_RESPONSE);
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_ALLOWED_LOST_RESPONSES,
+				0, 0, YDBI_CONFIG); // use the data of port=0,domain=0
 		(*mdeglb)->forAllDomain->allowedFaults =
-			gptpconf_get_intitem(CONF_ALLOWED_FAULTS);
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_ALLOWED_FAULTS,
+				0, 0, YDBI_CONFIG); // use the data of port=0,domain=0
 		(*mdeglb)->forAllDomain->neighborPropDelayThresh.nsec =
-			gptpconf_get_intitem(CONF_NEIGHBOR_PROPDELAY_THRESH);
+			((uint64_t)gptpgcfg_get_yang_portds_int64item(
+				gptpInstanceIndex,
+				IEEE1588_PTP_MEAN_LINK_DELAY_THRESH,
+				0, 0, YDBI_CONFIG)>>16u); // use the data of port=0,domain=0
 		(*mdeglb)->forAllDomain->neighborPropDelayMinLimit.nsec =
-			gptpconf_get_intitem(CONF_NEIGHBOR_PROPDELAY_MINLIMIT);
+			gptpgcfg_get_intitem(
+				gptpInstanceIndex,
+				XL4_EXTMOD_XL4GPTP_NEIGHBOR_PROPDELAY_MINLIMIT,
+				YDBI_CONFIG);
 	}
-	(*mdeglb)->syncSequenceId = (uint16_t)(rand() & 0xffff);
+	(*mdeglb)->syncSequenceId = (uint16_t)rand();
 	(*mdeglb)->oneStepReceive = false;
 	(*mdeglb)->oneStepTransmit = false;
 	(*mdeglb)->oneStepTxOper = false;
@@ -212,7 +288,7 @@ void md_entity_glb_init(MDEntityGlobal **mdeglb, MDEntityGlobalForAllDomain *for
 void md_entity_glb_close(MDEntityGlobal **mdeglb, int domainIndex)
 {
 	if(!*mdeglb){return;}
-	if(domainIndex==0){free((*mdeglb)->forAllDomain);}
-	free(*mdeglb);
+	if(domainIndex==0){UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, (*mdeglb)->forAllDomain);}
+	UB_SD_RELMEM(GPTP_SMALL_ALLOC, *mdeglb);
 	*mdeglb=NULL;
 }

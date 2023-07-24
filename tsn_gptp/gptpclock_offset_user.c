@@ -56,12 +56,13 @@
  * This mode is deprecated.
  */
 
-static int gptpclock_setts_od(int64_t ts64, oneclock_data_t *od)
+static int gptpclock_setts_od(uint8_t gptpInstanceIndex, gptpclock_data_t *gcd,
+			      int64_t ts64, oneclock_data_t *od)
 {
 	GPTP_CLOCK_GETTIME(od->ptpfd, od->last_setts64);
 
 	if(!od->clockIndex || (od->mode==PTPCLOCK_SLAVE_SUB)){
-		gptpclock_mutex_trylock(&gcd.shm->head.mcmutex);
+		gptpclock_mutex_trylock(&gcd->shm->head.mcmutex);
 	}
 
 	od->offset64=ts64-od->last_setts64;
@@ -69,32 +70,34 @@ static int gptpclock_setts_od(int64_t ts64, oneclock_data_t *od)
 		od->offset64=0;
 		GPTP_CLOCK_SETTIME(od->ptpfd, ts64);
 	}else{
-		gptpclock_setoffset_od(od);
+		gptpclock_setoffset_od(gcd, od);
 	}
 
 	if(!od->clockIndex || (od->mode==PTPCLOCK_SLAVE_SUB)){
-		CB_THREAD_MUTEX_UNLOCK(&gcd.shm->head.mcmutex);
+		CB_THREAD_MUTEX_UNLOCK(&gcd->shm->head.mcmutex);
 	}
 
 	return 0;
 }
 
 /* returns latency time in this function, if it is too long this setting is not accurate */
-static int64_t time_setoffset64(int64_t offset64, int clockIndex, uint8_t domainNumber)
+static int64_t time_setoffset64(uint8_t gptpInstanceIndex, gptpclock_data_t *gcd,
+				int64_t offset64, int clockIndex, uint8_t domainNumber)
 {
 	int64_t ats64=-1;
 	int64_t mt1,mt2;
 	oneclock_data_t *od;
-	GPTPCLOCK_FN_ENTRY(od, clockIndex, domainNumber);
+	GPTPCLOCK_FN_ENTRY(gcd, od, clockIndex, domainNumber);
 	mt1=ub_mt_gettime64();
-	gptpclock_getts_od(&ats64, od);
+	(void)gptpclock_getts_od(&ats64, od);
 	ats64 += offset64;
-	gptpclock_setts_od(ats64, od);
+	(void)gptpclock_setts_od(gptpInstanceIndex, gcd, ats64, od);
 	mt2=ub_mt_gettime64();
 	return mt2-mt1;
 }
 
-static int avarage_time_setoffset(int clockIndex, uint8_t domainNumber)
+static int avarage_time_setoffset(gptpclock_data_t *gcd, int clockIndex,
+				  uint8_t domainNumber)
 {
 	int64_t v;
 	int64_t vmax=0;
@@ -102,8 +105,11 @@ static int avarage_time_setoffset(int clockIndex, uint8_t domainNumber)
 	int count=0;
 	int i;
 	for(i=0;i<10;i++){
-		v = time_setoffset64(0, clockIndex, domainNumber);
-		if(v > gptpconf_get_intitem(CONF_MAX_CONSEC_TS_DIFF)){continue;}
+		v = time_setoffset64(gptpInstanceIndex, gcd, 0, clockIndex, domainNumber);
+		if(v > gptpgcfg_get_intitem(
+			   gptpInstanceIndex,
+			   XL4_EXTMOD_XL4GPTP_MAX_CONSEC_TS_DIFF,
+			   YDBI_CONFIG)){continue;}
 		if(llabs(vmax)<llabs(v)){vmax=v;}
 		av += v;
 		count ++;
@@ -119,7 +125,9 @@ static int avarage_time_setoffset(int clockIndex, uint8_t domainNumber)
 	}
 	av = av/count;
 	// it was measured in a short loop, and likely shorter value than real use case value.
-	avc = av*gptpconf_get_intitem(CONF_TS2DIFF_CACHE_FACTOR)/100;
+	avc = av*gptpgcfg_get_intitem(
+		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_TS2DIFF_CACHE_FACTOR,
+		YDBI_CONFIG)/100;
 	UB_LOG(UBL_DEBUG, "%s:clockIndex=%d, domainNumber=%d,"
 	       "calculate setoffset time av=%d, avc=%d, vmax=%"PRIi64"\n",
 	       __func__, clockIndex, domainNumber, av, avc, vmax);

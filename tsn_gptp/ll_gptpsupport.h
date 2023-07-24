@@ -47,12 +47,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __LL_GPTPSUPPORT_H_
-#define __LL_GPTPSUPPORT_H_
+#ifndef LL_GPTPSUPPORT_H_
+#define LL_GPTPSUPPORT_H_
 
 #ifndef PTPFD_TYPE
 #define PTPFD_TYPE int
-#define PTPFD_VALID(ptpfd) (ptpfd>=0)
+#define PTPFD_VALID(ptpfd) ((ptpfd)>=0)
 #define PTPFD_INVALID -1
 #define PRiFD "%d"
 #endif
@@ -75,11 +75,11 @@ int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset);
 #ifdef PTP_VIRTUAL_CLOCK_SUPPORT
 
 #define VIRTUAL_CLOCKFD(fd) \
-	((fd>=(PTPFD_TYPE)GPTP_VIRTUAL_PTPDEV_FDBASE) && \
-	 (fd<=(PTPFD_TYPE)GPTP_VIRTUAL_PTPDEV_FDMAX))
+	(((fd)>=(PTPFD_TYPE)GPTP_VIRTUAL_PTPDEV_FDBASE) &&	\
+	 ((fd)<=(PTPFD_TYPE)GPTP_VIRTUAL_PTPDEV_FDMAX))
 
 #define VIRTUAL_CLOCKNAME(name) \
-	(strstr(name, CB_VIRTUAL_PTPDEV_PREFIX)==name)
+	(strstr((name), CB_VIRTUAL_PTPDEV_PREFIX)==(name))
 
 /*----------------------------------------------------------*/
 /* These macros are used by application that use libgptp2 */
@@ -90,14 +90,14 @@ static inline int _zero_return(void){return 0;}
 	VIRTUAL_CLOCKNAME(name)?(PTPFD_TYPE)GPTP_VIRTUAL_PTPDEV_FDBASE:ptpdev_clock_open(name,perm)
 
 #define PTPDEV_CLOCK_CLOSE(fd) \
-	(fd==(PTPFD_TYPE)(GPTP_VIRTUAL_PTPDEV_FDBASE))?_zero_return():ptpdev_clock_close(fd)
+	((fd)==(PTPFD_TYPE)(GPTP_VIRTUAL_PTPDEV_FDBASE))?_zero_return():ptpdev_clock_close(fd)
 
 #define PTPDEV_CLOCK_GETTIME(fd,ts64) \
 {\
 	if(!VIRTUAL_CLOCKFD(fd)){\
-		ptpdev_clock_gettime(fd, (int64_t *)&(ts64));\
+		(void)ptpdev_clock_gettime((fd), (int64_t *)&(ts64));	\
 	}else{\
-		ts64=ub_rt_gettime64();\
+		(ts64)=ub_rt_gettime64();	\
 	}\
 }
 /*----------------------------------------------------------*/
@@ -108,31 +108,31 @@ uint64_t gptp_vclock_gettime(PTPFD_TYPE ptpfd);
 int gptp_vclock_settime(PTPFD_TYPE ptpfd, uint64_t ts64);
 int gptp_vclock_setoffset(PTPFD_TYPE ptpfd, int64_t offset64);
 
-#define GPTP_CLOCK_GETTIME(fd,ts64) \
-{\
-	if(!VIRTUAL_CLOCKFD(fd)){\
-		ptpdev_clock_gettime(fd, (int64_t *)&(ts64));\
-	}else{\
-		ts64=gptp_vclock_gettime(fd);\
-	}\
-}
+#define GPTP_CLOCK_GETTIME(fd,ts64)					\
+	{								\
+		if(!VIRTUAL_CLOCKFD(fd)){				\
+			(void)ptpdev_clock_gettime((fd), (int64_t *)&(ts64)); \
+		}else{							\
+			(ts64)=gptp_vclock_gettime(fd);			\
+		}							\
+	}
 
-#define GPTP_CLOCK_SETTIME(fd,ts64) \
-{\
-	if(!VIRTUAL_CLOCKFD(fd)){\
-		ptpdev_clock_settime(fd, (int64_t *)&(ts64));\
-	}else{\
-		gptp_vclock_settime(fd, ts64);\
-	}\
-}
+#define GPTP_CLOCK_SETTIME(fd,ts64)					\
+	{								\
+		if(!VIRTUAL_CLOCKFD(fd)){				\
+			(void)ptpdev_clock_settime((fd), (int64_t *)&(ts64)); \
+		}else{							\
+			(void)gptp_vclock_settime((fd), (ts64));	\
+		}							\
+	}
 
-#define GPTP_CLOCK_SETOFFSET(fd,offset64) \
-{\
-	if(!VIRTUAL_CLOCKFD(fd)){\
-		ptpdev_clock_setoffset(fd, offset64);\
-	}else{\
-		gptp_vclock_setoffset(fd, offset64);\
-	}\
+#define GPTP_CLOCK_SETOFFSET(fd,offset64)				\
+	{								\
+		if(!VIRTUAL_CLOCKFD(fd)){				\
+			(void)ptpdev_clock_setoffset((fd), (offset64));	\
+		}else{							\
+			(void)gptp_vclock_setoffset((fd), (offset64));	\
+		}							\
 }
 /*----------------------------------------------------------*/
 

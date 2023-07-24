@@ -47,12 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "md_pdelay_resp_sm.h"
 #include "md_abnormal_hooks.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -84,6 +86,7 @@ struct md_pdelay_resp_data{
 };
 
 #define PORT_OPER sm->ppg->forAllDomain->portOper
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static MDPTPMsgPdelayRespFollowUp *setPdelayRespFollowUp(md_pdelay_resp_data_t *sm)
 {
@@ -91,16 +94,16 @@ static MDPTPMsgPdelayRespFollowUp *setPdelayRespFollowUp(md_pdelay_resp_data_t *
 	int ssize=sizeof(MDPTPMsgPdelayRespFollowUp);
 	struct timespec ts;
 
-	sdata=(MDPTPMsgPdelayRespFollowUp *)md_header_compose(
-		sm->gpnetd, sm->portIndex, PDELAY_RESP_FOLLOW_UP, ssize,
-		sm->ptasg->thisClock, sm->ppg->thisPort,
-		ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
-		0x7f);
+	sdata=(MDPTPMsgPdelayRespFollowUp *)md_header_compose(GPTPINSTNUM, sm->gpnetd, sm->portIndex,
+				PDELAY_RESP_FOLLOW_UP, ssize,
+				sm->ptasg->thisClock, sm->ppg->thisPort,
+				ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
+				0x7f);
 	if(!sdata){return NULL;}
-	if(sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1 && sm->cmlds_mode){
+	if((sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1) && sm->cmlds_mode){
 		// PdelayReq came with CMLDS and we are also in CMLDS
 		sdata->head.majorSdoId_messageType =
-			(sdata->head.majorSdoId_messageType & 0x0F) | 0x20;
+			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x20u;
 	}
 	// As the fractional ns portion can't be measure, leave the 'correctionField' as 0
 	UB_NSEC2TS(sm->ts3, ts);
@@ -126,16 +129,15 @@ static MDPTPMsgPdelayResp *setPdelayResp(md_pdelay_resp_data_t *sm)
 	int ssize=sizeof(MDPTPMsgPdelayResp);
 	struct timespec ts;
 
-	sdata=(MDPTPMsgPdelayResp *)md_header_compose(
-		sm->gpnetd, sm->portIndex, PDELAY_RESP, ssize,
-		sm->ptasg->thisClock, sm->ppg->thisPort,
-		ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
-		0x7f);
+	sdata=(MDPTPMsgPdelayResp *)md_header_compose(GPTPINSTNUM, sm->gpnetd, sm->portIndex, PDELAY_RESP, ssize,
+				sm->ptasg->thisClock, sm->ppg->thisPort,
+				ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
+				0x7f);
 	if(!sdata){return NULL;}
-	if(sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1 && sm->cmlds_mode){
+	if((sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1) && sm->cmlds_mode){
 		// PdelayReq came with CMLDS and we are also in CMLDS
 		sdata->head.majorSdoId_messageType =
-			(sdata->head.majorSdoId_messageType & 0x0F) | 0x20;
+			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x20u;
 	}
 	// As the fractional ns portion can't be measure, leave the 'correctionField' as 0
 	UB_NSEC2TS(sm->ts2, ts);
@@ -226,7 +228,7 @@ static int sent_pdelay_resp_waiting_for_timestamp_proc(md_pdelay_resp_data_t *sm
 	sm->txPdelayResp_time=cts64;
 	sm->statd.pdelay_resp_send++;
 	if(res<0){
-		sm->mock_txts64=gptpclock_getts64(sm->ptasg->thisClockIndex,0);
+		sm->mock_txts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex,0);
 		res=-res;
 	}
 	return res;
@@ -236,9 +238,9 @@ static md_pdelay_resp_state_t sent_pdelay_resp_waiting_for_timestamp_condition(
 	md_pdelay_resp_data_t *sm, uint64_t cts64)
 {
 	if(sm->thisSM->rcvdMDTimestampReceive){return WAITING_FOR_PDELAY_REQ;}
-	if(cts64 - sm->txPdelayResp_time >=
+	if((cts64 - sm->txPdelayResp_time) >=
 	   gptpnet_txtslost_time(sm->gpnetd, sm->portIndex-1)){
-		if(sm->mock_txts64){
+		if(sm->mock_txts64!=0u){
 			sm->ts3=sm->mock_txts64;
 			sm->mock_txts64=0;
 			return WAITING_FOR_PDELAY_REQ;
@@ -271,19 +273,20 @@ int md_pdelay_resp_sm(md_pdelay_resp_data_t *sm, uint64_t cts64)
 			sm->state = NOT_ENABLED;
 			break;
 		case NOT_ENABLED:
-			if(state_change){not_enabled_proc(sm);}
+			if(state_change){(void)not_enabled_proc(sm);}
 			sm->state = not_enabled_condition(sm);
 			break;
 		case INITIAL_WAITING_FOR_PDELAY_REQ:
-			if(state_change){initial_waiting_for_pdelay_req_proc(sm);}
+			if(state_change){(void)initial_waiting_for_pdelay_req_proc(sm);}
 			sm->state = initial_waiting_for_pdelay_req_condition(sm);
 			break;
 		case WAITING_FOR_PDELAY_REQ:
-			if(state_change)
-				if(waiting_for_pdelay_req_proc(sm)){
+			if(state_change){
+				if(waiting_for_pdelay_req_proc(sm)!=0){
 					sm->last_state=REACTION;
 					return 0;
 				}
+			}
 			sm->state = waiting_for_pdelay_req_condition(sm);
 			break;
 		case SENT_PDELAY_RESP_WAITING_FOR_TIMESTAMP:
@@ -297,6 +300,7 @@ int md_pdelay_resp_sm(md_pdelay_resp_data_t *sm, uint64_t cts64)
 			sm->state = sent_pdelay_resp_waiting_for_timestamp_condition(sm, cts64);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
 		if(sm->last_state == sm->state){break;}
@@ -311,14 +315,17 @@ void md_pdelay_resp_sm_init(md_pdelay_resp_data_t **sm,
 	PerPortGlobal *ppg)
 {
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d\n", __func__, portIndex);
-	if(INIT_SM_DATA(md_pdelay_resp_data_t, MDPdelayRespSM, sm)){return;}
+	INIT_SM_DATA(md_pdelay_resp_data_t, MDPdelayRespSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->gpnetd = gpnetd;
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->portIndex = portIndex;
-	(*sm)->cmlds_mode = gptpconf_get_intitem(CONF_CMLDS_MODE);
+	(*sm)->cmlds_mode = gptpgcfg_get_intitem(
+		ptasg->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_CMLDS_MODE,
+		YDBI_CONFIG);
 	// 11.2.18.2.5
-	if((*sm)->cmlds_mode){
+	if((*sm)->cmlds_mode!=0){
 		// ??? cmldsLinkPortEnabled for CMLDS, but we use ptpPortEnabled here
 		(*sm)->thisSM->portEnabled1 = (*sm)->ppg->ptpPortEnabled;
 	}else{
@@ -346,13 +353,13 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 		// 802.1AS-2020 8.1 the value of majorSdoId for gPTP domain must be 0x1
 		// When device is accepting message under CMLDS domain, allow values
 		// other than 0x1
-		if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0)!=0x10){
+		if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u)!=0x10u){
 			UB_LOG(UBL_DEBUGV, "%s:port=%d, invalid majorSdoId on gPTP domain, ignore event.\n",
 					__func__, sm->portIndex);
 			return 0;
 		}
 	}else{
-		if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0)==0x20){
+		if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u)==0x20u){
 			if(sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq!=-1){
 				UB_LOG(UBL_INFO, "%s:port=%d, set receivedNonCMLDSPdelayReq=-1\n",
 						__func__, sm->portIndex);
@@ -360,7 +367,7 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 			}
 		}
 	}
-	if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0)==0x10){
+	if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u)==0x10u){
 		if(sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq!=1){
 			UB_LOG(UBL_INFO, "%s:port=%d, set receivedNonCMLDSPdelayReq=1\n",
 					__func__, sm->portIndex);
@@ -393,25 +400,27 @@ void md_pdelay_resp_sm_txts(md_pdelay_resp_data_t *sm, event_data_txts_t *edtxts
 	int pi;
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d, received seqID=%d\n",
 	       __func__, sm->portIndex, edtxts->seqid);
-	if(md_abnormal_timestamp(PDELAY_RESP, sm->portIndex-1, -1)){return;}
-	if(sm->state!=SENT_PDELAY_RESP_WAITING_FOR_TIMESTAMP ||
-	   edtxts->seqid != ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns)){
+	if(md_abnormal_timestamp(PDELAY_RESP, sm->portIndex-1, -1)!=0){return;}
+	if((sm->state!=SENT_PDELAY_RESP_WAITING_FOR_TIMESTAMP) ||
+	   (edtxts->seqid != ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns))){
 		UB_TLOG(UBL_WARN, "%s:TxTS is not expected, seqid expected=%d, received=%d\n",
 			 __func__, ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
 			 edtxts->seqid);
 		return;
 	}
-	pi=gptpconf_get_intitem(CONF_SINGLE_CLOCK_MODE)?1:sm->portIndex;
-	gptpclock_tsconv(&edtxts->ts64, pi, 0,
-			 sm->ptasg->thisClockIndex, sm->ptasg->domainNumber);
+	pi=gptpgcfg_get_intitem(GPTPINSTNUM,
+				XL4_EXTMOD_XL4GPTP_SINGLE_CLOCK_MODE,
+				YDBI_CONFIG)?1:sm->portIndex;
+	(void)gptpclock_tsconv(GPTPINSTNUM, &edtxts->ts64, pi, 0,
+			       sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
 	sm->ts3=edtxts->ts64;
 	sm->thisSM->rcvdMDTimestampReceive = true;
-	md_pdelay_resp_sm(sm, cts64);
+	(void)md_pdelay_resp_sm(sm, cts64);
 }
 
 void md_pdelay_resp_stat_reset(md_pdelay_resp_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_pdelay_resp_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_pdelay_resp_stat_data_t));
 }
 
 md_pdelay_resp_stat_data_t *md_pdelay_resp_get_stat(md_pdelay_resp_data_t *sm)

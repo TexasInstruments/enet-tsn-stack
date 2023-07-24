@@ -50,10 +50,12 @@
  /*
  * lld_gptp_private.h
  */
-#ifndef __LLD_GPTP_PRIVATE_H_
-#define __LLD_GPTP_PRIVATE_H_
+#ifndef LLD_GPTP_PRIVATE_H_
+#define LLD_GPTP_PRIVATE_H_
 
 #include <tsn_combase/combase.h>
+#include "gptpnet.h"
+#include <tsn_uniconf/yangs/ietf-interfaces_access.h>
 
 // UB_LOGCAT category 2 for this layer
 #define UB_LOGCAT 2

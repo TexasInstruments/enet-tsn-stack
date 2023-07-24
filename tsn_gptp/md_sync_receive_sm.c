@@ -47,12 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "md_sync_receive_sm.h"
 #include <math.h>
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -73,7 +75,10 @@ struct md_sync_receive_data{
 	int portIndex;
 	MDSyncReceive mdSyncReceive;
 	uint64_t rts;
-	MDPTPMsgSyncOneStep recSync;
+	union {
+		MDPTPMsgSync recSync;
+		MDPTPMsgSyncOneStep recOneStepSync;
+	}u;
 	MDPTPMsgFollowUp recFollowUp;
 	uint64_t rsync_ts; // for debug use
 	uint64_t rfup_ts; // for debug use
@@ -81,8 +86,8 @@ struct md_sync_receive_data{
 };
 
 #define RCVD_SYNC sm->thisSM->rcvdSync
-#define RCVD_SYNC_PTR sm->thisSM->rcvdSyncPtr
-#define RCVD_SYNC_ONESETP_PTR ((MDPTPMsgSyncOneStep *)sm->thisSM->rcvdSyncPtr)
+#define RCVD_SYNC_PTR sm->thisSM->u.rcvdSyncPtr
+#define RCVD_SYNC_ONESETP_PTR sm->thisSM->u.rcvdSyncOneStepPtr
 #define RCVD_FOLLOWUP sm->thisSM->rcvdFollowUp
 #define RCVD_FOLLOWUP_PTR sm->thisSM->rcvdFollowUpPtr
 #define PORT_OPER sm->ppg->forAllDomain->portOper
@@ -94,12 +99,13 @@ struct md_sync_receive_data{
 
 static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 {
-	sm->mdSyncReceive.domainNumber = RCVD_SYNC_PTR->head.domainNumber;
+	sm->mdSyncReceive.domainIndex =
+		md_domain_number2index(RCVD_SYNC_PTR->head.domainNumber);
 	sm->mdSyncReceive.seqid = ntohs(RCVD_SYNC_PTR->head.sequenceId_ns);
 	sm->mdSyncReceive.followUpCorrectionField.nsec =
 		(UB_NTOHLL((uint64_t)RCVD_SYNC_PTR->head.correctionField_nll)>>16);
 
-	if(TWO_STEP_FLAG){
+	if(TWO_STEP_FLAG!=0u){
 		sm->mdSyncReceive.followUpCorrectionField.nsec +=
 			(UB_NTOHLL((uint64_t)RCVD_FOLLOWUP_PTR->head.correctionField_nll)>>16);
 		sm->mdSyncReceive.preciseOriginTimestamp.seconds.lsb =
@@ -164,8 +170,8 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 	memcpy(sm->mdSyncReceive.sourcePortIdentity.clockIdentity,
 	       RCVD_SYNC_PTR->head.sourcePortIdentity.clockIdentity,
 	       sizeof(ClockIdentity));
-	sm->mdSyncReceive.sourcePortIdentity.portNumber =
-		ntohs(RCVD_SYNC_PTR->head.sourcePortIdentity.portNumber_ns);
+	sm->mdSyncReceive.sourcePortIdentity.portIndex =
+		md_port_number2index(ntohs(RCVD_SYNC_PTR->head.sourcePortIdentity.portNumber_ns));
 	sm->mdSyncReceive.logMessageInterval = RCVD_SYNC_PTR->head.logMessageInterval;
 
 	sm->mdSyncReceive.upstreamTxTime.nsec = (sm->rts -
@@ -229,7 +235,7 @@ static void *waiting_for_follow_up_proc(md_sync_receive_data_t *sm, uint64_t cts
 	       __func__, sm->domainIndex, sm->portIndex);
 	if(RCVD_SYNC) {
 		dts=cts64-sm->rsync_ts;
-		if(sm->rsync_ts && dts>175000000) {
+		if(sm->rsync_ts && (dts>175000000)) {
 			UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%"PRIi64"\n",
 				 __func__, sm->domainIndex, sm->portIndex, dts);
 		}
@@ -268,8 +274,7 @@ static md_sync_receive_state_t waiting_for_follow_up_condition(md_sync_receive_d
 	if(RCVD_SYNC && PORT_OPER && PTP_PORT_ENABLED && AS_CAPABLE &&
 	   !TWO_STEP_FLAG && ONE_STEP_RECEIVE){return WAITING_FOR_SYNC;}
 
-	if((cts64 >= sm->thisSM->followUpReceiptTimeoutTime.nsec &&
-	    !ASYMMETRY_MEASUREMENT_MODE) ||
+	if(((cts64 >= sm->thisSM->followUpReceiptTimeoutTime.nsec) && !ASYMMETRY_MEASUREMENT_MODE) ||
 	   (RCVD_SYNC && PORT_OPER && PTP_PORT_ENABLED && AS_CAPABLE &&
 	    !TWO_STEP_FLAG && !ASYMMETRY_MEASUREMENT_MODE && !ONE_STEP_RECEIVE )) {
 		UB_TLOG(UBL_WARN, "%s:domainIndex=%d, portIndex=%d, timed out for FUP\n",
@@ -288,7 +293,7 @@ static void *waiting_for_sync_proc(md_sync_receive_data_t *sm, uint64_t cts64)
 	RCVD_SYNC = false;
 	if(RCVD_FOLLOWUP) {
 		dts=cts64-sm->rfup_ts;
-		if(sm->rfup_ts && dts>175000000) {
+		if(sm->rfup_ts && (dts>175000000)) {
 			UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, fup gap=%"PRIi64"\n",
 				 __func__, sm->domainIndex, sm->portIndex, dts);
 		}
@@ -333,7 +338,7 @@ static md_sync_receive_state_t waiting_for_sync_condition(md_sync_receive_data_t
 			 * the SyncFup to consider the above possibility.
 			 * We will allow out-of-order SyncFup and Sync at this point by disabling
 			 * the following code:
-			 * // RCVD_FOLLOWUP=false;
+			 *   RCVD_FOLLOWUP=false;
 			 *
 			 * Checking of matching Sync and SyncFup is performed afterwards.
 			 */
@@ -370,9 +375,10 @@ void *md_sync_receive_sm(md_sync_receive_data_t *sm, uint64_t cts64)
 			sm->state = waiting_for_sync_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -386,7 +392,8 @@ void md_sync_receive_sm_init(md_sync_receive_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(md_sync_receive_data_t, MDSyncReceiveSM, sm)){return;}
+	INIT_SM_DATA(md_sync_receive_data_t, MDSyncReceiveSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->mdeg = mdeg;
@@ -409,10 +416,10 @@ void *md_sync_receive_sm_recv_sync(md_sync_receive_data_t *sm, event_data_recv_t
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex);
 	RCVD_SYNC=true;
-	size=GET_TWO_STEP_FLAG(*(MDPTPMsgHeader *)edrecv->recbptr)?
+	size=GET_TWO_STEP_BYTE_FLAG(edrecv->recbptr)?
 		sizeof(MDPTPMsgSync):sizeof(MDPTPMsgSyncOneStep);
-	memcpy(&sm->recSync, edrecv->recbptr, size);
-	RCVD_SYNC_PTR = (MDPTPMsgSync*)&sm->recSync;
+	memcpy(&sm->u.recSync, edrecv->recbptr, size);
+	RCVD_SYNC_PTR = &sm->u.recSync;
 	sm->rts = edrecv->ts64;
 	sm->statd.sync_rec++;
 	return md_sync_receive_sm(sm, cts64);
@@ -432,7 +439,7 @@ void *md_sync_receive_sm_recv_fup(md_sync_receive_data_t *sm, event_data_recv_t 
 
 void md_sync_receive_stat_reset(md_sync_receive_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_sync_receive_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_sync_receive_stat_data_t));
 }
 
 md_sync_receive_stat_data_t *md_sync_receive_get_stat(md_sync_receive_data_t *sm)

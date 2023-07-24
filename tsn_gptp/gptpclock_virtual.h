@@ -47,12 +47,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GPTPCLOCK_VIRTUAL_H_
-#define __GPTPCLOCK_VIRTUAL_H_
+#ifndef GPTPCLOCK_VIRTUAL_H_
+#define GPTPCLOCK_VIRTUAL_H_
 
 #include "ll_gptpsupport.h"
 
-PTPFD_TYPE gptp_vclock_alloc_fd(char *ptpdev);
+PTPFD_TYPE gptp_vclock_alloc_fd(uint8_t gptpInstanceIndex, char *ptpdev);
 
 int gptp_vclock_free_fd(PTPFD_TYPE ptpfd);
 

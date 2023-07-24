@@ -1,0 +1,185 @@
+/*
+ * Copyright (c) 2023 Texas Instruments Incorporated
+ * Copyright (c) 2023 Excelfore Corporation (https://excelfore.com)
+ *
+ * All rights reserved not granted herein.
+ * Limited License.
+ *
+ * Texas Instruments Incorporated grants a world-wide, royalty-free,
+ * non-exclusive license under copyrights and patents it now or hereafter
+ * owns or controls to make, have made, use, import, offer to sell and sell ("Utilize")
+ * this software subject to the terms herein. With respect to the foregoing patent
+ * license, such license is granted solely to the extent that any such patent is necessary
+ * to Utilize the software alone. The patent license shall not apply to any combinations which
+ * include this software, other than combinations with devices manufactured by or for TI ("TI Devices").
+ * No hardware patent is licensed hereunder.
+ *
+ * Redistributions must preserve existing copyright notices and reproduce this license (including the
+ * above copyright notice and the disclaimer and (if applicable) source code license limitations below)
+ * in the documentation and/or other materials provided with the distribution
+ *
+ * Redistribution and use in binary form, without modification, are permitted provided that the following
+ * conditions are met:
+ *
+ * * No reverse engineering, decompilation, or disassembly of this software is permitted with respect to any
+ * software provided in binary form.
+ * * any redistribution and use are licensed by TI for use only with TI Devices.
+ * * Nothing shall obligate TI to provide you with source code for the software licensed and provided to you in object code.
+ *
+ * If software source code is provided to you, modification and redistribution of the source code are permitted
+ * provided that the following conditions are met:
+ *
+ * * any redistribution and use of the source code, including any resulting derivative works, are licensed by
+ * TI for use only with TI Devices.
+ * * any redistribution and use of any object code compiled from the source code and any resulting derivative
+ * works, are licensed by TI for use only with TI Devices.
+ *
+ * Neither the name of Texas Instruments Incorporated nor the names of its suppliers may be used to endorse or
+ * promote products derived from this software without specific prior written permission.
+ *
+ * DISCLAIMER.
+ *
+ * THIS SOFTWARE IS PROVIDED BY TI AND TI"S LICENSORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL TI AND TI"S LICENSORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+*/
+/* Automatically generated file.  Don't edit this file.*/
+#ifndef IEEE1588_PTP_H_
+#define IEEE1588_PTP_H_
+
+#include "yang_db_access.h"
+
+typedef enum {
+	IEEE1588_PTP_VALUEKEY, // 0(0x0)
+	IEEE1588_PTP_DUMMY, // 1(0x1)
+	IEEE1588_PTP_PTP, // 2(0x2)
+	IEEE1588_PTP_INSTANCES, // 3(0x3)
+	IEEE1588_PTP_INSTANCE, // 4(0x4)
+	IEEE1588_PTP_INSTANCE_INDEX, // 5(0x5)
+	IEEE1588_PTP_DEFAULT_DS, // 6(0x6)
+	IEEE1588_PTP_CLOCK_IDENTITY, // 7(0x7)
+	IEEE1588_PTP_NUMBER_PORTS, // 8(0x8)
+	IEEE1588_PTP_CLOCK_QUALITY, // 9(0x9)
+	IEEE1588_PTP_CLOCK_CLASS, // 10(0xa)
+	IEEE1588_PTP_CLOCK_ACCURACY, // 11(0xb)
+	IEEE1588_PTP_OFFSET_SCALED_LOG_VARIANCE, // 12(0xc)
+	IEEE1588_PTP_PRIORITY1, // 13(0xd)
+	IEEE1588_PTP_PRIORITY2, // 14(0xe)
+	IEEE1588_PTP_DOMAIN_NUMBER, // 15(0xf)
+	IEEE1588_PTP_SLAVE_ONLY, // 16(0x10)
+	IEEE1588_PTP_SDO_ID, // 17(0x11)
+	IEEE1588_PTP_CURRENT_TIME, // 18(0x12)
+	IEEE1588_PTP_SECONDS_FIELD, // 19(0x13)
+	IEEE1588_PTP_NANOSECONDS_FIELD, // 20(0x14)
+	IEEE1588_PTP_EXTERNAL_PORT_CONFIG_ENABLE, // 21(0x15)
+	IEEE1588_PTP_MAX_STEPS_REMOVED, // 22(0x16)
+	IEEE1588_PTP_CURRENT_DS, // 23(0x17)
+	IEEE1588_PTP_STEPS_REMOVED, // 24(0x18)
+	IEEE1588_PTP_OFFSET_FROM_MASTER, // 25(0x19)
+	IEEE1588_PTP_MEAN_DELAY, // 26(0x1a)
+	IEEE1588_PTP_PARENT_DS, // 27(0x1b)
+	IEEE1588_PTP_PARENT_PORT_IDENTITY, // 28(0x1c)
+	IEEE1588_PTP_PORT_NUMBER, // 29(0x1d)
+	IEEE1588_PTP_GRANDMASTER_IDENTITY, // 30(0x1e)
+	IEEE1588_PTP_GRANDMASTER_CLOCK_QUALITY, // 31(0x1f)
+	IEEE1588_PTP_GRANDMASTER_PRIORITY1, // 32(0x20)
+	IEEE1588_PTP_GRANDMASTER_PRIORITY2, // 33(0x21)
+	IEEE1588_PTP_PROTOCOL_ADDRESS, // 34(0x22)
+	IEEE1588_PTP_NETWORK_PROTOCOL, // 35(0x23)
+	IEEE1588_PTP_ADDRESS_LENGTH, // 36(0x24)
+	IEEE1588_PTP_ADDRESS_FIELD, // 37(0x25)
+	IEEE1588_PTP_TIME_PROPERTIES_DS, // 38(0x26)
+	IEEE1588_PTP_CURRENT_UTC_OFFSET, // 39(0x27)
+	IEEE1588_PTP_CURRENT_UTC_OFFSET_VALID, // 40(0x28)
+	IEEE1588_PTP_LEAP59, // 41(0x29)
+	IEEE1588_PTP_LEAP61, // 42(0x2a)
+	IEEE1588_PTP_TIME_TRACEABLE, // 43(0x2b)
+	IEEE1588_PTP_FREQUENCY_TRACEABLE, // 44(0x2c)
+	IEEE1588_PTP_PTP_TIMESCALE, // 45(0x2d)
+	IEEE1588_PTP_TIME_SOURCE, // 46(0x2e)
+	IEEE1588_PTP_PORTS, // 47(0x2f)
+	IEEE1588_PTP_PORT, // 48(0x30)
+	IEEE1588_PTP_PORT_INDEX, // 49(0x31)
+	IEEE1588_PTP_UNDERLYING_INTERFACE, // 50(0x32)
+	IEEE1588_PTP_PORT_DS, // 51(0x33)
+	IEEE1588_PTP_PORT_IDENTITY, // 52(0x34)
+	IEEE1588_PTP_PORT_STATE, // 53(0x35)
+	IEEE1588_PTP_LOG_MIN_DELAY_REQ_INTERVAL, // 54(0x36)
+	IEEE1588_PTP_MEAN_LINK_DELAY, // 55(0x37)
+	IEEE1588_PTP_LOG_ANNOUNCE_INTERVAL, // 56(0x38)
+	IEEE1588_PTP_ANNOUNCE_RECEIPT_TIMEOUT, // 57(0x39)
+	IEEE1588_PTP_LOG_SYNC_INTERVAL, // 58(0x3a)
+	IEEE1588_PTP_DELAY_MECHANISM, // 59(0x3b)
+	IEEE1588_PTP_LOG_MIN_PDELAY_REQ_INTERVAL, // 60(0x3c)
+	IEEE1588_PTP_VERSION_NUMBER, // 61(0x3d)
+	IEEE1588_PTP_MINOR_VERSION_NUMBER, // 62(0x3e)
+	IEEE1588_PTP_DELAY_ASYMMETRY, // 63(0x3f)
+	IEEE1588_PTP_PORT_ENABLE, // 64(0x40)
+	IEEE1588_PTP_EXTERNAL_PORT_CONFIG_PORT_DS, // 65(0x41)
+	IEEE1588_PTP_DESIRED_STATE, // 66(0x42)
+	// augmented by ieee802-dot1as-ptp
+	IEEE1588_PTP_GM_CAPABLE, // 67(0x43)
+	IEEE1588_PTP_LAST_GM_PHASE_CHANGE, // 68(0x44)
+	IEEE1588_PTP_LAST_GM_FREQ_CHANGE, // 69(0x45)
+	IEEE1588_PTP_GM_TIMEBASE_INDICATOR, // 70(0x46)
+	IEEE1588_PTP_TIME_OF_LAST_FREQ_CHANGE, // 71(0x47)
+	IEEE1588_PTP_IS_MEASURING_DELAY, // 72(0x48)
+	IEEE1588_PTP_AS_CAPABLE, // 73(0x49)
+	IEEE1588_PTP_MEAN_LINK_DELAY_THRESH, // 74(0x4a)
+	IEEE1588_PTP_NEIGHBOR_RATE_RATIO, // 75(0x4b)
+	IEEE1588_PTP_INITIAL_LOG_ANNOUNCE_INTERVAL, // 76(0x4c)
+	IEEE1588_PTP_CURRENT_LOG_ANNOUNCE_INTERVAL, // 77(0x4d)
+	IEEE1588_PTP_USE_MGT_LOG_ANNOUNCE_INTERVAL, // 78(0x4e)
+	IEEE1588_PTP_INITIAL_LOG_SYNC_INTERVAL, // 79(0x4f)
+	IEEE1588_PTP_CURRENT_LOG_SYNC_INTERVAL, // 80(0x50)
+	IEEE1588_PTP_USE_MGT_LOG_SYNC_INTERVAL, // 81(0x51)
+	IEEE1588_PTP_SYNC_RECEIPT_TIMEOUT, // 82(0x52)
+	IEEE1588_PTP_SYNC_RECEIPT_TIMEOUT_INTERVAL, // 83(0x53)
+	IEEE1588_PTP_INITIAL_LOG_PDELAY_REQ_INTERVAL, // 84(0x54)
+	IEEE1588_PTP_CURRENT_LOG_PDELAY_REQ_INTERVAL, // 85(0x55)
+	IEEE1588_PTP_USE_MGT_LOG_PDELAY_REQ_INTERVAL, // 86(0x56)
+	IEEE1588_PTP_MGT_LOG_PDELAY_REQ_INTERVAL, // 87(0x57)
+	IEEE1588_PTP_CURRENT_LOG_GPTP_CAP_INTERVAL, // 88(0x58)
+	IEEE1588_PTP_USE_MGT_COMPUTE_RATE_RATIO, // 89(0x59)
+	IEEE1588_PTP_USE_MGT_COMPUTE_MEAN_LINK_DELAY, // 90(0x5a)
+	IEEE1588_PTP_ALLOWED_LOST_RESPONSES, // 91(0x5b)
+	IEEE1588_PTP_ALLOWED_FAULTS, // 92(0x5c)
+	IEEE1588_PTP_GPTP_CAP_RECEIPT_TIMEOUT, // 93(0x5d)
+	IEEE1588_PTP_ONE_STEP_TX_OPER, // 94(0x5e)
+	IEEE1588_PTP_ONE_STEP_RECEIVE, // 95(0x5f)
+	IEEE1588_PTP_ONE_STEP_TRANSMIT, // 96(0x60)
+	IEEE1588_PTP_INITIAL_ONE_STEP_TX_OPER, // 97(0x61)
+	IEEE1588_PTP_CURRENT_ONE_STEP_TX_OPER, // 98(0x62)
+	IEEE1588_PTP_USE_MGT_ONE_STEP_TX_OPER, // 99(0x63)
+	IEEE1588_PTP_MGT_ONE_STEP_TX_OPER, // 100(0x64)
+	IEEE1588_PTP_PDELAY_TRUNCATED_TIMESTAMPS, // 101(0x65)
+	IEEE1588_PTP_PORT_STATISTICS_DS, // 102(0x66)
+	IEEE1588_PTP_RX_SYNC_COUNT, // 103(0x67)
+	IEEE1588_PTP_RX_ONE_STEP_SYNC_COUNT, // 104(0x68)
+	IEEE1588_PTP_RX_FOLLOW_UP_COUNT, // 105(0x69)
+	IEEE1588_PTP_RX_PDELAY_REQ_COUNT, // 106(0x6a)
+	IEEE1588_PTP_RX_PDELAY_RESP_COUNT, // 107(0x6b)
+	IEEE1588_PTP_RX_PDELAY_RESP_FOLLOW_UP_COUNT, // 108(0x6c)
+	IEEE1588_PTP_RX_ANNOUNCE_COUNT, // 109(0x6d)
+	IEEE1588_PTP_TX_SYNC_COUNT, // 110(0x6e)
+	IEEE1588_PTP_TX_FOLLOW_UP_COUNT, // 111(0x6f)
+	IEEE1588_PTP_TX_PDELAY_REQ_COUNT, // 112(0x70)
+	IEEE1588_PTP_TX_PDELAY_RESP_COUNT, // 113(0x71)
+	IEEE1588_PTP_TX_PDELAY_RESP_FOLLOW_UP_COUNT, // 114(0x72)
+	IEEE1588_PTP_TX_ANNOUNCE_COUNT, // 115(0x73)
+	// augmented by xl4gptp
+	IEEE1588_PTP_PORT_CLOCK, // 116(0x74)
+	IEEE1588_PTP_ADJRATE, // 117(0x75)
+	IEEE1588_PTP_CLOCK_STATE, // 118(0x76)
+	IEEE1588_PTP_GMSTATE, // 119(0x77)
+	IEEE1588_PTP_INSTANCE_DOMAIN_MAP, // 120(0x78)
+	IEEE1588_PTP_ENUM_END,
+} ieee1588_ptp_enum_t;
+
+int ieee1588_ptp_config_init(uc_dbald *dbald, uc_hwald *hwald);
+
+#endif

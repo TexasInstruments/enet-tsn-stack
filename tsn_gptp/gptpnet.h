@@ -47,10 +47,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GPTPNET_H_
-#define __GPTPNET_H_
-#include "gptpcommon.h"
-#include "gptpipc.h"
+#ifndef GPTPNET_H_
+#define GPTPNET_H_
+#include <tsn_uniconf/yangs/tsn_data.h>
+#include "gptpbasetypes.h"
 
 // 10.4.3 Addresses
 #define GPTP_MULTICAST_DEST_ADDR {0x01,0x80,0xC2,0x00,0x00,0x0E}
@@ -105,18 +105,32 @@ typedef struct event_data_recv {
 	uint8_t *recbptr;
 } event_data_recv_t;
 
-typedef gptpipc_data_netlink_t event_data_netlink_t;
+/**
+ * @brief gptp data for netlink. this structure is formed with following details:
+ *  1. up -> true or false, used to know that device is up or not.
+ *  2. devname -> character array is used to hold device name (interface name i.e eth0,... ).
+ *  3. ptpdev -> array used to hold ptp device name.
+ *  4. speed -> integer used to notify speed.
+ *  5. duplex -> integer used to notify type of communication.
+ *  6. portid -> ClockIdentity is used to hold port identity number.
+ */
+typedef struct gptpnet_data_netlink {
+	uint32_t speed;
+	uint32_t duplex;
+	ClockIdentity portid;
+	uint8_t up;
+	char devname[XL4_DATA_ABS_MAX_NETDEVS];
+	char ptpdev[XL4_DATA_ABS_MAX_NETDEVS];
+} gptpnet_data_netlink_t;
 
-typedef struct event_data_ipc {
-	int client_index;
-	gptpipc_client_req_data_t reqdata;
-} event_data_ipc_t;
+typedef gptpnet_data_netlink_t event_data_netlink_t;
 
-gptpnet_data_t *gptpnet_init(gptpnet_cb_t cb_func, cb_ipcsocket_server_rdcb ipc_cb,
-			     void *cb_data, char *netdev[], int *num_ports, char *master_ptpdev);
+gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
+			     void *cb_data, const char *netdev[], uint8_t num_ports,
+			     char *master_ptpdev);
 int gptpnet_activate(gptpnet_data_t *gpnet);
 int gptpnet_close(gptpnet_data_t *gpnet);
-int gptpnet_eventloop(gptpnet_data_t *gpnet, int *stoploop);
+int gptpnet_eventloop(gptpnet_data_t *gpnet, bool *stoploop);
 uint8_t *gptpnet_get_sendbuf(gptpnet_data_t *gpnet, int ndevIndex);
 int gptpnet_send(gptpnet_data_t *gpnet, int ndevIndex, uint16_t length);
 char *gptpnet_ptpdev(gptpnet_data_t *gpnet, int ndevIndex);
@@ -140,10 +154,6 @@ void gptpnet_create_clockid(gptpnet_data_t *gpnet, uint8_t *id,
 
 uint64_t gptpnet_txtslost_time(gptpnet_data_t *gpnet, int ndevIndex);
 int gptpnet_get_nlstatus(gptpnet_data_t *gpnet, int ndevIndex, event_data_netlink_t *nlstatus);
-int gptpnet_ipc_notice(gptpnet_data_t *gpnet, gptpipc_gptpd_data_t *ipcdata, int size);
-int gptpnet_ipc_respond(gptpnet_data_t *gpnet, struct sockaddr *addr,
-			gptpipc_gptpd_data_t *ipcdata, int size);
-int gptpnet_ipc_client_remove(gptpnet_data_t *gpnet, struct sockaddr *addr);
 
 /**
  * @brief make the next timeout happen in toutns (nsec)

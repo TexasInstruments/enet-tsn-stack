@@ -87,6 +87,7 @@
 #define ETH_P_8021Q		0x8100  /* 802.1Q VLAN Extended Header  */
 #define ETH_P_1588		0x88F7	/* IEEE 1588 Timesync */
 #define ETH_P_TSN		0x22F0	/* TSN (IEEE 1722) packet	*/
+#define ETH_P_NETLINK		0x22F1  /* A virtual prototol for netlink rawsockt on TI platforms */
 
 #define CB_MAX_NETDEVNAME IFNAMSIZ
 
@@ -206,6 +207,10 @@ typedef struct {
 	 * 0 or positive value will be updated to LLDEnetCfg_t
 	 */
 	int dmaRxChId;
+	/**
+	 * true: won't use DMA, false: use DMA
+	 */
+	bool unusedDma;
 } cb_socket_lldcfg_update_t;
 
 /**
@@ -219,7 +224,9 @@ typedef int (*cb_socket_lldcfg_update_cb_t)(cb_socket_lldcfg_update_t *update_cf
 /**
  * @brief Initialize a LLD device table.
  *
- * This function must be called before calling any net functions from combase.
+ * This function should only be called once, before calling any net functions from
+ * the combase. It is recommended to call once in the main() application, not in any
+ * TSN module source.
  * If the ethdevs[i].srcmac is all zero, the srcmac will be alloced dynamically
  * by the the LLD layer.
  * Please note that ethdevs[i].netdev must point to a global memory address,
@@ -249,7 +256,7 @@ int cb_socket_set_lldcfg_update_cb(cb_socket_lldcfg_update_cb_t lldcfg_update_cb
  * @param netdev net device name e.g. eth0
  * @return >=0: MAC port, <0: error, detailed error will be printed out.
  */
-int cb_lld_netdev_to_macport(char *netdev);
+int cb_lld_netdev_to_macport(const char *netdev);
 
 /**
  * @brief Send a TX ethernet L2 packet.
@@ -305,12 +312,11 @@ int cb_lld_get_type_instance(uint32_t *enet_type, uint32_t *instance_id);
 
 /**
  * @brief Get all virtual network interfaces which were defined for the TI platform.
- * @return NULL on success; != NULL on failure
- * @note: this function returns an array of strings which is terminated by NULL.
- * The caller must not free memory of the returned pointer because memory
- * is statically allocated inside the function.
+ * @param netdevs an array of pointer points to the net devices acquired by this api.
+ * @param len  how many net devices are returned by this api.
+ * @return 0 on success; -1 on failure
  */
-char** const cb_lld_get_netdevs(void);
+int cb_lld_get_netdevs(char* netdevs[], int *len);
 
 /**
  * @brief get link state from device name like 'eth0'

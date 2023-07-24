@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_sync_sync_receive_sm.h"
+#include "gptpcommon.h"
 
 #define RCVD_MDSYNC sm->thisSM->rcvdMDSync
 #define RCVD_MDSYNC_PTR sm->thisSM->rcvdMDSyncPtr
@@ -81,10 +83,9 @@ struct port_sync_sync_receive_data{
 static void setPSSyncPSSR(port_sync_sync_receive_data_t *sm, double rateRatio, uint64_t cts64)
 {
 	uint64_t interval;
-	sm->portSyncSync.localPortNumber = sm->ppg->thisPort;
-	sm->portSyncSync.localPortIndex = sm->ppg->thisPortIndex;
+	sm->portSyncSync.localPortIndex = sm->ppg->thisPort;
 	sm->portSyncSync.local_ppg = sm->ppg;
-	sm->portSyncSync.domainNumber = RCVD_MDSYNC_PTR->domainNumber;
+	sm->portSyncSync.domainIndex = RCVD_MDSYNC_PTR->domainIndex;
 	sm->portSyncSync.followUpCorrectionField = RCVD_MDSYNC_PTR->followUpCorrectionField;
 	sm->portSyncSync.sourcePortIdentity = RCVD_MDSYNC_PTR->sourcePortIdentity;
 	sm->portSyncSync.logMessageInterval = RCVD_MDSYNC_PTR->logMessageInterval;
@@ -110,7 +111,7 @@ static void setPSSyncPSSR(port_sync_sync_receive_data_t *sm, double rateRatio, u
 	 * allowed timer values are 112.5msec to 187.5msec).
 	 */
 	interval = LOG_TO_NSEC(sm->portSyncSync.logMessageInterval);
-	sm->portSyncSync.syncNextSendTimeoutTime.nsec = cts64 + interval + (interval/2);
+	sm->portSyncSync.syncNextSendTimeoutTime.nsec = cts64 + interval + (interval/2u);
 }
 
 static void *received_sync(port_sync_sync_receive_data_t *sm, uint64_t cts64)
@@ -122,7 +123,7 @@ static void *received_sync(port_sync_sync_receive_data_t *sm, uint64_t cts64)
 	rateRatio += (sm->ppg->forAllDomain->neighborRateRatio - 1.0);
 	a = RCVD_MDSYNC_PTR->logMessageInterval;
 	sm->ppg->syncReceiptTimeoutTimeInterval.nsec =
-		sm->ppg->syncReceiptTimeout * LOG_TO_NSEC(a);
+		(uint8_t)sm->ppg->syncReceiptTimeout * LOG_TO_NSEC(a);
 
 	setPSSyncPSSR(sm, rateRatio, cts64);
 	sm->ptasg->parentLogSyncInterval = RCVD_MDSYNC_PTR->logMessageInterval;
@@ -197,9 +198,10 @@ void *port_sync_sync_receive_sm(port_sync_sync_receive_data_t *sm, uint64_t cts6
 			sm->state = received_sync_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -212,7 +214,8 @@ void port_sync_sync_receive_sm_init(port_sync_sync_receive_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_sync_sync_receive_data_t, PortSyncSyncReceiveSM, sm)){return;}
+	INIT_SM_DATA(port_sync_sync_receive_data_t, PortSyncSyncReceiveSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;

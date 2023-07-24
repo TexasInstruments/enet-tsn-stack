@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_announce_transmit_sm.h"
+#include "gptpcommon.h"
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define OLD_ANNOUNCE_INTERVAL sm->ppg->oldAnnounceInterval
@@ -113,7 +115,7 @@ static void txAnnounce(port_announce_transmit_data_t *sm)
 	sm->announceTx.tlvType = 0x8;
 	N = sm->bptasg->pathTraceCount;
 	if (N <= MAX_PATH_TRACE_N){
-		sm->announceTx.tlvLength = sizeof(ClockIdentity)*N;
+		sm->announceTx.tlvLength = sizeof(ClockIdentity)*(uint8_t)N;
 		memcpy(&sm->announceTx.pathSequence, &sm->bptasg->pathTrace,
 		       sm->announceTx.tlvLength);
 	}else{
@@ -160,7 +162,7 @@ static void *transmit_periodic_proc(port_announce_transmit_data_t *sm)
 {
 	UB_LOG(UBL_DEBUGV, "port_announce_transmit:%s:domainIndex=%d, portIndex=%d\n",
 		__func__, sm->domainIndex, sm->portIndex);
-	NEW_INFO = NEW_INFO || (SELECTED_STATE[sm->portIndex] == MasterPort);
+	NEW_INFO = NEW_INFO || (SELECTED_STATE[sm->portIndex] == (uint8_t)MasterPort);
 	return NULL;
 }
 
@@ -177,22 +179,22 @@ static void *idle_proc(port_announce_transmit_data_t *sm, uint64_t cts64)
 	/* announceSendTime = currentTime + interval2 */
 	sm->thisSM->announceSendTime.nsec = cts64 + sm->thisSM->interval2.nsec;
 	// align announce time to 25ms
-	sm->thisSM->announceSendTime.nsec = (sm->thisSM->announceSendTime.nsec/25000000)*25000000;
+	sm->thisSM->announceSendTime.nsec = (sm->thisSM->announceSendTime.nsec/25000000u)*25000000u;
 	return NULL;
 }
 
 static port_announce_transmit_state_t idle_condition(port_announce_transmit_data_t *sm, uint64_t cts64)
 {
-	if(NEW_INFO && (SELECTED_STATE[sm->portIndex]==MasterPort) &&
+	if(NEW_INFO && (SELECTED_STATE[sm->portIndex]==(uint8_t)MasterPort) &&
 	   (cts64 < sm->thisSM->announceSendTime.nsec) &&
 	   ((SELECTED[sm->portIndex] && !UPDT_INFO) ||
-	    sm->bptasg->externalPortConfiguration == VALUE_ENABLED) &&
+	    (sm->bptasg->externalPortConfiguration == VALUE_ENABLED)) &&
 	   !sm->ppg->forAllDomain->asymmetryMeasurementMode){
 		return TRANSMIT_ANNOUNCE;
 	}
 	if((cts64 >= sm->thisSM->announceSendTime.nsec) &&
 	   ((SELECTED[sm->portIndex] && !UPDT_INFO) ||
-	    sm->bptasg->externalPortConfiguration == VALUE_DISABLED)){
+	    (sm->bptasg->externalPortConfiguration == VALUE_DISABLED))){
 		return TRANSMIT_PERIODIC;
 	}
 	return sm->state;
@@ -206,7 +208,7 @@ static void *transmit_announce_proc(port_announce_transmit_data_t *sm)
 	txAnnounce(sm);
 
 	if(ANNOUNCE_SLOWDOWN){
-		if (sm->thisSM->numberAnnounceTransmissions >= ANNOUNCE_RECEIPT_TIMEOUT){
+		if (sm->thisSM->numberAnnounceTransmissions >= (uint8_t)ANNOUNCE_RECEIPT_TIMEOUT){
 			memcpy(&sm->thisSM->interval2, &ANNOUNCE_INTERVAL, sizeof(UScaledNs));
 			sm->thisSM->numberAnnounceTransmissions = 0;
 			ANNOUNCE_SLOWDOWN = false;
@@ -264,9 +266,10 @@ void *port_announce_transmit_sm(port_announce_transmit_data_t *sm, uint64_t cts6
 			sm->state = transmit_announce_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -281,7 +284,8 @@ void port_announce_transmit_sm_init(port_announce_transmit_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_announce_transmit_data_t, PortAnnounceTransmitSM, sm)){return;}
+	INIT_SM_DATA(port_announce_transmit_data_t, PortAnnounceTransmitSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->bptasg = bptasg;
@@ -289,7 +293,7 @@ void port_announce_transmit_sm_init(port_announce_transmit_data_t **sm,
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
 
-	memset(&(*sm)->announceTx, 0, sizeof(PTPMsgAnnounce));
+	(void)memset(&(*sm)->announceTx, 0, sizeof(PTPMsgAnnounce));
 	(*sm)->thisSM->interval2.nsec = 1000000000LL;
 }
 

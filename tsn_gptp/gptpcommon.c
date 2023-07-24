@@ -111,6 +111,6 @@ uint8_t compare_priority_vectors(UInteger224 *priorityA, UInteger224 *priorityB)
         }
         else if (compare > 0){
                 result = INFERIOR_PRIORITY;
-        }
+        }else{}
         return result;
 }

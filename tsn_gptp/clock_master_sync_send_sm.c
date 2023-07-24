@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "clock_master_sync_send_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -70,23 +72,23 @@ struct clock_master_sync_send_data{
 };
 
 #define SYNC_SEND_TIME sm->thisSM->syncSendTime
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static void *setPSSyncCMSS(clock_master_sync_send_data_t *sm)
 {
 	int64_t ts64;
 	struct timespec ts;
-	sm->portSyncSync.localPortNumber = 0;
 	sm->portSyncSync.localPortIndex = 0;
 	sm->portSyncSync.local_ppg = NULL;
-	sm->portSyncSync.domainNumber = sm->ptasg->domainNumber;
+	sm->portSyncSync.domainIndex = sm->ptasg->domainIndex;
 
 	/* for upstreamTxTime, use sm->ptasg->thisClockIndex,
 	   for preciseOriginTimestamp, use masterclock(clockIndex=0),
 	   the both time must be exactly the same time, so that 'gptpclock_apply_offset'
 	   is needed. */
-	ts64=gptpclock_getts64(sm->ptasg->thisClockIndex, sm->ptasg->domainNumber);
+	ts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
 	sm->portSyncSync.upstreamTxTime.nsec = ts64;
-	gptpclock_apply_offset(&ts64, 0, sm->ptasg->domainNumber);
+	(void)gptpclock_apply_offset(GPTPINSTNUM, &ts64, 0, sm->ptasg->domainIndex);
 	UB_NSEC2TS(ts64, ts);
 	sm->portSyncSync.preciseOriginTimestamp.seconds.lsb = ts.tv_sec;
 	sm->portSyncSync.preciseOriginTimestamp.nanoseconds = ts.tv_nsec;
@@ -96,9 +98,9 @@ static void *setPSSyncCMSS(clock_master_sync_send_data_t *sm)
 
 	memcpy(sm->portSyncSync.sourcePortIdentity.clockIdentity, sm->ptasg->thisClock,
 	       sizeof(ClockIdentity));
-	sm->portSyncSync.sourcePortIdentity.portNumber = 0;
+	sm->portSyncSync.sourcePortIdentity.portIndex = 0;
 	sm->portSyncSync.logMessageInterval = sm->ptasg->clockMasterLogSyncInterval;
-	sm->portSyncSync.syncReceiptTimeoutTime.nsec = 0xffffffffffffffff;
+	sm->portSyncSync.syncReceiptTimeoutTime.nsec = (uint64_t)(-1LL);
 	sm->portSyncSync.rateRatio = sm->ptasg->gmRateRatio;
 	sm->portSyncSync.gmTimeBaseIndicator = sm->ptasg->clockSourceTimeBaseIndicator;
 	sm->portSyncSync.lastGmPhaseChange = sm->ptasg->clockSourceLastGmPhaseChange;
@@ -107,7 +109,7 @@ static void *setPSSyncCMSS(clock_master_sync_send_data_t *sm)
 	/* syncNextSendTimeoutTime from ClockMasterSyncSend can be indefinite, is
 	 * not expected to miss or lose sending of Sync when we are ClockMaster
 	 */
-	sm->portSyncSync.syncNextSendTimeoutTime.nsec = 0xffffffffffffffff;
+	sm->portSyncSync.syncNextSendTimeoutTime.nsec = (uint64_t)(-1LL);
 
 	return &sm->portSyncSync;
 }
@@ -139,7 +141,7 @@ static void *send_sync_indication_proc(clock_master_sync_send_data_t *sm, uint64
 	UB_LOG(UBL_DEBUGV, "clock_master_sync_send:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	SYNC_SEND_TIME.nsec = cts64 + sm->ptasg->clockMasterSyncInterval.nsec;
 	// align time in 25msec
-	SYNC_SEND_TIME.nsec = ((SYNC_SEND_TIME.nsec + 12500000)/25000000)*25000000;
+	SYNC_SEND_TIME.nsec = ((SYNC_SEND_TIME.nsec + 12500000u)/25000000u)*25000000u;
 	return setPSSyncCMSS(sm);
 }
 
@@ -177,14 +179,15 @@ void *clock_master_sync_send_sm(clock_master_sync_send_data_t *sm, uint64_t cts6
 		case SEND_SYNC_INDICATION:
 			if(state_change){
 				retp=send_sync_indication_proc(sm, cts64);
-				if(retp){break;}
+				if(retp!=NULL){break;}
 			}
 			sm->state = send_sync_indication_condition(sm, cts64);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -195,7 +198,8 @@ void clock_master_sync_send_sm_init(clock_master_sync_send_data_t **sm,
 				    PerTimeAwareSystemGlobal *ptasg)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, domainIndex);
-	if(INIT_SM_DATA(clock_master_sync_send_data_t, ClockMasterSyncSendSM, sm)){return;}
+	INIT_SM_DATA(clock_master_sync_send_data_t, ClockMasterSyncSendSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->domainIndex = domainIndex;
 }

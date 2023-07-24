@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __MD_SYNC_SEND_SM_H_
-#define __MD_SYNC_SEND_SM_H_
+#ifndef MD_SYNC_SEND_SM_H_
+#define MD_SYNC_SEND_SM_H_
 
 typedef struct md_sync_send_data md_sync_send_data_t;
 

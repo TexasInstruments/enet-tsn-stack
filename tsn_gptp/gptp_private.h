@@ -47,13 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GPTP_PRIVATE_H_
-#define __GPTP_PRIVATE_H_
+#ifndef GPTP_PRIVATE_H_
+#define GPTP_PRIVATE_H_
 
 #include <tsn_combase/combase.h>
 
-// UB_LOGCAT category 2 for this layer
-#define UB_LOGCAT 2
+// UB_LOGCAT category 3 for this layer
+#define UB_LOGCAT 3
 #define UB_LOGTSTYPE UB_CLOCK_REALTIME
 
 #endif

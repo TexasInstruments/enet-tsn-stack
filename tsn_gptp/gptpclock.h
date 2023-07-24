@@ -47,13 +47,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GPTPCLOCK_H_
-#define __GPTPCLOCK_H_
-#include <stdio.h>
+#ifndef GPTPCLOCK_H_
+#define GPTPCLOCK_H_
 #include <stdlib.h>
 #include "gptpbasetypes.h"
 #include "ll_gptpsupport.h"
-#include "gptpipc.h"
 
 #define GPTP_VIRTUAL_PTPDEV_FDBASE 3018
 #define GPTP_VIRTUAL_PTPDEV_FDMAX 3117
@@ -69,9 +67,9 @@ typedef enum {
 
 typedef struct gptp_clock_ppara {
 	char ptpdev[MAX_PTPDEV_NAME];
-	uint8_t domainNumber; //when accessed by domainIndex, need this domainNumber
+	uint8_t domainIndex; //when accessed by domainIndex, need this domainIndex
 	int64_t offset64;
-	bool gmsync;
+	uint8_t gmsync;
 	uint32_t gmchange_ind;
 	int64_t last_setts64;
 	double adjrate;
@@ -85,7 +83,7 @@ typedef struct gptp_master_clock_shm_head {
 
 typedef struct gptp_master_clock_shm {
 	gptp_master_clock_shm_head_t head;
-	gptp_clock_ppara_t gcpp[];
+	gptp_clock_ppara_t gcpp[1];
 } gptp_master_clock_shm_t;
 
 #define GPTP_MAX_SIZE_SHARED_MEMNAME 32
@@ -94,11 +92,11 @@ typedef struct gptp_master_clock_shm {
 static inline int gptpclock_mutex_trylock(CB_THREAD_MUTEX_T *mutex)
 {
 	struct timespec mtots;
-	uint64_t mtout;
-	if(CB_THREAD_MUTEX_TRYLOCK(mutex)){
-		mtout=ub_rt_gettime64()+GPTP_MASTER_CLOCK_MUTEX_TIMEOUT;
+	int64_t mtout;
+	if(CB_THREAD_MUTEX_TRYLOCK(mutex)!=0){
+		mtout=(int64_t)ub_rt_gettime64()+GPTP_MASTER_CLOCK_MUTEX_TIMEOUT;
 		UB_NSEC2TS(mtout, mtots);
-		if(CB_THREAD_MUTEX_TIMEDLOCK(mutex, &mtots)){
+		if(CB_THREAD_MUTEX_TIMEDLOCK(mutex, &mtots)!=0){
 			// the mutex is on hold such a long time; the holder must crash
 			UB_LOG(UBL_WARN, "%s:the process is very slow,"
 			       " or some gptp2d client may crash\n", __func__);
@@ -108,43 +106,49 @@ static inline int gptpclock_mutex_trylock(CB_THREAD_MUTEX_T *mutex)
 	return 0;
 }
 
-int gptpclock_init(int max_domains, int max_ports);
-void gptpclock_close(void);
-int gptpclock_add_clock(int clockIndex, char *ptpdev, int domainIndex,
-			uint8_t domainNumber, ClockIdentity id);
-int gptpclock_del_clock(int clockIndex, uint8_t domainNumber);
-int gptpclock_apply_offset(int64_t *ts64, int clockIndex, uint8_t domainNumber);
-int gptpclock_setts64(int64_t ts64, int clockIndex, uint8_t domainNumber);
-int gptpclock_setadj(int adjvppb, int clockIndex, uint8_t domainNumber);
-void gptpclock_print_clkpara(ub_dbgmsg_level_t level);
-int gptpclock_mode_master(int clockIndex, uint8_t domainNumber);
-int gptpclock_mode_slave_main(int clockIndex, uint8_t domainNumber);
-int gptpclock_mode_slave_sub(int clockIndex, uint8_t domainNumber);
+int gptpclock_init(uint8_t gptpInstanceIndex, int max_domains, int max_ports);
+void gptpclock_close(uint8_t gptpInstanceIndex);
+int gptpclock_add_clock(uint8_t gptpInstanceIndex, int clockIndex, char *ptpdev, int domainIndex,
+			ClockIdentity id);
+int gptpclock_del_clock(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
+int gptpclock_apply_offset(uint8_t gptpInstanceIndex, int64_t *ts64,
+			   int clockIndex, uint8_t domainIndex);
+int gptpclock_setts64(uint8_t gptpInstanceIndex, int64_t ts64,
+		      int clockIndex, uint8_t domainIndex);
+int gptpclock_setadj(uint8_t gptpInstanceIndex, int32_t adjvppb,
+		     int clockIndex, uint8_t domainIndex);
+void gptpclock_print_clkpara(uint8_t gptpInstanceIndex, ub_dbgmsg_level_t level);
+int gptpclock_mode_master(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
+int gptpclock_mode_slave_main(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
+int gptpclock_mode_slave_sub(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
 
-int64_t gptpclock_getts64(int clockIndex, uint8_t domainNumber);
-int64_t gptpclock_gethwts64(int clockIndex, uint8_t domainNumber);
-int gptpclock_tsconv(int64_t *ts64, int clockIndex, uint8_t domainNumber,
-		     int clockIndex1, uint8_t domainNumber1);
-uint8_t *gptpclock_clockid(int clockIndex, uint8_t domainNumber);
-int gptpclock_rate_same(int clockIndex, uint8_t domainNumber,
-			int clockIndex1, uint8_t domainNumber1);
-int gptpclock_setoffset64(int64_t ts64, int clockIndex, uint8_t domainNumber);
-int gptpclock_active_domain_switch(int domainIndex);
-int gptpclock_active_domain_status(void);
-int gptpclock_set_gmsync(int clockIndex, uint8_t domainNumber, ClockIdentity gmIdentity, bool becomeGM);
-int gptpclock_get_gmsync(int clockIndex, uint8_t domainNumber);
-bool gptpclock_we_are_gm(int domainIndex);
-int gptpclock_reset_gmsync(int clockIndex, uint8_t domainNumber);
-int gptpclock_set_gmchange(int domainNumber, ClockIdentity clockIdentity);
-int gptpclock_get_gmchange_ind(int domainNumber);
-uint32_t gptpclock_get_event_flags(int clockIndex, uint8_t domainNumber);
-int gptpclock_set_event_flags(int clockIndex, uint8_t domainNumber, uint32_t event);
-int gptpclock_reset_event_flags(int clockIndex, uint8_t domainNumber, uint32_t event);
-int gptpclock_get_ipc_clock_data(int clockIndex, uint8_t domainNumber, gptpipc_clock_data_t *cd);
-void gptpclock_set_gmstable(int domainIndex, bool stable);
-bool gptpclock_get_gmstable(int domainIndex);
-int gptpclock_active_domain(void);
-int64_t gptpclock_d0ClockfromRT(int clockIndex);
+int64_t gptpclock_getts64(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
+int64_t gptpclock_gethwts64(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
+int gptpclock_tsconv(uint8_t gptpInstanceIndex, int64_t *ts64, int clockIndex,
+		     uint8_t domainIndex, int clockIndex1, uint8_t domainIndex1);
+uint8_t *gptpclock_clockid(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex);
+int gptpclock_rate_same(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domainIndex,
+			int clockIndex1, uint8_t domainIndex1);
+int gptpclock_setoffset64(uint8_t gptpInstanceIndex, int64_t ts64, int clockIndex,
+			  uint8_t domainIndex);
+int gptpclock_active_domain_switch(uint8_t gptpInstanceIndex, int domainIndex);
+int gptpclock_active_domain_status(uint8_t gptpInstanceIndex);
+bool gptpclock_we_are_gm(uint8_t gptpInstanceIndex, int domainIndex);
+int gptpclock_set_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex, uint32_t gmstate);
+gmsync_status_t gptpclock_get_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex);
+int gptpclock_set_gmchange(uint8_t gptpInstanceIndex, uint8_t domainIndex,
+			   ClockIdentity gmIdentity, bool becomeGM);
+int gptpclock_get_gmchange_ind(uint8_t gptpInstanceIndex, int domainIndex);
+uint32_t gptpclock_get_event_flags(uint8_t gptpInstanceIndex, int clockIndex,
+				   uint8_t domainIndex);
+uint32_t gptpclock_set_event_flags(uint8_t gptpInstanceIndex, int clockIndex,
+				   uint8_t domainIndex, uint32_t event);
+uint32_t gptpclock_reset_event_flags(uint8_t gptpInstanceIndex, int clockIndex,
+				     uint8_t domainIndex, uint32_t event);
+void gptpclock_set_gmstable(uint8_t gptpInstanceIndex, int domainIndex, bool stable);
+bool gptpclock_get_gmstable(uint8_t gptpInstanceIndex, int domainIndex);
+int gptpclock_active_domain(uint8_t gptpInstanceIndex);
+int64_t gptpclock_d0ClockfromRT(uint8_t gptpInstanceIndex, int clockIndex);
 
 /**
  * @brief set clockIndex to the thisClock, clockIndex=0 is set as the master clock
@@ -165,12 +169,13 @@ int64_t gptpclock_d0ClockfromRT(int clockIndex);
  * When this device becomes a new GM, this function should be called, then GM time phase
  * continues from the previous GM.
  */
-int gptpclock_set_thisClock(int clockIndex, uint8_t domainNumber, bool set_clock_para);
+int gptpclock_set_thisClock(uint8_t gptpInstanceIndex, int clockIndex,
+			    uint8_t domainIndex, bool set_clock_para);
 
 /***************************************
  * functions supported in lower layers
  ***************************************/
-ptpclock_state_t gptp_get_ptpfd(char *ptpdev, PTPFD_TYPE *ptpfd);
+ptpclock_state_t gptp_get_ptpfd(uint8_t gptpInstanceIndex, char *ptpdev, PTPFD_TYPE *ptpfd);
 int gptp_close_ptpfd(PTPFD_TYPE ptpfd);
 int gptp_clock_adjtime(PTPFD_TYPE ptpfd, int adjppb);
 
@@ -179,8 +184,9 @@ int gptp_clock_adjtime(PTPFD_TYPE ptpfd, int adjppb);
  * @result 0:success, -1:error
  * @param tstr	timeofday string in "year:mon:day:hour:min:sec" string format
  */
-int gptpclock_settime_str(char *tstr, int clockIndex, uint8_t domainNumber);
+int gptpclock_settime_str(uint8_t gptpInstanceIndex, char *tstr,
+			  int clockIndex, uint8_t domainIndex);
 
-int gptpclock_get_adjppb(int clockIndex, int domainNumber);
+int gptpclock_get_adjppb(uint8_t gptpInstanceIndex, int clockIndex, int domainIndex);
 
 #endif

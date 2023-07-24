@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __MD_ABNORMAL_HOOKS_H_
-#define __MD_ABNORMAL_HOOKS_H_
+#ifndef MD_ABNORMAL_HOOKS_H_
+#define MD_ABNORMAL_HOOKS_H_
 
 #include "gptpnet.h"
 
@@ -123,11 +123,12 @@ static inline int gptpnet_send_whook(gptpnet_data_t *gpnet, int ndevIndex, uint1
 	case MD_ABN_EVENTP_SKIP:
 		return -(length+sizeof(CB_ETHHDR_T));
 	case MD_ABN_EVENTP_DUPLICATE:
-		gptpnet_send(gpnet, ndevIndex, length);
+		(void)gptpnet_send(gpnet, ndevIndex, length);
 		return gptpnet_send(gpnet, ndevIndex, length);
 	case MD_ABN_EVENTP_MANUPULATE:
 		break;
 	case MD_ABN_EVENTP_SENDER:
+	default:
 		return -1;
 	}
 	return gptpnet_send(gpnet, ndevIndex, length);

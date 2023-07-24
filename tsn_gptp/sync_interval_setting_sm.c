@@ -47,12 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "sync_interval_setting_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -180,9 +181,10 @@ void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64)
 			sm->state = set_interval_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -195,12 +197,13 @@ void sync_interval_setting_sm_init(sync_interval_setting_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(sync_interval_setting_data_t, SyncIntervalSettingSM, sm)){return;}
+	INIT_SM_DATA(sync_interval_setting_data_t, SyncIntervalSettingSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
-	sync_interval_setting_sm(*sm, 0);
+	(void)sync_interval_setting_sm(*sm, 0);
 }
 
 int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm)

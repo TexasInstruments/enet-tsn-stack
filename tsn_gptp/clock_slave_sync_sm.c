@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "clock_slave_sync_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -71,6 +73,7 @@ struct clock_slave_sync_data{
 #define RCVD_PSSYNC sm->thisSM->rcvdPSSync
 #define RCVD_PSSYNC_PTR sm->thisSM->rcvdPSSyncPtr
 #define RCVD_LOCAL_CLOCK_TICK sm->thisSM->rcvdLocalClockTick
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static void updateSlaveTime(clock_slave_sync_data_t *sm)
 {
@@ -78,7 +81,7 @@ static void updateSlaveTime(clock_slave_sync_data_t *sm)
 	struct timespec ts;
 	UB_LOG(UBL_DEBUGV, "clock_slave_sync:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	// ??? regardless of sm->ptasg->gmPresent, do this way
-	ts64=gptpclock_getts64(sm->ptasg->thisClockIndex, sm->ptasg->domainNumber);
+	ts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
 	UB_NSEC2TS(ts64, ts);
 	sm->ptasg->clockSlaveTime.seconds.lsb=ts.tv_sec;
 	sm->ptasg->clockSlaveTime.fractionalNanoseconds.msb=ts.tv_nsec;
@@ -110,13 +113,13 @@ static void *send_sync_indication_proc(clock_slave_sync_data_t *sm)
 	uint64_t nsec;
 	void *smret=NULL;
 	UB_LOG(UBL_DEBUGV, "clock_slave_sync:%s:domainIndex=%d\n", __func__, sm->domainIndex);
-	// localPortNumber==0 means, sync by ClockMasterSyncSend,
+	// localPortIndex==0 means, sync by ClockMasterSyncSend,
 	// and don't need to issue syncReciptTime event
-	if (RCVD_PSSYNC && RCVD_PSSYNC_PTR->localPortNumber ) {
-		nsec=((RCVD_PSSYNC_PTR->preciseOriginTimestamp.seconds.lsb * UB_SEC_NS) +
+	if (RCVD_PSSYNC && RCVD_PSSYNC_PTR->localPortIndex ) {
+		nsec=((RCVD_PSSYNC_PTR->preciseOriginTimestamp.seconds.lsb * (uint64_t)UB_SEC_NS) +
 		      RCVD_PSSYNC_PTR->preciseOriginTimestamp.nanoseconds) +
-			RCVD_PSSYNC_PTR->followUpCorrectionField.nsec;
-		if(RCVD_PSSYNC_PTR->local_ppg){
+			(uint64_t)RCVD_PSSYNC_PTR->followUpCorrectionField.nsec;
+		if(RCVD_PSSYNC_PTR->local_ppg!=NULL){
 			nsec += RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec *
 				(RCVD_PSSYNC_PTR->rateRatio /
 				 RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborRateRatio) +
@@ -124,16 +127,16 @@ static void *send_sync_indication_proc(clock_slave_sync_data_t *sm)
 		}
 
 		sm->ptasg->lastSyncSeqID = RCVD_PSSYNC_PTR->lastSyncSeqID;
-		sm->ptasg->syncReceiptTime.seconds.lsb = nsec / UB_SEC_NS;
-		sm->ptasg->syncReceiptTime.fractionalNanoseconds.msb = nsec % UB_SEC_NS;
+		sm->ptasg->syncReceiptTime.seconds.lsb = nsec / (uint64_t)UB_SEC_NS;
+		sm->ptasg->syncReceiptTime.fractionalNanoseconds.msb = nsec % (uint64_t)UB_SEC_NS;
 
 		sm->ptasg->syncReceiptLocalTime.nsec = RCVD_PSSYNC_PTR->upstreamTxTime.nsec;
-		if(RCVD_PSSYNC_PTR->local_ppg){
+		if(RCVD_PSSYNC_PTR->local_ppg!=NULL){
 			sm->ptasg->syncReceiptLocalTime.nsec +=
-				RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec /
-				RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborRateRatio +
-				RCVD_PSSYNC_PTR->local_ppg->forAllDomain->delayAsymmetry.nsec /
-				RCVD_PSSYNC_PTR->rateRatio;
+				(RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec /
+				 RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborRateRatio) +
+				(RCVD_PSSYNC_PTR->local_ppg->forAllDomain->delayAsymmetry.nsec /
+				 RCVD_PSSYNC_PTR->rateRatio);
 		}
 
 		sm->ptasg->gmTimeBaseIndicator = RCVD_PSSYNC_PTR->gmTimeBaseIndicator;
@@ -145,15 +148,16 @@ static void *send_sync_indication_proc(clock_slave_sync_data_t *sm)
 		   will not be able to get GM information.
 		   For static port slave mode, consider the peer clockId as the GM.
 		*/
-		if(gptpconf_get_intitem(CONF_STATIC_PORT_STATE_SLAVE_PORT)>0){
-			if(memcmp(sm->ptasg->gmIdentity,
-				  RCVD_PSSYNC_PTR->sourcePortIdentity.clockIdentity,
+		if(gptpgcfg_get_intitem(
+			   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT,
+			   YDBI_CONFIG)>0){
+			if(memcmp(sm->ptasg->gmIdentity, RCVD_PSSYNC_PTR->sourcePortIdentity.clockIdentity,
 				  sizeof(ClockIdentity))!=0){
 				memcpy(sm->ptasg->gmIdentity,
 				       RCVD_PSSYNC_PTR->sourcePortIdentity.clockIdentity,
 				       sizeof(ClockIdentity));
-				gptpclock_set_gmchange(sm->ptasg->domainNumber,
-						       sm->ptasg->gmIdentity);
+				(void)gptpclock_set_gmchange(GPTPINSTNUM, sm->ptasg->domainIndex,
+							     sm->ptasg->gmIdentity, false);
 			}
 		}
 
@@ -201,9 +205,10 @@ void *clock_slave_sync_sm(clock_slave_sync_data_t *sm, uint64_t cts64)
 			sm->state = send_sync_indication_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -214,7 +219,8 @@ void clock_slave_sync_sm_init(clock_slave_sync_data_t **sm,
 			      PerTimeAwareSystemGlobal *ptasg)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, domainIndex);
-	if(INIT_SM_DATA(clock_slave_sync_data_t, ClockSlaveSyncSM, sm)){return;}
+	INIT_SM_DATA(clock_slave_sync_data_t, ClockSlaveSyncSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->domainIndex = domainIndex;
 }

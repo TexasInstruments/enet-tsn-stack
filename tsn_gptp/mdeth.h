@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __MDETH_H_
-#define __MDETH_H_
+#ifndef MDETH_H_
+#define MDETH_H_
 
 #include "mind.h"
 #include "gptpnet.h"
@@ -101,6 +101,23 @@ typedef struct MDPTPMsgHeader {
 	int8_t logMessageInterval;
 } __attribute__((packed)) MDPTPMsgHeader;
 
+#define MDPTPMSG_MAJORSDOID_MESSAGETYPE 0
+#define MDPTPMSG_MINORVERSIONPTP_VERSIONPTP 1
+#define MDPTPMSG_MESSAGELENGTH_NS 2
+#define MDPTPMSG_DOMAINNUMBER 4
+#define MDPTPMSG_MINORSDOID 5
+#define MDPTPMSG_FLAGS 6
+#define MDPTPMSG_CORRECTIONFIELD_NLL 8
+#define MDPTPMSG_MESSAGETYPESPECIFIC 16
+#define MDPTPMSG_SOURCEPORTIDENTITY 20
+#define MDPTPMSG_SEQUENCEID_NS 30
+#define MDPTPMSG_CONTROL 32
+#define MDPTPMSG_LOGMESSAGEINTERVAL 33
+
+#define MDPTPMSG_PRECISEORIGINTIMESTAMP 34
+#define MDPTPMSG_FUPINFOTLV 44
+
+
 // 11.4.4.3 Follow_Up information TLV
 typedef struct MDFollowUpInformationTLV {
 	uint16_t tlvType_ns;
@@ -112,6 +129,15 @@ typedef struct MDFollowUpInformationTLV {
 	MDScaledNs lastGmPhaseChange;
 	int32_t scaledLastGmFreqChange_nl;
 } __attribute__((packed)) MDFollowUpInformationTLV;
+
+#define MDFOLLOWUPTLV_TLVTYPE_NS 0
+#define MDFOLLOWUPTLV_LENGTHFIELD_NS 2
+#define MDFOLLOWUPTLV_ORGANIZATIONID 4
+#define MDFOLLOWUPTLV_ORGANIZATIONSUBTYPE_NB 7
+#define MDFOLLOWUPTLV_CUMULATIVESCALEDRATEOFFSET_NL 10
+#define MDFOLLOWUPTLV_GMTIMEBASEINDICATOR_NS 14
+#define MDFOLLOWUPTLV_LASTGMPHASECHANGE 16
+#define MDFOLLOWUPTLV_SCALEDLASTGMFREQCHANGE_NL 28
 
 // 11.4.3.1 General Sync message specifications
 typedef struct MDPTPMsgSync {
@@ -235,7 +261,10 @@ typedef struct MDSyncReceiveSM {
 	UScaledNs followUpReceiptTimeoutTime;
 	bool rcvdSync;
 	bool rcvdFollowUp;
-	MDPTPMsgSync *rcvdSyncPtr;
+	union{
+		MDPTPMsgSync *rcvdSyncPtr;
+		MDPTPMsgSyncOneStep *rcvdSyncOneStepPtr;
+	}u;
 	MDPTPMsgFollowUp *rcvdFollowUpPtr;
 	MDSyncReceive *txMDSyncReceivePtr;
 	UScaledNs upstreamSyncInterval;
@@ -338,25 +367,38 @@ typedef enum {
 /************************************************
   macros
 *************************************************/
-#define GET_TWO_STEP_FLAG(x) ((x).flags[0] & 0x2)
-#define SET_TWO_STEP_FLAG(x) ((x).flags[0] |= 0x2)
-#define RESET_TWO_STEP_FLAG(x) ((x).flags[0] &= ~0x2)
+#define GET_TWO_STEP_FLAG(x) ((x).flags[0] & 0x2u)
+#define SET_TWO_STEP_FLAG(x) ((x).flags[0] |= 0x2u)
+#define RESET_TWO_STEP_FLAG(x) ((x).flags[0] &= ~0x2u)
+
+#define GET_TWO_STEP_BYTE_FLAG(x) ((x)[6] & 0x2u)
+#define SET_TWO_STEP_BYTE_FLAG(x) ((x)[6] |= 0x2u)
+#define RESET_TWO_STEP_BYTE_FLAG(x) ((x)[6] &= ~0x2u)
 
 /************************************************
   functions
 *************************************************/
-void md_compose_head(PTPMsgHeader *head, MDPTPMsgHeader *phead);
-void *md_header_compose(gptpnet_data_t *gptpnet, int portIndex, PTPMsgType msgtype,
+uint8_t md_domain_number2index(uint8_t number);
+uint8_t md_domain_index2number(uint8_t index);
+
+uint16_t md_port_number2index(uint16_t number);
+uint16_t md_port_index2number(uint16_t index);
+
+void md_compose_head(PTPMsgHeader *head, uint8_t *phead);
+void *md_header_compose(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnetd,
+			int portIndex, PTPMsgType msgtype,
 			uint16_t ssize, ClockIdentity thisClock, uint16_t thisPort,
 			uint16_t seqid, int8_t logMessageInterval);
 void md_decompose_head(MDPTPMsgHeader *phead, PTPMsgHeader *head);
-void md_header_template(PTPMsgHeader *head, PTPMsgType msgtype, uint16_t len,
+void md_header_template(uint8_t gptpInstanceIndex, PTPMsgHeader *head,
+			PTPMsgType msgtype, uint16_t len,
 			PortIdentity *portId, uint16_t seqid, int8_t logMessageInterval);
 
-void md_entity_glb_init(MDEntityGlobal **mdeglb, MDEntityGlobalForAllDomain *forAllDomain);
+void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
+			MDEntityGlobalForAllDomain *forAllDomain);
 void md_entity_glb_close(MDEntityGlobal **mdeglb, int domainIndex);
 
-void md_followup_information_tlv_compose(MDFollowUpInformationTLV *tlv,
+void md_followup_information_tlv_compose(uint8_t *tlv,
 					 double rateRatio, uint16_t gmTimeBaseIndicator,
 					 ScaledNs lastGmPhaseChange, double lastGmFreqChange);
 

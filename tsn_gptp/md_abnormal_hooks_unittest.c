@@ -54,6 +54,8 @@
 #include "mdeth.h"
 #include "md_abnormal_hooks.h"
 #include "gptpnet.h"
+#include <tsn_uniconf/ucman.h>
+#include "gptpconf/gptpgcfg.h"
 
 static gptpnet_data_t *gpnet;
 
@@ -66,12 +68,12 @@ static int gptpnet_cb(void *cb_data, int portIndex, gptpnet_event_t event,
 static void test_abnormal_events1(void **state)
 {
 	md_abn_event_t event1={domainNumber:0, ndevIndex:0, msgtype:SYNC,
-			       eventtype:MD_ABN_EVENTP_SKIP,
+			       eventtype:MD_ABN_EVENT_SKIP,
 			       eventrate:1.0, repeat:0, interval:0, eventpara:0};
 	int length=sizeof(MDPTPMsgSync);
 	ClockIdentity clockid={0,};
 
-	md_header_compose(gpnet, 1, SYNC, length, clockid, 1, 100, -3);
+	md_header_compose(0, gpnet, 1, SYNC, length, clockid, 1, 100, -3);
 	// without md_abnormal_init, no event happens
 	assert_int_equal(md_abnormal_register_event(&event1),-1);
 	assert_int_equal(md_abnormal_gptpnet_send_hook(gpnet, 0, length), MD_ABN_EVENTP_NONE);
@@ -163,13 +165,13 @@ static void test_abnormal_events1(void **state)
 static void test_abnormal_events2(void **state)
 {
 	md_abn_event_t event1={domainNumber:0, ndevIndex:0, msgtype:PDELAY_REQ,
-			       eventtype:MD_ABN_EVENTP_DUPLICATE,
+			       eventtype:MD_ABN_EVENT_DUP,
 			       eventrate:1.0, repeat:0, interval:0, eventpara:0};
 	int length=sizeof(MDPTPMsgPdelayReq);
 	ClockIdentity clockid={0,};
 	int i, count;
 
-	md_header_compose(gpnet, 1, SYNC, length, clockid, 1, 100, -3);
+	md_header_compose(0, gpnet, 1, SYNC, length, clockid, 1, 100, -3);
 	md_abnormal_init();
 
 	// PDELAY_REQ != SYNC, the event doesn't happen
@@ -178,7 +180,7 @@ static void test_abnormal_events2(void **state)
 	assert_int_equal(md_abnormal_gptpnet_send_hook(gpnet, 0, length), MD_ABN_EVENTP_NONE);
 	assert_int_equal(md_abnormal_deregister_all_events(),0);
 
-	md_header_compose(gpnet, 1, PDELAY_REQ, length, clockid, 1, 100, -3);
+	md_header_compose(0, gpnet, 1, PDELAY_REQ, length, clockid, 1, 100, -3);
 	// repeat every time forever
 	assert_int_equal(md_abnormal_register_event(&event1),0);
 	assert_int_equal(md_abnormal_gptpnet_send_hook(gpnet, 0, length), MD_ABN_EVENTP_DUPLICATE);
@@ -206,16 +208,34 @@ static void test_abnormal_events2(void **state)
 	md_abnormal_close();
 }
 
+static CB_THREAD_T ucthreadt;
+static const char *dbname=".ix_gptpclock_unittestdb";
+static bool stopuc;
+static ucman_data_t ucmd;
+
 static int setup(void **state)
 {
 	unibase_init_para_t init_para;
-	char *netdevs[2]={"cbeth0",NULL};
-	int np;
+	const char *netdevs[2]={"cbeth0",NULL};
+	int np=1;
 
 	ubb_default_initpara(&init_para);
-	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,gptp:46", "UBL_GPTP");
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46,gptp:46",
+						   "UBL_GPTP");
 	unibase_init(&init_para);
-	gpnet=gptpnet_init(gptpnet_cb, NULL, NULL, netdevs, &np, NULL);
+	uniconf_remove_dbfile(dbname);
+	ucmd.stoprun=&stopuc;
+	ucmd.dbname=dbname;
+	ucmd.ucmode=UC_CALLMODE_UNICONF|UC_CALLMODE_THREAD;
+	ucmd.ucmanstart=malloc(sizeof(CB_SEM_T));
+	if(ub_assert_fatal(ucmd.ucmanstart!=NULL, __func__, NULL)){return -1;}
+	memset(ucmd.ucmanstart, 0, sizeof(CB_SEM_T));
+	ucmd.hwmod="NONE";
+	CB_SEM_INIT(ucmd.ucmanstart, 0, 0);
+	CB_THREAD_CREATE(&ucthreadt, NULL, uniconf_main, &ucmd);
+	CB_SEM_WAIT(ucmd.ucmanstart);
+	if(gptpgcfg_init(dbname, NULL, 0, true)) return -1;
+	gpnet=gptpnet_init(0, gptpnet_cb, NULL, netdevs, np, NULL);
 
 	return 0;
 }
@@ -223,6 +243,11 @@ static int setup(void **state)
 static int teardown(void **state)
 {
 	gptpnet_close(gpnet);
+	stopuc=true;
+	CB_THREAD_JOIN(ucthreadt, NULL);
+	CB_SEM_DESTROY(ucmd.ucmanstart);
+	free(ucmd.ucmanstart);
+	uniconf_remove_dbfile(dbname);
 	unibase_close();
 	return 0;
 }

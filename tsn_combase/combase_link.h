@@ -147,8 +147,10 @@ typedef struct cbl_cbs_params{
 	uint8_t offload; // set 1 to enable HW offload
 } cbl_cbs_params_t;
 
+#define TAS_MAX_NUM_QUEUES (8)
 typedef struct cbl_tas_sched_params_ext{
 	//T.B.D.
+	uint16_t max_sdu[TAS_MAX_NUM_QUEUES];
 } cbl_tas_sched_params_ext_t;
 
 typedef enum {

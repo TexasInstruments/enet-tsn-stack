@@ -59,6 +59,8 @@
 #ifndef CB_THREAD_H_
 #define CB_THREAD_H_
 
+#include <tsn_unibase/unibase.h>
+
 /**
  * @brief data structure for thread attributes
  */
@@ -136,7 +138,7 @@ static inline int cb_tsn_thread_attr_init(cb_tsn_thread_attr_t *attr, int pri,
 	if(pri>0){attr->pri=pri;}
 	if(stack_size>0){attr->stack_size=stack_size;}
 	if(name!=NULL){
-		(void)strncpy(attr->name, name, CB_TSN_THREAD_NAME_SIZE-1);
+		(void)ub_strncpy(attr->name, name, CB_TSN_THREAD_NAME_SIZE);
 	}
 	return 0;
 }

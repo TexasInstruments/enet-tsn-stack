@@ -47,6 +47,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
@@ -83,6 +84,7 @@ struct md_signaling_send_data{
 
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static void setup_gptp_capable_tlv(md_signaling_send_data_t *sm, void *sdata)
 {
@@ -91,9 +93,9 @@ static void setup_gptp_capable_tlv(md_signaling_send_data_t *sm, void *sdata)
 	gcmsg->tlvType_ns = htons(gctlm->tlvType);
 	gcmsg->lengthField_ns = htons(gctlm->lengthField);
 	memcpy(gcmsg->organizationId, gctlm->organizationId, 3);
-	gcmsg->organizationSubType_nb[0] = (gctlm->organizationSubType >> 16) & 0xff;
-	gcmsg->organizationSubType_nb[1] = (gctlm->organizationSubType >> 8) & 0xff;
-	gcmsg->organizationSubType_nb[2] = gctlm->organizationSubType & 0xff;
+	gcmsg->organizationSubType_nb[0] = (gctlm->organizationSubType >> 16u) & 0xffu;
+	gcmsg->organizationSubType_nb[1] = (gctlm->organizationSubType >> 8u) & 0xffu;
+	gcmsg->organizationSubType_nb[2] = gctlm->organizationSubType & 0xffu;
 	gcmsg->logGptpCapableMessageInterval = gctlm->logGptpCapableMessageInterval;
 	gcmsg->flags = gctlm->flags;
 }
@@ -105,9 +107,9 @@ static void setup_msg_interval_req_tlv(md_signaling_send_data_t *sm, void *sdata
 	mrmsg->tlvType_ns = htons(mrtlm->tlvType);
 	mrmsg->lengthField_ns = htons(mrtlm->lengthField);
 	memcpy(mrmsg->organizationId, mrtlm->organizationId, 3);
-	mrmsg->organizationSubType_nb[0] = (mrtlm->organizationSubType >> 16) & 0xff;
-	mrmsg->organizationSubType_nb[1] = (mrtlm->organizationSubType >> 8) & 0xff;
-	mrmsg->organizationSubType_nb[2] = mrtlm->organizationSubType & 0xff;
+	mrmsg->organizationSubType_nb[0] = (mrtlm->organizationSubType >> 16u) & 0xffu;
+	mrmsg->organizationSubType_nb[1] = (mrtlm->organizationSubType >> 8u) & 0xffu;
+	mrmsg->organizationSubType_nb[2] = mrtlm->organizationSubType & 0xffu;
 	mrmsg->linkDelayInterval = mrtlm->linkDelayInterval;
 	mrmsg->timeSyncInterval = mrtlm->timeSyncInterval;
 	mrmsg->announceInterval = mrtlm->announceInterval;
@@ -130,16 +132,16 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 	default:
 		return -1;
 	}
-
-	sdata=md_header_compose(sm->gpnetd, sm->portIndex, SIGNALING, size,
-				sm->ptasg->thisClock,
-				sm->ppg->thisPort,
-				sm->sequenceId,
-				0x7f);
+	sdata=md_header_compose(GPTPINSTNUM, sm->gpnetd, sm->portIndex, SIGNALING, size,
+                            sm->ptasg->thisClock,
+                            sm->ppg->thisPort,
+                            sm->sequenceId,
+                            0x7f);
 	if(!sdata){return -1;}
 	// 10.6.4.2.1 targetPortIdentity is 0xff
-	memset(((uint8_t*)sdata)+sizeof(MDPTPMsgHeader), 0xff, sizeof(MDPortIdentity));
-	((MDPTPMsgHeader*)sdata)->domainNumber=sm->ptasg->domainNumber;
+	(void)memset(&((uint8_t*)sdata)[sizeof(MDPTPMsgHeader)], 0xff, sizeof(MDPortIdentity));
+	((MDPTPMsgHeader*)sdata)->domainNumber=
+		md_domain_index2number(sm->ptasg->domainIndex);
 	switch(sm->stype){
 	case MD_SIGNALING_MSG_INTERVAL_REQ:
 		setup_msg_interval_req_tlv(sm, sdata);
@@ -154,7 +156,7 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 	}
 	if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, size)==-1){return -2;}
 	sm->sequenceId++;
-	if(statp){(*statp)++;}
+	if(statp!=NULL){(*statp)++;}
 	return 0;
 }
 
@@ -174,13 +176,13 @@ static void *initialize_proc(md_signaling_send_data_t *sm)
 		UB_LOG(UBL_DEBUGV, "md_signaling_send:%s:domainIndex=%d, portIndex=%d\n",
 		       __func__, sm->domainIndex, sm->portIndex);
 	}
-	sm->sequenceId=(uint16_t)(rand() & 0xffff);
+	sm->sequenceId=(uint16_t)rand();
 	return NULL;
 }
 
 static md_signaling_send_state_t initialize_condition(md_signaling_send_data_t *sm)
 {
-	if(sm->stype){return SEND_SIGNALING;}
+	if((int)sm->stype!=0){return SEND_SIGNALING;}
 	return INITIALIZE;
 }
 
@@ -195,7 +197,7 @@ static int send_signaling_proc(md_signaling_send_data_t *sm)
 
 static md_signaling_send_state_t send_signaling_condition(md_signaling_send_data_t *sm)
 {
-	if(sm->stype){sm->last_state=REACTION;}
+	if((int)sm->stype!=0){sm->last_state=REACTION;}
 	return SEND_SIGNALING;
 }
 
@@ -221,7 +223,7 @@ void *md_signaling_send_sm(md_signaling_send_data_t *sm, uint64_t cts64)
 			break;
 		case SEND_SIGNALING:
 			if(state_change){
-				if(send_signaling_proc(sm)) {
+				if(send_signaling_proc(sm)!=0) {
 					sm->last_state=REACTION;
 					return NULL;
 				}
@@ -230,9 +232,10 @@ void *md_signaling_send_sm(md_signaling_send_data_t *sm, uint64_t cts64)
 			sm->state = send_signaling_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -247,10 +250,10 @@ void md_signaling_send_sm_init(md_signaling_send_data_t **sm,
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
 	if(!*sm){
-		*sm=(md_signaling_send_data_t *)malloc(sizeof(md_signaling_send_data_t));
+		*sm=(md_signaling_send_data_t *)UB_SD_GETMEM(SM_DATA_INST, sizeof(md_signaling_send_data_t));
 		if(ub_assert_fatal(*sm, __func__, "malloc")){return;}
 	}
-	memset(*sm, 0, sizeof(md_signaling_send_data_t));
+	(void)memset(*sm, 0, sizeof(md_signaling_send_data_t));
 	(*sm)->gpnetd = gpnetd;
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
@@ -263,7 +266,7 @@ int md_signaling_send_sm_close(md_signaling_send_data_t **sm)
 	if(!*sm){return 0;}
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, (*sm)->domainIndex, (*sm)->portIndex);
-	free(*sm);
+	UB_SD_RELMEM(SM_DATA_INST, *sm);
 	*sm=NULL;
 	return 0;
 }
@@ -276,9 +279,9 @@ void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *m
 	       __func__, sm->domainIndex, sm->portIndex);
 	stype=((PTPMsgGPTPCapableTLV *)msg)->organizationSubType;
 	sm->stype=MD_SIGNALING_NONE;
-	if(stype==2){
+	if(stype==2u){
 		sm->stype=MD_SIGNALING_MSG_INTERVAL_REQ;
-	}else if(stype==4){
+	}else if(stype==4u){
 		sm->stype=MD_SIGNALING_GPTP_CAPABLE;
 	}else{
 		UB_LOG(UBL_WARN,
@@ -293,7 +296,7 @@ void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *m
 
 void md_signaling_send_stat_reset(md_signaling_send_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_signaling_send_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_signaling_send_stat_data_t));
 }
 
 md_signaling_send_stat_data_t *md_signaling_send_get_stat(md_signaling_send_data_t *sm)

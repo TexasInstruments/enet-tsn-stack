@@ -47,11 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "gm_stable_sm.h"
+#include "gptpconf/gptpgcfg.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -72,6 +75,7 @@ struct gm_stable_data{
 	ClockIdentity clockIdentity;
 	bool gm_change;
 };
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static gm_stable_state_t allstate_condition(gm_stable_data_t *sm)
 {
@@ -85,20 +89,25 @@ static void *initialize_proc(gm_stable_data_t *sm)
 {
 	UB_LOG(UBL_DEBUGV, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	sm->gm_stable_time=0;
-	sm->gm_stable_timer_time=gptpconf_get_intitem(CONF_INITIAL_GM_STABLE_TIME)*1000000LL;
+	sm->gm_stable_timer_time=gptpgcfg_get_intitem(
+		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_INITIAL_GM_STABLE_TIME,
+		YDBI_CONFIG)*1000000LL;
 	sm->ptasg->gm_stable_initdone=false;
-	if(sm->ptasg->selectedState[0]!=SlavePort){
+	if(sm->ptasg->selectedState[0]!=(uint8_t)SlavePort){
 		// if this device is not GM, gmsync must be lost
-		gptpclock_reset_gmsync(0, sm->domainIndex);
+		(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->domainIndex, GMSYNC_UNSYNC);
+	}else{
+		(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->domainIndex, GMSYNC_SYNC_STABLE);
 	}
-	gptpclock_set_gmstable(sm->domainIndex, false);
 	return NULL;
 }
 
 static gm_stable_state_t initialize_condition(gm_stable_data_t *sm)
 {
 	if(sm->ptasg->asCapableOrAll &&
-	   gptpclock_get_gmsync(0, sm->ptasg->domainNumber)){return GM_UNSTABLE;}
+	   (gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)>=GMSYNC_SYNC)){
+		return GM_UNSTABLE;
+	}
 	return INITIALIZE;
 }
 
@@ -112,7 +121,9 @@ static void *gm_lost_proc(gm_stable_data_t *sm)
 
 static gm_stable_state_t gm_lost_condition(gm_stable_data_t *sm)
 {
-	if(gptpclock_get_gmsync(0, sm->ptasg->domainNumber)){return GM_UNSTABLE;}
+	if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)<GMSYNC_SYNC_STABLE){
+		return GM_UNSTABLE;
+	}
 	return GM_LOST;
 }
 
@@ -120,7 +131,9 @@ static void *gm_unstable_proc(gm_stable_data_t *sm, uint64_t cts64)
 {
 	UB_TLOG(UBL_INFO, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	sm->gm_stable_time=cts64+sm->gm_stable_timer_time;
-	gptpclock_set_gmstable(sm->domainIndex, false);
+	if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)==GMSYNC_SYNC_STABLE){
+		gptpclock_set_gmsync(GPTPINSTNUM, sm->domainIndex, GMSYNC_SYNC);
+	}
 	return NULL;
 }
 
@@ -135,8 +148,12 @@ static void *gm_stable_proc(gm_stable_data_t *sm)
 {
 	UB_TLOG(UBL_INFO, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	sm->gm_stable_time=0;
-	sm->gm_stable_timer_time=gptpconf_get_intitem(CONF_NORMAL_GM_STABLE_TIME)*1000000LL;
-	gptpclock_set_gmstable(sm->domainIndex, true);
+	sm->gm_stable_timer_time=gptpgcfg_get_intitem(
+		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_NORMAL_GM_STABLE_TIME,
+		YDBI_CONFIG)*1000000LL;
+	if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)==GMSYNC_SYNC){
+		gptpclock_set_gmsync(GPTPINSTNUM, sm->domainIndex, GMSYNC_SYNC_STABLE);
+	}
 	sm->ptasg->gm_stable_initdone=true;
 	return NULL;
 }
@@ -155,7 +172,6 @@ void *gm_stable_sm(gm_stable_data_t *sm, uint64_t cts64)
 
 	if(!sm){return NULL;}
 	sm->state = allstate_condition(sm);
-
 	while(true){
 		state_change=(sm->last_state != sm->state);
 		sm->last_state = sm->state;
@@ -180,9 +196,10 @@ void *gm_stable_sm(gm_stable_data_t *sm, uint64_t cts64)
 			sm->state = gm_stable_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -194,10 +211,10 @@ void gm_stable_sm_init(gm_stable_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, domainIndex);
 	if(!*sm){
-		*sm=(gm_stable_data_t *)malloc(sizeof(gm_stable_data_t));
-		if(ub_assert_fatal(*sm, __func__, "malloc")){return;}
+		*sm=(gm_stable_data_t *)UB_SD_GETMEM(SM_DATA_INST, sizeof(gm_stable_data_t));
+		if(ub_assert_fatal(*sm!=NULL, __func__, "malloc")){return;}
 	}
-	memset(*sm, 0, sizeof(gm_stable_data_t));
+	(void)memset(*sm, 0, sizeof(gm_stable_data_t));
 	(*sm)->ptasg = ptasg;
 	(*sm)->domainIndex = domainIndex;
 }
@@ -206,7 +223,7 @@ int gm_stable_sm_close(gm_stable_data_t **sm)
 {
 	if(!*sm){return 0;}
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, (*sm)->domainIndex);
-	free(*sm);
+	UB_SD_RELMEM(SM_DATA_INST, *sm);
 	*sm=NULL;
 	return 0;
 }
@@ -216,6 +233,6 @@ void gm_stable_gm_change(gm_stable_data_t *sm, ClockIdentity clockIdentity, uint
 	if(!memcmp(sm->clockIdentity, clockIdentity, sizeof(ClockIdentity))){return;}
 	memcpy(sm->clockIdentity, clockIdentity, sizeof(ClockIdentity));
 	sm->gm_change=true;
-	gm_stable_sm(sm, cts64);
+	(void)gm_stable_sm(sm, cts64);
 	return;
 }

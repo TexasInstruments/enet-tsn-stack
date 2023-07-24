@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "clock_master_sync_offset_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -100,7 +102,7 @@ static void *send_sync_indication_proc(clock_master_sync_offset_data_t *sm)
 	UB_LOG(UBL_DEBUGV, "clock_master_sync_offset:%s:domainIndex=%d\n",
 	       __func__, sm->domainIndex);
 	RCVD_SYNC_RECEIPT_TIME = false;
-	if(SELECTED_STATE[0] == PassivePort) {
+	if(SELECTED_STATE[0] == (uint8_t)PassivePort) {
 		/* ??? sourcTime
 		sm->ptasg->clockSourcePhaseOffset.nsec =
 			(SOURCE_TIME.seconds.lsb – SYNC_RECEIPT_TIME.seconds.lsb)* UB_SEC_NS +
@@ -112,7 +114,7 @@ static void *send_sync_indication_proc(clock_master_sync_offset_data_t *sm)
 		  sm->ptasg->clockSourceTimeBaseIndicatorOld) {
 		sm->ptasg->clockSourcePhaseOffset = sm->ptasg->clockSourceLastGmPhaseChange;
 		sm->ptasg->clockSourceFreqOffset = sm->ptasg->clockSourceLastGmFreqChange;
-	}
+	}else{}
 	return NULL;
 }
 
@@ -151,9 +153,10 @@ void *clock_master_sync_offset_sm(clock_master_sync_offset_data_t *sm, uint64_t 
 			sm->state = send_sync_indication_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -164,7 +167,8 @@ void clock_master_sync_offset_sm_init(clock_master_sync_offset_data_t **sm,
 	PerTimeAwareSystemGlobal *ptasg)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, domainIndex);
-	if(INIT_SM_DATA(clock_master_sync_offset_data_t, ClockMasterSyncOffsetSM, sm)){return;}
+	INIT_SM_DATA(clock_master_sync_offset_data_t, ClockMasterSyncOffsetSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->domainIndex = domainIndex;
 }

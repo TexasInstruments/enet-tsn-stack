@@ -49,7 +49,7 @@
 */
 #include "gptpclock_virtual.h"
 #include "gptpclock.h"
-#include "gptp_config.h"
+#include "gptpconf/gptpgcfg.h"
 
 #define PTPVDEV_MAX_NAME 16
 #define MAX_VPTPD (GPTP_VIRTUAL_PTPDEV_FDMAX-GPTP_VIRTUAL_PTPDEV_FDBASE+1)
@@ -62,8 +62,12 @@ typedef struct ptpfd_virtual {
 	uint64_t lastpts;
 	bool rdwr_mode;
 	int users;
+	int vclkrate;
+	uint8_t gptpInstanceIndex;
 } ptpfd_virtual_t;
 
+// all instances share the same set of ptpfd_virtual_t
+// the data is per ptpdev(fd)
 static ub_esarray_cstd_t *esvptpd = NULL;
 
 static ptpfd_virtual_t *find_ptpfd_virtual(PTPFD_TYPE ptpfd)
@@ -84,7 +88,7 @@ static ptpfd_virtual_t *find_ptpfd_virtual(PTPFD_TYPE ptpfd)
 	return NULL;
 }
 
-PTPFD_TYPE gptp_vclock_alloc_fd(char *ptpdev)
+PTPFD_TYPE gptp_vclock_alloc_fd(uint8_t gptpInstanceIndex, char *ptpdev)
 {
 	int i,en;
 	ptpfd_virtual_t *pv, *rpv;
@@ -102,15 +106,19 @@ PTPFD_TYPE gptp_vclock_alloc_fd(char *ptpdev)
 		fdmax=UB_MAX(pv->fd, fdmax);
 	}
 	rpv=(ptpfd_virtual_t *)ub_esarray_get_newele(esvptpd);
-	memset(rpv, 0, sizeof(ptpfd_virtual_t));
-	strncpy(rpv->ptpdev, ptpdev, PTPVDEV_MAX_NAME-1);
+	(void)memset(rpv, 0, sizeof(ptpfd_virtual_t));
+	(void)strncpy(rpv->ptpdev, ptpdev, PTPVDEV_MAX_NAME-1);
 	rpv->fd=fdmax+1;
 	rpv->users=1;
+	rpv->gptpInstanceIndex=gptpInstanceIndex;
 	if(ptpdev[strlen(CB_VIRTUAL_PTPDEV_PREFIX)]=='w'){rpv->rdwr_mode=true;}
 	if(rpv->fd>(PTPFD_TYPE)GPTP_VIRTUAL_PTPDEV_FDMAX){
 		ub_esarray_del_pointer(esvptpd, (ub_esarray_element_t *)rpv);
 		return PTPFD_INVALID;
 	}
+	rpv->vclkrate=gptpgcfg_get_intitem(
+		rpv->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PTPVFD_CLOCK_RATE,
+		YDBI_CONFIG);
 	return rpv->fd;
 }
 
@@ -155,15 +163,14 @@ uint64_t gptp_vclock_gettime(PTPFD_TYPE ptpfd)
 	}
 	dts64=ts64-pv->lastts;
 	if(pv->rdwr_mode){
-		dpts64=dts64*(pv->freq_adj+
-			      gptpconf_get_intitem(CONF_PTPVFD_CLOCK_RATE))/UB_SEC_NS;
+		dpts64=dts64*(pv->freq_adj+pv->vclkrate)/UB_SEC_NS;
 	}else{
-		dpts64=dts64*(gptpconf_get_intitem(CONF_PTPVFD_CLOCK_RATE))/UB_SEC_NS;
+		dpts64=dts64*pv->vclkrate/UB_SEC_NS;
 	}
 	pv->lastts=ts64;
-	ts64=pv->lastpts+dts64+dpts64;
-	pv->lastpts=ts64;
-	return ts64;
+	dts64=(int64_t)pv->lastpts+dts64+dpts64;
+	pv->lastpts=(uint64_t)dts64;
+	return (uint64_t)dts64;
 }
 
 int gptp_vclock_adjtime(PTPFD_TYPE ptpfd, int adjppb)

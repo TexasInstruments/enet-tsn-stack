@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "gptp_capable_receive_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -122,7 +124,7 @@ static void *received_tlv_proc(gptp_capable_receive_data_t *sm, uint64_t cts64)
 
 	sm->thisSM->rcvdGptpCapableTlv = false;
 	sm->thisSM->gPtpCapableReceiptTimeoutInterval.nsec =
-		sm->ppg->gPtpCapableReceiptTimeout *
+		(uint8_t)sm->ppg->gPtpCapableReceiptTimeout *
 		LOG_TO_NSEC(sm->thisSM->rcvdSignalingMsgPtr->logGptpCapableMessageInterval);
 	sm->thisSM->timeoutTime.nsec = cts64 +
 		sm->thisSM->gPtpCapableReceiptTimeoutInterval.nsec;
@@ -170,9 +172,10 @@ void *gptp_capable_receive_sm(gptp_capable_receive_data_t *sm, uint64_t cts64)
 			sm->state = received_tlv_condition(sm, cts64);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -185,12 +188,13 @@ void gptp_capable_receive_sm_init(gptp_capable_receive_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(gptp_capable_receive_data_t, gPtpCapableReceiveSM, sm)){return;}
+	INIT_SM_DATA(gptp_capable_receive_data_t, gPtpCapableReceiveSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
-	gptp_capable_receive_sm(*sm, 0);
+	(void)gptp_capable_receive_sm(*sm, 0);
 }
 
 int gptp_capable_receive_sm_close(gptp_capable_receive_data_t **sm)

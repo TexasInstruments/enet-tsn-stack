@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "announce_interval_setting_sm.h"
+#include "gptpcommon.h"
 
 #define PTP_PORT_ENABLED    sm->ppg->ptpPortEnabled
 #define PORT_OPER           sm->ppg->forAllDomain->portOper
@@ -190,9 +192,10 @@ void *announce_interval_setting_sm(announce_interval_setting_data_t *sm, uint64_
 			sm->state = set_intervals_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -206,7 +209,8 @@ void announce_interval_setting_sm_init(announce_interval_setting_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(announce_interval_setting_data_t, AnnounceIntervalSettingSM, sm)){return;}
+	INIT_SM_DATA(announce_interval_setting_data_t, AnnounceIntervalSettingSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->bppg = bppg;

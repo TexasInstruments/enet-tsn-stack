@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GM_STABLE_SM_H_
-#define __GM_STABLE_SM_H_
+#ifndef GM_STABLE_SM_H_
+#define GM_STABLE_SM_H_
 
 typedef struct gm_stable_data gm_stable_data_t;
 

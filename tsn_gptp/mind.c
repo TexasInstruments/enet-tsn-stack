@@ -47,67 +47,67 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
-#include "gptp_config.h"
+#include "gptpconf/gptpgcfg.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
+#include "gptpcommon.h"
 
-void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb, uint8_t domainNumber)
+void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
+		   uint8_t gptpInstanceIndex, uint8_t domainIndex)
 {
 	if(!*tasglb){
-		*tasglb=(PerTimeAwareSystemGlobal *)malloc(sizeof(PerTimeAwareSystemGlobal));
+		*tasglb=(PerTimeAwareSystemGlobal *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerTimeAwareSystemGlobal));
 		if(ub_assert_fatal(*tasglb!=NULL, __func__, "malloc error")){return;}
 	}
-	memset(*tasglb, 0, sizeof(PerTimeAwareSystemGlobal));
+	(void)memset(*tasglb, 0, sizeof(PerTimeAwareSystemGlobal));
 	(*tasglb)->BEGIN=false;
-	(*tasglb)->clockMasterLogSyncInterval=gptpconf_get_intitem(CONF_LOG_SYNC_INTERVAL);
+	(*tasglb)->clockMasterLogSyncInterval=gptpgcfg_get_yang_portds_intitem(
+		gptpInstanceIndex,
+		IEEE1588_PTP_LOG_SYNC_INTERVAL,
+		domainIndex, 0, YDBI_STATUS); // use the data of port=0
 	(*tasglb)->clockMasterSyncInterval.nsec=LOG_TO_NSEC(
-		gptpconf_get_intitem(CONF_LOG_SYNC_INTERVAL));
+		(*tasglb)->clockMasterLogSyncInterval);
 	(*tasglb)->instanceEnable=true;
-	(*tasglb)->domainNumber=domainNumber;
+	(*tasglb)->domainIndex=domainIndex;
 	(*tasglb)->gmRateRatio = 1.0;
-	(*tasglb)->conformToAvnu = gptpconf_get_intitem(CONF_FOLLOW_AVNU);
+	(*tasglb)->conformToAvnu = gptpgcfg_get_intitem(
+		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_FOLLOW_AVNU,
+		YDBI_CONFIG);
+	(*tasglb)->gptpInstanceIndex = gptpInstanceIndex;
 }
 
 void ptas_glb_close(PerTimeAwareSystemGlobal **tasglb)
 {
 	if(!*tasglb){return;}
-	free(*tasglb);
+	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *tasglb);
 	*tasglb=NULL;
 }
 
-static bool get_pp_ptpPortEnabled(uint16_t portIndex)
+static bool get_pp_ptpPortEnabled(uint8_t gptpInstanceIndex, uint16_t portIndex,
+				  uint8_t domainIndex)
 {
-	bool ptpPortEnabled = true;
-	int i;
-	char *p, *str = (char *)gptpconf_get_item(CONF_PTP_PORT_ENABLED);
-
-	p=str;
-	if(portIndex>0){
-		// portIndex=0(IPC port) excluded in config
-		// portindex=1 uses first token in string config
-		for(i=2;i<=portIndex;i++){
-			p=strstr(p, ",");
-			if(!p){break;}
-			p++;
-		}
-		if(p){
-			ptpPortEnabled = strtol(p,&p,10)?true:false;
-		}
-	}
-	UB_LOG(UBL_DEBUG, "ptpPortEnabled[%d]=%s\n", portIndex, ptpPortEnabled?"true":"false");
-	return ptpPortEnabled;
+	int res;
+	res=gptpgcfg_get_yang_portds_intitem(
+		gptpInstanceIndex, IEEE1588_PTP_PORT_ENABLE,
+		portIndex, domainIndex, YDBI_CONFIG);
+	UB_LOG(UBL_DEBUG, "domainIndex=%d, ptpPortEnabled[%d]=%d\n",
+	       domainIndex, portIndex, res);
+	return (res!=0);
 }
 
-void pp_glb_init(PerPortGlobal **ppglb, PerPortGlobalForAllDomain *forAllDomain, uint16_t portIndex)
+void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
+		 PerPortGlobalForAllDomain *forAllDomain,
+		 uint8_t domainIndex, uint16_t portIndex)
 {
 	if(!*ppglb){
-		*ppglb=(PerPortGlobal *)malloc(sizeof(PerPortGlobal));
+		*ppglb=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerPortGlobal));
 		if(ub_assert_fatal(*ppglb!=NULL, __func__, "malloc error")){return;}
 	}
-	memset(*ppglb, 0, sizeof(PerPortGlobal));
-	if(forAllDomain){
-		// domainNumber != 0
+	(void)memset(*ppglb, 0, sizeof(PerPortGlobal));
+	if(forAllDomain!=NULL){
+		// domainIndex != 0
 		(*ppglb)->forAllDomain=forAllDomain;
 		//(*ppglb)->useMgtSettableLogSyncInterval = true; // 14.8.19
 		/* ??? by 14.8.19 the default should be true,
@@ -115,12 +115,11 @@ void pp_glb_init(PerPortGlobal **ppglb, PerPortGlobalForAllDomain *forAllDomain,
 		   and we set false here */
 		(*ppglb)->useMgtSettableLogSyncInterval = false;
 	}else{
-		// domainNumber == 0
-		(*ppglb)->forAllDomain=
-			(PerPortGlobalForAllDomain *)malloc(sizeof(PerPortGlobalForAllDomain));
+		// domainIndex == 0
+		(*ppglb)->forAllDomain=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerPortGlobalForAllDomain));
 		if(ub_assert_fatal((*ppglb)->forAllDomain!=NULL,
 				   __func__, "malloc error")){return;}
-		memset((*ppglb)->forAllDomain, 0, sizeof(PerPortGlobalForAllDomain));
+		(void)memset((*ppglb)->forAllDomain, 0, sizeof(PerPortGlobalForAllDomain));
 		(*ppglb)->forAllDomain->asymmetryMeasurementMode = false;
 		(*ppglb)->forAllDomain->portOper = false;
 		/* 802.1AS-2020 11.6 Control of computation of neighborRateRatio
@@ -133,71 +132,109 @@ void pp_glb_init(PerPortGlobal **ppglb, PerPortGlobalForAllDomain *forAllDomain,
 		(*ppglb)->forAllDomain->computeNeighborPropDelay = true;
 		(*ppglb)->forAllDomain->useMgtSettableLogAnnounceInterval = false;
 		(*ppglb)->forAllDomain->mgtSettableLogAnnounceInterval =
-			gptpconf_get_intitem(CONF_LOG_ANNOUNCE_INTERVAL);
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_LOG_ANNOUNCE_INTERVAL,
+				portIndex, domainIndex, YDBI_CONFIG);
 		(*ppglb)->forAllDomain->useMgtSettableLogPdelayReqInterval = false;
 		(*ppglb)->forAllDomain->mgtSettableLogPdelayReqInterval =
-			gptpconf_get_intitem(CONF_LOG_PDELAYREQ_INTERVAL);
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_INITIAL_LOG_PDELAY_REQ_INTERVAL,
+				portIndex, domainIndex, YDBI_CONFIG);
 		(*ppglb)->useMgtSettableLogSyncInterval = false;
 	}
 
 	(*ppglb)->asCapable = false;
-	(*ppglb)->currentLogSyncInterval = gptpconf_get_intitem(CONF_LOG_SYNC_INTERVAL);
-	(*ppglb)->initialLogSyncInterval = gptpconf_get_intitem(CONF_LOG_SYNC_INTERVAL);
-	(*ppglb)->syncReceiptTimeout = gptpconf_get_intitem(CONF_SYNC_RECEIPT_TIMEOUT);
-	(*ppglb)->syncInterval.nsec = LOG_TO_NSEC(gptpconf_get_intitem(CONF_LOG_SYNC_INTERVAL));
+	(*ppglb)->currentLogSyncInterval =
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_CURRENT_LOG_SYNC_INTERVAL,
+			portIndex, domainIndex, YDBI_STATUS);
+	(*ppglb)->initialLogSyncInterval =
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_INITIAL_LOG_SYNC_INTERVAL,
+			portIndex, domainIndex, YDBI_CONFIG);
+	(*ppglb)->syncReceiptTimeout =
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_SYNC_RECEIPT_TIMEOUT,
+			portIndex, domainIndex, YDBI_CONFIG);
+	(*ppglb)->syncInterval.nsec =
+		LOG_TO_NSEC(gptpgcfg_get_yang_portds_intitem(
+				    gptpInstanceIndex,
+				    IEEE1588_PTP_LOG_SYNC_INTERVAL,
+				    portIndex, domainIndex, YDBI_STATUS));
+	// we don't use IEEE1588_PTP_SYNC_RECEIPT_TIMEOUT_INTERVAL
 	(*ppglb)->syncReceiptTimeoutTimeInterval.nsec =
-		gptpconf_get_intitem(CONF_SYNC_RECEIPT_TIMEOUT) * (*ppglb)->syncInterval.nsec;
-	(*ppglb)->ptpPortEnabled = get_pp_ptpPortEnabled(portIndex);
-	// portIndex and portNumber is the same in our implementation,
-	// but it is not true in the standard
-	// in case these two numbers are different, we keep portIndex separately
+		(uint8_t)(*ppglb)->syncReceiptTimeout * (*ppglb)->syncInterval.nsec;
+	(*ppglb)->ptpPortEnabled = get_pp_ptpPortEnabled(gptpInstanceIndex,
+							 portIndex, domainIndex);
 	(*ppglb)->thisPort = portIndex;
-	(*ppglb)->thisPortIndex = portIndex;
 	(*ppglb)->syncLocked = false;
 	(*ppglb)->neighborGptpCapable = false;
 	(*ppglb)->syncSlowdown = false;
 
 	(*ppglb)->logGptpCapableMessageInterval =
-		gptpconf_get_intitem(CONF_LOG_GPTP_CAPABLE_MESSAGE_INTERVAL);
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_CURRENT_LOG_GPTP_CAP_INTERVAL,
+			portIndex, domainIndex, YDBI_STATUS);
 	(*ppglb)->gPtpCapableReceiptTimeout =
-		gptpconf_get_intitem(CONF_GPTP_CAPABLE_RECEIPT_TIMEOUT);
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_GPTP_CAP_RECEIPT_TIMEOUT,
+			portIndex, domainIndex, YDBI_CONFIG);
 	(*ppglb)->useMgtSettableOneStepTxOper = true;
 	(*ppglb)->mgtSettableOneStepTxOper = false;
 	(*ppglb)->initialOneStepTxOper = false;
 	(*ppglb)->currentOneStepTxOper = false;
 }
 
-void pp_glb_close(PerPortGlobal **ppglb, int domainNumber)
+void pp_glb_close(PerPortGlobal **ppglb, int domainIndex)
 {
 	if(!*ppglb){return;}
-	if(domainNumber==0){free((*ppglb)->forAllDomain);}
-	free(*ppglb);
+	if(domainIndex==0){UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, (*ppglb)->forAllDomain);}
+	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *ppglb);
 	*ppglb=NULL;
 }
 
-void bmcs_ptas_glb_init(BmcsPerTimeAwareSystemGlobal **btasglb,
-		PerTimeAwareSystemGlobal *ptasglb)
+void bmcs_ptas_glb_init(uint8_t gptpInstanceIndex, BmcsPerTimeAwareSystemGlobal **btasglb,
+                        PerTimeAwareSystemGlobal *ptasglb, uint8_t domainIndex)
 {
 	if(!*btasglb){
-		*btasglb=
-			(BmcsPerTimeAwareSystemGlobal *)malloc(sizeof(BmcsPerTimeAwareSystemGlobal));
+		*btasglb=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(BmcsPerTimeAwareSystemGlobal));
 		if(ub_assert_fatal(*btasglb, __func__, "malloc error")){return;}
 	}
-	memset(*btasglb, 0, sizeof(BmcsPerTimeAwareSystemGlobal));
+	(void)memset(*btasglb, 0, sizeof(BmcsPerTimeAwareSystemGlobal));
 
 	(*btasglb)->externalPortConfiguration =
-		gptpconf_get_intitem(CONF_EXTERNAL_PORT_CONFIGURATION);
+		gptpgcfg_get_yang_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_DEFAULT_DS,
+			IEEE1588_PTP_EXTERNAL_PORT_CONFIG_ENABLE, 255,
+			domainIndex, YDBI_CONFIG);
 	(*btasglb)->bmcsQuickUpdate =
-		gptpconf_get_intitem(CONF_BMCS_QUICK_UPDATE_MODE);
+		gptpgcfg_get_intitem(
+			ptasglb->gptpInstanceIndex,
+			XL4_EXTMOD_XL4GPTP_BMCS_QUICK_UPDATE_MODE,
+			YDBI_CONFIG);
 }
 
-void bmcs_ptas_glb_update(BmcsPerTimeAwareSystemGlobal **btasglb,
-                          PerTimeAwareSystemGlobal *ptasglb, bool primary)
+void bmcs_ptas_glb_update(uint8_t gptpInstanceIndex,
+			  BmcsPerTimeAwareSystemGlobal **btasglb,
+                          PerTimeAwareSystemGlobal *ptasglb,
+			  uint8_t domainIndex)
 {
 		(*btasglb)->sysLeap61 = false;
 		(*btasglb)->sysLeap59 = false;
 		(*btasglb)->sysCurrentUTCOffsetValid = false;
-		(*btasglb)->sysPtpTimescale = gptpconf_get_intitem(CONF_TIMESCALE_PTP);
+		(*btasglb)->sysPtpTimescale = gptpgcfg_get_yang_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_DEFAULT_DS,
+			IEEE1588_PTP_PTP_TIMESCALE, 255,
+			domainIndex, YDBI_STATUS);
 		(*btasglb)->sysTimeTraceable = false;
 		(*btasglb)->sysFrequencyTraceable = false;
 		if((*btasglb)->sysPtpTimescale ){
@@ -207,67 +244,87 @@ void bmcs_ptas_glb_update(BmcsPerTimeAwareSystemGlobal **btasglb,
 			*/
 			(*btasglb)->sysCurrentUtcOffset = 37;
 		}
-		(*btasglb)->sysTimeSource = gptpconf_get_intitem(CONF_TIME_SOURCE);
+		(*btasglb)->sysTimeSource = gptpgcfg_get_yang_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_DEFAULT_DS,
+			IEEE1588_PTP_TIME_SOURCE, 255,
+			domainIndex, YDBI_STATUS);
 		/* 10.3.5 systemPriority vector */
 		// systemPriority = {SS: 0: {CS: 0}: 0}
-		if(primary){
-			(*btasglb)->systemPriority.rootSystemIdentity.priority1 =
-			    gptpconf_get_intitem(CONF_PRIMARY_PRIORITY1);
-			(*btasglb)->systemPriority.rootSystemIdentity.clockClass =
-			    gptpconf_get_intitem(CONF_PRIMARY_CLOCK_CLASS);
-			(*btasglb)->systemPriority.rootSystemIdentity.clockAccuracy =
-			    gptpconf_get_intitem(CONF_PRIMARY_CLOCK_ACCURACY);
-			(*btasglb)->systemPriority.rootSystemIdentity.offsetScaledLogVariance =
-			    gptpconf_get_intitem(CONF_PRIMARY_OFFSET_SCALED_LOG_VARIANCE);
-			(*btasglb)->systemPriority.rootSystemIdentity.priority2 =
-			    gptpconf_get_intitem(CONF_PRIMARY_PRIORITY2);
-		}else{
-			(*btasglb)->systemPriority.rootSystemIdentity.priority1 =
-			    gptpconf_get_intitem(CONF_SECONDARY_PRIORITY1);
-			(*btasglb)->systemPriority.rootSystemIdentity.clockClass =
-			    gptpconf_get_intitem(CONF_SECONDARY_CLOCK_CLASS);
-			(*btasglb)->systemPriority.rootSystemIdentity.clockAccuracy =
-			    gptpconf_get_intitem(CONF_SECONDARY_CLOCK_ACCURACY);
-			(*btasglb)->systemPriority.rootSystemIdentity.offsetScaledLogVariance =
-			    gptpconf_get_intitem(CONF_SECONDARY_OFFSET_SCALED_LOG_VARIANCE);
-			(*btasglb)->systemPriority.rootSystemIdentity.priority2 =
-			    gptpconf_get_intitem(CONF_SECONDARY_PRIORITY2);
-		}
+		(*btasglb)->systemPriority.rootSystemIdentity.priority1 =
+			gptpgcfg_get_yang_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_DEFAULT_DS,
+				IEEE1588_PTP_PRIORITY1, 255,
+				domainIndex, YDBI_CONFIG);
+		(*btasglb)->systemPriority.rootSystemIdentity.clockClass =
+			gptpgcfg_get_yang_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_DEFAULT_DS,
+				IEEE1588_PTP_CLOCK_QUALITY,
+				IEEE1588_PTP_CLOCK_CLASS,
+				domainIndex, YDBI_CONFIG);
+		(*btasglb)->systemPriority.rootSystemIdentity.clockAccuracy =
+			gptpgcfg_get_yang_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_DEFAULT_DS,
+				IEEE1588_PTP_CLOCK_QUALITY,
+				IEEE1588_PTP_CLOCK_ACCURACY,
+				domainIndex, YDBI_CONFIG);
+		(*btasglb)->systemPriority.rootSystemIdentity.offsetScaledLogVariance =
+			gptpgcfg_get_yang_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_DEFAULT_DS,
+				IEEE1588_PTP_CLOCK_QUALITY,
+				IEEE1588_PTP_OFFSET_SCALED_LOG_VARIANCE,
+				domainIndex, YDBI_CONFIG);
+		(*btasglb)->systemPriority.rootSystemIdentity.priority2 =
+			gptpgcfg_get_yang_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_DEFAULT_DS,
+				IEEE1588_PTP_PRIORITY2, 255,
+				domainIndex, YDBI_CONFIG);
 		memcpy((*btasglb)->systemPriority.rootSystemIdentity.clockIdentity,
 		       ptasglb->thisClock, sizeof(ClockIdentity));
 		(*btasglb)->systemPriority.stepsRemoved = 0;
 		memcpy((*btasglb)->systemPriority.sourcePortIdentity.clockIdentity,
 		       ptasglb->thisClock, sizeof(ClockIdentity));
-		(*btasglb)->systemPriority.sourcePortIdentity.portNumber = 0;
+		(*btasglb)->systemPriority.sourcePortIdentity.portIndex = 0;
 		(*btasglb)->systemPriority.portNumber = 0;
 }
 
 void bmcs_ptas_glb_close(BmcsPerTimeAwareSystemGlobal **btasglb)
 {
 	if(!*btasglb){return;}
-	free(*btasglb);
+	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *btasglb);
 	*btasglb=NULL;
 }
 
-void bmcs_pp_glb_init(BmcsPerPortGlobal **bppglb)
+void bmcs_pp_glb_init(uint8_t gptpInstanceIndex, BmcsPerPortGlobal **bppglb,
+		      uint8_t domainIndex, uint8_t portIndex)
 {
 	if(!*bppglb){
-		*bppglb=(BmcsPerPortGlobal *)malloc(sizeof(BmcsPerPortGlobal));
+		*bppglb=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(BmcsPerPortGlobal));
 		if(ub_assert_fatal(*bppglb, __func__, "malloc error")){return;}
 	}
-	memset(*bppglb, 0, sizeof(BmcsPerPortGlobal));
+	(void)memset(*bppglb, 0, sizeof(BmcsPerPortGlobal));
 
 	(*bppglb)->infoIs = Disabled;
 	(*bppglb)->initialLogAnnounceInterval =
-		gptpconf_get_intitem(CONF_INITIAL_LOG_ANNOUNCE_INTERVAL);
-
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_INITIAL_LOG_ANNOUNCE_INTERVAL,
+			portIndex, domainIndex, YDBI_CONFIG);
 	(*bppglb)->announceReceiptTimeout =
-		gptpconf_get_intitem(CONF_ANNOUNCE_RECEIPT_TIMEOUT);
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_ANNOUNCE_RECEIPT_TIMEOUT,
+			portIndex, domainIndex, YDBI_CONFIG);
 }
 
 void bmcs_pp_glb_close(BmcsPerPortGlobal **bppglb)
 {
 	if(!*bppglb){return;}
-	free(*bppglb);
+	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *bppglb);
 	*bppglb=NULL;
 }

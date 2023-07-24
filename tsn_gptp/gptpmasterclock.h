@@ -55,8 +55,8 @@
  *
  */
 
-#ifndef __GPTPMASTERCLOCK_H_
-#define __GPTPMASTERCLOCK_H_
+#ifndef GPTPMASTERCLOCK_H_
+#define GPTPMASTERCLOCK_H_
 
 /**
  * @brief initialize to get gptp clock from gptp2 daemon.
@@ -79,12 +79,6 @@ int gptpmasterclock_close(void);
  * @return domainIndex, -1: error
  */
 int gptpmasterclock_gm_domainIndex(void);
-
-/**
- * @brief return the domainNumber which is currently used as system wide gptp clock.
- * @return domainIndex, -1: error, domain number on success.
- */
-int gptpmasterclock_gm_domainNumber(void);
 
 /**
  * @brief get 64-bit nsec unit ts of system wide gptp clock

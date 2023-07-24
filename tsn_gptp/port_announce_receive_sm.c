@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_announce_receive_sm.h"
+#include "gptpcommon.h"
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define PATH_TRACE	    sm->bptasg->pathTrace
@@ -91,12 +93,12 @@ static bool qualifyAnnounce(port_announce_receive_data_t *sm)
 		UB_LOG(UBL_DEBUGV, "port_announce_receive:%s:Announce sent by self\n", __func__);
 		return false;
 	}
-	if(RCVD_ANNOUNCE_PTR->stepsRemoved >= 255){
+	if(RCVD_ANNOUNCE_PTR->stepsRemoved >= 255u){
 		UB_LOG(UBL_DEBUGV, "port_announce_receive:%s:stepsRemoved=%d\n", __func__,
 		       RCVD_ANNOUNCE_PTR->stepsRemoved);
 		return false;
 	}
-	if (RCVD_ANNOUNCE_PTR->tlvType == 0x8){
+	if (RCVD_ANNOUNCE_PTR->tlvType == 0x8u){
 		/* 10.6.3.3.4 pathSequence (ClockIdentify[N]
 		   N = stepsRemoved+1 (pathSequence increases by 1 for each system traversed.
 		   We also limit the pathSequence to MAX_. */
@@ -105,8 +107,8 @@ static bool qualifyAnnounce(port_announce_receive_data_t *sm)
 		// grandMaster priority has changed and the candidate GM is in the same pathTrace
 		// the clockPriority vectors are not updated (resulting to Repeated or Inferior)
 		// but pathTrace will be updated and is not equal to step remove anymore
-		N = (RCVD_ANNOUNCE_PTR->tlvLength/sizeof(ClockIdentity)) < MAX_PATH_TRACE_N ?
-			(RCVD_ANNOUNCE_PTR->tlvLength/sizeof(ClockIdentity)) : MAX_PATH_TRACE_N;
+		N = (RCVD_ANNOUNCE_PTR->tlvLength/sizeof(ClockIdentity)) < (uint8_t)MAX_PATH_TRACE_N ?
+			(RCVD_ANNOUNCE_PTR->tlvLength/sizeof(ClockIdentity)) : (uint8_t)MAX_PATH_TRACE_N;
 		for(i=0;i<N;i++){
 			if(memcmp(RCVD_ANNOUNCE_PTR->pathSequence[i], sm->ptasg->thisClock,
 				  sizeof(ClockIdentity))==0){
@@ -115,17 +117,18 @@ static bool qualifyAnnounce(port_announce_receive_data_t *sm)
 				return false;
 			}
 		}
-		if(SELECTED_STATE[sm->ppg->thisPortIndex] == SlavePort){
-			if (N+1 <= MAX_PATH_TRACE_N){
+		if(SELECTED_STATE[sm->ppg->thisPort] == (uint8_t)SlavePort){
+			if ((N+1u) <= (uint8_t)MAX_PATH_TRACE_N){
 				/* path trace TLV copy to pathTrace */
 				memcpy(PATH_TRACE, RCVD_ANNOUNCE_PTR->pathSequence,
 				       sizeof(ClockIdentity) * N);
 				/* append thisClock to pathTrace */
 				memcpy(&(PATH_TRACE[N]), sm->ptasg->thisClock, sizeof(ClockIdentity));
-				sm->bptasg->pathTraceCount = N+1;
+				sm->bptasg->pathTraceCount = N+1u;
 			}else{
-				UB_LOG(UBL_WARN, "port_announce_receive:%s:pathTrace=%d (including thisClock) exceeds limit=%d\n",
-				       __func__, N+1, MAX_PATH_TRACE_N);
+				UB_LOG(UBL_WARN, "port_announce_receive:%s:pathTrace=%d "
+				       "(including thisClock) exceeds limit=%d\n",
+				       __func__, N+1u, MAX_PATH_TRACE_N);
 				/* 10.3.8.23 ... a path trace TLV is not appended to an Announce message
 				   and the pathTrace array is empty, once appending a clockIdentity
 				   to the TLV would cause the frame carrying the Announce to exceed
@@ -135,7 +138,7 @@ static bool qualifyAnnounce(port_announce_receive_data_t *sm)
 		}
 	}else {
 		/* path trace TLV not present, empty pathTrace */
-		memset(PATH_TRACE, 0, sizeof(ClockIdentity) * MAX_PATH_TRACE_N);
+		(void)memset(PATH_TRACE, 0, sizeof(ClockIdentity) * (uint8_t)MAX_PATH_TRACE_N);
 	}
 	UB_LOG(UBL_DEBUGV, "port_announce_receive:%s:announce qualified\n", __func__);
 	return true;
@@ -206,9 +209,10 @@ void *port_announce_receive_sm(port_announce_receive_data_t *sm, uint64_t cts64)
 			sm->state = receive_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -223,7 +227,8 @@ void port_announce_receive_sm_init(port_announce_receive_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_announce_receive_data_t, PortAnnounceReceiveSM, sm)){return;}
+	INIT_SM_DATA(port_announce_receive_data_t, PortAnnounceReceiveSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->bptasg = bptasg;
@@ -231,7 +236,7 @@ void port_announce_receive_sm_init(port_announce_receive_data_t **sm,
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
 
-	port_announce_receive_sm(*sm, 0);
+	(void)port_announce_receive_sm(*sm, 0);
 }
 
 int port_announce_receive_sm_close(port_announce_receive_data_t **sm)
@@ -252,5 +257,5 @@ void port_announce_receive_sm_recv_announce(port_announce_receive_data_t *sm,
 	memcpy(&sm->rcvdAnnounce, rcvdAnnounce, sizeof(PTPMsgAnnounce));
 	RCVD_ANNOUNCE_PTR = &sm->rcvdAnnounce;
 	sm->last_state = DISCARD;
-	port_announce_receive_sm(sm, cts64);
+	(void)port_announce_receive_sm(sm, cts64);
 }

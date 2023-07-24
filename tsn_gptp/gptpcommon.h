@@ -47,52 +47,90 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __GPTPCOMMON_H_
-#define __GPTPCOMMON_H_
+#ifndef GPTPCOMMON_H_
+#define GPTPCOMMON_H_
 #include "gptpbasetypes.h"
-#include "gptp_config.h"
+#include "gptpconf/gptpgcfg.h"
 
 void eui48to64(const uint8_t *eui48, uint8_t *eui64, const uint8_t *insert);
 
-#define LOG_TO_NSEC(x) (((x)>=0)?UB_SEC_NS*(1<<(x)):UB_SEC_NS/(1<<-(x)))
+#define LOG_TO_NSEC(x) (((x)>=0)?(uint64_t)UB_SEC_NS*(1u<<(uint8_t)(x)):(uint64_t)UB_SEC_NS/(1u<<(uint8_t)(-(x))))
 
-#define GET_FLAG_BIT(x,b) ((x) & (1<<(b)))
-#define SET_FLAG_BIT(x,b) x |= (1<<(b))
-#define RESET_FLAG_BIT(x,b) x &= ~(1<<(b))
-#define SET_RESET_FLAG_BIT(c,x,b) if(c) SET_FLAG_BIT(x,b); else RESET_FLAG_BIT(x,b)
+#define GET_FLAG_BIT(x,b) ((x) & (1u<<(b)))
+#define SET_FLAG_BIT(x,b) (x) |= (1u<<(b))
+#define RESET_FLAG_BIT(x,b) (x) &= ~(1u<<(b))
+#define SET_RESET_FLAG_BIT(c,x,b) if(c){SET_FLAG_BIT((x),(b));}else{RESET_FLAG_BIT((x),(b));}
 
-#define SM_CLOSE(f,x) if(x) f(&x)
+#define SM_CLOSE(f,x) if((x)!=NULL){(f)(&(x));}
+
+#ifndef GPTP_MAX_INSTANCES
+#define GPTP_MAX_INSTANCES 1u
+#endif
+
+#define SM_DATA_INST sm_data_INST
+#define SM_DATA_FSIZE (sizeof(void*)+12u)
+#ifndef SM_DATA_FNUM
+// there are 25 state machines and each uses 2 UD_SD_MALLOC, 3 state machines with 1 UD_SD_MALLOC
+// With SM_DATA_FSIZE above, 9 fragments each can work for a single domain and a single port.
+// Increasing ports/domain, 7 fragments each port, 12 fragments for domain/2ports
+// (25*2+3)*(9+7*[number of extra ports - 1]+12*[number of domains - 1])
+// The default is set here is for 2 ports and 2 domains
+#define SM_DATA_FNUM (GPTP_MAX_INSTANCES*(((25u*2u)+3u)*(9u+7u+12u)))
+#endif
+UB_SD_GETMEM_DEF_EXTERN(SM_DATA_INST);
+
+#define GPTP_SMALL_ALLOC gptp_small_alloc
+#define GPTP_SMALL_AFSIZE (sizeof(void*))
+#ifndef GPTP_SMALL_AFNUM
+// With GPTP_SMALL_AFAIZE above, 80 fragments can work for a single domain and a single port.
+// Increasing ports/domain, 12 fragments each port, 12 fragments for domain/2ports
+// The default is set here is for 2 ports and 2 domains
+#define GPTP_SMALL_AFNUM (GPTP_MAX_INSTANCES*(80u+12u+12u))
+#endif
+UB_SD_GETMEM_DEF_EXTERN(GPTP_SMALL_ALLOC);
+
+#define GPTP_MEDIUM_ALLOC gptp_medium_alloc
+#define GPTP_MEDIUM_AFSIZE 64u
+#ifndef GPTP_MEDIUM_AFNUM
+// With GPTP_MEDIUM_AFSIZE above, 135 fragments can work for a single domain and a single port.
+// Increasing ports/domain, 65 fragments each port, 125 fragment for domain/2ports
+// The default is set here is for 2 ports and 2 domains
+#define GPTP_MEDIUM_AFNUM (GPTP_MAX_INSTANCES*(135u+65u+125u))
+#endif
+UB_SD_GETMEM_DEF_EXTERN(GPTP_MEDIUM_ALLOC);
 
 /* allocate typed in *sm, then allocate typesm in (*sm)->thisSM */
-#define INIT_SM_DATA(typed, typesm, sm) \
-	({if(!*sm){ \
-			*sm=(typed *)malloc(sizeof(typed)); \
-		ub_assert_fatal(*sm!=NULL, __func__, "malloc1"); \
-	} \
-	if(*sm!=NULL){ \
-		memset(*sm, 0, sizeof(typed)); \
-		(*sm)->thisSM=(typesm *)malloc(sizeof(typesm));	\
+#define INIT_SM_DATA(typed, typesm, sm)					\
+{									\
+	if(!*sm){							\
+		*sm=UB_SD_GETMEM(SM_DATA_INST, sizeof(typed));		\
+		(void)ub_assert_fatal(*sm!=NULL, __func__, "malloc1");	\
+	}								\
+	if(*sm!=NULL){							\
+		(void)memset(*sm, 0, sizeof(typed));			\
+		(*sm)->thisSM=UB_SD_GETMEM(SM_DATA_INST, sizeof(typesm));\
 		if(!ub_assert_fatal((*sm)->thisSM!=NULL, __func__, "malloc2")){ \
-			memset((*sm)->thisSM, 0, sizeof(typesm)); \
-		} \
-	} \
-	ub_fatalerror();})
+			(void)memset((*sm)->thisSM, 0, sizeof(typesm));	\
+		}							\
+	}								\
+}
+
 
 /* free the above allocations */
 #define CLOSE_SM_DATA(sm) \
-	if(!*sm) return 0; \
-	free((*sm)->thisSM); \
-	free(*sm); \
-	*sm=NULL;
+	if(!*(sm)){return 0;}				\
+	UB_SD_RELMEM(SM_DATA_INST, (*(sm))->thisSM);	\
+	UB_SD_RELMEM(SM_DATA_INST, *(sm));		\
+	*(sm)=NULL;
 
 /* check for portPriority vector, any non-zero value is sufficient */
 #define HAS_PORT_PRIORITY(pp) \
-        (((pp).rootSystemIdentity.priority1 !=0) || \
-         ((pp).rootSystemIdentity.clockClass != 0) || \
-         ((pp).rootSystemIdentity.clockAccuracy != 0) || \
-         ((pp).rootSystemIdentity.offsetScaledLogVariance != 0) || \
-         ((pp).rootSystemIdentity.priority2 != 0) || \
-         ((pp).stepsRemoved != 0))
+        (((pp).rootSystemIdentity.priority1 !=0u) || \
+         ((pp).rootSystemIdentity.clockClass != 0u) || \
+         ((pp).rootSystemIdentity.clockAccuracy != 0u) || \
+         ((pp).rootSystemIdentity.offsetScaledLogVariance != 0u) || \
+         ((pp).rootSystemIdentity.priority2 != 0u) || \
+         ((pp).stepsRemoved != 0u))
 
 typedef enum {
         SAME_PRIORITY,

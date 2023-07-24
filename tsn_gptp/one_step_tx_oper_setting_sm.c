@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "one_step_tx_oper_setting_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -173,9 +175,10 @@ void *one_step_tx_oper_setting_sm(one_step_tx_oper_setting_data_t *sm, uint64_t 
 			sm->state = set_one_step_tx_oper_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -189,7 +192,8 @@ void one_step_tx_oper_setting_sm_init(one_step_tx_oper_setting_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(one_step_tx_oper_setting_data_t, OneStepTxOperSettingSM, sm)){return;}
+	INIT_SM_DATA(one_step_tx_oper_setting_data_t, OneStepTxOperSettingSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->mdeg = mdeg;

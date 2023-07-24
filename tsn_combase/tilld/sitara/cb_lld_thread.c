@@ -232,8 +232,10 @@ static int lld_mutex_trylock(cb_lld_mutex_t *cbmutex, uint32_t timeout_msec)
 	int32_t status = SystemP_FAILURE;
 	status = SemaphoreP_pend(&cbmutex->lldmutex, timeout_msec);
 
-	if ((status != SystemP_SUCCESS) && (status != SystemP_FAILURE)) {
-		UB_LOG(UBL_ERROR,"%s:failed %d!\n", __func__, status);
+	if (status != SystemP_SUCCESS) {
+		if (status != SystemP_TIMEOUT) {
+			UB_LOG(UBL_ERROR,"%s:failed %d!\n", __func__, status);
+		}
 		return -1;
 	}
 	return 0;
@@ -253,7 +255,7 @@ int cb_lld_mutex_unlock(CB_THREAD_MUTEX_T *mutex)
 
 int cb_lld_mutex_trylock(CB_THREAD_MUTEX_T *mutex)
 {
-	return lld_mutex_trylock(*mutex, 0);
+	return lld_mutex_trylock(*mutex, SystemP_NO_WAIT);
 }
 
 int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime)

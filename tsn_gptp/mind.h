@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __MIND_H_
-#define __MIND_H_
+#ifndef MIND_H_
+#define MIND_H_
 
 #include "gptpbasetypes.h"
 
@@ -62,7 +62,7 @@ typedef struct PerPortGlobal PerPortGlobal;
 // 10.2 Time-synchronization state machines
 // 10.2.2.1 MDSyncSend
 typedef struct MDSyncSend {
-	uint8_t domainNumber;
+	uint8_t domainIndex;
 	ScaledNs followUpCorrectionField;
 	PortIdentity sourcePortIdentity;
 	int8_t logMessageInterval;
@@ -76,7 +76,7 @@ typedef struct MDSyncSend {
 
 // 10.2.2.2 MDSyncReceive
 typedef struct MDSyncReceive {
-	uint8_t domainNumber;
+	uint8_t domainIndex;
 	ScaledNs followUpCorrectionField;
 	PortIdentity sourcePortIdentity;
 	int8_t logMessageInterval;
@@ -91,8 +91,8 @@ typedef struct MDSyncReceive {
 
 // 10.2.2.3 PortSyncSync
 typedef struct PortSyncSync {
-	uint8_t domainNumber;
-	int16_t localPortNumber;
+	uint8_t domainIndex;
+	int16_t localPortIndex;
 	UScaledNs syncReceiptTimeoutTime;
 	ScaledNs followUpCorrectionField;
 	PortIdentity sourcePortIdentity;
@@ -103,8 +103,6 @@ typedef struct PortSyncSync {
 	uint16_t gmTimeBaseIndicator;
 	ScaledNs lastGmPhaseChange;
 	double lastGmFreqChange;
-	// As portNumber is not the same as portIndex, we keep portIndex separately
-	int16_t localPortIndex;
 	// Next send time relative to current time
 	UScaledNs syncNextSendTimeoutTime;
 	uint16_t lastSyncSeqID;
@@ -124,20 +122,20 @@ typedef struct PerTimeAwareSystemGlobal {
 	uint16_t clockSourceTimeBaseIndicatorOld;
 	ScaledNs clockSourceLastGmPhaseChange;
 	double clockSourceLastGmFreqChange;
-	//UScaledNs currentTime; //we use gptpclock of (clockIndex,domainNumber)
+	//UScaledNs currentTime; //we use gptpclock of (clockIndex,domainIndex)
 	bool gmPresent;
 	double gmRateRatio;
 	uint16_t gmTimeBaseIndicator;
 	ScaledNs lastGmPhaseChange;
 	double lastGmFreqChange;
 	TimeInterval localClockTickInterval;
-	//UScaledNs localTime;  //we use gptpclock of (clockIndex,domainNumber)
-	Enumeration2 selectedState[MAX_PORT_NUMBER_LIMIT];
-	//ExtendedTimestamp masterTime; //we use gptpclock of (clockIndex=0,domainNumber)
+	//UScaledNs localTime;  //we use gptpclock of (clockIndex,domainIndex)
+	Enumeration2 selectedState[XL4_DATA_ABS_MAX_NETDEVS];
+	//ExtendedTimestamp masterTime; //we use gptpclock of (clockIndex=0,domainIndex)
 	ClockIdentity thisClock;
 	int8_t parentLogSyncInterval;
 	bool instanceEnable;
-	uint8_t domainNumber; // domainNumber is not defined in the standard, but we need here
+	uint8_t domainIndex;
 	int thisClockIndex; // index of the gptpclock entity of 'thisClock'
 	int8_t clockMasterLogSyncInterval;
 	bool gm_stable_initdone;
@@ -146,6 +144,7 @@ typedef struct PerTimeAwareSystemGlobal {
 	ClockIdentity gmIdentity;
 	// Flag to determine if AVNU is followed over 802.1AS
 	bool conformToAvnu;
+	uint8_t gptpInstanceIndex; // this is the same data as the one in gptpman_data
 } PerTimeAwareSystemGlobal;
 
 // 10.2.4 Per-port global variables
@@ -167,15 +166,12 @@ typedef struct PerPortGlobalForAllDomain {
 }PerPortGlobalForAllDomain;
 struct PerPortGlobal {
 	bool asCapable; // for domain!=0, somebody needs to set this
-	uint32_t portEventFlags;
 	UScaledNs syncReceiptTimeoutTimeInterval;
 	int8_t currentLogSyncInterval;
 	int8_t initialLogSyncInterval;
 	UScaledNs syncInterval;
 	bool ptpPortEnabled;
 	uint16_t thisPort;
-	// As portNumber is not the same as portIndex, we keep portIndex separately
-	uint16_t thisPortIndex;
 	bool syncLocked;
 	bool neighborGptpCapable;
 	bool syncSlowdown;
@@ -267,8 +263,8 @@ typedef struct ClockSlaveSyncSM {
 // 10.3 Best master clock selection
 // 10.3.8 Per-time-aware-system global variables
 typedef struct BmcsPerTimeAwareSystemGlobal {
-	bool reselect[MAX_PORT_NUMBER_LIMIT];
-	bool selected[MAX_PORT_NUMBER_LIMIT];
+	bool reselect[XL4_DATA_ABS_MAX_NETDEVS];
+	bool selected[XL4_DATA_ABS_MAX_NETDEVS];
 	uint16_t masterStepsRemoved;
 	bool leap61;
 	bool leap59;
@@ -422,7 +418,7 @@ typedef struct PTPMsgHeader {
 	UInteger4 minorVersionPTP;
 	UInteger4 versionPTP;
 	uint16_t messageLength;
-	uint8_t domainNumber;
+	uint8_t domainIndex;
 	uint8_t minorSdoId;
 	Octet2 flags;
 	int64_t correctionField;
@@ -475,20 +471,26 @@ struct PTPMsgGPTPCapableTLV {
 #define COMPUTE_NEIGHBOR_PROP_DELAY_BIT 1
 #define ONE_STEP_RECEIVE_CAPABLE_BIT 2
 
-void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb, uint8_t domainNumber);
+void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
+		   uint8_t gptpInstanceIndex, uint8_t domainIndex);
 void ptas_glb_close(PerTimeAwareSystemGlobal **tasglb);
 
-void pp_glb_init(PerPortGlobal **ppglb, PerPortGlobalForAllDomain *forAllDomain,
-		 uint16_t portIndex);
-void pp_glb_close(PerPortGlobal **ppglb, int domainNumber);
+void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
+		 PerPortGlobalForAllDomain *forAllDomain,
+		 uint8_t domainIndex, uint16_t portIndex);
+void pp_glb_close(PerPortGlobal **ppglb, int domainIndex);
 
-void bmcs_ptas_glb_init(BmcsPerTimeAwareSystemGlobal **btasglb,
-                        PerTimeAwareSystemGlobal *ptasglb);
-void bmcs_ptas_glb_update(BmcsPerTimeAwareSystemGlobal **btasglb,
-                          PerTimeAwareSystemGlobal *ptasglb, bool primary);
+void bmcs_ptas_glb_init(uint8_t gptpInstanceIndex, BmcsPerTimeAwareSystemGlobal **btasglb,
+                        PerTimeAwareSystemGlobal *ptasglb, uint8_t domainIndex);
+void bmcs_ptas_glb_update(uint8_t gptpInstanceIndex,
+			  BmcsPerTimeAwareSystemGlobal **btasglb,
+                          PerTimeAwareSystemGlobal *ptasglb,
+			  uint8_t domainIndex);
 void bmcs_ptas_glb_close(BmcsPerTimeAwareSystemGlobal **btasglb);
 
-void bmcs_pp_glb_init(BmcsPerPortGlobal **bppglb);
+void bmcs_pp_glb_init(uint8_t gptpInstanceIndex, BmcsPerPortGlobal **bppglb,
+		      uint8_t domainIndex, uint8_t portIndex);
+
 void bmcs_pp_glb_close(BmcsPerPortGlobal **bppglb);
 
 #endif

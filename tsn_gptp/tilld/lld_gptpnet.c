@@ -52,6 +52,9 @@
  */
 #include "gptpnet.h"
 #include "gptpclock.h"
+#include "lld_gptp_private.h"
+#include "gptpconf/gptpgcfg.h"
+#include "gptpcommon.h"
 
 extern char *PTPMsgType_debug[];
 
@@ -96,6 +99,7 @@ struct gptpnet_data {
 	ptpkt_t rxbuf;
 	CB_SOCKET_T lldsock;
 	ub_macaddr_t srcmac;
+	uint8_t gptpInstanceIndex;
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -129,27 +133,35 @@ static void txrx_notify_cb(void *arg)
 	CB_SEM_POST(&gpnet->semaphore);
 }
 
-static int onenet_init(gptpnet_data_t *gpnet, netdevice_t *ndev, char *netdev)
+static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet, netdevice_t *ndev, const char *netdev)
 {
 	ub_macaddr_t destmac = GPTP_MULTICAST_DEST_ADDR;
 
-	snprintf(ndev->nlstatus.devname, IFNAMSIZ, "%s", netdev);
+	(void)snprintf(ndev->nlstatus.devname, CB_MAX_NETDEVNAME, "%s", netdev);
 	if(cb_get_ptpdev_from_netdev(ndev->nlstatus.devname,
 			ndev->nlstatus.ptpdev) < 0) {
 		return -1;
 	}
-	ndev->txtslost_time = gptpconf_get_intitem(CONF_TXTS_LOST_TIME);
+
+	ndev->txtslost_time = gptpgcfg_get_intitem(
+		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_TXTS_LOST_TIME,
+		YDBI_CONFIG);
+
 
 	/* We need a single lldsock for all the ports */
 	if (gpnet->lldsock == NULL) {
 		cb_rawsock_paras_t llrawp;
-		memset(&llrawp, 0, sizeof(llrawp));
+		(void)memset(&llrawp, 0, sizeof(llrawp));
 		llrawp.dev=ndev->nlstatus.devname;
 		llrawp.proto=ETH_P_1588;
 		llrawp.vlan_proto=0;
 		llrawp.vlanid = 0;
-		llrawp.priority=gptpconf_get_intitem(CONF_SOCKET_TXPRIORITY);
+		llrawp.priority= gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_SOCKET_TXPRIORITY,
+			YDBI_CONFIG);
 		llrawp.rw_type=CB_RAWSOCK_RDWR;
+
+		gptpgcfg_releasedb(gptpInstanceIndex);
 		if(cb_rawsock_open(&llrawp, &gpnet->lldsock, NULL, NULL, gpnet->srcmac) < 0) {
 			return -1;
 		}
@@ -173,8 +185,34 @@ static int onenet_init(gptpnet_data_t *gpnet, netdevice_t *ndev, char *netdev)
 	return ndev->addr.macport;
 }
 
-gptpnet_data_t *gptpnet_init(gptpnet_cb_t cb_func, cb_ipcsocket_server_rdcb ipc_cb,
-				 void *cb_data, char *netdev[], int *num_ports, char *master_ptpdev)
+static int onenet_activate(gptpnet_data_t *gpnet, int ndevIndex)
+{
+	netdevice_t *ndev=&gpnet->netdevices[ndevIndex];
+	void *value;
+	uint64_t speed=0;
+
+	ndev->nlstatus.up=0;
+	YDBI_GET_ITEM_VSUBST(uint8_t*, ifk1vk0, ndev->nlstatus.up, value,
+			     ndev->nlstatus.devname, IETF_INTERFACES_OPER_STATUS, YDBI_STATUS);
+	ndev->nlstatus.duplex=1;
+	YDBI_GET_ITEM_VSUBST(uint32_t*, ifk1vk0, ndev->nlstatus.duplex, value,
+			     ndev->nlstatus.devname, IETF_INTERFACES_DUPLEX, YDBI_STATUS);
+
+	YDBI_GET_ITEM_VSUBST(uint64_t*, ifk1vk0, speed, value,
+			     ndev->nlstatus.devname, IETF_INTERFACES_SPEED, YDBI_STATUS);
+	ndev->nlstatus.speed=speed/1000000u;
+	if(ndev->nlstatus.speed == 0u){ndev->nlstatus.up = false;}
+	UB_LOG(UBL_INFO, "%s:%s status=%d, duplex=%d, speed=%dMbps\n", __func__,
+			ndev->nlstatus.devname, ndev->nlstatus.up, ndev->nlstatus.duplex,
+			ndev->nlstatus.speed);
+	if(!gpnet->cb_func || !ndev->nlstatus.up){return 0;}
+	return gpnet->cb_func(gpnet->cb_data, ndevIndex+1, GPTPNET_EVENT_DEVUP,
+						  &gpnet->event_ts64, &ndev->nlstatus);
+}
+
+gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
+			     void *cb_data, const char *netdev[], uint8_t num_ports,
+			     char *master_ptpdev)
 {
 	gptpnet_data_t *gpnet;
 	LLDTSyncCfg_t tsyncfg;
@@ -187,29 +225,31 @@ gptpnet_data_t *gptpnet_init(gptpnet_cb_t cb_func, cb_ipcsocket_server_rdcb ipc_
 	if ( i == 0) {
 		UB_LOG(UBL_ERROR,"%s:at least one netdev need\n",__func__);
 		return NULL;
-	} else if (i > MAX_PORT_NUMBER_LIMIT) {
+	} else if (i > num_ports) {
 		UB_LOG(UBL_ERROR,"%s:too many netework devices\n",__func__);
 		return NULL;
 	}
-	gpnet = (gptpnet_data_t *)malloc(sizeof(gptpnet_data_t));
+	gpnet = (gptpnet_data_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(gptpnet_data_t));
 	if (ub_assert_fatal(gpnet != NULL, __func__, "malloc")) {
 		return NULL;
 	}
-	memset(gpnet, 0, sizeof(gptpnet_data_t));
-	gpnet->num_netdevs = i;
-	*num_ports = i;
-	gpnet->netdevices = (netdevice_t *)malloc(i * sizeof(netdevice_t));
+	(void)memset(gpnet, 0, sizeof(gptpnet_data_t));
+	gpnet->gptpInstanceIndex=gptpInstanceIndex;
+	gpnet->num_netdevs = num_ports;
+	gpnet->netdevices = (netdevice_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, i * sizeof(netdevice_t));
 	if(ub_assert_fatal(gpnet->netdevices, __func__, "malloc")){
-		free(gpnet);
+		UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, gpnet);
 		return NULL;
 	}
-	memset(gpnet->netdevices, 0, i * sizeof(netdevice_t));
+	(void)memset(gpnet->netdevices, 0, i * sizeof(netdevice_t));
 
 	for (i = 0; i < gpnet->num_netdevs; i++) {
-		res = onenet_init(gpnet, &gpnet->netdevices[i], netdev[i]);
+		res = onenet_init(gptpInstanceIndex, gpnet, &gpnet->netdevices[i], netdev[i]);
 		if (res < 0) {
 			UB_LOG(UBL_ERROR, "dev:%s open failed\n", netdev[i]);
 			goto error;
+		} else {
+			UB_LOG(UBL_INFO, "dev:%s open success\n", netdev[i]);
 		}
 		ports[nports] = res;
 		nports++;
@@ -263,8 +303,8 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 		CB_SEM_DESTROY(&gpnet->semaphore);
 		gpnet->semaphore = NULL;
 	}
-	free(gpnet->netdevices);
-	free(gpnet);
+	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, gpnet->netdevices);
+	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, gpnet);
 	return 0;
 }
 
@@ -307,24 +347,6 @@ static int poll_linkstate(gptpnet_data_t *gpnet)
 	return 0;
 }
 
-static int onenet_activate(gptpnet_data_t *gpnet, int ndev_index)
-{
-	netdevice_t *ndev = &gpnet->netdevices[ndev_index];
-	uint32_t speed = 0;
-	uint32_t duplex = 0;
-	uint32_t linkstate = 0;
-
-	cb_get_ethtool_linkstate(gpnet->lldsock, ndev->nlstatus.devname, &linkstate);
-	if (linkstate == 0) {
-		return 0;
-	}
-	cb_get_ethtool_info(gpnet->lldsock, ndev->nlstatus.devname, &speed, &duplex);
-	ndev->nlstatus.up = linkstate;
-	ndev->nlstatus.speed = speed;
-	ndev->nlstatus.duplex = duplex;
-	return gpnet->cb_func(gpnet->cb_data, ndev_index+1, GPTPNET_EVENT_DEVUP,
-						  &gpnet->event_ts64, &ndev->nlstatus);
-}
 
 int gptpnet_activate(gptpnet_data_t *gpnet)
 {
@@ -511,20 +533,20 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 	ts64 = ub_mt_gettime64();
 	tstout64 = ts64-gpnet->last_ts64;
 	// every 10 seconds, print clock parameters for debug
-	if (tstout64>=10*UB_SEC_NS) {
-		gptpclock_print_clkpara(UBL_INFOV);
+	if (tstout64>=(10*UB_SEC_NS)){
+		gptpclock_print_clkpara(gpnet->gptpInstanceIndex, UBL_INFOV);
 		gpnet->last_ts64 = ts64;
 	}
 
 	poll_linkstate(gpnet);
 
-	if (gpnet->next_tout64) {
+	if (gpnet->next_tout64!=0) {
 		tstout64 = gpnet->next_tout64-ts64;
 		if (tstout64<0) {
 			gpnet->next_tout64 = 0;
 			UB_LOG(UBL_DEBUG,"%s:call missed or extra TIMEOUT CB\n", __func__);
-			return gpnet->cb_func(gpnet->cb_data, 0,
-						GPTPNET_EVENT_TIMEOUT, &ts64, NULL);
+			return gpnet->cb_func(gpnet->cb_data, 0, GPTPNET_EVENT_TIMEOUT,
+					     &ts64, NULL);
 		}
 	} else {
 		gpnet->next_tout64 = ((ts64 / GPTPNET_INTERVAL_TIMEOUT) + 1) *
@@ -553,7 +575,7 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 	return 0;
 }
 
-int gptpnet_eventloop(gptpnet_data_t *gpnet, int *stoploop)
+int gptpnet_eventloop(gptpnet_data_t *gpnet, bool *stoploop)
 {
 	while (!*stoploop) {
 		gptpnet_catch_event(gpnet);
@@ -562,56 +584,40 @@ int gptpnet_eventloop(gptpnet_data_t *gpnet, int *stoploop)
 	return 0;
 }
 
-int gptpnet_ipc_notice(gptpnet_data_t *gpnet, gptpipc_gptpd_data_t *ipcdata, int size)
+char *gptpnet_ptpdev(gptpnet_data_t *gpnet, int ndevIndex)
 {
-	return 0;
-}
-
-int gptpnet_ipc_respond(gptpnet_data_t *gpnet, struct sockaddr *addr,
-			gptpipc_gptpd_data_t *ipcdata, int size)
-{
-	return 0;
-}
-
-int gptpnet_ipc_client_remove(gptpnet_data_t *gpnet, struct sockaddr *addr)
-{
-	return 0;
+	return gpnet->netdevices[ndevIndex].nlstatus.ptpdev;
 }
 
 void gptpnet_create_clockid(gptpnet_data_t *gpnet, uint8_t *id,
-				int ndev_index, int8_t domain)
+			    int ndevIndex, int8_t domainNumber)
 {
-	memcpy(id, gpnet->netdevices[ndev_index].nlstatus.portid, sizeof(ClockIdentity));
-	if (domain == 0) {return;}
-	id[3] = 0;
-	id[4] = domain;
+	memcpy(id, gpnet->netdevices[ndevIndex].nlstatus.portid, sizeof(ClockIdentity));
+	if(domainNumber==0){return;}
+	id[3]=0;
+	id[4]=domainNumber;
 }
 
-int gptpnet_get_nlstatus(gptpnet_data_t *gpnet, int ndev_index,
+int gptpnet_get_nlstatus(gptpnet_data_t *gpnet, int ndevIndex,
 						 event_data_netlink_t *nlstatus)
 {
-	if (ndev_index < 0 || ndev_index >= gpnet->num_netdevs) {
-		UB_LOG(UBL_ERROR, "%s:ndev_index = %d doesn't exist\n",__func__, ndev_index);
+	if((ndevIndex < 0) || (ndevIndex >= gpnet->num_netdevs)){
+		UB_LOG(UBL_ERROR, "%s:ndevIndex=%d doesn't exist\n",__func__, ndevIndex);
 		return -1;
 	}
-	memcpy(nlstatus, &gpnet->netdevices[ndev_index].nlstatus,
+	memcpy(nlstatus, &gpnet->netdevices[ndevIndex].nlstatus,
 		   sizeof(event_data_netlink_t));
 	return 0;
 }
 
-char *gptpnet_ptpdev(gptpnet_data_t *gpnet, int ndev_index)
+uint64_t gptpnet_txtslost_time(gptpnet_data_t *gpnet, int ndevIndex)
 {
-	return gpnet->netdevices[ndev_index].nlstatus.ptpdev;
+	/* give up to read TxTS, if it can't be captured in this time */
+	return gpnet->netdevices[ndevIndex].txtslost_time;
 }
 
 int gptpnet_tsn_schedule(gptpnet_data_t *gpnet, uint32_t aligntime, uint32_t cycletime)
 {
 	/* IEEE 802.1qbv (time-aware traffic shaping) not yet supported */
 	return 0;
-}
-
-uint64_t gptpnet_txtslost_time(gptpnet_data_t *gpnet, int ndev_index)
-{
-	/* give up to read TxTS, if it can't be captured in this time */
-	return gpnet->netdevices[ndev_index].txtslost_time;
 }

@@ -48,11 +48,12 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdlib.h>
+#include <tsn_unibase/unibase.h>
 #include "gptpnet.h"
 #include "mdeth.h"
 #include "md_abnormal_hooks.h"
 
-extern char *PTPMsgType_debug[];
+extern char *PTPMsgType_debug[16];
 
 typedef struct event_data {
 	md_abn_event_t evd;
@@ -114,11 +115,13 @@ static md_abn_eventp_t proc_event(event_data_t *event, uint8_t *dbuf, bool domai
 	case MD_ABN_EVENT_BADSEQN:
 		if(!event_happen(event)){break;}
 		if(event->evd.eventpara==0){
-			*(dbuf+31)^=0xff; //invert lower 8 bits of SequenceID
+			dbuf[31]^=0xff; //invert lower 8 bits of SequenceID
 		}else{
-			uint16_t n;
-			n=ntohs(*(uint16_t*)(dbuf+30))+event->evd.eventpara;
-			*(uint16_t*)(dbuf+30)=htons(n);
+			uint16_t n,m;
+			memcpy(&m, &dbuf[30], 2);
+			n=ntohs(m)+event->evd.eventpara;
+			m=htons(n);
+			memcpy(&dbuf[30], &m, 2);
 		}
 		return MD_ABN_EVENTP_MANUPULATE;
 	case MD_ABN_EVENT_SENDER:
@@ -132,11 +135,11 @@ static md_abn_eventp_t proc_event(event_data_t *event, uint8_t *dbuf, bool domai
 
 void md_abnormal_init(void)
 {
-	if(gmdabnd){md_abnormal_close();}
+	if(gmdabnd!=NULL){md_abnormal_close();}
 
-	gmdabnd=(md_abnormal_data_t *)malloc(sizeof(md_abnormal_data_t));
+	gmdabnd=(md_abnormal_data_t *)UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(md_abnormal_data_t));
 	if(ub_assert_fatal(gmdabnd, __func__, "malloc error")){return;}
-	memset(gmdabnd, 0, sizeof(md_abnormal_data_t));
+	(void)memset(gmdabnd, 0, sizeof(md_abnormal_data_t));
 	gmdabnd->events=ub_esarray_init(MD_EVENT_ARRAY_EXPUNIT, sizeof(event_data_t),
 					MD_EVENT_ARRAY_MAXUNIT);
 	return;
@@ -145,8 +148,8 @@ void md_abnormal_init(void)
 void md_abnormal_close(void)
 {
 	if(!gmdabnd){return;}
-	if(gmdabnd->events){ub_esarray_close(gmdabnd->events);}
-	free(gmdabnd);
+	if(gmdabnd->events!=NULL){ub_esarray_close(gmdabnd->events);}
+	UB_SD_RELMEM(GPTP_SMALL_ALLOC, gmdabnd);
 	gmdabnd=NULL;
 	return;
 }
@@ -155,10 +158,10 @@ int md_abnormal_register_event(md_abn_event_t *event)
 {
 	event_data_t *nevent;
 	if(!gmdabnd){return -1;}
-	if(event->msgtype>15){return -1;}
+	if(event->msgtype>(PTPMsgType)15){return -1;}
 	nevent=(event_data_t *)ub_esarray_get_newele(gmdabnd->events);
 	if(!nevent){return -1;}
-	memset(nevent, 0, sizeof(event_data_t));
+	(void)memset(nevent, 0, sizeof(event_data_t));
 	memcpy(&nevent->evd, event, sizeof(md_abn_event_t));
 	UB_LOG(UBL_INFO, "%s:dn=%d, ni=%d, msgtype=%s, eventtype=%d,"
 	       "eventrate=%f, repeat=%d interval=%d eventpara=%d\n",__func__,
@@ -180,7 +183,7 @@ int md_abnormal_deregister_all_events(void)
 	if(!gmdabnd){return -1;}
 	UB_LOG(UBL_DEBUG, "%s:\n",__func__);
 	elen=ub_esarray_ele_nums(gmdabnd->events);
-	for(i=elen-1;i>=0;i--) ub_esarray_del_index(gmdabnd->events, i);
+	for(i=elen-1;i>=0;i--){(void)ub_esarray_del_index(gmdabnd->events, i);}
 	return 0;
 }
 
@@ -190,13 +193,13 @@ int md_abnormal_deregister_msgtype_events(PTPMsgType msgtype)
 	event_data_t *event;
 	int elen;
 	if(!gmdabnd){return -1;}
-	if(msgtype>15){return -1;}
+	if(msgtype>(PTPMsgType)15){return -1;}
 	UB_LOG(UBL_DEBUG, "%s:msgtype=%s\n",__func__, PTPMsgType_debug[msgtype]);
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=elen-1;i>=0;i--) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
-		if(event && event->evd.msgtype==msgtype){
-			ub_esarray_del_index(gmdabnd->events, i);
+		if(event && (event->evd.msgtype==msgtype)){
+			(void)ub_esarray_del_index(gmdabnd->events, i);
 		}
 	}
 	return 0;
@@ -265,8 +268,8 @@ int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber)
 		if(event->evd.msgtype!=msgtype){continue;}
 		if(event->evd.ndevIndex!=ndevIndex){continue;}
 		if(event->evd.eventtype!=MD_ABN_EVENT_NOTS){continue;}
-		if(domainNumber>=0 && event->evd.domainNumber!=domainNumber){continue;}
-		if(event_happen(event)){
+		if((domainNumber>=0) && (event->evd.domainNumber!=domainNumber)){continue;}
+		if(event_happen(event)!=0){
 			UB_LOG(UBL_DEBUG, "%s:%s timestamp must be abandoned\n",
 			       __func__, PTPMsgType_debug[msgtype]);
 			return 1;

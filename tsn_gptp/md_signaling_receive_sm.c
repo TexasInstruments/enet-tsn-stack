@@ -47,6 +47,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
@@ -143,14 +144,14 @@ static void *recv_signaling_proc(md_signaling_receive_data_t *sm)
 		__func__, sm->domainIndex, sm->portIndex);
 	sm->recv=false;
 	stype=((MDPTPMsgGPTPCapableTLV*)(sm->rcvd_rxmsg))->organizationSubType_nb[2];
-	if(stype==2){
+	if(stype==2u){
 		sm->statd.signal_msg_interval_rec++;
 		return recv_msg_interval_req(sm);
 	}
-	else if(stype==4){
+	else if(stype==4u){
 		sm->statd.signal_gptp_capable_rec++;
 		return recv_gptp_capable(sm);
-	}
+	}else{}
 	UB_LOG(UBL_WARN, "%s:unknown tlv type = %d\n", __func__, stype);
 	return NULL;
 }
@@ -189,9 +190,10 @@ void *md_signaling_receive_sm(md_signaling_receive_data_t *sm, uint64_t cts64)
 			sm->state = recv_signaling_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -205,10 +207,10 @@ void md_signaling_receive_sm_init(md_signaling_receive_data_t **sm,
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
 	if(!*sm){
-		*sm=(md_signaling_receive_data_t *)malloc(sizeof(md_signaling_receive_data_t));
+		*sm=(md_signaling_receive_data_t *)UB_SD_GETMEM(SM_DATA_INST, sizeof(md_signaling_receive_data_t));
 		if(ub_assert_fatal(*sm, __func__, "malloc")){return;}
 	}
-	memset(*sm, 0, sizeof(md_signaling_receive_data_t));
+	(void)memset(*sm, 0, sizeof(md_signaling_receive_data_t));
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
@@ -220,7 +222,7 @@ int md_signaling_receive_sm_close(md_signaling_receive_data_t **sm)
 	if(!*sm){return 0;}
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, (*sm)->domainIndex, (*sm)->portIndex);
-	free(*sm);
+	UB_SD_RELMEM(SM_DATA_INST, *sm);
 	*sm=NULL;
 	return 0;
 }
@@ -239,7 +241,7 @@ void *md_signaling_receive_sm_mdSignalingRec(md_signaling_receive_data_t *sm,
 
 void md_signaling_receive_stat_reset(md_signaling_receive_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_signaling_receive_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_signaling_receive_stat_data_t));
 }
 
 md_signaling_receive_stat_data_t *md_signaling_receive_get_stat(md_signaling_receive_data_t *sm)

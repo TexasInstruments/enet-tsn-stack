@@ -55,17 +55,11 @@
  * Standard Documentation.
  */
 
-#ifndef __GPTPBASETYPES_H_
-#define __GPTPBASETYPES_H_
+#ifndef GPTPBASETYPES_H_
+#define GPTPBASETYPES_H_
 
 #include <string.h>
-
-/**
- * @brief Macro which defines Maximum port number limit for gPTP2.
- * @note CONF_MAX_PORT_NUMBER can be configured at a runtime,
- * 	 it must be less than this numumber
- */
-#define MAX_PORT_NUMBER_LIMIT 33
+#include <tsn_uniconf/yangs/tsn_data.h>
 
 /**
  * @brief Macro to define maximum path trace.
@@ -118,7 +112,7 @@ typedef uint8_t UInteger4;
  */
 typedef struct PortIdentity {
 	ClockIdentity clockIdentity;
-	uint16_t portNumber;
+	uint16_t portIndex;
 } PortIdentity;
 
 /**
@@ -182,7 +176,7 @@ typedef struct ScaledNs {
  * @brief The ScaledNs type represents unsigned values of time and
  * time interval in units of 2^-16 ns.
  * @code
- * //2.5 ns expressed as below
+ * 2.5 ns expressed as below
  * 0x0000 0000 0000 0000 0002 8000
  * @endcode
  *
@@ -197,7 +191,7 @@ typedef struct UScaledNs {
  * @brief The TimeInterval type represents time intervals, in units of 2^-16 ns
  * @verbatim Example to express ns@endverbatim
  * @code
- * //2.5 ns expressed as below
+ * 2.5 ns expressed as below
  * 0x0000 0000 0002 8000
  * @endcode
  *
@@ -234,8 +228,8 @@ typedef struct ExtendedTimestamp {
 	UInteger48 seconds;
 } ExtendedTimestamp;
 
-#define VALUE_DISABLED 0
-#define VALUE_ENABLED 1
+#define VALUE_DISABLED 0u
+#define VALUE_ENABLED 1u
 
 /**
  * @brief the type of source of time used by a ClockMaster(802.1AS, 8.6.2.7 timeSource)
@@ -254,6 +248,10 @@ typedef enum {
 // 14.8.3 portState, (from IEEE 1588 Table-8)
 /**
  * @brief value of the port state (802.1AS 14.8.3 portState)
+ * @note IEEE1588-2019,
+ * 	initializing=1, faulty=2, disabled=3, listening=4,
+ * 	pre-master=5, master=6, passive=7, uncalibrated=8,
+ * 	slave=9
  */
 typedef enum {
 	DisabledPort = 3,
@@ -261,6 +259,12 @@ typedef enum {
 	PassivePort = 7,
 	SlavePort = 9,
 } PTPPortState;
+
+typedef enum {
+	GMSYNC_UNSYNC=0,
+	GMSYNC_SYNC,
+	GMSYNC_SYNC_STABLE,
+} gmsync_status_t;
 
 #endif
 /** @}*/

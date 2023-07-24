@@ -57,33 +57,47 @@
 #include "mdeth.h"
 #include "gptpman.h"
 #include <getopt.h>
-#include "gptp_config.h"
-
-extern int gptpconf_values_test(void);
+#include "gptpconf/gptpgcfg.h"
+#include "tsn_uniconf/uc_dbal.h"
+#include "tsn_uniconf/hal/uc_hwal.h"
+#include "tsn_uniconf/uc_notice.h"
+#include "tsn_uniconf/ucman.h"
+#include "tsn_uniconf/yangs/tsn_data.h"
+#include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
 
 typedef struct gptpdpd {
-	char **netdevs;
+	const char **netdevs;
 } gptpdpd_t;
 
 typedef struct gptpoptd {
 	char *devlist;
-	char *conf_file;
+	const char **conf_files;
+	const char *db_file;
 	int netdnum;
 	int domain_num;
 	char *inittm;
+	int instnum;
+	bool ucthread;
+	int numconf;
 } gptpoptd_t;
 
 static int print_usage(char *pname, gptpoptd_t *gpoptd)
 {
 	char *s;
-	if((s=strchr(pname,'/'))==NULL){s=pname;}
+	if((s=strchr(pname,'/'))==NULL) s=pname;
 	UB_CONSOLE_PRINT("%s [options]\n", s);
 	UB_CONSOLE_PRINT("-h|--help: this help\n");
 	UB_CONSOLE_PRINT("-d|--devs \"eth0,eth1,...\": comma separated network devices\n");
 	UB_CONSOLE_PRINT("-n|--dnum number: max number of network devices\n");
 	UB_CONSOLE_PRINT("-m|--domain number: max number of domain\n");
+	UB_CONSOLE_PRINT("-p|--dbname: database file\n");
 	UB_CONSOLE_PRINT("-c|--conf: config file\n");
+	UB_CONSOLE_PRINT("\tuse multiple times for multiple configuration files\n");
+	UB_CONSOLE_PRINT("  -c "UC_INIT_COPY_INSTANCE_PRE"N, "
+			 "copy instance N,domain=0 data to this instance,domain=0.\n");
 	UB_CONSOLE_PRINT("-t|--inittm year:month:date:hour:minute:second: set initial time\n");
+	UB_CONSOLE_PRINT("-i|--instnum instance_number:set an instance number(default=0)\n");
+	UB_CONSOLE_PRINT("-u|--ucthread: run uniconf in a thread\n");
 	return -1;
 }
 
@@ -97,16 +111,26 @@ static int set_options(gptpoptd_t *gpoptd, int argc, char *argv[])
 		{"dnum", required_argument, 0, 'n'},
 		{"domain", required_argument, 0, 'm'},
 		{"conf", required_argument, 0, 'c'},
+		{"dbname", required_argument, 0, 'p'},
 		{"inittm", required_argument, 0, 't'},
+		{"instnum", required_argument, 0, 'i'},
+		{"ucthread", no_argument, 0, 'u'},
 		{NULL, 0, 0, 0},
 	};
-	while((oc=getopt_long(argc, argv, "hd:n:c:m:t:", long_options, NULL))!=-1){
+	while((oc=getopt_long(argc, argv, "hd:n:c:m:t:i:p:u", long_options, NULL))!=-1){
 		switch(oc){
 		case 'd':
 			gpoptd->devlist=optarg;
 			break;
 		case 'c':
-			gpoptd->conf_file=optarg;
+			gpoptd->conf_files=
+				UB_SD_REGETMEM(GPTP_SMALL_ALLOC, gpoptd->conf_files,
+					      sizeof(char*)*(gpoptd->numconf+2));
+			gpoptd->conf_files[gpoptd->numconf++]=optarg;
+			gpoptd->conf_files[gpoptd->numconf]=NULL;
+			break;
+		case 'p':
+			gpoptd->db_file=optarg;
 			break;
 		case 'n':
 			gpoptd->netdnum=strtol(optarg, NULL, 0);
@@ -116,6 +140,12 @@ static int set_options(gptpoptd_t *gpoptd, int argc, char *argv[])
 			break;
 		case 't':
 			gpoptd->inittm=optarg;
+			break;
+		case 'i':
+			gpoptd->instnum=strtol(optarg, NULL, 0);
+			break;
+		case 'u':
+			gpoptd->ucthread=true;
 			break;
 		case 'h':
 		default:
@@ -127,85 +157,147 @@ static int set_options(gptpoptd_t *gpoptd, int argc, char *argv[])
 	return res;
 }
 
-static void signal_handler(int sig)
-{
-	gptpman_stop();
-}
 #ifndef GPTP2_IN_LIBRARY
 #define GPTP2D_MAIN main
 #endif
+
+static bool stopgptp;
+static void signal_handler(int sig)
+{
+	stopgptp=true;
+}
+
+static int get_netdevices(gptpdpd_t *gpdpd, gptpoptd_t *gpoptd)
+{
+	int i, k;
+	const char *ndev;
+
+	if(!gpoptd->devlist){
+		// use domainIndex=0
+		gpoptd->netdnum=ydbi_portdevices_pt(ydbi_access_handle(),
+						    gpoptd->instnum, 0, &gpdpd->netdevs);
+		if(gpoptd->netdnum<=0) return -1;
+	}else{
+		k=strlen(gpoptd->devlist);
+		gpoptd->netdnum=1;
+		for(i=0;i<k;i++){
+			if(gpoptd->netdnum==XL4_DATA_ABS_MAX_NETDEVS){break;}
+			if(gpoptd->devlist[i]!=','){continue;}
+			gpoptd->devlist[i++]=0;
+			gpoptd->netdnum++;
+		}
+		gpdpd->netdevs=UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+					    (gpoptd->netdnum) * sizeof(char *));
+		ndev=gpoptd->devlist;
+		for(i=0;i<gpoptd->netdnum;i++){
+			gpdpd->netdevs[i]=ndev;
+			ndev+=strlen(ndev)+1;
+		}
+	}
+	for(i=0;i<gpoptd->netdnum;i++){
+		UB_LOG(UBL_DEBUG, "use network device:%s\n", gpdpd->netdevs[i]);
+	}
+	return 0;
+}
+
+static void release_netdevices(gptpdpd_t *gpdpd, gptpoptd_t *gpoptd)
+{
+	if(!gpoptd->devlist){
+		ydbi_portdevices_pt_release(&gpdpd->netdevs, gpoptd->netdnum);
+	}else{
+		UB_SD_RELMEM(GPTP_SMALL_ALLOC, gpdpd->netdevs);
+	}
+}
 
 int GPTP2D_MAIN(int argc, char *argv[])
 {
 	gptpdpd_t gpdpd;
 	gptpoptd_t gpoptd;
-	int i, j, k;
-	netdevname_t *netdevs;
-	ptpdevname_t *ptpdevs;
 	int res=-1;
 	mode_t oumask;
-	struct sigaction sigact;
 	unibase_init_para_t init_para;
+	CB_THREAD_T ucthreadt;
+	ucman_data_t ucmd;
+	struct sigaction sigact;
+	bool stopuniconf=false;
+
 	ubb_default_initpara(&init_para);
-	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,gptp:46", "UBL_GPTP");
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46,gptp:46",
+						   "UBL_GPTP");
 	unibase_init(&init_para);
 	ubb_memory_out_init(NULL, 0);// start with zero, so that the memory is not allocated
+	memset(&ucmd, 0, sizeof(ucmd));
+	oumask=umask(011);
+	memset(&gpdpd, 0, sizeof(gpdpd));
+	memset(&gpoptd, 0, sizeof(gpoptd));
 
 	memset(&sigact, 0, sizeof(sigact));
 	sigact.sa_handler=signal_handler;
 	sigaction(SIGINT, &sigact, NULL);
 	sigaction(SIGTERM, &sigact, NULL);
 
-	if(gptpconf_values_test()){return -1;}
-	oumask=umask(011);
-	memset(&gpdpd, 0, sizeof(gpdpd));
-	memset(&gpoptd, 0, sizeof(gpoptd));
 	if(set_options(&gpoptd, argc, argv)<0){return -1;}
-	if(gpoptd.conf_file){ub_read_config_file(gpoptd.conf_file, gptpconf_set_stritem);}
-	ubb_memory_out_init(NULL, gptpconf_get_intitem(CONF_DEBUGLOG_MEMORY_SIZE)*1024);
-	UB_LOG(UBL_INFO, "gptp2d: gptp2-"TSNPKGVERSION"\n");
-	if(!gpoptd.netdnum){gpoptd.netdnum=gptpconf_get_intitem(CONF_MAX_PORT_NUMBER);}
-	if(!gpoptd.domain_num){gpoptd.domain_num=gptpconf_get_intitem(CONF_MAX_DOMAIN_NUMBER);}
-	netdevs=malloc(gpoptd.netdnum * sizeof(netdevname_t));
-	ptpdevs=malloc(gpoptd.netdnum * sizeof(ptpdevname_t));
-	gpdpd.netdevs=malloc((gpoptd.netdnum+1) * sizeof(char *));
-
-	if(!gpoptd.devlist){
-		gpoptd.netdnum = cb_get_all_netdevs(gpoptd.netdnum, netdevs);
-		for(i=0,j=0;i<gpoptd.netdnum;i++){
-			if(!cb_get_ptpdev_from_netdev(netdevs[i], ptpdevs[i])){
-				gpdpd.netdevs[j++]=netdevs[i];
-			}
-		}
-		gpdpd.netdevs[j]=0;
+	if(gpoptd.ucthread){
+		ucmd.dbname=gpoptd.db_file;
+		ucmd.stoprun=&stopuniconf;
+		ucmd.ucmode=UC_CALLMODE_UNICONF|UC_CALLMODE_THREAD;
+		ucmd.ucmanstart=UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(CB_SEM_T));
+		if(ub_assert_fatal(ucmd.ucmanstart!=NULL, __func__, NULL)){return -1;}
+		memset(ucmd.ucmanstart, 0, sizeof(CB_SEM_T));
+		ucmd.hwmod="NONE";
+		CB_SEM_INIT(ucmd.ucmanstart, 0, 0);
+		CB_THREAD_CREATE(&ucthreadt, NULL, uniconf_main, &ucmd);
+		CB_SEM_WAIT(ucmd.ucmanstart);
+	}
+	res=gptpgcfg_init(gpoptd.db_file, gpoptd.conf_files, gpoptd.instnum,
+				 gpoptd.ucthread);
+	if(gpoptd.conf_files){
+		UB_SD_RELMEM(GPTP_SMALL_ALLOC, gpoptd.conf_files);
+		gpoptd.conf_files=NULL;
+	}
+	if(res){
+		UB_LOG(UBL_ERROR, "gptp2d: error in gptpgcfg_init\n");
+		return -1;
+	}
+	res=gptpgcfg_get_intitem(gpoptd.instnum, XL4_EXTMOD_XL4GPTP_DEBUGLOG_MEMORY_SIZE,
+				 YDBI_CONFIG);
+	if(res<0){
+		UB_LOG(UBL_WARN, "gptp2d:No DEBUGLOG_MEMORY_SIZE, use 0\n");
 	}else{
-		j=0;
-		gpdpd.netdevs[j++]=gpoptd.devlist;
-		k=strlen(gpoptd.devlist);
-		for(i=0;i<k;i++){
-			if(gpoptd.devlist[i]!=','){continue;}
-			gpoptd.devlist[i++]=0;
-			if(j>=gpoptd.netdnum){break;}
-			gpdpd.netdevs[j++]=gpoptd.devlist+i;
-			continue;
-		}
-		gpdpd.netdevs[j]=0;
-		gpoptd.netdnum=j;
+		ubb_memory_out_init(NULL, res * 1024);
 	}
-	for(i=0;i<gpoptd.netdnum;i++){
-		if(!gpdpd.netdevs[i]){break;}
-		UB_LOG(UBL_DEBUG, "use network device:%s\n", gpdpd.netdevs[i]);
+	UB_LOG(UBL_INFO, "gptp2d: gptp2-"TSNPKGVERSION"\n");
+	res=get_netdevices(&gpdpd, &gpoptd);
+	if(res!=0){
+		UB_LOG(UBL_ERROR, "no network device\n");
+		goto erexit;
 	}
-	gptpconf_values_test();
 
-	gptpman_run(gpdpd.netdevs, gpoptd.netdnum, gpoptd.domain_num, gpoptd.inittm);
-	UB_LOG(UBL_INFO,"gptp2d going to close\n");
+	gptpman_run(gpoptd.instnum, gpdpd.netdevs, gpoptd.netdnum,
+		    gpoptd.domain_num, gpoptd.inittm, &stopgptp);
+	UB_TLOG(UBL_INFO,"gptp2d going to close\n");
 	res=0;
-	free(gpdpd.netdevs);
-	free(ptpdevs);
-	free(netdevs);
-	if(ubb_memory_file_out(gptpconf_get_item(CONF_DEBUGLOG_MEMORY_FILE))){
-		UB_LOG(UBL_ERROR, "%s:can't write the memory log into a file\n", __func__);
+erexit:
+	if(gpdpd.netdevs){release_netdevices(&gpdpd, &gpoptd);}
+	const char *dbfname;
+	char *fname=NULL;
+	dbfname=gptpgcfg_get_item(gpoptd.instnum, XL4_EXTMOD_XL4GPTP_DEBUGLOG_MEMORY_FILE,
+				  YDBI_CONFIG);
+	if(dbfname){
+		fname=UB_SD_GETMEM(GPTP_SMALL_ALLOC, strlen(dbfname)+1);
+		if(fname){strcpy(fname, dbfname);}
+	}
+	gptpgcfg_get_item_release(gpoptd.instnum);
+	gptpgcfg_close(gpoptd.instnum);
+	if(fname && ubb_memory_file_out(fname)){
+		UB_LOG(UBL_ERROR, "gptp2d:can't write the memory log into a file\n");
+	}
+	if(fname){UB_SD_RELMEM(GPTP_SMALL_ALLOC, fname);}
+	if(gpoptd.ucthread){
+		stopuniconf=true;
+		CB_THREAD_JOIN(ucthreadt, NULL);
+		CB_SEM_DESTROY(ucmd.ucmanstart);
+		UB_SD_RELMEM(GPTP_SMALL_ALLOC, ucmd.ucmanstart);
 	}
 	umask(oumask);
 	ubb_memory_out_close();

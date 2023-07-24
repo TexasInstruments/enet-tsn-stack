@@ -101,6 +101,7 @@ typedef struct {
 	 * If all bytes of dstMacAddr are 0, no filter is applied.
 	 */
 	uint32_t vlanId;
+
 	/**
 	 * Number of buffers allocated for transmit packets
 	 * Set to 0 to use the default value assigned by the implementation.
@@ -126,6 +127,11 @@ typedef struct {
 	 * Set to -1 for dynamic allocation, only supported by Jacinto.
 	 */
 	int dmaRxChId;
+
+	/**
+	 *  true: won't use DMA; false: will use DMA
+	 */
+	bool unusedDma;
 } LLDEnetCfg_t;
 
 /**
@@ -269,6 +275,29 @@ int LLDEnetSetTxNotifyCb(LLDEnet_t *hLLDEnet, void (*txNotifyCb)(void *arg), voi
  */
 int LLDEnetSetRxNotifyCb(LLDEnet_t *hLLDEnet, void (*rxNotifyCb)(void *arg), void *arg);
 
+/**
+ * @brief Set parameters for schedule traffic
+ *
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @param macPort port number of the MAC port to be configured with TAS parameters.
+ * @param arg input argument to be configured. The caller shall pass
+ *        an object of `cbl_tas_sched_params_t` via this argument.
+ * @return LLDENET_E_OK: on success, an error code otherwise.
+ */
+int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *arg);
+
+/**
+ * @brief Set frame preemption parameters for the port indicated by `macPort`.
+ *
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @param macPort port number of the MAC port to be configured with TAS parameters.
+ * @param reqPrm input argument to be configured. The caller shall pass
+ *        an object of `cbl_preempt_params_t` via this argument.
+ * @param resPrm response parameters will be stored in this object. The caller shall pass
+ *       address of an object `cbl_cb_event_t` to this API.
+ * @return LLDENET_E_OK: on success, an error code otherwise.
+ */
+int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm);
 #endif //LLDENET_H_
 
 /** @}*/

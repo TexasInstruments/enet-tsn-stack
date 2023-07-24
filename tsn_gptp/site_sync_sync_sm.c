@@ -47,11 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "site_sync_sync_sm.h"
+#include "gptpconf/gptpgcfg.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -77,6 +80,7 @@ struct site_sync_sync_data{
 #define SELECTED_STATE sm->ptasg->selectedState
 #define GM_PRESENT sm->ptasg->gmPresent
 #define PARENT_LOG_SYNC_INTERVAL sm->ptasg->parentLogSyncInterval
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static site_sync_sync_state_t allstate_condition(site_sync_sync_data_t *sm)
 {
@@ -97,9 +101,13 @@ static void *initializing_proc(site_sync_sync_data_t *sm)
 static site_sync_sync_state_t initializing_condition(site_sync_sync_data_t *sm)
 {
 	if(RCVD_PSSYNC &&
-	   ((SELECTED_STATE[RCVD_PSSYNC_PTR->localPortIndex] == SlavePort &&
-	     GM_PRESENT) || (gptpconf_get_intitem(CONF_TEST_SYNC_REC_PORT) ==
-			     RCVD_PSSYNC_PTR->localPortIndex))){return RECEIVING_SYNC;}
+	   (((SELECTED_STATE[RCVD_PSSYNC_PTR->localPortIndex] == (uint8_t)SlavePort) &&
+	     GM_PRESENT) || (gptpgcfg_get_intitem(
+				     GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_TEST_SYNC_REC_PORT,
+				     YDBI_CONFIG) ==
+			     RCVD_PSSYNC_PTR->localPortIndex))){
+		return RECEIVING_SYNC;
+	}
 	return INITIALIZING;
 }
 
@@ -131,19 +139,22 @@ static site_sync_sync_state_t receiving_sync_condition(site_sync_sync_data_t *sm
 						       uint64_t cts64)
 {
 	if(RCVD_PSSYNC &&
-	   ((SELECTED_STATE[RCVD_PSSYNC_PTR->localPortIndex] == SlavePort &&
-	     GM_PRESENT)  || (gptpconf_get_intitem(CONF_TEST_SYNC_REC_PORT) ==
-						   RCVD_PSSYNC_PTR->localPortIndex))){
+	   (((SELECTED_STATE[RCVD_PSSYNC_PTR->localPortIndex] == (uint8_t)SlavePort) &&
+	     GM_PRESENT)  || (gptpgcfg_get_intitem(
+				      GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_TEST_SYNC_REC_PORT,
+				      YDBI_CONFIG) ==
+			      RCVD_PSSYNC_PTR->localPortIndex))){
 		sm->last_state=REACTION;
 	}
 
 	if(RCVD_PSSYNC &&
-		(SELECTED_STATE[TX_PSSYNC_PTR_SSS->localPortIndex] == SlavePort && GM_PRESENT) &&
-		(sm->site_sync_timeout && !(cts64 > sm->site_sync_timeout)) &&
-		sm->site_sync_sendtime && (cts64 > sm->site_sync_sendtime)){
+	   (SELECTED_STATE[TX_PSSYNC_PTR_SSS->localPortIndex] == (uint8_t)SlavePort) &&
+	   GM_PRESENT && (sm->site_sync_timeout && !(cts64 > sm->site_sync_timeout)) &&
+	   sm->site_sync_sendtime && (cts64 > sm->site_sync_sendtime)){
 		/* Lost Sync message from GM, force reaction and refer to txPSSyncPtrSSS
 		 * as reference for sending the Sync and FollowUp messages. */
-		UB_LOG(UBL_DEBUGV,"%s:domainIndex=%d, site_sync_sendtime\n", __func__, sm->domainIndex);
+		UB_LOG(UBL_DEBUGV,"%s:domainIndex=%d, site_sync_sendtime\n",
+		       __func__, sm->domainIndex);
 		if((RCVD_PSSYNC_PTR->syncReceiptTimeoutTime.nsec == (uint64_t)-1)||
 			(sm->site_sync_sendtime>=RCVD_PSSYNC_PTR->syncReceiptTimeoutTime.nsec)){
 			/* In the case that a PSSSync is received but not yet stored via
@@ -158,7 +169,9 @@ static site_sync_sync_state_t receiving_sync_condition(site_sync_sync_data_t *sm
 	}
 	if(sm->site_sync_timeout && (cts64 > sm->site_sync_timeout)){
 		sm->site_sync_timeout=0;
-		if(gptpconf_get_intitem(CONF_STATIC_PORT_STATE_SLAVE_PORT)>0){
+		if(gptpgcfg_get_intitem(
+			   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT,
+			   YDBI_CONFIG)>0){
 			/*
 			'static port config' and 'this is not GM'
 			syncReceiptTimeoutTime is not checked in port_announce_information_state
@@ -166,8 +179,8 @@ static site_sync_sync_state_t receiving_sync_condition(site_sync_sync_data_t *sm
 			*/
 			UB_LOG(UBL_DEBUGV,"%s:domainIndex=%d, site_sync_timeout\n",
 			       __func__, sm->domainIndex);
-			gptpclock_reset_gmsync(0, sm->domainIndex);
-			gptpclock_set_gmstable(sm->domainIndex, false);
+			(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex,
+						   GMSYNC_UNSYNC);
 		}
 	}
 	return RECEIVING_SYNC;
@@ -198,9 +211,10 @@ void *site_sync_sync_sm(site_sync_sync_data_t *sm, uint64_t cts64)
 			sm->state = receiving_sync_condition(sm, cts64);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -211,10 +225,11 @@ void site_sync_sync_sm_init(site_sync_sync_data_t **sm,
 	PerTimeAwareSystemGlobal *ptasg)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, domainIndex);
-	if(INIT_SM_DATA(site_sync_sync_data_t, SiteSyncSyncSM, sm)){return;}
+	INIT_SM_DATA(site_sync_sync_data_t, SiteSyncSyncSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->domainIndex = domainIndex;
-	site_sync_sync_sm(*sm, 0);
+	(void)site_sync_sync_sm(*sm, 0);
 }
 
 int site_sync_sync_sm_close(site_sync_sync_data_t **sm)

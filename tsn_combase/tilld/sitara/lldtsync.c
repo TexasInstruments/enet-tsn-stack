@@ -181,13 +181,16 @@ int LLDTSyncAdjFreq(LLDTSync_t *hTSync, int ppb)
 int LLDTSyncSetTime(LLDTSync_t *hTSync, uint64_t ts)
 {
 	int32_t status = ENET_SOK;
+	EnetTimeSync_setTimestamp timestamp;
 	Enet_IoctlPrms prms;
 
 	if (hTSync == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
-	ENET_IOCTL_SET_IN_ARGS(&prms, &ts);
+	memset((void *)(&timestamp), 0, sizeof(timestamp));
+	timestamp.tsLoadVal = ts;
+	ENET_IOCTL_SET_IN_ARGS(&prms, &timestamp);
 	ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
 			   ENET_TIMESYNC_IOCTL_SET_TIMESTAMP, &prms, status);
 	if (status != ENET_SOK) {

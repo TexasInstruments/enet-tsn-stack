@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_announce_information_sm.h"
+#include "gptpcommon.h"
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define RESELECT	    sm->bptasg->reselect
@@ -112,21 +114,21 @@ static uint8_t rcvdInfo(port_announce_information_data_t *sm)
 	MESSAGE_PRIORITY.stepsRemoved = RCVD_ANNOUNCE_PTR->stepsRemoved;
 	memcpy(&MESSAGE_PRIORITY.sourcePortIdentity, &RCVD_ANNOUNCE_PTR->header.sourcePortIdentity,
 	       sizeof(PortIdentity));
-	MESSAGE_PRIORITY.portNumber = sm->ppg->thisPort;
+	MESSAGE_PRIORITY.portNumber = md_port_index2number(sm->ppg->thisPort);
 	sm->bppg->messageStepsRemoved = RCVD_ANNOUNCE_PTR->stepsRemoved;
 
 	print_priority_vector( UBL_DEBUGV, "portPriority   ", &PORT_PRIORITY);
 	print_priority_vector( UBL_DEBUGV, "messagePriority", &MESSAGE_PRIORITY);
 	// ??? receipt of a Announce message conveys always conveys a MasterPort
-	if (SELECTED_STATE[sm->ppg->thisPortIndex] != DisabledPort){
+	if (SELECTED_STATE[sm->ppg->thisPort] != (uint8_t)DisabledPort){
 		if (memcmp(&PORT_PRIORITY, &MESSAGE_PRIORITY, sizeof(UInteger224))==0){
 			UB_LOG(UBL_DEBUGV, "port_announce_information:%s:rcvdInfo=%s\n",
 			       __func__, "RepeatedMasterInfo");
 			return RepeatedMasterInfo;
 		}
 
-		if (SUPERIOR_PRIORITY == compare_priority_vectors(&MESSAGE_PRIORITY,
-								  &PORT_PRIORITY)){
+		if ((uint8_t)SUPERIOR_PRIORITY == compare_priority_vectors(&MESSAGE_PRIORITY,
+									   &PORT_PRIORITY)){
 			UB_LOG(UBL_DEBUGV, "port_announce_information:%s:rcvdInfo=%s\n",
 			       __func__, "SuperiorMasterInfo");
 			return SuperiorMasterInfo;
@@ -144,12 +146,12 @@ static uint8_t rcvdInfo(port_announce_information_data_t *sm)
 
 static void recordOtherAnnounceInfo(port_announce_information_data_t *sm)
 {
-	sm->bppg->annLeap61 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x01) == 0x01;
-	sm->bppg->annLeap59 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x02) == 0x02;
-	sm->bppg->annCurrentUtcOffsetValid = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x04) == 0x04;
-	sm->bppg->annPtpTimescale = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x08) == 0x08;
-	sm->bppg->annTimeTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x10) == 0x10;
-	sm->bppg->annFrequencyTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x20) == 0x20;
+	sm->bppg->annLeap61 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x01u) == 0x01u;
+	sm->bppg->annLeap59 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x02u) == 0x02u;
+	sm->bppg->annCurrentUtcOffsetValid = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x04u) == 0x04u;
+	sm->bppg->annPtpTimescale = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x08u) == 0x08u;
+	sm->bppg->annTimeTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x10u) == 0x10u;
+	sm->bppg->annFrequencyTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x20u) == 0x20u;
 	sm->bppg->annCurrentUtcOffset = RCVD_ANNOUNCE_PTR->currentUtcOffset;
 	sm->bppg->annTimeSource = RCVD_ANNOUNCE_PTR->timeSource;
 
@@ -168,7 +170,7 @@ static void recordOtherAnnounceInfo(port_announce_information_data_t *sm)
 static port_announce_information_state_t allstate_condition(port_announce_information_data_t *sm)
 {
 	if ((((!PORT_OPER || !PTP_PORT_ENABLED || !AS_CAPABLE) &&
-	     (INFO_IS != Disabled)) || sm->ptasg->BEGIN ||
+	     (INFO_IS != (uint8_t)Disabled)) || sm->ptasg->BEGIN ||
 	     !sm->ptasg->instanceEnable) && (sm->bptasg->externalPortConfiguration == VALUE_DISABLED)) {
 		return DISABLED;
 	}
@@ -258,7 +260,7 @@ static port_announce_information_state_t current_condition(port_announce_informa
 	if (SELECTED[sm->portIndex] && UPDT_INFO){
 		return UPDATE;
 	}
-	if ((INFO_IS == Received) &&
+	if ((INFO_IS == (uint8_t)Received) &&
 	    ((cts64 >= ANN_RECEIPT_TIMEOUT_TIME.nsec) ||
 	     ((cts64 >= sm->syncReceiptTimeoutTime.nsec) &&
 	      sm->ptasg->gmPresent)) && !UPDT_INFO && !RCVD_MSG){
@@ -284,15 +286,16 @@ static void *receive_proc(port_announce_information_data_t *sm)
 
 static port_announce_information_state_t receive_condition(port_announce_information_data_t *sm)
 {
-	if ((sm->thisSM->rcvdInfo==RepeatedMasterInfo) &&
+	if ((sm->thisSM->rcvdInfo==(uint8_t)RepeatedMasterInfo) &&
 	    !sm->ppg->forAllDomain->asymmetryMeasurementMode){
 		return REPEATED_MASTER_PORT;
 	}
-	if (((sm->thisSM->rcvdInfo==InferiorMasterInfo) || (sm->thisSM->rcvdInfo==OtherInfo)) &&
+	if (((sm->thisSM->rcvdInfo==(uint8_t)InferiorMasterInfo) ||
+	     (sm->thisSM->rcvdInfo==(uint8_t)OtherInfo)) &&
 	    !sm->ppg->forAllDomain->asymmetryMeasurementMode){
 		return INFERIOR_MASTER_OR_OTHER_PORT;
 	}
-	if ((sm->thisSM->rcvdInfo==SuperiorMasterInfo) &&
+	if ((sm->thisSM->rcvdInfo==(uint8_t)SuperiorMasterInfo) &&
 	    !sm->ppg->forAllDomain->asymmetryMeasurementMode){
 		return SUPERIOR_MASTER_PORT;
 	}
@@ -311,7 +314,8 @@ static void *superior_master_port_proc(port_announce_information_data_t *sm, uin
 
 	/* A = 16*logMessageInterval, but since we do not use subns, we remove 16 bit shift */
 	A = RCVD_ANNOUNCE_PTR->header.logMessageInterval;
-	ANN_RECEIPT_TIMEOUT_TIME_INTERVAL.nsec = sm->bppg->announceReceiptTimeout * LOG_TO_NSEC(A);
+	ANN_RECEIPT_TIMEOUT_TIME_INTERVAL.nsec =
+		(uint8_t)sm->bppg->announceReceiptTimeout * LOG_TO_NSEC(A);
 	ANN_RECEIPT_TIMEOUT_TIME.nsec = cts64 + ANN_RECEIPT_TIMEOUT_TIME_INTERVAL.nsec;
 
 	if (sm->ppg->useMgtSettableLogSyncInterval){
@@ -320,7 +324,8 @@ static void *superior_master_port_proc(port_announce_information_data_t *sm, uin
 	else {
 		B = sm->ppg->initialLogSyncInterval;
 	}
-	sm->ppg->syncReceiptTimeoutTimeInterval.nsec = sm->ppg->syncReceiptTimeout * LOG_TO_NSEC(B);
+	sm->ppg->syncReceiptTimeoutTimeInterval.nsec =
+		(uint8_t)sm->ppg->syncReceiptTimeout * LOG_TO_NSEC(B);
 	sm->syncReceiptTimeoutTime.nsec = cts64 + sm->ppg->syncReceiptTimeoutTimeInterval.nsec;
 
 	INFO_IS = Received;
@@ -373,7 +378,7 @@ static port_announce_information_state_t inferior_master_or_other_port_condition
 		// When BMCS quick update is enabled, set the current portPriority as AGED.
 		// This should restart the BMCS to try to find better master port.
 		// Otherwise, follow standard with UTC to CURRENT.
-		if(sm->bptasg->bmcsQuickUpdate){
+		if(sm->bptasg->bmcsQuickUpdate!=0){
 			return AGED;
 		}
 	}
@@ -430,9 +435,10 @@ void *port_announce_information_sm(port_announce_information_data_t *sm, uint64_
 			sm->state = inferior_master_or_other_port_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -447,7 +453,8 @@ void port_announce_information_sm_init(port_announce_information_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_announce_information_data_t, PortAnnounceInformationSM, sm)){return;}
+	INIT_SM_DATA(port_announce_information_data_t, PortAnnounceInformationSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->bptasg = bptasg;
@@ -455,7 +462,7 @@ void port_announce_information_sm_init(port_announce_information_data_t **sm,
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
 
-	(*sm)->syncReceiptTimeoutTime.nsec = 0xffffffffffffffff;
+	(*sm)->syncReceiptTimeoutTime.nsec = (uint64_t)(-1LL);
 }
 
 int port_announce_information_sm_close(port_announce_information_data_t **sm)

@@ -52,6 +52,12 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include "gptpclock.h"
+#include "gptpconf/gptpgcfg.h"
+#include <tsn_uniconf/ucman.h>
+#include "gptpcommon.h"
+
+UB_SD_GETMEM_DEF(GPTP_SMALL_ALLOC, GPTP_SMALL_AFSIZE, GPTP_SMALL_AFNUM);
+UB_SD_GETMEM_DEF(GPTP_MEDIUM_ALLOC, GPTP_MEDIUM_AFSIZE, GPTP_MEDIUM_AFNUM);
 
 static void get_tsrp(int ptpfd, uint64_t *tsr, uint64_t *tsp)
 {
@@ -113,7 +119,7 @@ static void test_adjustment(void **state)
 	char *ptpdev=CB_VIRTUAL_PTPDEV_PREFIX"w0";
 	ptpclock_state_t pds;
 
-	pds=gptp_get_ptpfd(ptpdev, &ptpfd);
+	pds=gptp_get_ptpfd(0, ptpdev, &ptpfd);
 	assert_int_equal(pds, PTPCLOCK_RDWR);
 	test_one_adjust(ptpfd, 0);
 	test_one_adjust(ptpfd, 100000);
@@ -130,27 +136,50 @@ static void test_multi(void **state)
 	char *ptpdev1=CB_VIRTUAL_PTPDEV_PREFIX"w0";
 	char *ptpdev2=CB_VIRTUAL_PTPDEV_PREFIX"1";
 	ptpclock_state_t pds;
-
-	pds=gptp_get_ptpfd(ptpdev1, &ptpfd1);
+	pds=gptp_get_ptpfd(0, ptpdev1, &ptpfd1);
 	assert_int_equal(pds, PTPCLOCK_RDWR);
-	pds=gptp_get_ptpfd(ptpdev2, &ptpfd2);
+	pds=gptp_get_ptpfd(0,ptpdev2, &ptpfd2);
 	assert_int_equal(pds, PTPCLOCK_RDONLY);
 	test_two_adjust(ptpfd1, ptpfd2, 100000, 0);
 	test_two_adjust(ptpfd1, ptpfd2, 100000, 0);
 	test_two_adjust(ptpfd1, ptpfd2, -100000, 0);
 }
 
+static CB_THREAD_T ucthreadt;
+static const char *dbname=".freqqdj_unittestdb";
+static bool stopuc;
+static ucman_data_t ucmd;
+
 static int setup(void **state)
 {
 	unibase_init_para_t init_para;
 	ubb_default_initpara(&init_para);
-	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,gptp:46", "UBL_GPTP");
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46,gptp:46",
+						   "UBL_GPTP");
 	unibase_init(&init_para);
+	uniconf_remove_dbfile(dbname);
+	ucmd.stoprun=&stopuc;
+	ucmd.dbname=dbname;
+	ucmd.ucmode=UC_CALLMODE_UNICONF|UC_CALLMODE_THREAD;
+	ucmd.ucmanstart=malloc(sizeof(CB_SEM_T));
+	if(ub_assert_fatal(ucmd.ucmanstart!=NULL, __func__, NULL)){return -1;}
+	memset(ucmd.ucmanstart, 0, sizeof(CB_SEM_T));
+	ucmd.hwmod="NONE";
+	CB_SEM_INIT(ucmd.ucmanstart, 0, 0);
+	CB_THREAD_CREATE(&ucthreadt, NULL, uniconf_main, &ucmd);
+	CB_SEM_WAIT(ucmd.ucmanstart);
+	if(gptpgcfg_init(dbname, NULL, 0, true)) return -1;
+
 	return 0;
 }
 
 static int teardown(void **state)
 {
+	stopuc=true;
+	CB_THREAD_JOIN(ucthreadt, NULL);
+	CB_SEM_DESTROY(ucmd.ucmanstart);
+	free(ucmd.ucmanstart);
+	uniconf_remove_dbfile(dbname);
 	unibase_close();
 	return 0;
 }

@@ -47,13 +47,15 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_state_selection_sm.h"
+#include "gptpcommon.h"
 
-extern char *PTPPortState_debug[];
+extern char *PTPPortState_debug[10];
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define PATH_TRACE	    sm->bptasg->pathTrace
@@ -63,6 +65,7 @@ extern char *PTPPortState_debug[];
 #define PATH_TRACE	    sm->bptasg->pathTrace
 #define RESELECT	    sm->bptasg->reselect
 #define SELECTED	    sm->bptasg->selected
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 typedef enum {
 	INIT,
@@ -90,10 +93,15 @@ void updateStateDisabledTree(port_state_selection_data_t *sm)
 	/* 10.3.12.2.1 ... sets all elements of selectedState to DisablePort
 	   and lastGmPriority to all ones, set pathTrace to thisClock */
 	int i;
-	for(i=0;i<MAX_PORT_NUMBER_LIMIT;i++){
+	for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 		SELECTED_STATE[i] = DisabledPort;
+		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
+					    IEEE1588_PTP_PORT_STATE, i,
+					    sm->domainIndex, YDBI_STATUS,
+					    &SELECTED_STATE[i], sizeof(uint8_t),
+					    YDBI_NO_NOTICE);
 	}
-	memset(&LAST_GM_PRIORITY, 1, sizeof(UInteger224));
+	(void)memset(&LAST_GM_PRIORITY, 1, sizeof(UInteger224));
 	memcpy(&PATH_TRACE[0], sm->ptasg->thisClock, sizeof(ClockIdentity));
 	sm->bptasg->pathTraceCount = 1;
 }
@@ -102,7 +110,7 @@ void clearReselectTree(port_state_selection_data_t *sm)
 {
 	/* 10.3.12.2.2 set all reselect element to false */
 	int i;
-	for(i=0;i<MAX_PORT_NUMBER_LIMIT;i++){
+	for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 		RESELECT[i] = false;
 	}
 }
@@ -111,7 +119,7 @@ void setSelectedTree(port_state_selection_data_t *sm)
 {
 	/* 10.3.12.2.3 set all selected element to true */
 	int i;
-	for(i=0;i<MAX_PORT_NUMBER_LIMIT;i++){
+	for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 		SELECTED[i] = true;
 	}
 }
@@ -124,29 +132,29 @@ static int portStateUpdate(port_state_selection_data_t *sm,
 	int N;
 
 	oldState = *selected_state;
-	if(bppgl->infoIs == Disabled){
+	if(bppgl->infoIs == (uint8_t)Disabled){
 		*selected_state = DisabledPort;
 		bppgl->updtInfo = false;
 	} else if(ppgl->forAllDomain->asymmetryMeasurementMode == true){
 		*selected_state = PassivePort;
 		bppgl->updtInfo = false;
-	} else if(bppgl->infoIs == Aged){
+	} else if(bppgl->infoIs == (uint8_t)Aged){
 		bppgl->updtInfo = true;
 		*selected_state = MasterPort;
-	} else if(bppgl->infoIs == Mine){
+	} else if(bppgl->infoIs == (uint8_t)Mine){
 		*selected_state = MasterPort;
 		if ((memcmp(&bppgl->masterPriority,&bppgl->portPriority,
 			    sizeof(UInteger224))!=0) ||
 		    (sm->bptasg->masterStepsRemoved != bppgl->portStepsRemoved)){
 			bppgl->updtInfo = true;
 		}
-	} else if(bppgl->infoIs == Received){
+	} else if(bppgl->infoIs == (uint8_t)Received){
 		// gmPriority is derived from portPriority
 		if (memcmp(&GM_PRIORITY, gmPathPriority, sizeof(UInteger224))==0){
 			*selected_state = SlavePort;
 			bppgl->updtInfo = false;
 		}else{
-			if (SUPERIOR_PRIORITY !=
+			if ((uint8_t)SUPERIOR_PRIORITY !=
 			    compare_priority_vectors(&bppgl->masterPriority,
 						     &bppgl->portPriority)){
 				*selected_state = PassivePort;
@@ -157,15 +165,15 @@ static int portStateUpdate(port_state_selection_data_t *sm,
 				bppgl->updtInfo = true;
 			}
 		}
-	}
-	if((*selected_state==SlavePort) && (oldState!=SlavePort)){
+	}else{}
+	if((*selected_state==(uint8_t)SlavePort) && (oldState!=(uint8_t)SlavePort)){
 		// ??? transition from none SlavePort to this port as SlavePort must
 		// update the global pathTrace
-		N = bppgl->annPathSequenceCount < MAX_PATH_TRACE_N ?
-			bppgl->annPathSequenceCount : MAX_PATH_TRACE_N;
-		if(N+1 <= MAX_PATH_TRACE_N){
+		N = bppgl->annPathSequenceCount < (uint8_t)MAX_PATH_TRACE_N ?
+			bppgl->annPathSequenceCount : (uint8_t)MAX_PATH_TRACE_N;
+		if((N+1) <= MAX_PATH_TRACE_N){
 			// copy pathSequence to pathTrace
-			memcpy(PATH_TRACE, &bppgl->annPathSequence, sizeof(ClockIdentity)*N);
+			memcpy(PATH_TRACE, &bppgl->annPathSequence, sizeof(ClockIdentity)*(uint32_t)N);
 			// append thisClock to pathTrace
 			memcpy(&(PATH_TRACE[N]), sm->ptasg->thisClock, sizeof(ClockIdentity));
 			sm->bptasg->pathTraceCount = N+1;
@@ -184,13 +192,17 @@ static int portStateUpdate(port_state_selection_data_t *sm,
 	return 0;
 }
 
-static void update_lastGmInfo(PerTimeAwareSystemGlobal *ptasg)
+static void update_lastGmInfo(uint8_t gptpInstanceIndex, PerTimeAwareSystemGlobal *ptasg,
+			      int domainIndex)
 {
 	ptasg->gmTimeBaseIndicator++;
-	memset(&ptasg->lastGmPhaseChange, 0, sizeof(ScaledNs));
-	if(gptpconf_get_intitem(CONF_RESET_FREQADJ_BECOMEGM)){
+	(void)memset(&ptasg->lastGmPhaseChange, 0, sizeof(ScaledNs));
+	if(gptpgcfg_get_intitem(
+		   gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_RESET_FREQADJ_BECOMEGM,
+		   YDBI_CONFIG)!=0){
 		ptasg->lastGmFreqChange =
-			(double)(-gptpclock_get_adjppb(0, ptasg->domainNumber))	/ 1.0E9;
+			(double)(-gptpclock_get_adjppb(gptpInstanceIndex,
+						       0, ptasg->domainIndex))	/ 1.0E9;
 	}else{
 		ptasg->lastGmFreqChange = 0.0;
 	}
@@ -199,23 +211,25 @@ static void update_lastGmInfo(PerTimeAwareSystemGlobal *ptasg)
 static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 {
 	int i;
-	UInteger224 gmPathPriority[sm->max_ports];
+	UInteger224 *gmPathPriority;
 	bool slavePortAvail = false;
 	Enumeration2 oldState;
 	void *rval=NULL;
 	bool gmchange=false;
 
+	gmPathPriority=UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(UInteger224)*(uint32_t)sm->max_ports);
+	if(ub_assert_fatal(gmPathPriority!=NULL, __func__, NULL)){return NULL;}
 	/* 10.3.12.2.3 */
 	// compute gmPathPriority vector for each port
 	for(i=0;i<sm->max_ports;i++){
 		// initialize gmPathPriority as inferior (set all to 0xFF)
-		memset(&gmPathPriority[i], 0xFF, sizeof(UInteger224));
+		(void)memset(&gmPathPriority[i], 0xFF, sizeof(UInteger224));
 		if (HAS_PORT_PRIORITY(sm->bppgl[i]->portPriority) &&
-		    (sm->bppgl[i]->infoIs != Aged)){
+		    (sm->bppgl[i]->infoIs != (uint8_t)Aged)){
 			// gmPathPriority = {RM: SRM+1: PM: PNS}
 			memcpy(&gmPathPriority[i], &sm->bppgl[i]->portPriority,
 			       sizeof(UInteger224));
-			gmPathPriority[i].stepsRemoved += 1;
+			gmPathPriority[i].stepsRemoved += 1u;
 		}
 	}
 	// save gmPriority to lastGmPriority
@@ -233,10 +247,10 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 	sm->bptasg->timeSource = sm->bptasg->sysTimeSource;
 
 	for(i=0;i<sm->max_ports;i++){
-		if (sm->bppgl[i]->infoIs == Disabled){continue;}
+		if (sm->bppgl[i]->infoIs == (uint8_t)Disabled){continue;}
 		if ((memcmp(gmPathPriority[i].sourcePortIdentity.clockIdentity,
 			   &sm->ptasg->thisClock, sizeof(ClockIdentity))!=0) &&
-		    (SUPERIOR_PRIORITY == compare_priority_vectors(&gmPathPriority[i],
+		    ((uint8_t)SUPERIOR_PRIORITY == compare_priority_vectors(&gmPathPriority[i],
 								   &GM_PRIORITY))){
 			UB_LOG(UBL_DEBUGV, "port_state_selection:%s:"
 			       "new gmPriority from portIndex=%d\n", __func__, i);
@@ -255,13 +269,11 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 			print_priority_vector(UBL_DEBUG,"GM", &GM_PRIORITY);
 		}
 	}
-	if(memcmp(&LAST_GM_PRIORITY, &GM_PRIORITY, sizeof(UInteger224))){
+	if(memcmp(&LAST_GM_PRIORITY, &GM_PRIORITY, sizeof(UInteger224))!=0){
 		UB_TLOG(UBL_INFO, "domainIndex=%d, GM changed old="UB_PRIhexB8", new="UB_PRIhexB8"\n",
 			 sm->domainIndex,
 			 UB_ARRAY_B8(LAST_GM_PRIORITY.rootSystemIdentity.clockIdentity),
 			 UB_ARRAY_B8(GM_PRIORITY.rootSystemIdentity.clockIdentity));
-		gptpclock_set_gmchange(sm->ptasg->domainNumber,
-				       GM_PRIORITY.rootSystemIdentity.clockIdentity);
 		gmchange=true;
 		rval=GM_PRIORITY.rootSystemIdentity.clockIdentity;
 	}
@@ -274,9 +286,9 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 		memcpy(&sm->bppgl[i]->masterPriority, &GM_PRIORITY, sizeof(UInteger224));
 		memcpy(&sm->bppgl[i]->masterPriority.sourcePortIdentity.clockIdentity,
 		       &sm->ptasg->thisClock, sizeof(ClockIdentity));
-		sm->bppgl[i]->masterPriority.sourcePortIdentity.portNumber =
+		sm->bppgl[i]->masterPriority.sourcePortIdentity.portIndex =
 			sm->ppgl[i]->thisPort;
-		sm->bppgl[i]->masterPriority.portNumber = sm->ppgl[i]->thisPort;
+		sm->bppgl[i]->masterPriority.portNumber = md_port_index2number(sm->ppgl[i]->thisPort);
 	}
 	// compute masterStepsRemoved
 	sm->bptasg->masterStepsRemoved = GM_PRIORITY.stepsRemoved;
@@ -284,13 +296,19 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 	for(i=1;i<sm->max_ports;i++){
 		oldState=SELECTED_STATE[i];
 		if(portStateUpdate(sm, &SELECTED_STATE[i],
-				   sm->bppgl[i], sm->ppgl[i], &gmPathPriority[i])){
+				   sm->bppgl[i], sm->ppgl[i], &gmPathPriority[i])!=0){
 			UB_LOG(UBL_DEBUG, "port_state_selection:%s: domainIndex=%d portIndex=%d "
 			       "state %s -> %s\n",
 			       __func__, sm->domainIndex, i, PTPPortState_debug[oldState],
 			       PTPPortState_debug[SELECTED_STATE[i]]);
-			if(oldState==SlavePort){
-				gptpclock_reset_gmsync(0, sm->ptasg->domainNumber);
+			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
+						    IEEE1588_PTP_PORT_STATE, i,
+						    sm->domainIndex, YDBI_STATUS,
+						    &SELECTED_STATE[i], sizeof(uint8_t),
+						    YDBI_NO_NOTICE);
+			if(oldState==(uint8_t)SlavePort){
+				(void)gptpclock_set_gmsync(GPTPINSTNUM,
+							   sm->ptasg->domainIndex, GMSYNC_UNSYNC);
 			}
 			continue;
 		}
@@ -300,7 +318,7 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 		       sm->bppgl[i]->updtInfo);
 	}
 	// update gmPresent
-	if (GM_PRIORITY.rootSystemIdentity.priority1 < 255){
+	if (GM_PRIORITY.rootSystemIdentity.priority1 < 255u){
 		sm->ptasg->gmPresent = true;
 	} else {
 		sm->ptasg->gmPresent = false;
@@ -308,7 +326,7 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 
 	// assign portState for port 0
 	for(i=1;i<sm->max_ports;i++){
-		if(SELECTED_STATE[i]==SlavePort){
+		if(SELECTED_STATE[i]==(uint8_t)SlavePort){
 			slavePortAvail = true;
 			break;
 		}
@@ -320,23 +338,36 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 		SELECTED_STATE[0] = PassivePort; // we are not GM
 	}else{
 		SELECTED_STATE[0] = SlavePort; // we are GM
-		if(gmchange){update_lastGmInfo(sm->ptasg);}
+		if(gmchange){
+			update_lastGmInfo(GPTPINSTNUM, sm->ptasg, sm->domainIndex);
+		}
+	}
+	if(gmchange){
+		(void)gptpclock_set_gmchange(GPTPINSTNUM, sm->ptasg->domainIndex,
+					     GM_PRIORITY.rootSystemIdentity.clockIdentity,
+					     !slavePortAvail);
 	}
 	if(oldState != SELECTED_STATE[0]){
 		UB_LOG(UBL_DEBUG, "port_state_selection:%s: domainIndex=%d portIndex=0 "
 		       "state %s -> %s\n",
 		       __func__, sm->domainIndex, PTPPortState_debug[oldState],
 		       PTPPortState_debug[SELECTED_STATE[0]]);
-		if(SELECTED_STATE[0] == SlavePort){
+		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
+					    IEEE1588_PTP_PORT_STATE, 0,
+					    sm->domainIndex, YDBI_STATUS,
+					    &SELECTED_STATE[0], sizeof(uint8_t),
+					    YDBI_NO_NOTICE);
+		if(SELECTED_STATE[0] == (uint8_t)SlavePort){
 			/* we are GM and the clock doesn't have to sync to the other,
 			   which means the master clock is synced status.
 			   if init_slave_ts is set, defer gptpclock_set_gmsync */
 			if(!sm->deferred_gmsync){
-				gptpclock_set_gmsync(0, sm->ptasg->domainNumber,
-						     sm->ptasg->thisClock, true);
+				(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex,
+							   GMSYNC_SYNC_STABLE);
 			}
 		}else{
-			gptpclock_reset_gmsync(0, sm->ptasg->domainNumber);
+			(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex,
+						   GMSYNC_UNSYNC);
 		}
 	}
 
@@ -346,12 +377,14 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 		memcpy(&PATH_TRACE[0], &sm->ptasg->thisClock, sizeof(ClockIdentity));
 		sm->bptasg->pathTraceCount = 1;
 	}
+	UB_SD_RELMEM(GPTP_SMALL_ALLOC, gmPathPriority);
 	return rval;
 }
 
 static void *proc_init_slave(port_state_selection_data_t *sm, int64_t cts64)
 {
-	if(SELECTED_STATE[0] != SlavePort && gptpclock_get_gmsync(0, 0)==1 &&
+	if((SELECTED_STATE[0] != (uint8_t)SlavePort) &&
+	   (gptpclock_get_gmsync(GPTPINSTNUM, 0)>=GMSYNC_SYNC) &&
 	   sm->ptasg->gm_stable_initdone){
 		UB_LOG(UBL_INFO, "%s:already synced, "
 		       "Domain0-priority1 returns to the configured value\n",__func__);
@@ -359,9 +392,10 @@ static void *proc_init_slave(port_state_selection_data_t *sm, int64_t cts64)
 	}else if(sm->init_slave_ts<cts64){
 		UB_LOG(UBL_INFO, "%s:expired, "
 		       "Domain0-priority1 returns to the configured value\n",__func__);
-		if(SELECTED_STATE[0] == SlavePort){
+		if(SELECTED_STATE[0] == (uint8_t)SlavePort){
 			// this is GM, call the deferred process
-			gptpclock_set_gmsync(0, sm->ptasg->domainNumber, sm->ptasg->thisClock, true);
+			(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex,
+						   GMSYNC_SYNC_STABLE);
 		}
 		goto clearexit;
 	} else {
@@ -371,22 +405,26 @@ clearexit:
 	sm->deferred_gmsync=false;
 	sm->init_slave_ts=0;
 	SYSTEM_PRIORITY.rootSystemIdentity.priority1=
-		gptpconf_get_intitem(CONF_PRIMARY_PRIORITY1);
+		gptpgcfg_get_yang_intitem(GPTPINSTNUM,
+					  IEEE1588_PTP_DEFAULT_DS,
+					  IEEE1588_PTP_PRIORITY1, 255,
+					  sm->domainIndex, YDBI_CONFIG);
 	return updtStatesTree(sm, cts64);
 }
 
 static void *proc_deferred_gmsync(port_state_selection_data_t *sm, int64_t cts64)
 {
-	if(sm->init_slave_ts) {
+	if(sm->init_slave_ts!=0) {
 		// domain0 only
 		return proc_init_slave(sm, cts64);
 	}
 	if(sm->domainIndex==0){return NULL;}
 
-	if(gptpclock_get_gmstable(0)){
-		if(SELECTED_STATE[0] == SlavePort){
+	if(gptpclock_get_gmsync(GPTPINSTNUM, 0)>=GMSYNC_SYNC_STABLE){
+		if(SELECTED_STATE[0] == (uint8_t)SlavePort){
 			// this is GM on dominaIndex > 0
-			gptpclock_set_gmsync(0, sm->ptasg->domainNumber, sm->ptasg->thisClock, true);
+			(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex,
+						   GMSYNC_SYNC_STABLE);
 		}
 		sm->deferred_gmsync=false;
 	}
@@ -405,20 +443,27 @@ static port_state_selection_state_t allstate_condition(port_state_selection_data
 static void *init_bridge_proc(port_state_selection_data_t *sm, int64_t cts64)
 {
 	int i;
-	int static_slave=gptpconf_get_intitem(CONF_STATIC_PORT_STATE_SLAVE_PORT);
+	int static_slave=gptpgcfg_get_intitem(
+		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT,
+		YDBI_CONFIG);
 	UB_LOG(UBL_DEBUGV, "port_state_selection:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	if(static_slave>=0){
-		for(i=0;i<MAX_PORT_NUMBER_LIMIT;i++){
+		for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 			if(i==static_slave){
 				SELECTED_STATE[i] = SlavePort;
 			}else{
 				SELECTED_STATE[i] = MasterPort;
 			}
+			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
+						    IEEE1588_PTP_PORT_STATE, i,
+						    sm->domainIndex, YDBI_STATUS,
+						    &SELECTED_STATE[i], sizeof(uint8_t),
+						    YDBI_NO_NOTICE);
 		}
 		sm->ptasg->gmPresent = true;
 		if(static_slave==0){
-			gptpclock_set_gmsync(0, sm->ptasg->domainNumber,
-					     sm->ptasg->thisClock, true);
+			(void)gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex,
+						   GMSYNC_SYNC_STABLE);
 		}
 		return NULL;
 	}
@@ -428,7 +473,21 @@ static void *init_bridge_proc(port_state_selection_data_t *sm, int64_t cts64)
 
 static port_state_selection_state_t init_bridge_condition(port_state_selection_data_t *sm)
 {
-	if(gptpconf_get_intitem(CONF_STATIC_PORT_STATE_SLAVE_PORT)>=0){return INIT_BRIDGE;}
+	int static_slave=gptpgcfg_get_intitem(
+		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT,
+		YDBI_CONFIG);
+	if(static_slave>=0){
+		if(static_slave>=XL4_DATA_ABS_MAX_NETDEVS){return INIT_BRIDGE;} //invalid
+		if(static_slave==0){return INIT_BRIDGE;} // we are GM
+		if(sm->ppgl[static_slave]->asCapable){
+			if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)<GMSYNC_SYNC){
+				gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex, GMSYNC_SYNC);
+			}
+		}else{
+			gptpclock_set_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex, GMSYNC_UNSYNC);
+		}
+		return INIT_BRIDGE;
+	}
 	return STATE_SELECTION;
 }
 
@@ -440,15 +499,19 @@ static void *state_selection_proc(port_state_selection_data_t *sm, int64_t cts64
 	sm->thisSM->forAllDomain->asymmetryMeasurementModeChange = false;
 	clearReselectTree(sm);
 
-	if(sm->domainIndex==0 && gptpconf_get_intitem(CONF_INITIAL_SLAVE_TIME) &&
+	if((sm->domainIndex==0) && gptpgcfg_get_intitem(
+		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_INITIAL_SLAVE_TIME,
+		   YDBI_CONFIG) &&
 	   !sm->ptasg->gm_stable_initdone){
 		UB_LOG(UBL_INFO, "%s:Domain0 start with priority1=254\n", __func__);
 		SYSTEM_PRIORITY.rootSystemIdentity.priority1=254; // set lowest
 		sm->init_slave_ts=cts64;
-		sm->init_slave_ts+=gptpconf_get_intitem(CONF_INITIAL_SLAVE_TIME)*UB_SEC_NS;
+		sm->init_slave_ts+=gptpgcfg_get_intitem(
+			GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_INITIAL_SLAVE_TIME,
+			YDBI_CONFIG)*UB_SEC_NS;
 		sm->deferred_gmsync=true;
 	}
-	if(sm->domainIndex!=0 && !sm->ptasg->gm_stable_initdone) {
+	if((sm->domainIndex!=0) && !sm->ptasg->gm_stable_initdone) {
 		sm->deferred_gmsync=true;
 	}
 
@@ -461,7 +524,7 @@ static port_state_selection_state_t state_selection_condition(port_state_selecti
 {
 	int i;
 	bool reselected = false;
-	for(i=0;i<MAX_PORT_NUMBER_LIMIT;i++){
+	for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 		if (RESELECT[i]) {
 			reselected=true;
 			break;
@@ -497,15 +560,17 @@ void *port_state_selection_sm(port_state_selection_data_t *sm, uint64_t cts64)
 			break;
 		case STATE_SELECTION:
 			if(sm->deferred_gmsync) {
-				if((retp=proc_deferred_gmsync(sm, cts64))){break;}
+				retp=proc_deferred_gmsync(sm, cts64);
+				if(retp!=NULL){break;}
 			}
 			if(state_change){retp=state_selection_proc(sm, cts64);}
 			sm->state = state_selection_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -521,7 +586,8 @@ void port_state_selection_sm_init(port_state_selection_data_t **sm,
 	port_state_selection_data_t **forAllDomainSM)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, domainIndex);
-	if(INIT_SM_DATA(port_state_selection_data_t, PortStateSelectionSM, sm)){return;}
+	INIT_SM_DATA(port_state_selection_data_t, PortStateSelectionSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppgl = ppgl;
 	(*sm)->bptasg = bptasg;
@@ -532,11 +598,11 @@ void port_state_selection_sm_init(port_state_selection_data_t **sm,
 	if (domainIndex==0){
 		if(ub_assert_fatal((*sm)==(*forAllDomainSM), __func__, NULL)){return;}
 		// initialize forAllDomain
-		(*sm)->thisSM->forAllDomain=(PortStateSelectionSMforAllDomain *)
-			malloc(sizeof(PortStateSelectionSMforAllDomain));
+		(*sm)->thisSM->forAllDomain=(PortStateSelectionSMforAllDomain *)UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+							 sizeof(PortStateSelectionSMforAllDomain));
 		if(ub_assert_fatal((*sm)->thisSM->forAllDomain!=NULL,
 				   __func__, "malloc")){return;}
-		memset((*sm)->thisSM->forAllDomain, 0, sizeof(PortStateSelectionSMforAllDomain));
+		(void)memset((*sm)->thisSM->forAllDomain, 0, sizeof(PortStateSelectionSMforAllDomain));
 		(*sm)->thisSM->forAllDomain->asymmetryMeasurementModeChange = false;
 	}else{
 		if(ub_assert_fatal((*forAllDomainSM!=NULL) &&
@@ -549,7 +615,7 @@ void port_state_selection_sm_init(port_state_selection_data_t **sm,
 int port_state_selection_sm_close(port_state_selection_data_t **sm)
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d\n", __func__, (*sm)->domainIndex);
-	if ((*sm)->domainIndex==0){free((*sm)->thisSM->forAllDomain);}
+	if ((*sm)->domainIndex==0){UB_SD_RELMEM(GPTP_SMALL_ALLOC, (*sm)->thisSM->forAllDomain);}
 	CLOSE_SM_DATA(sm);
 	return 0;
 }

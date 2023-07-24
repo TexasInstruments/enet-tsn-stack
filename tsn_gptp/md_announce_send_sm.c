@@ -47,12 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "md_announce_send_sm.h"
 #include "md_abnormal_hooks.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -79,6 +81,7 @@ struct md_announce_send_data{
 #define AS_CAPABLE sm->ppg->asCapable
 #define TXANN sm->thisSM->txAnnouncePtr
 #define RCVDTXANN sm->thisSM->rcvdTxAnnounce
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static int sendAnnounce(md_announce_send_data_t *sm)
 {
@@ -88,15 +91,16 @@ static int sendAnnounce(md_announce_send_data_t *sm)
 
 	// truncate uncessary container */
 	N = TXANN->tlvLength / sizeof(ClockIdentity);
-	ssize=ssize-((MAX_PATH_TRACE_N-N)*sizeof(ClockIdentity));
-	sdata=(MDPTPMsgAnnounce *)md_header_compose(
-		sm->gpnetd, sm->portIndex, ANNOUNCE, ssize,
-		sm->ptasg->thisClock,
-		sm->ppg->thisPort,
-		TXANN->header.sequenceId,
-		sm->bppg->currentLogAnnounceInterval);
+	ssize=ssize-((MAX_PATH_TRACE_N-N)*(int)sizeof(ClockIdentity));
+	sdata=(MDPTPMsgAnnounce *)md_header_compose(GPTPINSTNUM,
+				sm->gpnetd, sm->portIndex, ANNOUNCE, ssize,
+				sm->ptasg->thisClock,
+				sm->ppg->thisPort,
+				TXANN->header.sequenceId,
+				sm->bppg->currentLogAnnounceInterval);
 	if(!sdata){return -1;}
-	sdata->head.domainNumber=sm->ptasg->domainNumber;
+	sdata->head.domainNumber=
+		md_domain_index2number(sm->ptasg->domainIndex);
 	sdata->head.flags[0] = TXANN->header.flags[0];
 	sdata->head.flags[1] = TXANN->header.flags[1];
 	sdata->currentUtcOffset_ns = htons(TXANN->currentUtcOffset);
@@ -114,8 +118,8 @@ static int sendAnnounce(md_announce_send_data_t *sm)
 	sdata->timeSource = TXANN->timeSource;
 	sdata->tlvType_ns = htons(TXANN->tlvType);
 	sdata->tlvLength_ns = htons(TXANN->tlvLength);
-	if (TXANN->tlvLength > 0){
-		memcpy(&sdata->pathSequence, &TXANN->pathSequence, sizeof(ClockIdentity) * N);
+	if (TXANN->tlvLength > 0u){
+		memcpy(&sdata->pathSequence, &TXANN->pathSequence, (int)sizeof(ClockIdentity) * N);
 	} else {
 		/* 802.1AS and AVNU differs in the behavior when there is no PathTrace
 		 * TLV appended in the Announce message.
@@ -128,8 +132,8 @@ static int sendAnnounce(md_announce_send_data_t *sm)
 		 */
 		if(sm->ptasg->conformToAvnu){
 			// truncate PathTrace field
-			ssize-=sizeof(sdata->tlvType_ns);
-			ssize-=sizeof(sdata->tlvLength_ns);
+			ssize-=(int)sizeof(sdata->tlvType_ns);
+			ssize-=(int)sizeof(sdata->tlvLength_ns);
 		}
 	}
 
@@ -206,9 +210,10 @@ void *md_announce_send_sm(md_announce_send_data_t *sm, uint64_t cts64)
 			sm->state = send_announce_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -223,7 +228,8 @@ void md_announce_send_sm_init(md_announce_send_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(md_announce_send_data_t, MDAnnounceSendSM, sm)){return;}
+	INIT_SM_DATA(md_announce_send_data_t, MDAnnounceSendSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->gpnetd = gpnetd;
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
@@ -253,7 +259,7 @@ void *md_announce_send_sm_mdAnnouncSend(md_announce_send_data_t *sm,
 
 void md_announce_send_stat_reset(md_announce_send_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_announce_send_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_announce_send_stat_data_t));
 }
 
 md_announce_send_stat_data_t *md_announce_send_get_stat(md_announce_send_data_t *sm)

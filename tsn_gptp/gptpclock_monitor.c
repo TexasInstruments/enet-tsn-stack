@@ -278,7 +278,8 @@ int main(int argc, char *argv[])
 	unibase_init_para_t init_para;
 
 	ubb_default_initpara(&init_para);
-	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,gptp:46", "UBL_GPTP");
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46,gptp:46",
+						   "UBL_GPTP");
 	unibase_init(&init_para);
 	if(set_options(argc, argv)){return 1;}
 	if(gptpmasterclock_init(shmem_name)){return 1;}

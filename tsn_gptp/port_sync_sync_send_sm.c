@@ -47,11 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_sync_sync_send_sm.h"
+#include "gptpconf/gptpgcfg.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -87,12 +90,13 @@ struct port_sync_sync_send_data{
 //#define OLD_SYNC_INTERVAL oldSyncInterval
 #define OLD_SYNC_INTERVAL sm->ppg->syncInterval;
 #define LAST_SYNC_SENT_TIME sm->thisSM->lastSyncSentTime
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static void setMDSync(port_sync_sync_send_data_t *sm)
 {
-	sm->mdSyncSend.domainNumber = sm->ptasg->domainNumber;
+	sm->mdSyncSend.domainIndex = sm->ptasg->domainIndex;
 	sm->mdSyncSend.followUpCorrectionField = sm->thisSM->lastFollowUpCorrectionField;
-	sm->mdSyncSend.sourcePortIdentity.portNumber = THIS_PORT ;
+	sm->mdSyncSend.sourcePortIdentity.portIndex = THIS_PORT ;
 	memcpy(sm->mdSyncSend.sourcePortIdentity.clockIdentity, sm->ptasg->thisClock,
 	       sizeof(ClockIdentity));
 	sm->mdSyncSend.logMessageInterval = sm->ppg->currentLogSyncInterval;
@@ -127,11 +131,15 @@ static void *transmit_init_proc(port_sync_sync_send_data_t *sm)
 static port_sync_sync_send_state_t transmit_init_condition(port_sync_sync_send_data_t *sm)
 {
 	if(RCVD_PSSYNC &&
-	   (RCVD_PSSYNC_PTR->localPortNumber != THIS_PORT) &&
+	   ((uint16_t)RCVD_PSSYNC_PTR->localPortIndex != THIS_PORT) &&
 	   PORT_OPER && PTP_PORT_ENABLED &&
 	   AS_CAPABLE &&
-	   (SELECTED_STATE[sm->portIndex] == MasterPort ||
-	    gptpconf_get_intitem(CONF_TEST_SYNC_SEND_PORT) == sm->portIndex)){return SEND_MD_SYNC;}
+	   ((SELECTED_STATE[sm->portIndex] == (uint8_t)MasterPort) ||
+	    (gptpgcfg_get_intitem(
+		    GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_TEST_SYNC_SEND_PORT,
+		    YDBI_CONFIG) == sm->portIndex))){
+		return SEND_MD_SYNC;
+	}
 
 	return TRANSMIT_INIT;
 }
@@ -142,7 +150,7 @@ static void *send_md_sync_proc(port_sync_sync_send_data_t *sm, uint64_t cts64)
 	UB_LOG(UBL_DEBUGV, "port_sync_sync_send:%s:domainIndex=%d, portIndex=%d\n",
 		__func__, sm->domainIndex, sm->portIndex);
 	if(RCVD_PSSYNC) {
-		sm->thisSM->lastRcvdPortNum = RCVD_PSSYNC_PTR->localPortNumber;
+		sm->thisSM->lastRcvdPortNum = RCVD_PSSYNC_PTR->localPortIndex;
 		sm->thisSM->lastPreciseOriginTimestamp = RCVD_PSSYNC_PTR->preciseOriginTimestamp;
 		sm->thisSM->lastFollowUpCorrectionField = RCVD_PSSYNC_PTR->followUpCorrectionField;
 		sm->thisSM->lastRateRatio = RCVD_PSSYNC_PTR->rateRatio;
@@ -159,7 +167,7 @@ static void *send_md_sync_proc(port_sync_sync_send_data_t *sm, uint64_t cts64)
 	//UB_LOG(UBL_DEBUG, "%s:txMDSync\n", __func__);
 	retv = &sm->mdSyncSend;
 	if (SYNC_SLOWDOWN) {
-		if (NUMBER_SYNC_TRANSMISSIONS >= sm->ppg->syncReceiptTimeout) {
+		if (NUMBER_SYNC_TRANSMISSIONS >= (uint8_t)sm->ppg->syncReceiptTimeout) {
 			INTERVAL1 = sm->ppg->syncInterval;
 			NUMBER_SYNC_TRANSMISSIONS = 0;
 			SYNC_SLOWDOWN = false;
@@ -177,16 +185,17 @@ static void *send_md_sync_proc(port_sync_sync_send_data_t *sm, uint64_t cts64)
 static port_sync_sync_send_state_t send_md_sync_condition(port_sync_sync_send_data_t *sm,
 							  uint64_t cts64)
 {
-	if(cts64 >= sm->thisSM->syncReceiptTimeoutTime.nsec &&
+	if((cts64 >= sm->thisSM->syncReceiptTimeoutTime.nsec) &&
 	   !SYNC_LOCKED){return SYNC_RECEIPT_TIMEOUT;}
 
 	if( ( (RCVD_PSSYNC && SYNC_LOCKED &&
-	       RCVD_PSSYNC_PTR->localPortNumber != THIS_PORT) ||
-	      (!SYNC_LOCKED && (cts64 - LAST_SYNC_SENT_TIME.nsec >= INTERVAL1.nsec) &&
+	       ((uint16_t)RCVD_PSSYNC_PTR->localPortIndex != THIS_PORT)) ||
+	      (!SYNC_LOCKED && ((cts64 - LAST_SYNC_SENT_TIME.nsec) >= INTERVAL1.nsec) &&
 	       (sm->thisSM->lastRcvdPortNum != THIS_PORT )) ) &&
 	    PORT_OPER && PTP_PORT_ENABLED && AS_CAPABLE &&
-	    (SELECTED_STATE[sm->portIndex] == MasterPort ||
-	     gptpconf_get_intitem(CONF_TEST_SYNC_SEND_PORT) == sm->portIndex)){
+	    ((SELECTED_STATE[sm->portIndex] == (uint8_t)MasterPort) ||
+	     (gptpgcfg_get_intitem(GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_TEST_SYNC_SEND_PORT,
+				   YDBI_CONFIG) == sm->portIndex))){
 		sm->last_state = REACTION;
 	}
 
@@ -204,11 +213,13 @@ static void *sync_receipt_timeout_proc(port_sync_sync_send_data_t *sm)
 static port_sync_sync_send_state_t sync_receipt_timeout_condition(port_sync_sync_send_data_t *sm)
 {
 	if(RCVD_PSSYNC &&
-	   (RCVD_PSSYNC_PTR->localPortNumber != THIS_PORT) &&
+	   ((uint16_t)RCVD_PSSYNC_PTR->localPortIndex != THIS_PORT) &&
 	   PORT_OPER && PTP_PORT_ENABLED &&
 	   AS_CAPABLE &&
-	   (SELECTED_STATE[sm->portIndex] == MasterPort ||
-	    gptpconf_get_intitem(CONF_TEST_SYNC_SEND_PORT) == sm->portIndex)){
+	   (SELECTED_STATE[sm->portIndex] == (uint8_t)MasterPort ||
+	    gptpgcfg_get_intitem(
+		    GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_TEST_SYNC_SEND_PORT,
+		    YDBI_CONFIG) == sm->portIndex)){
 		return SEND_MD_SYNC;
 	}
 	return SYNC_RECEIPT_TIMEOUT;
@@ -246,9 +257,10 @@ void *port_sync_sync_send_sm(port_sync_sync_send_data_t *sm, uint64_t cts64)
 			sm->state = sync_receipt_timeout_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -261,7 +273,8 @@ void port_sync_sync_send_sm_init(port_sync_sync_send_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_sync_sync_send_data_t, PortSyncSyncSendSM, sm)){return;}
+	INIT_SM_DATA(port_sync_sync_send_data_t, PortSyncSyncSendSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
@@ -281,7 +294,7 @@ void *port_sync_sync_send_sm_portSyncSync(port_sync_sync_send_data_t *sm,
 {
 	RCVD_PSSYNC = true;
 	RCVD_PSSYNC_PTR = portSyncSync;
-	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d, localPortNumber=%d\n",
-	       __func__, sm->domainIndex, sm->portIndex, RCVD_PSSYNC_PTR->localPortNumber);
+	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d, localPortIndex=%d\n",
+	       __func__, sm->domainIndex, sm->portIndex, RCVD_PSSYNC_PTR->localPortIndex);
 	return port_sync_sync_send_sm(sm, cts64);
 }

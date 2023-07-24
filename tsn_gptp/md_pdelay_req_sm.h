@@ -47,8 +47,8 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __MD_PDELAY_REQ_SM_H_
-#define __MD_PDELAY_REQ_SM_H_
+#ifndef MD_PDELAY_REQ_SM_H_
+#define MD_PDELAY_REQ_SM_H_
 
 typedef struct md_pdelay_req_data md_pdelay_req_data_t;
 

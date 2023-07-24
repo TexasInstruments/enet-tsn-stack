@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "link_delay_interval_setting_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -196,9 +198,10 @@ void *link_delay_interval_setting_sm(link_delay_interval_setting_data_t *sm, uin
 			sm->state = set_interval_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -211,8 +214,9 @@ void link_delay_interval_setting_sm_init(link_delay_interval_setting_data_t **sm
 	MDEntityGlobal *mdeg)
 {
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d\n", __func__, portIndex);
-	if(INIT_SM_DATA(link_delay_interval_setting_data_t,
-			LinkDelayIntervalSettingSM, sm)){return;}
+	INIT_SM_DATA(link_delay_interval_setting_data_t,
+		     LinkDelayIntervalSettingSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->mdeg = mdeg;

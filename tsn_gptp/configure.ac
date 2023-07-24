@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tsn_gptp], [1.2.3], [shiro@excelfore.com])
+AC_INIT([xl4gptp], [1.2.3], [shiro@excelfore.com])
 AC_SUBST(PACKAGE_DESC,"Excelfore gptp daemon and libary")
 
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
@@ -15,7 +15,6 @@ AC_CONFIG_SRCDIR([gptpbasetypes.h])
 AC_PROG_CC
 AC_PROG_INSTALL
 AM_PROG_CC_C_O
-AC_PROG_CC_C99
 
 # pkg-config dependency
 PKG_PROG_PKG_CONFIG
@@ -47,6 +46,8 @@ AC_ARG_ENABLE([understpl],
 	AS_HELP_STRING([--enable-understpl],[enable understpl mode build]))
 AC_ARG_ENABLE([ti-dp83867a],
 	AS_HELP_STRING([--enable-ti-dp83867a],[enable TI DP83867A PHY PTP]))
+AC_ARG_ENABLE([staticmem],
+	AS_HELP_STRING([--enable-staticmem],[use static memory allocation]))
 
 # Checks for libraries.
 PKG_CHECK_MODULES([x4unibase],[tsn_unibase],,
@@ -71,6 +72,7 @@ fi
 # conditional build
 AM_CONDITIONAL(UNITTEST_MEMTEST, [test x"$enable_unittest_memtest" = "xyes"])
 AM_CONDITIONAL(BUILD_IN_STPL, [test x"$enable_understpl" = "xyes"])
+AM_CONDITIONAL(STATIC_MEMALLOC, [test x"$enable_staticmem" = "xyes"])
 
 # sja1105 molex switch
 AM_CONDITIONAL(SJA1105_LINUX, [test "x$enable_sja1105_linux" = "xyes"])
@@ -96,6 +98,7 @@ AC_CHECK_FUNC([strtol], [], [AC_MSG_ERROR([strtol() function not found.])])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
 	Makefile
-	tsn_gptp.pc])
+	gptpconf/Makefile
+	xl4gptp.pc])
 
 AC_OUTPUT

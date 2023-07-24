@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "md_announce_receive_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -79,6 +81,8 @@ struct md_announce_receive_data{
 #define RXANN sm->thisSM->rxAnnouncePtr
 #define RCVDRXANN sm->thisSM->rcvdRxAnnounce
 #define IEEE_1588_ANNOUNCE_NO_TLV_SIZE 64
+#define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
+
 static void *recAnnounce(md_announce_receive_data_t *sm)
 {
 	MDPTPMsgAnnounce *md_announce=(MDPTPMsgAnnounce *)RXANN;
@@ -87,7 +91,7 @@ static void *recAnnounce(md_announce_receive_data_t *sm)
 		// 802.1AS-2020 8.1 the value of majorSdoId for gPTP domain must be 0x1
 		// When device is accepting message under CMLDS domain, allow values
 		// other than 0x1
-		if(sm->rcvdAnnounce.header.majorSdoId!=0x1){
+		if(sm->rcvdAnnounce.header.majorSdoId!=0x1u){
 			UB_LOG(UBL_DEBUGV, "%s:port=%d, invalid majorSdoId on gPTP domain, ignore ANNOUNCE\n",
 					__func__, sm->portIndex);
 			return NULL;
@@ -113,10 +117,27 @@ static void *recAnnounce(md_announce_receive_data_t *sm)
 		// ??? In the case where the master sent inconsistent value
 		// where stepsRemoved does not corresponds
 		// to the number (N) of elements in the pathSequence, set missing path TLV to all 1
-		memset(&sm->rcvdAnnounce.pathSequence, 0xFF,
-		       sizeof(ClockIdentity)*MAX_PATH_TRACE_N);
-		memcpy(&sm->rcvdAnnounce.pathSequence, &md_announce->pathSequence,
-		       sm->rcvdAnnounce.tlvLength);
+		(void)memset(&sm->rcvdAnnounce.pathSequence, 0xFF,
+			     (int)sizeof(ClockIdentity)*MAX_PATH_TRACE_N);
+		// ??? In the case where tlvLength from received Announce message is
+		// inconsistent, ignore the Announce message, this includes the malformed cases:
+		//    - received tlvLength > received Announce TLV data (from offset 68) length
+		//    - received tlvLengh/sizeof(ClockIdentity) > MAX_PATH_TRACE_N
+		if((sm->rcvdAnnounce.tlvLength <= (
+			    ntohs(md_announce->head.messageLength_ns)-
+			    (IEEE_1588_ANNOUNCE_NO_TLV_SIZE+
+			     (int)sizeof(sm->rcvdAnnounce.tlvType)+
+			     (int)sizeof(sm->rcvdAnnounce.tlvLength)))) &&
+		   ((sm->rcvdAnnounce.tlvLength/(int)sizeof(ClockIdentity)) <=
+		    MAX_PATH_TRACE_N)){
+			(void)memcpy(&sm->rcvdAnnounce.pathSequence,
+				     &md_announce->pathSequence,
+				     sm->rcvdAnnounce.tlvLength);
+		}else{
+			UB_LOG(UBL_DEBUG, "%s:port=%d, invalid tlvLength=%d, ignore ANNOUNCE\n",
+			__func__, sm->portIndex, sm->rcvdAnnounce.tlvLength);
+			return NULL;
+		}
 	}
 
 	sm->statd.announce_rec_valid++;
@@ -188,9 +209,10 @@ void *md_announce_receive_sm(md_announce_receive_data_t *sm, uint64_t cts64)
 			sm->state = recv_announce_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -203,12 +225,15 @@ void md_announce_receive_sm_init(md_announce_receive_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(md_announce_receive_data_t, MDAnnounceReceiveSM, sm)){return;}
+	INIT_SM_DATA(md_announce_receive_data_t, MDAnnounceReceiveSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
-	(*sm)->cmlds_mode = gptpconf_get_intitem(CONF_CMLDS_MODE);
+	(*sm)->cmlds_mode = gptpgcfg_get_intitem(
+		ptasg->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_CMLDS_MODE,
+		YDBI_CONFIG);
 }
 
 int md_announce_receive_sm_close(md_announce_receive_data_t **sm)
@@ -233,7 +258,7 @@ void *md_announce_receive_sm_mdAnnounceRec(md_announce_receive_data_t *sm,
 
 void md_announce_receive_stat_reset(md_announce_receive_data_t *sm)
 {
-	memset(&sm->statd, 0, sizeof(md_announce_receive_stat_data_t));
+	(void)memset(&sm->statd, 0, sizeof(md_announce_receive_stat_data_t));
 }
 
 md_announce_receive_stat_data_t *md_announce_receive_get_stat(md_announce_receive_data_t *sm)

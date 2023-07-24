@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "port_announce_information_ext_sm.h"
+#include "gptpcommon.h"
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define PATH_TRACE	    sm->bptasg->pathTrace
@@ -98,13 +100,13 @@ static void* rcvdInfoExt(port_announce_information_ext_data_t *sm)
 	MESSAGE_PRIORITY.stepsRemoved = RCVD_ANNOUNCE_PTR->stepsRemoved;
 	memcpy(&MESSAGE_PRIORITY.sourcePortIdentity, &RCVD_ANNOUNCE_PTR->header.sourcePortIdentity,
 	       sizeof(PortIdentity));
-	MESSAGE_PRIORITY.portNumber = sm->ppg->thisPort;
+	MESSAGE_PRIORITY.portNumber = md_port_index2number(sm->ppg->thisPort);
 	sm->bppg->messageStepsRemoved = RCVD_ANNOUNCE_PTR->stepsRemoved;
 
-	if (SELECTED_STATE[sm->ppg->thisPortIndex] == SlavePort){
-		N = (RCVD_ANNOUNCE_PTR->stepsRemoved)+1 < MAX_PATH_TRACE_N ?
-			(RCVD_ANNOUNCE_PTR->stepsRemoved)+1 : MAX_PATH_TRACE_N;
-		if (N < MAX_PATH_TRACE_N) {
+	if (SELECTED_STATE[sm->ppg->thisPort] == (uint8_t)SlavePort){
+		N = (((RCVD_ANNOUNCE_PTR->stepsRemoved)+1u) < (uint8_t)MAX_PATH_TRACE_N) ?
+			(RCVD_ANNOUNCE_PTR->stepsRemoved+1u) : (uint8_t)MAX_PATH_TRACE_N;
+		if (N < (uint8_t)MAX_PATH_TRACE_N) {
 			/* path trace TLV copy to pathTrace */
 			memcpy(PATH_TRACE, RCVD_ANNOUNCE_PTR->pathSequence,
 			       sizeof(ClockIdentity) * N);
@@ -118,7 +120,7 @@ static void* rcvdInfoExt(port_announce_information_ext_data_t *sm)
 			   and the pathTrace array is empty, once appending a clockIdentity
 			   to the TLV would cause the frame carrying the Announce to exceed
 			   its maximum size. */
-			memset(PATH_TRACE, 0, sizeof(ClockIdentity) * MAX_PATH_TRACE_N);
+			(void)memset(PATH_TRACE, 0, sizeof(ClockIdentity) * (uint8_t)MAX_PATH_TRACE_N);
 		}
 	}
 	// return messagePriority PortStateSettingExtSM reference
@@ -127,12 +129,12 @@ static void* rcvdInfoExt(port_announce_information_ext_data_t *sm)
 
 static void recordOtherAnnounceInfo(port_announce_information_ext_data_t *sm)
 {
-	sm->bppg->annLeap61 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x01) == 0x01;
-	sm->bppg->annLeap59 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x02) == 0x02;
-	sm->bppg->annCurrentUtcOffsetValid = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x04) == 0x04;
-	sm->bppg->annPtpTimescale = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x08) == 0x08;
-	sm->bppg->annTimeTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x10) == 0x10;
-	sm->bppg->annFrequencyTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x20) == 0x20;
+	sm->bppg->annLeap61 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x01u) == 0x01u;
+	sm->bppg->annLeap59 = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x02u) == 0x02u;
+	sm->bppg->annCurrentUtcOffsetValid = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x04u) == 0x04u;
+	sm->bppg->annPtpTimescale = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x08u) == 0x08u;
+	sm->bppg->annTimeTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x10u) == 0x10u;
+	sm->bppg->annFrequencyTraceable = (RCVD_ANNOUNCE_PTR->header.flags[1] & 0x20u) == 0x20u;
 	sm->bppg->annCurrentUtcOffset = RCVD_ANNOUNCE_PTR->currentUtcOffset;
 	sm->bppg->annTimeSource = RCVD_ANNOUNCE_PTR->timeSource;
 }
@@ -171,7 +173,7 @@ static void *receive_proc(port_announce_information_ext_data_t *sm)
 		__func__, sm->domainIndex, sm->portIndex);
 	retv = rcvdInfoExt(sm);
 	recordOtherAnnounceInfo(sm);
-	sm->bppg->portStepsRemoved = sm->bppg->messageStepsRemoved + 1;
+	sm->bppg->portStepsRemoved = sm->bppg->messageStepsRemoved + 1u;
 	// messageStepsRemoved is set by rcvInfoExt()
 	return retv;
 }
@@ -208,9 +210,10 @@ void *port_announce_information_ext_sm(port_announce_information_ext_data_t *sm,
 			sm->state = receive_condition(sm);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -225,8 +228,9 @@ void port_announce_information_ext_sm_init(port_announce_information_ext_data_t 
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(port_announce_information_ext_data_t,
-			PortAnnounceInformationExtSM, sm)){return;}
+	INIT_SM_DATA(port_announce_information_ext_data_t,
+		     PortAnnounceInformationExtSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->bptasg = bptasg;

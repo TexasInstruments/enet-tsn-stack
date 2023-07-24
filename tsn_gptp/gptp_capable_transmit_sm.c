@@ -47,11 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "gptp_capable_transmit_sm.h"
+#include "gptpcommon.h"
 
 typedef enum {
 	INIT,
@@ -89,9 +91,9 @@ static void *setGptpCapableTlv(gptp_capable_transmit_data_t *sm)
 	sm->signalingMsg.logGptpCapableMessageInterval = sm->ppg->logGptpCapableMessageInterval;
 	// Table 10-15 - Definitions of bits of flags field of message interval request TLV
 	SET_RESET_FLAG_BIT(sm->ppg->forAllDomain->computeNeighborPropDelay,
-			   sm->signalingMsg.flags, COMPUTE_NEIGHBOR_PROP_DELAY_BIT);
+			   sm->signalingMsg.flags, (uint8_t)COMPUTE_NEIGHBOR_PROP_DELAY_BIT);
 	SET_RESET_FLAG_BIT(sm->ppg->forAllDomain->computeNeighborRateRatio,
-			   sm->signalingMsg.flags, COMPUTE_NEIGHBOR_RATE_RATIO_BIT);
+			   sm->signalingMsg.flags, (uint8_t)COMPUTE_NEIGHBOR_RATE_RATIO_BIT);
 	// ??? bit2 of flags,  oneStepReceiveCapable
 	return &sm->signalingMsg;
 }
@@ -126,7 +128,7 @@ static void *initialize_proc(gptp_capable_transmit_data_t *sm, uint64_t cts64)
 	}
 	// the default of logGptpCapableMessageInterval is TBD
 	sm->thisSM->signalingMsgTimeInterval.nsec =
-		UB_SEC_NS * (1 << sm->ppg->logGptpCapableMessageInterval);
+		(uint64_t)UB_SEC_NS * (1u << (uint8_t)sm->ppg->logGptpCapableMessageInterval);
 	sm->thisSM->intervalTimer.nsec = cts64;
 	return NULL;
 }
@@ -185,9 +187,10 @@ void *gptp_capable_transmit_sm(gptp_capable_transmit_data_t *sm, uint64_t cts64)
 			sm->state = transmit_tlv_condition(sm, cts64);
 			break;
 		case REACTION:
+		default:
 			break;
 		}
-		if(retp){return retp;}
+		if(retp!=NULL){return retp;}
 		if(sm->last_state == sm->state){break;}
 	}
 	return retp;
@@ -200,7 +203,8 @@ void gptp_capable_transmit_sm_init(gptp_capable_transmit_data_t **sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 		__func__, domainIndex, portIndex);
-	if(INIT_SM_DATA(gptp_capable_transmit_data_t, gPtpCapableTransmitSM, sm)){return;}
+	INIT_SM_DATA(gptp_capable_transmit_data_t, gPtpCapableTransmitSM, sm);
+	if(ub_fatalerror()){return;}
 	(*sm)->ptasg = ptasg;
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;

@@ -53,10 +53,10 @@
 #include <errno.h>
 #include <stdio.h>
 #include "gptpclock.h"
-#include "gptp_config.h"
+#include "gptpconf/gptpgcfg.h"
 #include "ll_gptpsupport.h"
 
-ptpclock_state_t gptp_get_ptpfd(char *ptpdev, PTPFD_TYPE *ptpfd)
+ptpclock_state_t gptp_get_ptpfd(uint8_t gptpInstanceIndex, char *ptpdev, PTPFD_TYPE *ptpfd)
 {
 	ptpclock_state_t state=PTPCLOCK_NOWORK;
 
@@ -81,7 +81,8 @@ int gptp_clock_adjtime(PTPFD_TYPE ptpfd, int adjppb)
 	return ptpdev_clock_adjtime(ptpfd, adjppb);
 }
 
-int gptpclock_settime_str(char *tstr, int clockIndex, uint8_t domainNumber)
+int gptpclock_settime_str(uint8_t gptpInstanceIndex, char *tstr,
+			  int clockIndex, uint8_t domainNumber)
 {
 	struct tm tmv;
 	int64_t ts64;
@@ -101,7 +102,7 @@ int gptpclock_settime_str(char *tstr, int clockIndex, uint8_t domainNumber)
 		tmv.tm_mon-=1;
 		ts64=CB_MKTIME(&tmv)*UB_SEC_NS;
 	}
-	gptpclock_setts64(ts64, clockIndex, domainNumber);
+	gptpclock_setts64(gptpInstanceIndex, ts64, clockIndex, domainNumber);
 	UB_LOG(UBL_INFO,"set up time to %s\n",tstr);
 	return 0;
 }
