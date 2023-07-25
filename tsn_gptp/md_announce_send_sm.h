@@ -52,10 +52,6 @@
 
 typedef struct md_announce_send_data md_announce_send_data_t;
 
-typedef struct md_announce_send_stat_data{
-	uint32_t announce_send;
-}md_announce_send_stat_data_t;
-
 void *md_announce_send_sm(md_announce_send_data_t *sm, uint64_t cts64);
 
 void md_announce_send_sm_init(md_announce_send_data_t **sm,
@@ -69,9 +65,5 @@ int md_announce_send_sm_close(md_announce_send_data_t **sm);
 
 void *md_announce_send_sm_mdAnnouncSend(md_announce_send_data_t *sm,
 					PTPMsgAnnounce *msgAnnounce, uint64_t cts64);
-
-void md_announce_send_stat_reset(md_announce_send_data_t *sm);
-
-md_announce_send_stat_data_t *md_announce_send_get_stat(md_announce_send_data_t *sm);
 
 #endif

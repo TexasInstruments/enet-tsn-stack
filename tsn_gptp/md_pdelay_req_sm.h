@@ -52,14 +52,6 @@
 
 typedef struct md_pdelay_req_data md_pdelay_req_data_t;
 
-typedef struct md_pdelay_req_stat_data {
-	uint32_t pdelay_req_send;
-	uint32_t pdelay_resp_rec;
-	uint32_t pdelay_resp_rec_valid;
-	uint32_t pdelay_resp_fup_rec;
-	uint32_t pdelay_resp_fup_rec_valid;
-} md_pdelay_req_stat_data_t;
-
 int md_pdelay_req_sm(md_pdelay_req_data_t *sm, uint64_t cts64);
 void md_pdelay_req_sm_init(md_pdelay_req_data_t **sm,
 			   int portIndex,
@@ -74,7 +66,5 @@ void md_pdelay_req_sm_recv_resp(md_pdelay_req_data_t *sm, event_data_recv_t *edr
 				uint64_t cts64);
 void md_pdelay_req_sm_recv_respfup(md_pdelay_req_data_t *sm, event_data_recv_t *edrecv,
 				   uint64_t cts64);
-md_pdelay_req_stat_data_t *md_pdelay_req_get_stat(md_pdelay_req_data_t *sm);
-void md_pdelay_req_stat_reset(md_pdelay_req_data_t *sm);
 
 #endif

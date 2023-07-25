@@ -56,6 +56,7 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
@@ -110,82 +111,128 @@ const char *ieee1588_ptp_enum_strings[]={
 	"frequency-traceable", 		// 44(0x2c)
 	"ptp-timescale", 		// 45(0x2d)
 	"time-source", 		// 46(0x2e)
-	"ports", 		// 47(0x2f)
-	"port", 		// 48(0x30)
-	"port-index", 		// 49(0x31)
-	"underlying-interface", 		// 50(0x32)
-	"port-ds", 		// 51(0x33)
-	"port-identity", 		// 52(0x34)
-	"port-state", 		// 53(0x35)
-	"log-min-delay-req-interval", 		// 54(0x36)
-	"mean-link-delay", 		// 55(0x37)
-	"log-announce-interval", 		// 56(0x38)
-	"announce-receipt-timeout", 		// 57(0x39)
-	"log-sync-interval", 		// 58(0x3a)
-	"delay-mechanism", 		// 59(0x3b)
-	"log-min-pdelay-req-interval", 		// 60(0x3c)
-	"version-number", 		// 61(0x3d)
-	"minor-version-number", 		// 62(0x3e)
-	"delay-asymmetry", 		// 63(0x3f)
-	"port-enable", 		// 64(0x40)
-	"external-port-config-port-ds", 		// 65(0x41)
-	"desired-state", 		// 66(0x42)
+	"performance-monitoring-ds", 		// 47(0x2f)
+	"enable", 		// 48(0x30)
+	"record-list", 		// 49(0x31)
+	"index", 		// 50(0x32)
+	"measurement-valid", 		// 51(0x33)
+	"period-complete", 		// 52(0x34)
+	"pm-time", 		// 53(0x35)
+	"average-master-slave-delay", 		// 54(0x36)
+	"minimum-master-slave-delay", 		// 55(0x37)
+	"maximum-master-slave-delay", 		// 56(0x38)
+	"stddev-master-slave-delay", 		// 57(0x39)
+	"average-slave-master-delay", 		// 58(0x3a)
+	"minimum-slave-master-delay", 		// 59(0x3b)
+	"maximum-slave-master-delay", 		// 60(0x3c)
+	"stddev-slave-master-delay", 		// 61(0x3d)
+	"average-mean-path-delay", 		// 62(0x3e)
+	"minimum-mean-path-delay", 		// 63(0x3f)
+	"maximum-mean-path-delay", 		// 64(0x40)
+	"stddev-mean-path-delay", 		// 65(0x41)
+	"average-offset-from-master", 		// 66(0x42)
+	"minimum-offset-from-master", 		// 67(0x43)
+	"maximum-offset-from-master", 		// 68(0x44)
+	"stddev-offset-from-master", 		// 69(0x45)
+	"ports", 		// 70(0x46)
+	"port", 		// 71(0x47)
+	"port-index", 		// 72(0x48)
+	"underlying-interface", 		// 73(0x49)
+	"port-ds", 		// 74(0x4a)
+	"port-identity", 		// 75(0x4b)
+	"port-state", 		// 76(0x4c)
+	"log-min-delay-req-interval", 		// 77(0x4d)
+	"mean-link-delay", 		// 78(0x4e)
+	"log-announce-interval", 		// 79(0x4f)
+	"announce-receipt-timeout", 		// 80(0x50)
+	"log-sync-interval", 		// 81(0x51)
+	"delay-mechanism", 		// 82(0x52)
+	"log-min-pdelay-req-interval", 		// 83(0x53)
+	"version-number", 		// 84(0x54)
+	"minor-version-number", 		// 85(0x55)
+	"delay-asymmetry", 		// 86(0x56)
+	"port-enable", 		// 87(0x57)
+	"performance-monitoring-port-ds", 		// 88(0x58)
+	"record-list-peer-delay", 		// 89(0x59)
+	"average-mean-link-delay", 		// 90(0x5a)
+	"min-mean-link-delay", 		// 91(0x5b)
+	"max-mean-link-delay", 		// 92(0x5c)
+	"stddev-mean-link-delay", 		// 93(0x5d)
+	"announce-tx", 		// 94(0x5e)
+	"announce-rx", 		// 95(0x5f)
+	"announce-foreign-rx", 		// 96(0x60)
+	"sync-tx", 		// 97(0x61)
+	"sync-rx", 		// 98(0x62)
+	"follow-up-tx", 		// 99(0x63)
+	"follow-up-rx", 		// 100(0x64)
+	"delay-req-tx", 		// 101(0x65)
+	"delay-req-rx", 		// 102(0x66)
+	"delay-resp-tx", 		// 103(0x67)
+	"delay-resp-rx", 		// 104(0x68)
+	"pdelay-req-tx", 		// 105(0x69)
+	"pdelay-req-rx", 		// 106(0x6a)
+	"pdelay-resp-tx", 		// 107(0x6b)
+	"pdelay-resp-rx", 		// 108(0x6c)
+	"pdelay-resp-follow-up-tx", 		// 109(0x6d)
+	"pdelay-resp-follow-up-rx", 		// 110(0x6e)
+	"external-port-config-port-ds", 		// 111(0x6f)
+	"desired-state", 		// 112(0x70)
 	// augmented by ieee802-dot1as-ptp
-	"gm-capable",		// 67(0x43)
-	"last-gm-phase-change",		// 68(0x44)
-	"last-gm-freq-change",		// 69(0x45)
-	"gm-timebase-indicator",		// 70(0x46)
-	"time-of-last-freq-change",		// 71(0x47)
-	"is-measuring-delay",		// 72(0x48)
-	"as-capable",		// 73(0x49)
-	"mean-link-delay-thresh",		// 74(0x4a)
-	"neighbor-rate-ratio",		// 75(0x4b)
-	"initial-log-announce-interval",		// 76(0x4c)
-	"current-log-announce-interval",		// 77(0x4d)
-	"use-mgt-log-announce-interval",		// 78(0x4e)
-	"initial-log-sync-interval",		// 79(0x4f)
-	"current-log-sync-interval",		// 80(0x50)
-	"use-mgt-log-sync-interval",		// 81(0x51)
-	"sync-receipt-timeout",		// 82(0x52)
-	"sync-receipt-timeout-interval",		// 83(0x53)
-	"initial-log-pdelay-req-interval",		// 84(0x54)
-	"current-log-pdelay-req-interval",		// 85(0x55)
-	"use-mgt-log-pdelay-req-interval",		// 86(0x56)
-	"mgt-log-pdelay-req-interval",		// 87(0x57)
-	"current-log-gptp-cap-interval",		// 88(0x58)
-	"use-mgt-compute-rate-ratio",		// 89(0x59)
-	"use-mgt-compute-mean-link-delay",		// 90(0x5a)
-	"allowed-lost-responses",		// 91(0x5b)
-	"allowed-faults",		// 92(0x5c)
-	"gptp-cap-receipt-timeout",		// 93(0x5d)
-	"one-step-tx-oper",		// 94(0x5e)
-	"one-step-receive",		// 95(0x5f)
-	"one-step-transmit",		// 96(0x60)
-	"initial-one-step-tx-oper",		// 97(0x61)
-	"current-one-step-tx-oper",		// 98(0x62)
-	"use-mgt-one-step-tx-oper",		// 99(0x63)
-	"mgt-one-step-tx-oper",		// 100(0x64)
-	"pdelay-truncated-timestamps",		// 101(0x65)
-	"port-statistics-ds",		// 102(0x66)
-	"rx-sync-count",		// 103(0x67)
-	"rx-one-step-sync-count",		// 104(0x68)
-	"rx-follow-up-count",		// 105(0x69)
-	"rx-pdelay-req-count",		// 106(0x6a)
-	"rx-pdelay-resp-count",		// 107(0x6b)
-	"rx-pdelay-resp-follow-up-count",		// 108(0x6c)
-	"rx-announce-count",		// 109(0x6d)
-	"tx-sync-count",		// 110(0x6e)
-	"tx-follow-up-count",		// 111(0x6f)
-	"tx-pdelay-req-count",		// 112(0x70)
-	"tx-pdelay-resp-count",		// 113(0x71)
-	"tx-pdelay-resp-follow-up-count",		// 114(0x72)
-	"tx-announce-count",		// 115(0x73)
+	"gm-capable",		// 113(0x71)
+	"last-gm-phase-change",		// 114(0x72)
+	"last-gm-freq-change",		// 115(0x73)
+	"gm-timebase-indicator",		// 116(0x74)
+	"time-of-last-freq-change",		// 117(0x75)
+	"is-measuring-delay",		// 118(0x76)
+	"as-capable",		// 119(0x77)
+	"mean-link-delay-thresh",		// 120(0x78)
+	"neighbor-rate-ratio",		// 121(0x79)
+	"initial-log-announce-interval",		// 122(0x7a)
+	"current-log-announce-interval",		// 123(0x7b)
+	"use-mgt-log-announce-interval",		// 124(0x7c)
+	"initial-log-sync-interval",		// 125(0x7d)
+	"current-log-sync-interval",		// 126(0x7e)
+	"use-mgt-log-sync-interval",		// 127(0x7f)
+	"sync-receipt-timeout",		// 128(0x80)
+	"sync-receipt-timeout-interval",		// 129(0x81)
+	"initial-log-pdelay-req-interval",		// 130(0x82)
+	"current-log-pdelay-req-interval",		// 131(0x83)
+	"use-mgt-log-pdelay-req-interval",		// 132(0x84)
+	"mgt-log-pdelay-req-interval",		// 133(0x85)
+	"current-log-gptp-cap-interval",		// 134(0x86)
+	"use-mgt-compute-rate-ratio",		// 135(0x87)
+	"use-mgt-compute-mean-link-delay",		// 136(0x88)
+	"allowed-lost-responses",		// 137(0x89)
+	"allowed-faults",		// 138(0x8a)
+	"gptp-cap-receipt-timeout",		// 139(0x8b)
+	"one-step-tx-oper",		// 140(0x8c)
+	"one-step-receive",		// 141(0x8d)
+	"one-step-transmit",		// 142(0x8e)
+	"initial-one-step-tx-oper",		// 143(0x8f)
+	"current-one-step-tx-oper",		// 144(0x90)
+	"use-mgt-one-step-tx-oper",		// 145(0x91)
+	"mgt-one-step-tx-oper",		// 146(0x92)
+	"pdelay-truncated-timestamps",		// 147(0x93)
+	"port-statistics-ds",		// 148(0x94)
+	"rx-sync-count",		// 149(0x95)
+	"rx-one-step-sync-count",		// 150(0x96)
+	"rx-follow-up-count",		// 151(0x97)
+	"rx-pdelay-req-count",		// 152(0x98)
+	"rx-pdelay-resp-count",		// 153(0x99)
+	"rx-pdelay-resp-follow-up-count",		// 154(0x9a)
+	"rx-announce-count",		// 155(0x9b)
+	"tx-sync-count",		// 156(0x9c)
+	"tx-follow-up-count",		// 157(0x9d)
+	"tx-pdelay-req-count",		// 158(0x9e)
+	"tx-pdelay-resp-count",		// 159(0x9f)
+	"tx-pdelay-resp-follow-up-count",		// 160(0xa0)
+	"tx-announce-count",		// 161(0xa1)
 	// augmented by xl4gptp
-	"port-clock",		// 116(0x74)
-	"adjrate",		// 117(0x75)
-	"clock-state",		// 118(0x76)
-	"gmstate",		// 119(0x77)
-	"instance-domain-map",		// 120(0x78)
+	"port-clock",		// 162(0xa2)
+	"adjrate",		// 163(0xa3)
+	"clock-state",		// 164(0xa4)
+	"gmstate",		// 165(0xa5)
+	"instance-domain-map",		// 166(0xa6)
 };
 
 uint8_t ieee1588_ptp_get_enum(char *astr)
@@ -390,7 +437,77 @@ int ieee1588_ptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[5] = IEEE1588_PTP_TIME_SOURCE;
 	vtype=YANG_VTYPE_IDENTITYREF;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0009_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds/port-identity
+	//0009_ieee1588-ptp/ptp/instances/instance/performance-monitoring-ds/record-list
+	aps[4] = IEEE1588_PTP_PERFORMANCE_MONITORING_DS;
+	aps[5] = IEEE1588_PTP_RECORD_LIST;
+	aps[6] = IEEE1588_PTP_MEASUREMENT_VALID;
+	vtype=YANG_VTYPE_BOOLEAN;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_PERIOD_COMPLETE;
+	vtype=YANG_VTYPE_BOOLEAN;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_PM_TIME;
+	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_AVERAGE_MASTER_SLAVE_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MINIMUM_MASTER_SLAVE_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MAXIMUM_MASTER_SLAVE_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_STDDEV_MASTER_SLAVE_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_AVERAGE_SLAVE_MASTER_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MINIMUM_SLAVE_MASTER_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MAXIMUM_SLAVE_MASTER_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_STDDEV_SLAVE_MASTER_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_AVERAGE_MEAN_PATH_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MINIMUM_MEAN_PATH_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MAXIMUM_MEAN_PATH_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_STDDEV_MEAN_PATH_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_AVERAGE_OFFSET_FROM_MASTER;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MINIMUM_OFFSET_FROM_MASTER;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_MAXIMUM_OFFSET_FROM_MASTER;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_STDDEV_OFFSET_FROM_MASTER;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[6] = IEEE1588_PTP_VALUEKEY;
+	aps[7] = IEEE1588_PTP_INDEX;
+	vtype=YANG_VTYPE_UINT16;
+	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	//0010_ieee1588-ptp/ptp/instances/instance/performance-monitoring-ds
+	aps[0] = IEEE1588_PTP_RW;
+	aps[5] = IEEE1588_PTP_ENABLE;
+	vtype=YANG_VTYPE_BOOLEAN;
+	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
+	//0011_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds/port-identity
+	aps[0] = IEEE1588_PTP_RO;
 	aps[4] = IEEE1588_PTP_PORTS;
 	aps[5] = IEEE1588_PTP_PORT;
 	aps[6] = IEEE1588_PTP_PORT_DS;
@@ -406,7 +523,7 @@ int ieee1588_ptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = IEEE1588_PTP_PORT_INDEX;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0010_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds
+	//0012_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds
 	aps[0] = IEEE1588_PTP_RO;
 	aps[6] = IEEE1588_PTP_PORT_DS;
 	aps[7] = IEEE1588_PTP_PORT_STATE;
@@ -557,13 +674,96 @@ int ieee1588_ptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = IEEE1588_PTP_PDELAY_TRUNCATED_TIMESTAMPS;
 	vtype=YANG_VTYPE_UINT64;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0011_ieee1588-ptp/ptp/instances/instance/ports/port/external-port-config-port-ds
+	//0013_ieee1588-ptp/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list-peer-delay
+	aps[6] = IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS;
+	aps[7] = IEEE1588_PTP_RECORD_LIST_PEER_DELAY;
+	aps[8] = IEEE1588_PTP_PM_TIME;
+	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_AVERAGE_MEAN_LINK_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_MIN_MEAN_LINK_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_MAX_MEAN_LINK_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_STDDEV_MEAN_LINK_DELAY;
+	vtype=YANG_VTYPE_TIME_INTERVAL;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_VALUEKEY;
+	aps[9] = IEEE1588_PTP_INDEX;
+	vtype=YANG_VTYPE_UINT16;
+	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
+	//0014_ieee1588-ptp/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list
+	aps[7] = IEEE1588_PTP_RECORD_LIST;
+	aps[8] = IEEE1588_PTP_PM_TIME;
+	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_ANNOUNCE_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_ANNOUNCE_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_ANNOUNCE_FOREIGN_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_SYNC_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_SYNC_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_FOLLOW_UP_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_FOLLOW_UP_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_DELAY_REQ_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_DELAY_REQ_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_DELAY_RESP_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_DELAY_RESP_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_PDELAY_REQ_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_PDELAY_REQ_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_PDELAY_RESP_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_PDELAY_RESP_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_PDELAY_RESP_FOLLOW_UP_TX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_PDELAY_RESP_FOLLOW_UP_RX;
+	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[8] = IEEE1588_PTP_VALUEKEY;
+	aps[9] = IEEE1588_PTP_INDEX;
+	vtype=YANG_VTYPE_UINT16;
+	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
+	//0015_ieee1588-ptp/ptp/instances/instance/ports/port/external-port-config-port-ds
+	//0016_ieee1588-ptp/ptp/instances/instance/ports/port/external-port-config-port-ds
 	aps[0] = IEEE1588_PTP_RW;
 	aps[6] = IEEE1588_PTP_EXTERNAL_PORT_CONFIG_PORT_DS;
 	aps[7] = IEEE1588_PTP_DESIRED_STATE;
 	vtype=YANG_VTYPE_PORT_STATE;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0012_ieee1588-ptp/ptp/instances/instance/ports/port/port-statistics-ds
+	//0017_ieee1588-ptp/ptp/instances/instance/ports/port/port-statistics-ds
 	aps[0] = IEEE1588_PTP_RO;
 	aps[6] = IEEE1588_PTP_PORT_STATISTICS_DS;
 	aps[7] = IEEE1588_PTP_RX_SYNC_COUNT;
@@ -605,26 +805,26 @@ int ieee1588_ptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = IEEE1588_PTP_TX_ANNOUNCE_COUNT;
 	vtype=YANG_VTYPE_YANG_COUNTER32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0013_ieee1588-ptp/ptp/instances/instance/ports/port/port-clock
+	//0018_ieee1588-ptp/ptp/instances/instance/ports/port/port-clock
 	aps[6] = IEEE1588_PTP_PORT_CLOCK;
 	aps[7] = IEEE1588_PTP_ADJRATE;
 	vtype=YANG_VTYPE_INT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0014_ieee1588-ptp/ptp/instances/instance/ports/port
+	//0019_ieee1588-ptp/ptp/instances/instance/ports/port
 	aps[0] = IEEE1588_PTP_RW;
 	aps[6] = IEEE1588_PTP_UNDERLYING_INTERFACE;
 	vtype=YANG_VTYPE_IF_INTERFACE_REF;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
-	//0015_ieee1588-ptp/ptp/instances/instance/clock-state
-	//0016_ieee1588-ptp/ptp/instances/instance/clock-state
+	//0020_ieee1588-ptp/ptp/instances/instance/clock-state
+	//0021_ieee1588-ptp/ptp/instances/instance/clock-state
 	aps[0] = IEEE1588_PTP_RO;
 	aps[4] = IEEE1588_PTP_CLOCK_STATE;
 	aps[5] = IEEE1588_PTP_GMSTATE;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0017_ieee1588-ptp/ptp/instances/instance
-	//0018_ieee1588-ptp/ptp/instance-domain-map
-	//0019_ieee1588-ptp/ptp
+	//0022_ieee1588-ptp/ptp/instances/instance
+	//0023_ieee1588-ptp/ptp/instance-domain-map
+	//0024_ieee1588-ptp/ptp
 	aps[0] = IEEE1588_PTP_RW;
 	aps[2] = IEEE1588_PTP_INSTANCE_DOMAIN_MAP;
 	vtype=YANG_VTYPE_HEXUINT16;

@@ -57,6 +57,7 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "excelfore-tsn-remote.h"
 

@@ -159,7 +159,7 @@ typedef struct yang_db_item_access {
  * 2 character abbreviations
  *  if: ietf-interfaces, qb: ieee802-dot1q-bridge, pt: ieee1588-ptp,
  *  mr: xmrpd, tu: ieee802-dot1q-tsn-config-uni, tr: excelfore-tsn-remote,
- *  nc: ietf-netconf-server, kc: ietf-keychain
+ *  nc: ietf-netconf-server, kc: ietf-keychain yl: ietf-yang-library
  *  [kN] k1:1-key access, k2:2-key access,,,
  *  [vkN] vk0:vk1=1-value_key access, vk2:2-value_key access,,,
  ************************************/
@@ -316,6 +316,31 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 		     kvs_t *nkvs, uint8_t *nkss);
 
 /**
+ * @brief move items under (ap, kvs) to a new key which is modified by 'keymod_cb'
+ * @note keymod_cb is called for each item found under the list.
+ *       returns '0': no move happens,
+ *       returns '1': no overwriting, move only when the modified key has no data.
+ *       returns '2': overwriting, move anyway.
+ *       returns '3': no move and delete the source item. this works like 'listdelete'
+ *       ap and kvs are internally allocated area, so keymod_cb can change the contents
+ *       but can't change the size.
+ */
+typedef enum {
+	KEYMOD_ERROR=-1,
+	KEYMOD_NOMOVE=0,
+	KEYMOD_MOVE_NOOVERWRITE,
+	KEYMOD_MOVE_OVERWRITE,
+	KEYMOD_NOMOVE_DELETE,
+} keymod_rcode_t;
+
+typedef keymod_rcode_t (*key_modifier_t)(uint8_t *ap, kvs_t *kvs, uint8_t *kss);
+
+#define LISTMOVE_FORWARD true
+#define LISTMOVE_BACKWARD false
+int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
+		     bool forward_direction, key_modifier_t keymod_cb);
+
+/**
  * @brief convert string value to binary value
  * @param	*size:size of *d memory, if the data is bigger it is reallocated.
  *		to allocate a new memory or force to reallocate with a new data size, set *size=0.
@@ -384,5 +409,10 @@ void yang_db_extract_key_free(uint8_t *ap, kvs_t *kvs, uint8_t *kss);
  * 	this function returns the last 'lenN + kvs[N]' part.
  */
 void *yang_db_key_bottomp(void *key, uint32_t ksize);
+
+/**
+ * @brief request to save the DB into a file
+ */
+int ydbi_request_savedb(yang_db_item_access_t *ydbia);
 
 #endif

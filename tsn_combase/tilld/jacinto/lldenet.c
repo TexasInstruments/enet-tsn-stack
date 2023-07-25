@@ -240,16 +240,12 @@ static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t 
 	int32_t status;
 
 	memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
-	setPolicerEntryInArgs.policerMatch.policerMatchEnMask = CPSW_ALE_POLICER_MATCH_MACDST;
+	setPolicerEntryInArgs.policerMatch.policerMatchEnMask =
+		CPSW_ALE_POLICER_MATCH_MACDST;
 	setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.portNum = 0U;
 	setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = vlanId;
 	memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
 		   &dstMacAddr[0U], ENET_MAC_ADDR_LEN);
-
-	/* Set policer params for ARP EtherType matching */
-	setPolicerEntryInArgs.policerMatch.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_ETHERTYPE;
-	setPolicerEntryInArgs.policerMatch.etherType = 0x88F7U;
-	setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
 
 	setPolicerEntryInArgs.threadIdEn = true;
 	setPolicerEntryInArgs.threadId = hLLDma->rxFlowIdx;
@@ -388,26 +384,28 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 	hLLDEnet->coreKey = attachInfo.coreKey;
 	hLLDEnet->enetType = (Enet_Type)cfg->enetType;
 
-	hLLDEnet->dma.hUdmaDrv = handleInfo.hUdmaDrv;
-	hLLDEnet->dma.hLLDEnet = hLLDEnet;
-	hLLDEnet->dma.nRxPkts = cfg->nRxPkts;
-	if (hLLDEnet->dma.nRxPkts == 0) {
-		hLLDEnet->dma.nRxPkts = ENET_MEM_NUM_RX_PKTS;
-	}
-	hLLDEnet->dma.nTxPkts = cfg->nTxPkts;
-	if (hLLDEnet->dma.nTxPkts == 0) {
-		hLLDEnet->dma.nTxPkts = ENET_MEM_NUM_TX_PKTS;
-	}
-	hLLDEnet->dma.pktSize = cfg->pktSize;
-	if (hLLDEnet->dma.pktSize == 0) {
-		hLLDEnet->dma.pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
-	}
-	hLLDEnet->dma.txNotifyCb = cfg->txNotifyCb;
-	hLLDEnet->dma.rxNotifyCb = cfg->rxNotifyCb;
-	hLLDEnet->dma.txCbArg = cfg->txCbArg;
-	hLLDEnet->dma.rxCbArg = cfg->rxCbArg;
+	if (!cfg->unusedDma) {
+		hLLDEnet->dma.hUdmaDrv = handleInfo.hUdmaDrv;
+		hLLDEnet->dma.hLLDEnet = hLLDEnet;
+		hLLDEnet->dma.nRxPkts = cfg->nRxPkts;
+		if (hLLDEnet->dma.nRxPkts == 0) {
+			hLLDEnet->dma.nRxPkts = ENET_MEM_NUM_RX_PKTS;
+		}
+		hLLDEnet->dma.nTxPkts = cfg->nTxPkts;
+		if (hLLDEnet->dma.nTxPkts == 0) {
+			hLLDEnet->dma.nTxPkts = ENET_MEM_NUM_TX_PKTS;
+		}
+		hLLDEnet->dma.pktSize = cfg->pktSize;
+		if (hLLDEnet->dma.pktSize == 0) {
+			hLLDEnet->dma.pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
+		}
+		hLLDEnet->dma.txNotifyCb = cfg->txNotifyCb;
+		hLLDEnet->dma.rxNotifyCb = cfg->rxNotifyCb;
+		hLLDEnet->dma.txCbArg = cfg->txCbArg;
+		hLLDEnet->dma.rxCbArg = cfg->rxCbArg;
 
-	DmaOpen(&hLLDEnet->dma);
+		DmaOpen(&hLLDEnet->dma);
+	}
 	if (IsMacAddrSet(cfg->dstMacAddr)) {
 		res = FilterVlanDestMac(hLLDEnet, cfg->dstMacAddr, cfg->vlanId);
 		EnetAppUtils_assert(res == 0);
@@ -642,4 +640,14 @@ int LLDEnetSetRxNotifyCb(LLDEnet_t *hLLDEnet, void (*rxNotifyCb)(void *arg), voi
 	hLLDEnet->dma.rxNotifyCb = rxNotifyCb;
 	hLLDEnet->dma.rxCbArg = arg;
 	return LLDENET_E_OK;
+}
+
+int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
+{
+	return LLDENET_E_NOAVAIL;
+}
+
+int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm)
+{
+	return LLDENET_E_NOAVAIL;
 }

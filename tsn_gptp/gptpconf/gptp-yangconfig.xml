@@ -1,0 +1,96 @@
+/*
+ * Copyright (c) 2023 Texas Instruments Incorporated
+ * Copyright (c) 2023 Excelfore Corporation (https://excelfore.com)
+ *
+ * All rights reserved not granted herein.
+ * Limited License.
+ *
+ * Texas Instruments Incorporated grants a world-wide, royalty-free,
+ * non-exclusive license under copyrights and patents it now or hereafter
+ * owns or controls to make, have made, use, import, offer to sell and sell ("Utilize")
+ * this software subject to the terms herein. With respect to the foregoing patent
+ * license, such license is granted solely to the extent that any such patent is necessary
+ * to Utilize the software alone. The patent license shall not apply to any combinations which
+ * include this software, other than combinations with devices manufactured by or for TI ("TI Devices").
+ * No hardware patent is licensed hereunder.
+ *
+ * Redistributions must preserve existing copyright notices and reproduce this license (including the
+ * above copyright notice and the disclaimer and (if applicable) source code license limitations below)
+ * in the documentation and/or other materials provided with the distribution
+ *
+ * Redistribution and use in binary form, without modification, are permitted provided that the following
+ * conditions are met:
+ *
+ * * No reverse engineering, decompilation, or disassembly of this software is permitted with respect to any
+ * software provided in binary form.
+ * * any redistribution and use are licensed by TI for use only with TI Devices.
+ * * Nothing shall obligate TI to provide you with source code for the software licensed and provided to you in object code.
+ *
+ * If software source code is provided to you, modification and redistribution of the source code are permitted
+ * provided that the following conditions are met:
+ *
+ * * any redistribution and use of the source code, including any resulting derivative works, are licensed by
+ * TI for use only with TI Devices.
+ * * any redistribution and use of any object code compiled from the source code and any resulting derivative
+ * works, are licensed by TI for use only with TI Devices.
+ *
+ * Neither the name of Texas Instruments Incorporated nor the names of its suppliers may be used to endorse or
+ * promote products derived from this software without specific prior written permission.
+ *
+ * DISCLAIMER.
+ *
+ * THIS SOFTWARE IS PROVIDED BY TI AND TI"S LICENSORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING,
+ * BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL TI AND TI"S LICENSORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA,
+ * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+*/
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <ptp xmlns="urn:ieee:std:1588:yang:gptp-yangconfig">
+    <instance-domain-map>0x0000</instance-domain-map>
+    <instances>
+      <instance>
+        <instance-index>0</instance-index>
+        <default-ds>
+          <priority1>248</priority1>
+          <priority2>248</priority2>
+          <external-port-config-enable>false</external-port-config-enable>
+          <time-source>internal-oscillator</time-source>
+	  <ptp-timescale>true</ptp-timescale>
+	  <clock-quality>
+	    <clock-class>cc-default</clock-class>
+	    <clock-accuracy>ca-time-accurate-to-250-ns</clock-accuracy>
+	    <offset-scaled-log-variance>0x436a</offset-scaled-log-variance>
+	  </clock-quality>
+        </default-ds>
+        <ports>
+          <port>
+            <port-index>1</port-index>
+	    <underlying-interface>tilld0</underlying-interface>
+	    <port-ds>
+	      <port-enable>true</port-enable>
+	      <log-announce-interval>0</log-announce-interval>
+	      <gptp-cap-receipt-timeout>3</gptp-cap-receipt-timeout>
+	      <announce-receipt-timeout>3</announce-receipt-timeout>
+	      <log-sync-interval>-3</log-sync-interval>
+	      <minor-version-number>1</minor-version-number>
+	      <initial-log-announce-interval>0</initial-log-announce-interval>
+	      <sync-receipt-timeout>3</sync-receipt-timeout>
+	      <initial-log-sync-interval>-3</initial-log-sync-interval>
+	      <current-log-sync-interval>-3</current-log-sync-interval>
+	      <current-log-gptp-cap-interval>3</current-log-gptp-cap-interval>
+	      <initial-log-pdelay-req-interval>0</initial-log-pdelay-req-interval>
+	      <current-log-pdelay-req-interval>0</current-log-pdelay-req-interval>
+	      <allowed-lost-responses>9</allowed-lost-responses>
+	      <allowed-faults>9</allowed-faults>
+	      <mean-link-delay-thresh>0x27100000</mean-link-delay-thresh>
+	    </port-ds>
+          </port>
+        </ports>
+      </instance>
+    </instances>
+  </ptp>
+</data>

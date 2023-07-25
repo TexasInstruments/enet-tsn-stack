@@ -52,11 +52,6 @@
 
 typedef struct md_announce_receive_data md_announce_receive_data_t;
 
-typedef struct md_announce_receive_stat_data{
-	uint32_t announce_rec;
-	uint32_t announce_rec_valid;
-}md_announce_receive_stat_data_t;
-
 void *md_announce_receive_sm(md_announce_receive_data_t *sm, uint64_t cts64);
 
 void md_announce_receive_sm_init(md_announce_receive_data_t **sm,
@@ -68,9 +63,5 @@ int md_announce_receive_sm_close(md_announce_receive_data_t **sm);
 
 void *md_announce_receive_sm_mdAnnounceRec(md_announce_receive_data_t *sm,
 					   event_data_recv_t *edrecv, uint64_t cts64);
-
-void md_announce_receive_stat_reset(md_announce_receive_data_t *sm);
-
-md_announce_receive_stat_data_t *md_announce_receive_get_stat(md_announce_receive_data_t *sm);
 
 #endif

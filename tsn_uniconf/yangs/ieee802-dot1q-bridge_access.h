@@ -53,19 +53,27 @@
 #include "yang_db_access.h"
 #include "ieee802-dot1q-bridge.h"
 
-int ydbi_get_item_qbk1vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t instIndex,
+#define DOT1Q_DEFAULT_BRIDGE_NAME "br0"
+
+int ydbi_get_item_qbk1vk0(yang_db_item_access_t *ydbia, void **rval,
+			  const char* bridgename, uint8_t instIndex,
 			  uint8_t k1, bool status);
 
-int ydbi_set_item_qbk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
+int ydbi_set_item_qbk1vk0(yang_db_item_access_t *ydbia,
+			  const char* bridgename, uint8_t instIndex,
 			  uint8_t k1, bool status, void *value, uint32_t vsize,
 			  uint8_t notice);
 
-int ydbi_del_item_qbk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
+int ydbi_del_item_qbk1vk0(yang_db_item_access_t *ydbia,
+			  const char* bridgename, uint8_t instIndex,
 			  uint8_t k1, bool status);
 
-int ydbi_vlan_regis_qb(yang_db_item_access_t *ydbia, uint8_t instIndex,
+int ydbi_vlan_regis_qb(yang_db_item_access_t *ydbia,
+		       const char* bridgename, uint8_t instIndex,
 		       uint16_t vid1, uint16_t vid2, const char *netdev, bool reg);
-bool ydbi_vlan_check_qb(yang_db_item_access_t *ydbia, uint8_t instIndex,
+
+bool ydbi_vlan_check_qb(yang_db_item_access_t *ydbia,
+			const char* bridgename, uint8_t instIndex,
 			uint16_t vid1, uint16_t vid2, const char *netdev);
 
 #endif

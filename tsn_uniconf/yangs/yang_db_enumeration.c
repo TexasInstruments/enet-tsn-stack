@@ -186,23 +186,31 @@ const char* lldp_chassis_id_subtype[] = {
 };
 const uint32_t lldp_chassis_id_subtype_num = sizeof(lldp_chassis_id_subtype)/sizeof(char*);
 
+const char* conformance_type[] = {
+    "implement",
+    "import",
+    NULL
+};
+const uint32_t conformance_type_num = sizeof(conformance_type)/sizeof(char*);
+
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
  *----------------------------------------------------------------------------*/
 const yang_enumeration_str_map_t yang_enumeration_str_map_list[] = {
-    { interfaces_oper_status,   interfaces_oper_status_num,  "oper-status"      },
-    { interfaces_duplex,        interfaces_duplex_num,       "duplex"           },
-    { tsn_uni_talker_status,    tsn_uni_talker_status_num,   "talker-status"    },
-    { tsn_uni_listener_status,  tsn_uni_listener_status_num, "listener-status"  },
-    { tsn_uni_stream_status,    tsn_uni_stream_status_num,   "stream-status"    },
-    { ieee802dq_control_reg,    ieee802dq_control_reg_num,   "control-reg"      },
-    { ieee802dq_entry_stadyn,   ieee802dq_entry_stadyn_num,  "entry-stadyn"     },
-    { excelfore_mrp_protocol,   excelfore_mrp_protocol_num,  "mrp-protocol"     },
-    { frame_preemption_status,  frame_preemption_status_num, "preemption-status"},
-    { hold_request_status,      hold_request_status_num,     "hold-request"     },
-    { private_key_algorithm,    private_key_algorithm_num,   "algorithm"        },
-    { lldp_chassis_id_subtype,  lldp_chassis_id_subtype_num, "chassis-id-subtype"},
-    { NULL,                     0,                           NULL               }
+    { interfaces_oper_status,   interfaces_oper_status_num,  "oper-status"        },
+    { interfaces_duplex,        interfaces_duplex_num,       "duplex"             },
+    { tsn_uni_talker_status,    tsn_uni_talker_status_num,   "talker-status"      },
+    { tsn_uni_listener_status,  tsn_uni_listener_status_num, "listener-status"    },
+    { tsn_uni_stream_status,    tsn_uni_stream_status_num,   "stream-status"      },
+    { ieee802dq_control_reg,    ieee802dq_control_reg_num,   "control-reg"        },
+    { ieee802dq_entry_stadyn,   ieee802dq_entry_stadyn_num,  "entry-stadyn"       },
+    { excelfore_mrp_protocol,   excelfore_mrp_protocol_num,  "mrp-protocol"       },
+    { frame_preemption_status,  frame_preemption_status_num, "preemption-status"  },
+    { hold_request_status,      hold_request_status_num,     "hold-request"       },
+    { private_key_algorithm,    private_key_algorithm_num,   "algorithm"          },
+    { lldp_chassis_id_subtype,  lldp_chassis_id_subtype_num, "chassis-id-subtype" },
+    { conformance_type,         conformance_type_num,        "conformance-type"   },
+    { NULL,                     0,                           NULL                 }
 };
 
 /*-----------------------------------------------------------------------------

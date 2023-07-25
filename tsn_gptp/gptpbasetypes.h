@@ -188,6 +188,11 @@ typedef struct UScaledNs {
 } UScaledNs;
 
 /*
+ * @brief 2^-16 ns scaling multiplier
+ */
+#define SCALEDNS_FACTOR 0x10000
+
+/*
  * @brief The TimeInterval type represents time intervals, in units of 2^-16 ns
  * @verbatim Example to express ns@endverbatim
  * @code

@@ -295,14 +295,12 @@ void *gptpconf_get_item(gptp_config_item_t item)
 
 int32_t gptpconf_get_intitem(gptp_config_item_t item)
 {
-	int32_t *ptr = (int32_t *)gptpconf_get_item(item);
-	if (ptr){return *ptr;}else{return -1;}
+	return *((int32_t *)gptpconf_get_item(item));
 }
 
 int64_t gptpconf_get_lintitem(gptp_config_item_t item)
 {
-	int64_t *ptr = (int64_t *)gptpconf_get_item(item);
-	if (ptr){return *ptr;} else {return -1;}
+	return *((int64_t *)gptpconf_get_item(item));
 }
 
 int gptpconf_set_item(gptp_config_item_t item, void *v)

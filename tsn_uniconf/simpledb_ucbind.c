@@ -78,13 +78,18 @@ uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
 
 void uc_dbal_close(uc_dbald *dbald, uint8_t callmode)
 {
+	if(UC_CALL_THREADSLAVE(callmode)){return;}
+	(void)uc_dbal_save(dbald);
+	(void)simpledb_close((simpledb_data_t *)dbald);
+}
+
+int uc_dbal_save(uc_dbald *dbald)
+{
 	uint8_t pkend=0x7f;
 	simpledb_keydata_t kd={1, &pkend};
 	key_range_t kr={NULL, &kd}; // save key[0]>=0 to key[0]<=0x7f
 	key_range_t *keyranges[2]={&kr, NULL};
-	if(UC_CALL_THREADSLAVE(callmode)){return;}
-	(void)simpledb_savedata((simpledb_data_t *)dbald, keyranges);
-	(void)simpledb_close((simpledb_data_t *)dbald);
+	return simpledb_savedata((simpledb_data_t *)dbald, keyranges);
 }
 
 int uc_dbal_getdb(uc_dbald *dbald, int toutms, uint8_t *key, uint32_t ksize)

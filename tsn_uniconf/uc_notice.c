@@ -136,6 +136,7 @@ static void delete_putsemaphore(bool fromthread, putnotice_data_t *pnd)
 	if(pnd->semname!=NULL){UB_SD_RELMEM(UC_NOTICE_PUT, pnd->semname);}
 }
 
+// this returns 2, when uc_client signals on '/xl4-data/uc-ready'
 static int respond_getnotice(uc_notice_data_t *ucntd, uc_dbald *dbald, uc_hwald *hwald)
 {
 	uc_range *range;
@@ -183,19 +184,30 @@ static int respond_getnotice(uc_notice_data_t *ucntd, uc_dbald *dbald, uc_hwald 
 		res=yang_db_action(dbald, hwald, &dbpara);
 		if(res==0){
 			if(nv==UC_ASKACTION_HW){
-				res=uc_hwal_writehw(hwald, dbpara.aps, dbpara.kvs,
-						    dbpara.kss, dbpara.value, dbpara.vsize);
+				if((dbpara.aps[0]==XL4_DATA_RO) && (dbpara.aps[1]==UC_READY)){
+					UB_LOG(UBL_DEBUG, "%s:action on UC_READY, save DB\n",
+					       __func__);
+					res=2;
+				}else{
+					res=uc_hwal_writehw(hwald, dbpara.aps, dbpara.kvs,
+							    dbpara.kss, dbpara.value,
+							    dbpara.vsize);
+				}
 			}
 			dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
 			dbpara.onhw=YANG_DB_ONHW_NOACTION;
 			(void)yang_db_action(dbald, hwald, &dbpara);
 		}else{
+			if(nv==UC_ASKACTION_HW){
+				res=uc_hwal_dereghw(hwald, dbpara.aps, dbpara.kvs,
+						    dbpara.kss);
+			}
 			yang_db_keydump_log(UBL_DEBUG, dbpara.aps, dbpara.kvs, dbpara.kss);
 			UB_LOG(UBL_INFO, "%s:a notice with a deletion\n", __func__);
 		}
 		(void)uc_nu_putnotice_push(ucntd, dbald, caps, ckvs, ckss);
 		yang_db_extract_key_free(caps, ckvs, ckss);
-		res=0;
+		if(res!=2){res=0;}
 		if(uc_del_in_range(dbald, range,UC_DBAL_FORWARD)!=0){break;}
 	}
 	uc_get_range_release(dbald, range);
@@ -340,7 +352,7 @@ static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete)
 					    UC_DBAL_FORWARD)!=0){
 			break;
 		}
-		if((nksize>snsize) && (nkey[nksize-(snsize+2u)]==(snsize+1u)) &&
+		if((nksize>snsize+2) && (nkey[nksize-(snsize+2u)]==(snsize+1u)) &&
 		   !memcmp(&nkey[nksize-(snsize+1u)], semname, snsize) &&
 		   (vsize==sizeof(uint8_t))){
 			action=*((uint8_t*)vdata);

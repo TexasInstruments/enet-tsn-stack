@@ -56,6 +56,7 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
@@ -68,8 +69,8 @@ int ieee1588_ptp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	int i;
 	int res=-1;
 	uint32_t vsize=0;
-	void *kvs[3]={NULL};
-	uint8_t kss[3];
+	void *kvs[4]={NULL};
+	uint8_t kss[4];
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE,YANG_DB_ONHW_ALWAYS,
 	                              NULL,aps,kvs,kss,NULL,0};
 	dbpara.atype=YANG_DB_ACTION_READ;
@@ -89,17 +90,22 @@ int ieee1588_ptp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0006_ieee1588-ptp/ptp/instances/instance/parent-ds/protocol-address
 	//0007_ieee1588-ptp/ptp/instances/instance/parent-ds
 	//0008_ieee1588-ptp/ptp/instances/instance/time-properties-ds
-	//0009_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds/port-identity
-	//0010_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds
-	//0011_ieee1588-ptp/ptp/instances/instance/ports/port/external-port-config-port-ds
-	//0012_ieee1588-ptp/ptp/instances/instance/ports/port/port-statistics-ds
-	//0013_ieee1588-ptp/ptp/instances/instance/ports/port/port-clock
-	//0014_ieee1588-ptp/ptp/instances/instance/ports/port
-	//0015_ieee1588-ptp/ptp/instances/instance/clock-state
-	//0016_ieee1588-ptp/ptp/instances/instance/clock-state
-	//0017_ieee1588-ptp/ptp/instances/instance
-	//0018_ieee1588-ptp/ptp/instance-domain-map
-	//0019_ieee1588-ptp/ptp
+	//0009_ieee1588-ptp/ptp/instances/instance/performance-monitoring-ds/record-list
+	//0010_ieee1588-ptp/ptp/instances/instance/performance-monitoring-ds
+	//0011_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds/port-identity
+	//0012_ieee1588-ptp/ptp/instances/instance/ports/port/port-ds
+	//0013_ieee1588-ptp/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list-peer-delay
+	//0014_ieee1588-ptp/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list
+	//0015_ieee1588-ptp/ptp/instances/instance/ports/port/external-port-config-port-ds
+	//0016_ieee1588-ptp/ptp/instances/instance/ports/port/external-port-config-port-ds
+	//0017_ieee1588-ptp/ptp/instances/instance/ports/port/port-statistics-ds
+	//0018_ieee1588-ptp/ptp/instances/instance/ports/port/port-clock
+	//0019_ieee1588-ptp/ptp/instances/instance/ports/port
+	//0020_ieee1588-ptp/ptp/instances/instance/clock-state
+	//0021_ieee1588-ptp/ptp/instances/instance/clock-state
+	//0022_ieee1588-ptp/ptp/instances/instance
+	//0023_ieee1588-ptp/ptp/instance-domain-map
+	//0024_ieee1588-ptp/ptp
 	if(kvs[0]!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, kvs[0]);}
 	kvs[0] = NULL;
 	dbpara.atype=YANG_DB_ACTION_CREATE;
@@ -111,7 +117,7 @@ int ieee1588_ptp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	res=0;
 erexit:
 	if(dbpara.value!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, dbpara.value);}
-	for(i=0;i<2;i++){
+	for(i=0;i<3;i++){
 		if(kvs[i]!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, kvs[i]);}
 	}
 	return res;

@@ -226,7 +226,7 @@ int cb_lld_mutex_init(CB_THREAD_MUTEX_T *mutex, CB_THREAD_MUTEXATTR_T attr)
 	*mutex = cbmutex;
 	return 0;
 error:
-	cb_lld_mutex_destroy(&cbmutex);
+	UB_SD_RELMEM(CB_LLDMUTEX_MMEM, cbmutex);
 	return -1;
 }
 
@@ -282,6 +282,32 @@ int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime)
 {
 	uint32_t timeout_msec = abs_realtime_to_msec(abstime);
 	return lld_mutex_trylock(*mutex, timeout_msec);
+}
+
+// WARNING! The following function will be called inside the API
+// `ub_protected_func` which shares the same global mutex named `gmutex`
+// with log module in the unibase library. Thus, calling any unibase
+// log macro (ie. UB_LOG) inside this function will cause a DEADLOCK.
+int cb_lld_global_mutex_init(void *mutex)
+{
+	cb_lld_mutex_t **mt = (cb_lld_mutex_t **)mutex;
+	cb_lld_mutex_t *cbmutex;
+
+	if(*mt){ return 0; }
+	cbmutex = UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
+	if (cbmutex == NULL) {
+		return -1;
+	}
+	memset(cbmutex, 0, sizeof(cb_lld_mutex_t));
+	cbmutex->lldmutex = MutexP_create(&cbmutex->mobj);
+	if (cbmutex->lldmutex == NULL) {
+		goto error;
+	}
+	*mt = cbmutex;
+	return 0;
+error:
+	UB_SD_RELMEM(CB_LLDMUTEX_MMEM, cbmutex);
+	return -1;
 }
 
 static void task_fxn(void* a0, void* a1)

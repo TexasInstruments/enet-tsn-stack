@@ -52,6 +52,8 @@
 #include "../yangs/yang_modules.h"
 #include "../yangs/ietf-interfaces.h"
 #include "../yangs/ietf-interfaces_access.h"
+#include "../yangs/ieee802-dot1q-bridge.h"
+#include "../yangs/ieee802-dot1q-bridge_access.h"
 #include "../uc_notice.h"
 #include "uc_hwal.h"
 #include <tsn_combase/combase_link.h>
@@ -393,7 +395,7 @@ static int cbs_hw_action(uc_hwald *hwald, const char *ifname, uint8_t *tc,
 		UB_LOG(UBL_ERROR, "%s:no value\n", __func__);
 		return -1;
 	}
-	UB_LOG(UBL_DEBUG, "%s:cbs setup %s\n", __func__, ifname);
+	UB_LOG(UBL_DEBUG, "%s:cbs setup %s, tc=%d\n", __func__, ifname, *tc);
 	hwald->operating_tc=*tc;
 	res=update_cbs_idle_slope(hwald->hwctx, ifname, *tc, *admin_idleslope);
 	if(res<1) return res;
@@ -784,11 +786,11 @@ static int ietf_interfaces_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, ui
 				   void *value, uint32_t vsize)
 {
 	int res;
-	UB_LOG(UBL_DEBUG, "%s:\n", __func__);
 	if(aps[0]!=IETF_INTERFACES_RW){return 1;}
 	if(aps[1]!=IETF_INTERFACES_INTERFACES){return -1;}
 	if(aps[2]!=IETF_INTERFACES_INTERFACE){return -1;}
 	if(!hwald->hwctx){return 0;}
+	UB_LOG(UBL_DEBUG, "%s:\n", __func__);
 	if(aps[3]==IETF_INTERFACES_ENABLED){
 		bool enabled;
 		if((value==NULL) || (kvs[0]==NULL)){
@@ -837,6 +839,58 @@ static int ietf_interfaces_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, ui
 	}
 	return 1;
 }
+
+static int vlan_register(uc_hwald *hwald, const char *bridgename, const char *ifname,
+			 uint16_t vid, bool reg)
+{
+	if(reg){
+		// register vlan
+		UB_LOG(UBL_INFO, "%s:bridgename=%s, netdev=%s, register vid=%d\n",
+		       __func__, bridgename, ifname, vid);
+	}else{
+		// deregister vlan
+		UB_LOG(UBL_INFO, "%s:bridgename=%s, netdev=%s, deregister vid=%d\n",
+		       __func__, bridgename, ifname, vid);
+	}
+	return 0;
+}
+
+static int vlans_register(uc_hwald *hwald, const char *bridgename, const char *ifname,
+			  uint16_t vid1, uint16_t vid2, bool reg)
+{
+	int res=0;
+	uint16_t vid;
+	for(vid=vid1;vid<=vid2;vid++){
+		res|=vlan_register(hwald, bridgename, ifname, vid, reg);
+	}
+	return res;
+}
+
+static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
+				void *value, uint32_t vsize)
+{
+	if(aps[0]!=IEEE802_DOT1Q_BRIDGE_RW){return 1;}
+	if(aps[1]!=IEEE802_DOT1Q_BRIDGE_BRIDGES){return -1;}
+	if(aps[2]!=IEEE802_DOT1Q_BRIDGE_BRIDGE){return -1;}
+	if(aps[3]!=IEEE802_DOT1Q_BRIDGE_COMPONENT){return -1;}
+	if(!hwald->hwctx){return 0;}
+	UB_LOG(UBL_DEBUG, "%s:\n", __func__);
+	if(aps[4]==IEEE802_DOT1Q_BRIDGE_FILTERING_DATABASE &&
+	   aps[5]==IEEE802_DOT1Q_BRIDGE_VLAN_REGISTRATION_ENTRY &&
+	   aps[6]==IEEE802_DOT1Q_BRIDGE_PORT_MAP &&
+	   aps[7]==IEEE802_DOT1Q_BRIDGE_DYNAMIC_VLAN_REGISTRATION_ENTRIES){
+		uint16_t *vids;
+		// dynamic VLAN registration
+		// kvs[0]:bridgename, kvs[1]:component name, kvs[2]:dtabase_id,
+		// kvs[3]:vids(start, end, 0, 0), kvs[4]:netdev
+		if((kvs[3]==NULL) || (kvs[4]==NULL)){return -1;}
+		vids=(uint16_t*)kvs[3];
+		return vlans_register(hwald, (const char*)kvs[0], (const char*)kvs[4],
+				      vids[0], vids[1], value!=NULL);
+	}
+	return 1;
+}
+
 
 /* the instance must be only 1 */
 #define UC_HWAL_NLINST uc_hwal_nlinst
@@ -889,7 +943,15 @@ int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss)
 	/* this is called when the DB item to update the HW is deleted.
 	 * If HW needs some action to de-register, do it here.
 	 */
+	int res;
+	const char *emes;
 	if(!hwald){return 0;}
+	emes="dot1q_bridge";
+	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, NULL, 0);
+	if(res<0){
+		UB_LOG(UBL_ERROR, "%s:error in %s\n", __func__, emes);
+		return res;
+	}
 	return 0;
 }
 
@@ -901,6 +963,8 @@ int uc_hwal_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 	const char *emes="ietf_interfaces";
 	res=ietf_interfaces_writehw(hwald, aps, kvs, kss, value, vsize);
 	if(res<0){goto erexit;}
+	emes="dot1q_bridge";
+	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, value, vsize);
 erexit:
 	if(res<0){
 		UB_LOG(UBL_ERROR, "%s:error in %s\n", __func__, emes);

@@ -52,11 +52,6 @@
 
 typedef struct md_sync_send_data md_sync_send_data_t;
 
-typedef struct md_sync_send_stat_data{
-	uint32_t sync_send;
-	uint32_t sync_fup_send;
-}md_sync_send_stat_data_t;
-
 int md_sync_send_sm(md_sync_send_data_t *sm, uint64_t cts64);
 
 void md_sync_send_sm_init(md_sync_send_data_t **sm,
@@ -73,9 +68,5 @@ int md_sync_send_sm_mdSyncSend(md_sync_send_data_t *sm,
 
 void md_sync_send_sm_txts(md_sync_send_data_t *sm, event_data_txts_t *edtxts,
 			  uint64_t cts64);
-
-void md_sync_send_stat_reset(md_sync_send_data_t *sm);
-
-md_sync_send_stat_data_t *md_sync_send_get_stat(md_sync_send_data_t *sm);
 
 #endif

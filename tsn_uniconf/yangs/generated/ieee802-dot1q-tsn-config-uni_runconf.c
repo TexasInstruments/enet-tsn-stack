@@ -56,6 +56,7 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
@@ -261,7 +262,6 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	aps[10] = IEEE802_DOT1Q_TSN_CONFIG_UNI_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 13, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[9] = IEEE802_DOT1Q_TSN_CONFIG_UNI_VALUEKEY;
 	aps[10] = IEEE802_DOT1Q_TSN_CONFIG_UNI_INDEX;
 	vtype=YANG_VTYPE_UINT8;
@@ -273,6 +273,7 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	aps[9] = IEEE802_DOT1Q_TSN_CONFIG_UNI_INTERFACE_NAME;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[7] = IEEE802_DOT1Q_TSN_CONFIG_UNI_VALUEKEY;
 	aps[8] = IEEE802_DOT1Q_TSN_CONFIG_UNI_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -346,7 +347,6 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	aps[10] = IEEE802_DOT1Q_TSN_CONFIG_UNI_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 13, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[9] = IEEE802_DOT1Q_TSN_CONFIG_UNI_VALUEKEY;
 	aps[10] = IEEE802_DOT1Q_TSN_CONFIG_UNI_INDEX;
 	vtype=YANG_VTYPE_UINT8;
@@ -359,7 +359,6 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0020_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc/stream/listener/interface-configuration/interface-list/config-list/ieee802-vlan-tag
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RO;
 	aps[8] = IEEE802_DOT1Q_TSN_CONFIG_UNI_CONFIG_LIST;
 	aps[9] = IEEE802_DOT1Q_TSN_CONFIG_UNI_IEEE802_VLAN_TAG;
 	aps[10] = IEEE802_DOT1Q_TSN_CONFIG_UNI_PRIORITY_CODE_POINT;
@@ -401,6 +400,7 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	aps[6] = IEEE802_DOT1Q_TSN_CONFIG_UNI_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RO;
 	aps[6] = IEEE802_DOT1Q_TSN_CONFIG_UNI_VALUEKEY;
 	aps[7] = IEEE802_DOT1Q_TSN_CONFIG_UNI_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -414,6 +414,7 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0028_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc
 	//0029_ieee802-dot1q-tsn-config-uni/tsn-uni/domain
+	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[3] = IEEE802_DOT1Q_TSN_CONFIG_UNI_CNC_ENABLED;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}

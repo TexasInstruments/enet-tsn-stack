@@ -56,6 +56,7 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
@@ -258,7 +259,6 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[5] = IEEE802_DOT1AB_LLDP_IF_ID;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IEEE802_DOT1AB_LLDP_RW;
 	aps[5] = IEEE802_DOT1AB_LLDP_VALUEKEY;
 	aps[6] = IEEE802_DOT1AB_LLDP_ADDRESS_SUBTYPE;
 	vtype=YANG_VTYPE_IDENTITYREF;
@@ -274,23 +274,19 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0006_ieee802-dot1ab-lldp/lldp/port/remote-systems-data/remote-unknown-tlv
-	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[4] = IEEE802_DOT1AB_LLDP_REMOTE_UNKNOWN_TLV;
 	aps[5] = IEEE802_DOT1AB_LLDP_TLV_INFO;
 	vtype=YANG_VTYPE_BINARY;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IEEE802_DOT1AB_LLDP_RW;
 	aps[5] = IEEE802_DOT1AB_LLDP_VALUEKEY;
 	aps[6] = IEEE802_DOT1AB_LLDP_TLV_TYPE;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	//0007_ieee802-dot1ab-lldp/lldp/port/remote-systems-data/remote-org-defined-info
-	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[4] = IEEE802_DOT1AB_LLDP_REMOTE_ORG_DEFINED_INFO;
 	aps[5] = IEEE802_DOT1AB_LLDP_REMOTE_INFO;
 	vtype=YANG_VTYPE_BINARY;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IEEE802_DOT1AB_LLDP_RW;
 	aps[5] = IEEE802_DOT1AB_LLDP_VALUEKEY;
 	aps[6] = IEEE802_DOT1AB_LLDP_INFO_IDENTIFIER;
 	vtype=YANG_VTYPE_UINT32;
@@ -302,7 +298,6 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	//0008_ieee802-dot1ab-lldp/lldp/port/remote-systems-data
-	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[4] = IEEE802_DOT1AB_LLDP_REMOTE_TOO_MANY_NEIGHBORS;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}

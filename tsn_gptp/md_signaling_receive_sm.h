@@ -52,12 +52,6 @@
 
 typedef struct md_signaling_receive_data md_signaling_receive_data_t;
 
-typedef struct md_signaling_receive_stat_data{
-	uint32_t signal_rec;
-	uint32_t signal_msg_interval_rec;
-	uint32_t signal_gptp_capable_rec;
-}md_signaling_receive_stat_data_t;
-
 void *md_signaling_receive_sm(md_signaling_receive_data_t *sm, uint64_t cts64);
 
 void md_signaling_receive_sm_init(md_signaling_receive_data_t **sm,
@@ -69,9 +63,5 @@ int md_signaling_receive_sm_close(md_signaling_receive_data_t **sm);
 
 void *md_signaling_receive_sm_mdSignalingRec(md_signaling_receive_data_t *sm,
 					     event_data_recv_t *edrecv, uint64_t cts64);
-
-void md_signaling_receive_stat_reset(md_signaling_receive_data_t *sm);
-
-md_signaling_receive_stat_data_t *md_signaling_receive_get_stat(md_signaling_receive_data_t *sm);
 
 #endif

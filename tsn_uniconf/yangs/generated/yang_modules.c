@@ -60,25 +60,28 @@ const char *yang_modules_enum_strings[]={
 	"xl4-extmod",
 	"ietf-interfaces",
 	"ieee802-dot1q-bridge",
+	"ieee802-dot1ab-lldp",
 	"ieee1588-ptp",
 	"ieee802-dot1q-tsn-config-uni",
-	"excelfore-tsn-remote",
-	"ieee802-dot1ab-lldp",
+	"ietf-yang-library",
 	"ietf-netconf-server",
 	"ietf-keychain",
+	"excelfore-tsn-remote",
 };
+extern uint8_t excelfore_tsn_remote_get_enum(char *astr);
+extern const char* excelfore_tsn_remote_get_string(uint8_t anum);
 extern uint8_t ietf_keychain_get_enum(char *astr);
 extern const char* ietf_keychain_get_string(uint8_t anum);
 extern uint8_t ietf_netconf_server_get_enum(char *astr);
 extern const char* ietf_netconf_server_get_string(uint8_t anum);
-extern uint8_t ieee802_dot1ab_lldp_get_enum(char *astr);
-extern const char* ieee802_dot1ab_lldp_get_string(uint8_t anum);
-extern uint8_t excelfore_tsn_remote_get_enum(char *astr);
-extern const char* excelfore_tsn_remote_get_string(uint8_t anum);
+extern uint8_t ietf_yang_library_get_enum(char *astr);
+extern const char* ietf_yang_library_get_string(uint8_t anum);
 extern uint8_t ieee802_dot1q_tsn_config_uni_get_enum(char *astr);
 extern const char* ieee802_dot1q_tsn_config_uni_get_string(uint8_t anum);
 extern uint8_t ieee1588_ptp_get_enum(char *astr);
 extern const char* ieee1588_ptp_get_string(uint8_t anum);
+extern uint8_t ieee802_dot1ab_lldp_get_enum(char *astr);
+extern const char* ieee802_dot1ab_lldp_get_string(uint8_t anum);
 extern uint8_t ieee802_dot1q_bridge_get_enum(char *astr);
 extern const char* ieee802_dot1q_bridge_get_string(uint8_t anum);
 extern uint8_t ietf_interfaces_get_enum(char *astr);
@@ -155,23 +158,26 @@ uint8_t yang_modules_get_node_enums(xl4_data_data_t *xdd, char *astr, uint8_t *a
 	case IEEE802_DOT1Q_BRIDGE_RW:
 		get_enum=ieee802_dot1q_bridge_get_enum;
 		break;
+	case IEEE802_DOT1AB_LLDP_RW:
+		get_enum=ieee802_dot1ab_lldp_get_enum;
+		break;
 	case IEEE1588_PTP_RW:
 		get_enum=ieee1588_ptp_get_enum;
 		break;
 	case IEEE802_DOT1Q_TSN_CONFIG_UNI_RW:
 		get_enum=ieee802_dot1q_tsn_config_uni_get_enum;
 		break;
-	case EXCELFORE_TSN_REMOTE_RW:
-		get_enum=excelfore_tsn_remote_get_enum;
-		break;
-	case IEEE802_DOT1AB_LLDP_RW:
-		get_enum=ieee802_dot1ab_lldp_get_enum;
+	case IETF_YANG_LIBRARY_RW:
+		get_enum=ietf_yang_library_get_enum;
 		break;
 	case IETF_NETCONF_SERVER_RW:
 		get_enum=ietf_netconf_server_get_enum;
 		break;
 	case IETF_KEYCHAIN_RW:
 		get_enum=ietf_keychain_get_enum;
+		break;
+	case EXCELFORE_TSN_REMOTE_RW:
+		get_enum=excelfore_tsn_remote_get_enum;
 		break;
 	// get_node_enums_ENUM_END
 	default:
@@ -248,6 +254,10 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 	case IEEE802_DOT1Q_BRIDGE_RO:
 		get_string=ieee802_dot1q_bridge_get_string;
 		break;
+	case IEEE802_DOT1AB_LLDP_RW:
+	case IEEE802_DOT1AB_LLDP_RO:
+		get_string=ieee802_dot1ab_lldp_get_string;
+		break;
 	case IEEE1588_PTP_RW:
 	case IEEE1588_PTP_RO:
 		get_string=ieee1588_ptp_get_string;
@@ -256,13 +266,9 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 	case IEEE802_DOT1Q_TSN_CONFIG_UNI_RO:
 		get_string=ieee802_dot1q_tsn_config_uni_get_string;
 		break;
-	case EXCELFORE_TSN_REMOTE_RW:
-	case EXCELFORE_TSN_REMOTE_RO:
-		get_string=excelfore_tsn_remote_get_string;
-		break;
-	case IEEE802_DOT1AB_LLDP_RW:
-	case IEEE802_DOT1AB_LLDP_RO:
-		get_string=ieee802_dot1ab_lldp_get_string;
+	case IETF_YANG_LIBRARY_RW:
+	case IETF_YANG_LIBRARY_RO:
+		get_string=ietf_yang_library_get_string;
 		break;
 	case IETF_NETCONF_SERVER_RW:
 	case IETF_NETCONF_SERVER_RO:
@@ -271,6 +277,10 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 	case IETF_KEYCHAIN_RW:
 	case IETF_KEYCHAIN_RO:
 		get_string=ietf_keychain_get_string;
+		break;
+	case EXCELFORE_TSN_REMOTE_RW:
+	case EXCELFORE_TSN_REMOTE_RO:
+		get_string=excelfore_tsn_remote_get_string;
 		break;
 	// get_node_string_ENUM_END
 	default:

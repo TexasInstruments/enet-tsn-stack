@@ -469,6 +469,7 @@ int simpledb_savedata(simpledb_data_t *sdbd, key_range_t **keyranges)
 	if(!sdbd || !keyranges || !sdbd->pfname){return -1;}
 	outf=ub_fioopen(sdbd->pfname, "w");
 	if(outf==NULL){return -1;}
+	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);
 	while(!res){
 		kr=*keyranges;
 		keyranges++;
@@ -482,6 +483,7 @@ int simpledb_savedata(simpledb_data_t *sdbd, key_range_t **keyranges)
 		sod.keyrange.kd2=kr->kd2;
 		res=serialize_range(outf, &sdbd->dblist, &sod);
 	}
+	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
 	(void)ub_fioclose(outf);
 	return 0;
 }

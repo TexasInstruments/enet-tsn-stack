@@ -62,7 +62,9 @@ void *uniconf_main(void *ptr)
 	uc_data_t ucd;
 	ucman_data_t *ucmd=(ucman_data_t *)ptr;
 	UC_RUNCONF_DATA *ydrd;
-	uint8_t uc_rap[2]={XL4_DATA_RO, UC_READY};
+	uint8_t apsd[5]={XL4_DATA_RW, YANG_VALUE_TYPES, XL4_DATA_RO, UC_READY, 255};
+	uint8_t vtype=YANG_VTYPE_UINT8;
+	uint8_t *uc_rap=&apsd[2];
 	uint8_t uc_rv=1;
 
 	(void)memset(&ucd, 0, sizeof(ucd));
@@ -107,7 +109,8 @@ void *uniconf_main(void *ptr)
 		(void)uc_notice_sig_post(UC_CALL_THREAD(ucmd->ucmode), ucmd->ucmanstart);
 	}
 	UB_TLOG(UBL_INFO, "%s:uniconf started\n", __func__);
-	if(uc_dbal_create(ucd.dbald, uc_rap, 2, &uc_rv, 1)){goto erexit;}
+	if(uc_dbal_create(ucd.dbald, apsd, 4, &vtype, 1)){goto erexit;}
+	if(uc_dbal_create(ucd.dbald, uc_rap, 3, &uc_rv, 1)){goto erexit;}
 	while(!*ucmd->stoprun){
 		/*
 		 * here each detect fuction has 50msec timeout, so the worst case response
@@ -124,11 +127,17 @@ void *uniconf_main(void *ptr)
 			goto erexit;
 		}
 		if(*ucmd->stoprun){break;}
-		if(uc_nu_proc_asked_actions(ucd.ucntd,
-					    ucd.dbald, ucd.hwald, 50)<0){
+		// this returns '2', when the DB should be saved
+		res=uc_nu_proc_asked_actions(ucd.ucntd,
+					     ucd.dbald, ucd.hwald, 50);
+		if(res<0){
 			UB_TLOG(UBL_ERROR, "%s:error in uc_nu_proc_asked_actions\n",
 				__func__);
 			goto erexit;
+		}
+		if(res==2){
+			// save the DB to a file
+			if(uc_dbal_save(ucd.dbald)){goto erexit;}
 		}
 	}
 	ucmd->rval=0;
@@ -151,7 +160,7 @@ erexit:
 int uniconf_ready(const char *dbname, uint8_t callmode, int tout_ms)
 {
 	uc_dbald *dbald;
-	uint8_t uc_rap[2]={XL4_DATA_RO, UC_READY};
+	uint8_t uc_rap[3]={XL4_DATA_RO, UC_READY, 255};
 	void *value;
 	uint32_t vsize=0;
 	uint8_t ready=0;
@@ -162,9 +171,9 @@ int uniconf_ready(const char *dbname, uint8_t callmode, int tout_ms)
 		tout_ms-=10;
 	}while(tout_ms>0);
 	while(dbald){
-		if(uc_dbal_get(dbald, uc_rap, 2, &value, &vsize)==0){
+		if(uc_dbal_get(dbald, uc_rap, 3, &value, &vsize)==0){
 			ready=*(uint8_t*)value;
-			uc_dbal_get_release(dbald, uc_rap, 2, value, vsize);
+			uc_dbal_get_release(dbald, uc_rap, 3, value, vsize);
 			if(ready==1){break;}
 		}
 		uc_dbal_releasedb(dbald);

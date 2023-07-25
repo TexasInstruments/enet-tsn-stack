@@ -52,11 +52,6 @@
 
 typedef struct md_signaling_send_data md_signaling_send_data_t;
 
-typedef struct md_signaling_send_stat_data{
-	uint32_t signal_msg_interval_send;
-	uint32_t signal_gptp_capable_send;
-}md_signaling_send_stat_data_t;
-
 void *md_signaling_send_sm(md_signaling_send_data_t *sm, uint64_t cts64);
 
 void md_signaling_send_sm_init(md_signaling_send_data_t **sm,
@@ -69,9 +64,5 @@ int md_signaling_send_sm_close(md_signaling_send_data_t **sm);
 
 void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *msg,
 					   uint64_t cts64);
-
-void md_signaling_send_stat_reset(md_signaling_send_data_t *sm);
-
-md_signaling_send_stat_data_t *md_signaling_send_get_stat(md_signaling_send_data_t *sm);
 
 #endif

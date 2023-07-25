@@ -154,6 +154,18 @@ const yang_identity_map_t addr_family_map[] = {
     { "nsap"       , 3 }
 };
 const uint32_t addr_family_map_num = sizeof(addr_family_map)/sizeof(addr_family_map[0]);
+
+const yang_identity_map_t datastore[] = {
+    { "running"         , 0x0 },
+    { "candidate"       , 0x1 },
+    { "startup"         , 0x2 },
+    { "conventional"    , 0x3 },
+    { "intended"        , 0x4 },
+    { "dynamic"         , 0x5 },
+    { "operational"     , 0x6 }
+};
+const uint32_t datastore_num = sizeof(datastore)/sizeof(datastore[0]);
+
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
  *----------------------------------------------------------------------------*/
@@ -164,7 +176,8 @@ const yang_identityref_t yang_identityref_list[] = {
     { time_source,      time_source_num,      "time-source"      },
     { gate_operation,   gate_operation_num,   "gate-operation"   },
     { map_type,         map_type_num,         "map-type"         },
-    { addr_family_map,  addr_family_map_num,  "address-family"         },
+    { addr_family_map,  addr_family_map_num,  "address-family"   },
+    { datastore,        datastore_num,        "datastore"        },
     { NULL,             0,                    NULL               }
 };
 

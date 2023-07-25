@@ -51,16 +51,17 @@
 #include "yang_modules.h"
 #include "yang_db_access.h"
 #include "ieee802-dot1q-bridge.h"
+#include "ieee802-dot1q-bridge_access.h"
 
-#define QBRIDGE_NAME "br0"
 #define QBRIDGE_COMP_NAME "cmp00"
 #define QBRIDGE_FDB_ID 0
-static char bridgename[4]=QBRIDGE_NAME;
 static char compname[6]=QBRIDGE_COMP_NAME;
 
 static void set_dpara_k1vk0(yang_db_access_para_t *dbpara, xl4_data_data_t *xdd,
-			    uint8_t instIndex, uint8_t k1, bool status)
+			    const char* bridgename, uint8_t instIndex,
+			    uint8_t k1, bool status)
 {
+	if(bridgename==NULL){bridgename=DOT1Q_DEFAULT_BRIDGE_NAME;}
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
 	dbpara->aps[0] = status?IEEE802_DOT1Q_BRIDGE_RO:IEEE802_DOT1Q_BRIDGE_RW;
 	dbpara->aps[1] = IEEE802_DOT1Q_BRIDGE_BRIDGES;
@@ -68,7 +69,7 @@ static void set_dpara_k1vk0(yang_db_access_para_t *dbpara, xl4_data_data_t *xdd,
 	dbpara->aps[3] = IEEE802_DOT1Q_BRIDGE_COMPONENT;
 	dbpara->aps[4] = k1;
 	dbpara->aps[5] = 255u;
-	dbpara->kvs[0]=bridgename;
+	dbpara->kvs[0]=(void*)bridgename;
 	dbpara->kss[0]=strlen(bridgename)+1u;
 	(void)ub_bytearray2str(&compname[3], &instIndex, 1);
 	dbpara->kvs[1]=compname;
@@ -76,45 +77,50 @@ static void set_dpara_k1vk0(yang_db_access_para_t *dbpara, xl4_data_data_t *xdd,
 	dbpara->kvs[2]=NULL;
 }
 
-int ydbi_get_item_qbk1vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t instIndex,
+int ydbi_get_item_qbk1vk0(yang_db_item_access_t *ydbia, void **rval,
+			  const char* bridgename, uint8_t instIndex,
 			  uint8_t k1, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
-int ydbi_rel_item_qbk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
-			    uint8_t k1, bool status)
+int ydbi_rel_item_qbk1vk0(yang_db_item_access_t *ydbia,
+			  const char* bridgename, uint8_t instIndex,
+			  uint8_t k1, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
 	return ydbi_rel_foot(ydbia, __func__);
 }
 
-int ydbi_set_item_qbk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
+int ydbi_set_item_qbk1vk0(yang_db_item_access_t *ydbia,
+			  const char* bridgename, uint8_t instIndex,
 			  uint8_t k1, bool status, void *value, uint32_t vsize,
 			  uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
 }
 
-int ydbi_del_item_qbk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
+int ydbi_del_item_qbk1vk0(yang_db_item_access_t *ydbia,
+			  const char* bridgename, uint8_t instIndex,
 			  uint8_t k1, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
-static void set_dpara_vlan_reg(yang_db_item_access_t *ydbia, uint8_t instIndex,
+static void set_dpara_vlan_reg(yang_db_item_access_t *ydbia,
+			       const char* bridgename, uint8_t instIndex,
 			       uint32_t *database_id, uint16_t *vids, const char *netdev)
 {
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex,
+	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex,
 			IEEE802_DOT1Q_BRIDGE_FILTERING_DATABASE, YDBI_CONFIG);
 	ydbia->dbpara.aps[5] = IEEE802_DOT1Q_BRIDGE_VLAN_REGISTRATION_ENTRY;
 	ydbia->dbpara.aps[6] = IEEE802_DOT1Q_BRIDGE_PORT_MAP;
@@ -129,7 +135,8 @@ static void set_dpara_vlan_reg(yang_db_item_access_t *ydbia, uint8_t instIndex,
 	ydbia->dbpara.kvs[5] = NULL;
 }
 
-int ydbi_vlan_regis_qb(yang_db_item_access_t *ydbia, uint8_t instIndex,
+int ydbi_vlan_regis_qb(yang_db_item_access_t *ydbia,
+		       const char* bridgename, uint8_t instIndex,
 		       uint16_t vid1, uint16_t vid2, const char *netdev, bool reg)
 {
 	uint32_t database_id=QBRIDGE_FDB_ID;
@@ -140,13 +147,16 @@ int ydbi_vlan_regis_qb(yang_db_item_access_t *ydbia, uint8_t instIndex,
 	}else{
 		if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
 	}
-	set_dpara_vlan_reg(ydbia, instIndex, &database_id, vids, netdev);
+	set_dpara_vlan_reg(ydbia, bridgename, instIndex, &database_id, vids, netdev);
 	ydbia->dbpara.value = &vi;
 	ydbia->dbpara.vsize = sizeof(uint32_t);
+	UB_LOG(UBL_DEBUG, "%s:vid1=%d, vid2=%d, netdev=%s, reg=%d\n",
+	       __func__, vid1, vid2, netdev, reg);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_PUSH_NOTICE);
 }
 
-bool ydbi_vlan_check_qb(yang_db_item_access_t *ydbia, uint8_t instIndex,
+bool ydbi_vlan_check_qb(yang_db_item_access_t *ydbia,
+			const char* bridgename, uint8_t instIndex,
 			uint16_t vid1, uint16_t vid2, const char *netdev)
 {
 	uint32_t database_id=QBRIDGE_FDB_ID;
@@ -154,9 +164,11 @@ bool ydbi_vlan_check_qb(yang_db_item_access_t *ydbia, uint8_t instIndex,
 	void *vi;
 	int res;
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_vlan_reg(ydbia, instIndex, &database_id, vids, netdev);
+	set_dpara_vlan_reg(ydbia, bridgename, instIndex, &database_id, vids, netdev);
 	res=ydbi_get_foot(ydbia, __func__, &vi, UBL_INFO);
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
 	ydbi_rel_foot(ydbia, __func__);
-	return res==0;
+	UB_LOG(UBL_DEBUGV, "%s:vid1=%d, vid2=%d, netdev=%s, res=%d\n",
+	       __func__, vid1, vid2, netdev, res);
+	return res==sizeof(uint32_t);
 }

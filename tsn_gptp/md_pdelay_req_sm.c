@@ -56,6 +56,7 @@
 #include "md_abnormal_hooks.h"
 #include "gptpconf/gptpgcfg.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -86,7 +87,6 @@ struct md_pdelay_req_data{
 	MDPTPMsgPdelayResp recPdelayResp;
 	MDPTPMsgPdelayRespFollowUp recPdelayRespFup;
 	int cmlds_mode;
-	md_pdelay_req_stat_data_t statd;
 	uint64_t mock_txts64;
 	uint64_t prev_t1ts64;
 	uint64_t prev_t2ts64;
@@ -100,18 +100,17 @@ struct md_pdelay_req_data{
 
 static bool isPdelayIntervalTimerExpired(md_pdelay_req_data_t *sm, uint64_t cts64)
 {
-	const unsigned int round = 1000000;
-	uint64_t tsdiff = cts64 - sm->thisSM->pdelayIntervalTimer.nsec;
-	// align time in @round so that we can accept the case that tsdiff is very closed
-	// to the pdelayIntervalTimer
-	tsdiff = ((tsdiff + (round/2u))/round)*round;
-	return (tsdiff >= sm->mdeg->forAllDomain->pdelayReqInterval.nsec);
+	// align time in 25msec
+	cts64 = ((cts64 + 12500000)/25000000)*25000000;
+	return ((cts64 - sm->thisSM->pdelayIntervalTimer.nsec) >=
+			sm->mdeg->forAllDomain->pdelayReqInterval.nsec);
 }
 
 static MDPTPMsgPdelayReq *setPdelayReq(md_pdelay_req_data_t *sm)
 {
 	MDPTPMsgPdelayReq *sdata;
 	int ssize=sizeof(MDPTPMsgPdelayReq);
+
 	sdata=(MDPTPMsgPdelayReq *)md_header_compose(GPTPINSTNUM,
 				sm->gpnetd, sm->portIndex, PDELAY_REQ, ssize,
 				sm->ptasg->thisClock, sm->ppg->thisPort,
@@ -270,7 +269,7 @@ static int initial_send_pdelay_req_proc(md_pdelay_req_data_t *sm, uint64_t cts64
 	if(res<0){
 		sm->mock_txts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex,0);
 	}
-	sm->statd.pdelay_req_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayReqTx);
 	sm->thisSM->pdelayIntervalTimer.subns = 0;
 	sm->thisSM->pdelayIntervalTimer.nsec = cts64;
 	sm->thisSM->lostResponses = 0;
@@ -392,7 +391,7 @@ static int send_pdelay_req_proc(md_pdelay_req_data_t *sm, uint64_t cts64)
 	if(res<0){
 		sm->mock_txts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex,0);
 	}
-	sm->statd.pdelay_req_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayReqTx);
 	// align time in 25msec
 	sm->thisSM->pdelayIntervalTimer.nsec = ((cts64 + 12500000)/25000000)*25000000;;
 	return 0;
@@ -537,7 +536,7 @@ static void *waiting_for_pdelay_resp_follow_up_proc(md_pdelay_req_data_t *sm)
 {
 	UB_LOG(UBL_DEBUGV, "md_pdelay_req:%s:portIndex=%d\n", __func__, sm->portIndex);
 	RCVD_PDELAY_RESP = false;
-	sm->statd.pdelay_resp_rec_valid++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayRespRx);
 	return NULL;
 }
 
@@ -643,6 +642,8 @@ static void *waiting_for_pdelay_interval_timer_proc(md_pdelay_req_data_t *sm)
 	}
 	if(sm->ppg->forAllDomain->computeNeighborPropDelay){
 		sm->ppg->forAllDomain->neighborPropDelay.nsec = computePropTime(sm);
+		PERFMON_PPMPDDR_ADD(sm->ppg->perfmonDS, PPMPDDR_meanLinkDelay,
+			sm->ppg->forAllDomain->neighborPropDelay.nsec);
 	}
 
 	sm->mdeg->forAllDomain->isMeasuringDelay = true;
@@ -655,9 +656,10 @@ static void *waiting_for_pdelay_interval_timer_proc(md_pdelay_req_data_t *sm)
 	   (memcmp(RCVD_PDELAY_RESP_PTR->head.sourcePortIdentity.clockIdentity,
 		   sm->ptasg->thisClock, sizeof(ClockIdentity))
 		   ) && sm->thisSM->neighborRateRatioValid) {
-		UB_LOG(UBL_WARN, "%s:portIndex=%d, neighborPropDelay is below the min limit (%"PRIu64" < %"PRIu64")\n",
-				__func__, sm->portIndex, sm->ppg->forAllDomain->neighborPropDelay.nsec,
-				sm->mdeg->forAllDomain->neighborPropDelayMinLimit.nsec);
+		UB_LOG(UBL_WARN, "%s:portIndex=%d, neighborPropDelay is below the min limit (%"
+		       PRIu64" < %"PRIu64")\n",
+		       __func__, sm->portIndex, sm->ppg->forAllDomain->neighborPropDelay.nsec,
+		       sm->mdeg->forAllDomain->neighborPropDelayMinLimit.nsec);
 		goto detectedfault;
 	}
 
@@ -666,7 +668,7 @@ static void *waiting_for_pdelay_interval_timer_proc(md_pdelay_req_data_t *sm)
 	   (memcmp(RCVD_PDELAY_RESP_PTR->head.sourcePortIdentity.clockIdentity,
 		   sm->ptasg->thisClock, sizeof(ClockIdentity))
 		   ) && sm->thisSM->neighborRateRatioValid) {
-		sm->statd.pdelay_resp_fup_rec_valid++;
+		PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayRespFollowUpRx);
 		sm->thisSM->detectedFaults = 0;
 		if(sm->mdeg->forAllDomain->asCapableAcrossDomains){return NULL;}
 		sm->mdeg->forAllDomain->asCapableAcrossDomains = true;
@@ -862,6 +864,7 @@ void md_pdelay_req_sm_recv_resp(md_pdelay_req_data_t *sm, event_data_recv_t *edr
 				uint64_t cts64)
 {
 	uint32_t tsec, tns;
+	uint64_t slaveMasterDelay;
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d\n",__func__, sm->portIndex);
 	RCVD_PDELAY_RESP = true;
 	memcpy(&sm->recPdelayResp, edrecv->recbptr, sizeof(MDPTPMsgPdelayResp));
@@ -870,8 +873,20 @@ void md_pdelay_req_sm_recv_resp(md_pdelay_req_data_t *sm, event_data_recv_t *edr
 	tns = ntohl(RCVD_PDELAY_RESP_PTR->requestReceiptTimestamp.nanoseconds_nl);
 	sm->t2ts64 = ((uint64_t)tsec * (uint64_t)UB_SEC_NS) + (uint64_t)tns;
 	sm->t4ts64 = edrecv->ts64;
+
+	/* IEEE1588-2019 SlaveMasterDelay calculation (J.2 Timestamping monitoring, p. 409)
+	 * SlaveMasterDelay is computed as follows:
+	 * SlaveMasterDelay = receiveTimestamp of PDelay_Resp - correction field - TxTS of PDelay_Req (T1)
+	 *  = t4 - correction field - t1
+	 *
+	 *  Note: 1588-2019 standards labels TxTS of PDelay_Req as t3, which is in
+	 *  conflict with the use of t3 in this implementation. TxTS of PDelay_Req
+	 *  is stored as t1 in this implementation.
+	*/
+	slaveMasterDelay = edrecv->ts64 - RCVD_PDELAY_RESP_PTR->head.correctionField_nll - sm->t1ts64;
+	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_slaveMasterDelay, slaveMasterDelay);
+
 	(void)md_pdelay_req_sm(sm, cts64);
-	sm->statd.pdelay_resp_rec++;
 }
 
 void md_pdelay_req_sm_recv_respfup(md_pdelay_req_data_t *sm, event_data_recv_t *edrecv,
@@ -886,15 +901,4 @@ void md_pdelay_req_sm_recv_respfup(md_pdelay_req_data_t *sm, event_data_recv_t *
 	tns = ntohl(RCVD_PDELAY_RESP_FOLLOWUP_PTR->requestOriginTimestamp.nanoseconds_nl);
 	sm->t3ts64 = ((uint64_t)tsec * (uint64_t)UB_SEC_NS) + (uint64_t)tns;
 	(void)md_pdelay_req_sm(sm, cts64);
-	sm->statd.pdelay_resp_fup_rec++;
-}
-
-void md_pdelay_req_stat_reset(md_pdelay_req_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_pdelay_req_stat_data_t));
-}
-
-md_pdelay_req_stat_data_t *md_pdelay_req_get_stat(md_pdelay_req_data_t *sm)
-{
-	return &sm->statd;
 }

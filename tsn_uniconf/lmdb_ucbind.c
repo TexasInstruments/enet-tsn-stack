@@ -184,6 +184,20 @@ void uc_dbal_close(uc_dbald *dbald, uint8_t callmode)
 	free(lmubd);
 }
 
+int uc_dbal_save(uc_dbald *dbald)
+{
+	lmdb_ucbind_data_t *lmubd=(lmdb_ucbind_data_t *)dbald;
+	UB_TLOG(UBL_DEBUG, "%s:\n", __func__);
+	TXN_RECAPTURE(-1, NULL, 0);
+	CB_THREAD_MUTEX_LOCK(&lmubd->putlock);
+	mdb_txn_commit(lmubd->txn);
+	mdb_env_sync(lmubd->env, 1);
+	lmubd->txn=NULL;
+	CB_SEM_POST(lmubd->relwait);
+	CB_THREAD_MUTEX_UNLOCK(&lmubd->putlock);
+	return 0;
+}
+
 /* to debug uc_dbal_releasedb interval, we need to know who captures it at the time
  * 'program_invocation_short_name' is not portable,
  * RELEASEDB_DEBUG is defined only for the debug.
@@ -276,7 +290,7 @@ int uc_dbal_getdb(uc_dbald *dbald, int toutms, uint8_t *key, uint32_t ksize)
 		return -1;
 	}
 	ts=ub_rt_gettime64();
-	mtout=ts+toutms*UB_MSEC_NS;
+	mtout=ts+(uint64_t)toutms*UB_MSEC_NS;
 	UB_NSEC2TS(mtout, mtots);
 	if(CB_SEM_TIMEDWAIT(lmubd->relwait, &mtots)){
 		UB_TLOG(UBL_ERROR, "%s:can't get it in the timeout\n", __func__);

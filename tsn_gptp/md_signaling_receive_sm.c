@@ -53,6 +53,7 @@
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "md_signaling_receive_sm.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -72,7 +73,6 @@ struct md_signaling_receive_data{
 	void *rcvd_rxmsg;
 	PTPMsgGPTPCapableTLV gctlm;
 	PTPMsgIntervalRequestTLV mrtlm;
-	md_signaling_receive_stat_data_t statd;
 };
 
 #define PORT_OPER sm->ppg->forAllDomain->portOper
@@ -145,11 +145,11 @@ static void *recv_signaling_proc(md_signaling_receive_data_t *sm)
 	sm->recv=false;
 	stype=((MDPTPMsgGPTPCapableTLV*)(sm->rcvd_rxmsg))->organizationSubType_nb[2];
 	if(stype==2u){
-		sm->statd.signal_msg_interval_rec++;
+		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, msgIntervalRx);
 		return recv_msg_interval_req(sm);
 	}
 	else if(stype==4u){
-		sm->statd.signal_gptp_capable_rec++;
+		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, asCapableRx);
 		return recv_gptp_capable(sm);
 	}else{}
 	UB_LOG(UBL_WARN, "%s:unknown tlv type = %d\n", __func__, stype);
@@ -235,16 +235,6 @@ void *md_signaling_receive_sm_mdSignalingRec(md_signaling_receive_data_t *sm,
 	sm->recv=true;
 	sm->rcvd_rxmsg=edrecv->recbptr;
 	sm->last_state=REACTION;
-	sm->statd.signal_rec++;
+	PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, signalingRx);
 	return md_signaling_receive_sm(sm, cts64);
-}
-
-void md_signaling_receive_stat_reset(md_signaling_receive_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_signaling_receive_stat_data_t));
-}
-
-md_signaling_receive_stat_data_t *md_signaling_receive_get_stat(md_signaling_receive_data_t *sm)
-{
-	return &sm->statd;
 }

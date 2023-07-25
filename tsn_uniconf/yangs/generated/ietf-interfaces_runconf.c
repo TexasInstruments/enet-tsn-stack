@@ -56,6 +56,7 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
@@ -267,12 +268,12 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[6] = IETF_INTERFACES_LQUEUE;
 	vtype=YANG_VTYPE_INT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IETF_INTERFACES_RW;
 	aps[6] = IETF_INTERFACES_VALUEKEY;
 	aps[7] = IETF_INTERFACES_PQUEUE;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0004_ietf-interfaces/interfaces/interface/bridge-port/traffic-class
+	aps[0] = IETF_INTERFACES_RW;
 	aps[5] = IETF_INTERFACES_CBS_ENABLED;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
@@ -336,13 +337,13 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = IETF_INTERFACES_GATE_STATES_VALUE;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IETF_INTERFACES_RW;
 	aps[7] = IETF_INTERFACES_VALUEKEY;
 	aps[8] = IETF_INTERFACES_INDEX;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0011_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
 	//0012_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
+	aps[0] = IETF_INTERFACES_RW;
 	aps[5] = IETF_INTERFACES_ADMIN_CYCLE_TIME;
 	aps[6] = IETF_INTERFACES_NUMERATOR;
 	vtype=YANG_VTYPE_UINT32;

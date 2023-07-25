@@ -68,6 +68,7 @@ struct yang_db_runtime_data{
 	uint8_t kss[MAX_KV_DEPTH];
 	uint8_t kpi[MAX_AP_DEPTH];
 	xl4_data_data_t *xdd;
+	bool changtoRO;
 };
 
 #define KEYV_DELIMITER '|'
@@ -158,16 +159,20 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv)
 	}
 	ydrd->aps[ydrd->api+1u]=rv[0];
 	if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+4u, &value, &vsize)!=0){
-		char *rstr=NULL;
-		ub_hexdump(true, true, ydrd->apsd, ydrd->api+4u, 0);
-		ydrd->apsd[ydrd->api+4u]=255;
-		(void)yang_modules_get_node_string(ydrd->xdd, &rstr, &ydrd->apsd[2]);
-		if(rstr!=NULL) {
-			UB_LOG(UBL_ERROR, "%s:%s\n", __func__, rstr);
-			UB_SD_RELMEM(YANGINIT_GEN_SMEM, rstr);
+		ydrd->aps[0]+=XL4_DATA_RO; // 2nd try with '_RO'
+		if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+4u, &value, &vsize)!=0){
+			char *rstr=NULL;
+			ub_hexdump(true, true, ydrd->apsd, ydrd->api+4u, 0);
+			ydrd->apsd[ydrd->api+4u]=255;
+			(void)yang_modules_get_node_string(ydrd->xdd, &rstr, &ydrd->apsd[2]);
+			if(rstr!=NULL) {
+				UB_LOG(UBL_ERROR, "%s:%s\n", __func__, rstr);
+				UB_SD_RELMEM(YANGINIT_GEN_SMEM, rstr);
+			}
+			UB_LOG(UBL_ERROR, "%s:unknown key value type:%s\n", __func__, kn);
+			return -1;
 		}
-		UB_LOG(UBL_ERROR, "%s:unknown key value type:%s\n", __func__, kn);
-		return -1;
+		ydrd->aps[0]-=XL4_DATA_RO; // back to the '_RW'
 	}
 	kvtype=*(uint8_t*)value;
 	(void)uc_dbal_get_release(ydrd->dbald, ydrd->apsd, ydrd->api+4u, value, vsize);
@@ -344,10 +349,10 @@ static int copy_list(yang_db_runtime_dataq_t *ydrd, char *vstr)
 		//yang_db_keydump_log(UBL_DEBUG, ydrd->aps, ydrd->kvs, ydrd->kss);
 		res=yang_db_listcopy(ydrd->dbald, ydrd->aps, okvs, ydrd->kss,
 				     ydrd->kvs, ydrd->kss);
-		ydrd->aps[0]+=0x80u;
+		ydrd->aps[0]+=XL4_DATA_RO;
 		res=yang_db_listcopy(ydrd->dbald, ydrd->aps, okvs, ydrd->kss,
 				     ydrd->kvs, ydrd->kss);
-		ydrd->aps[0]-=0x80u;
+		ydrd->aps[0]-=XL4_DATA_RO;
 	}
 	// release the source side value key, and keep the new value key in 'ydrd->kvs'
 	UB_SD_RELMEM(YANGINIT_GEN_SMEM, okvs[tkpi-1]);
@@ -360,12 +365,12 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 	uint8_t vtype;
 	void *value;
 	uint32_t vsize;
-	bool changtoRO=false;
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE,onhw,
 				      NULL,NULL,NULL,NULL,NULL,0};
 
 	UB_LOG(UBL_DEBUGV, "%s:kstr=%s, vstr=%s\n", __func__, kstr, vstr);
 	res=proc_get_keys(ydrd, kstr);
+	ydrd->changtoRO=false;
 	if(res<0){return -1;}
 	if(res==1){return 0;} // this is key only line
 	if((vstr[0]==KEYV_DELIMITER) && (strlen(vstr)>1) &&
@@ -374,8 +379,8 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 	}
 	if(res==2){dbpara.atype=YANG_DB_ACTION_APPEND;} // key end with '+"
 	if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &value, &vsize)!=0){
-		changtoRO=true;
-		ydrd->aps[0]+=0x80u;
+		ydrd->changtoRO=true;
+		ydrd->aps[0]+=XL4_DATA_RO;
 		if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &value, &vsize)!=0){
 			char *rstr=NULL;
 			ub_hexdump(true, true, ydrd->apsd, ydrd->api+2u, 0);
@@ -387,7 +392,7 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 			}
 			UB_LOG(UBL_ERROR, "%s:unknown value type\n", __func__);
 			ydrd->api--;
-			ydrd->aps[0]-=0x80u;
+			ydrd->aps[0]-=XL4_DATA_RO;
 			return -1;
 		}
 	}
@@ -398,7 +403,7 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 	if(res<0){
 		UB_LOG(UBL_ERROR, "%s:invalid value:%s\n", __func__, vstr);
 		ydrd->api--;
-		if(changtoRO){ydrd->aps[0]-=0x80u;}
+		if(ydrd->changtoRO){ydrd->aps[0]-=XL4_DATA_RO;}
 		return -1;
 	}
 	ydrd->aps[ydrd->api--]=255; // decrement api to set yard->aps without the last leaf
@@ -411,7 +416,7 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 		UB_LOG(UBL_ERROR, "%s:yang_db_action to create failed\n", __func__);
 	}
 	if(dbpara.value!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, dbpara.value);}
-	if(changtoRO){ydrd->aps[0]-=0x80u;}
+	if(ydrd->changtoRO){ydrd->aps[0]-=XL4_DATA_RO;}
 	return res;
 }
 
@@ -503,7 +508,11 @@ void yang_db_runtime_close(yang_db_runtime_dataq_t *ydrd)
 int yang_db_runtime_put_oneline(yang_db_runtime_dataq_t *ydrd,
 				char *kstr, char *vstr, uint8_t onhw)
 {
-	return proc_one_item(ydrd, kstr, vstr, onhw);
+	int res;
+	res=proc_one_item(ydrd, kstr, vstr, onhw);
+	if(res){return res;}
+	if(ydrd->changtoRO){ydrd->aps[0]+=XL4_DATA_RO;}
+	return 0;
 }
 
 int yang_db_runtime_askaction(yang_db_runtime_dataq_t *ydrd,
@@ -537,7 +546,7 @@ int yang_db_runtime_get_oneline(yang_db_runtime_dataq_t *ydrd,
 
 	ydrd->aps[0]&=0x7f;
 	if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &vtv, &vts)!=0){
-		ydrd->aps[0]+=0x80u;
+		ydrd->aps[0]+=XL4_DATA_RO;
 		if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &vtv, &vts)!=0){
 			UB_LOG(UBL_DEBUG, "%s:can't get vtype\n", __func__);
 			yang_db_keydump_log(UBL_DEBUG, ydrd->apsd, NULL, NULL);
@@ -582,7 +591,7 @@ int yang_db_runtime_notice_register(yang_db_runtime_dataq_t *ydrd, uc_notice_dat
 	}
 	ydrd->aps[0]&=0x7f;
 	if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &vtv, &vts)!=0){
-		ydrd->aps[0]+=0x80u;
+		ydrd->aps[0]+=XL4_DATA_RO;
 		if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &vtv, &vts)!=0){
 			UB_LOG(UBL_DEBUG, "%s:can't get vtype\n", __func__);
 			return -1;

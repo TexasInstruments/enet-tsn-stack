@@ -55,6 +55,7 @@
 #include "md_announce_send_sm.h"
 #include "md_abnormal_hooks.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -73,7 +74,6 @@ struct md_announce_send_data{
 	MDAnnounceSendSM *thisSM;
 	int domainIndex;
 	int portIndex;
-	md_announce_send_stat_data_t statd;
 };
 
 #define PORT_OPER sm->ppg->forAllDomain->portOper
@@ -138,7 +138,7 @@ static int sendAnnounce(md_announce_send_data_t *sm)
 	}
 
 	if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, ssize)==-1){return -2;}
-	sm->statd.announce_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, announceTx);
 	return 0;
 }
 
@@ -255,14 +255,4 @@ void *md_announce_send_sm_mdAnnouncSend(md_announce_send_data_t *sm,
 	TXANN=msgAnnounce;
 	sm->last_state=REACTION;
 	return md_announce_send_sm(sm, cts64);
-}
-
-void md_announce_send_stat_reset(md_announce_send_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_announce_send_stat_data_t));
-}
-
-md_announce_send_stat_data_t *md_announce_send_get_stat(md_announce_send_data_t *sm)
-{
-	return &sm->statd;
 }

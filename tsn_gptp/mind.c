@@ -50,9 +50,11 @@
 #include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "gptpconf/gptpgcfg.h"
+#include <tsn_uniconf/yangs/ieee1588-ptp.h>
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 		   uint8_t gptpInstanceIndex, uint8_t domainIndex)
@@ -75,12 +77,37 @@ void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 	(*tasglb)->conformToAvnu = gptpgcfg_get_intitem(
 		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_FOLLOW_AVNU,
 		YDBI_CONFIG);
-	(*tasglb)->gptpInstanceIndex = gptpInstanceIndex;
+
+	(*tasglb)->perfmonEnable = gptpgcfg_get_yang_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
+			IEEE1588_PTP_ENABLE, 255,
+			domainIndex, YDBI_CONFIG);
+	UB_LOG(UBL_INFO, "IEEE1588-2019 performance monitoring %s.\n",
+		(*tasglb)->perfmonEnable?"enabled":"disabled");
+
+	if((*tasglb)->perfmonEnable){
+		if(!(*tasglb)->perfmonClockDS){
+			(*tasglb)->perfmonClockDS=(PerfMonClockDS *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerfMonClockDS));
+			if(ub_assert_fatal((*tasglb)->perfmonClockDS!=NULL, __func__, "malloc error")){return;}
+			gptp_clock_perfmon_dr_reset((*tasglb)->perfmonClockDS, PERFMON_ALL_DR, ub_mt_gettime64());
+		}
+		(*tasglb)->perfmonLongPeriod_ms = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_LONG_PERIOD, YDBI_CONFIG);
+		(*tasglb)->perfmonShortPeriod_ms = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_SHORT_PERIOD, YDBI_CONFIG);
+		(*tasglb)->perfmonCurrentPeriod_ms = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_CURRENT_PERIOD, YDBI_CONFIG);
+		(*tasglb)->gptpInstanceIndex = gptpInstanceIndex;
+	}
 }
 
 void ptas_glb_close(PerTimeAwareSystemGlobal **tasglb)
 {
 	if(!*tasglb){return;}
+	if((*tasglb)->perfmonClockDS){
+		UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, (*tasglb)->perfmonClockDS);
+	}
 	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *tasglb);
 	*tasglb=NULL;
 }
@@ -99,6 +126,7 @@ static bool get_pp_ptpPortEnabled(uint8_t gptpInstanceIndex, uint16_t portIndex,
 
 void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 		 PerPortGlobalForAllDomain *forAllDomain,
+		 PerTimeAwareSystemGlobal *tasglb,
 		 uint8_t domainIndex, uint16_t portIndex)
 {
 	if(!*ppglb){
@@ -190,12 +218,22 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 	(*ppglb)->mgtSettableOneStepTxOper = false;
 	(*ppglb)->initialOneStepTxOper = false;
 	(*ppglb)->currentOneStepTxOper = false;
+
+	if(tasglb->perfmonEnable){
+		(*ppglb)->perfmonDS=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerfMonPortDS));
+		if(ub_assert_fatal((*ppglb)->perfmonDS!=NULL, __func__, "malloc error")){return;}
+		gptp_port_perfmon_dr_reset((*ppglb)->perfmonDS, PERFMON_ALL_DR,
+			  domainIndex, portIndex, ub_mt_gettime64());
+	}
 }
 
 void pp_glb_close(PerPortGlobal **ppglb, int domainIndex)
 {
 	if(!*ppglb){return;}
 	if(domainIndex==0){UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, (*ppglb)->forAllDomain);}
+	if((*ppglb)->perfmonDS){
+		UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, (*ppglb)->perfmonDS);
+	}
 	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *ppglb);
 	*ppglb=NULL;
 }
@@ -328,3 +366,4 @@ void bmcs_pp_glb_close(BmcsPerPortGlobal **bppglb)
 	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *bppglb);
 	*bppglb=NULL;
 }
+

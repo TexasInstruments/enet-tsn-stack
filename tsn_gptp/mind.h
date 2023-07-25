@@ -51,6 +51,7 @@
 #define MIND_H_
 
 #include "gptpbasetypes.h"
+#include <stdint.h>
 
 #define NUMBER_OF_PORTS 2
 
@@ -109,6 +110,121 @@ typedef struct PortSyncSync {
 	PerPortGlobal *local_ppg; // per-port-global for the localPort
 } PortSyncSync;
 
+// IEEE1588-2019 J.4.1 Performance Monitoring
+typedef uint32_t PMTimestamp; // ms unit
+#define PERFMON_SHORTINTV_DR 0 // short interval, typically 15m
+#define PERFMON_LONGINTV_DR 1 // long interval, typically 24h
+#define PERFMON_ALL_DR 2  // keep current (index=0) data records only
+
+// IEEE1588-2019 Tbl. J.1 and J.2 invalid value
+#define INVALID_TIMEINTERVAL_VALUE 0x7FFFFFFFFFFFFFFF
+
+// Ancillary data required to compute parameters on standard Data Records
+typedef struct PerfMonAncillaryDataRecord {
+	uint32_t N; // number of entries
+	double prev_M; // previous mean
+	double M; // running mean
+	double prev_V; // previous variance
+	double V; //  running variance
+} PerfMonAncillaryDataRecord;
+
+// IEEE1588-2019 Tbl J.1 ClockPerfMonDataRecord
+typedef struct ClockPerfMonDataRecord {
+	// uint16_t index;
+	// PMTimestamp PMTime;
+	bool measurementValid;
+	bool periodComplete;
+	TimeInterval averageMasterSlaveDelay;
+	TimeInterval minMasterSlaveDelay;
+	TimeInterval maxMasterSlaveDelay;
+	TimeInterval stdDevMasterSlaveDelay;
+	TimeInterval averageSlaveMasterDelay;
+	TimeInterval minSlaveMasterDelay;
+	TimeInterval maxSlaveMasterDelay;
+	TimeInterval stdDevSlaveMasterDelay;
+	TimeInterval averageMeanPathDelay;
+	TimeInterval minMeanPathDelay;
+	TimeInterval maxMeanPathDelay;
+	TimeInterval stdDevMeanPathDelay;
+	TimeInterval averageOffsetFromMaster;
+	TimeInterval minOffsetFromMaster;
+	TimeInterval maxOffsetFromMaster;
+	TimeInterval stdDevOffsetFromMaster;
+	// ancillary structure members (not in standards)
+	PerfMonAncillaryDataRecord masterSlaveDelay;
+	PerfMonAncillaryDataRecord slaveMasterDelay;
+	PerfMonAncillaryDataRecord meanPathDelay;
+	PerfMonAncillaryDataRecord offsetFromMaster;
+} ClockPerfMonDataRecord;
+
+// IEEE1588-2019 Tbl J.2 PortPerformanceMonitoringPeerDelayDataRecord
+typedef struct PortPerfMonPeerDelayDataRecord {
+	// uint16_t index;
+	// PMTimestamp PMTime;
+	TimeInterval averageMeanLinkDelay;
+	TimeInterval minMeanLinkDelay;
+	TimeInterval maxMeanLinkDelay;
+	TimeInterval stdDevMeanLinkDelay;
+	// ancillary structure members (not in standards)
+	PerfMonAncillaryDataRecord meanLinkDelay;
+} PortPerfMonPeerDelayDataRecord;
+
+// IEEE1588-2019 Tbl J.3 PortPerformanceMonitoringDataRecord
+typedef struct PortPerfMonDataRecord {
+	// uint16_t index;
+	// PMTimestamp PMTime;
+	uint32_t announceTx;
+	uint32_t announceRx;
+	uint32_t announceForeignMasterRx;
+	uint32_t syncTx;
+	uint32_t syncRx;
+	uint32_t followUpTx;
+	uint32_t followUpRx;
+	uint32_t delayReqTx;
+	uint32_t delayReqRx;
+	uint32_t delayRespTx;
+	uint32_t delayRespRx;
+	uint32_t pDelayReqTx;
+	uint32_t pDelayReqRx;
+	uint32_t pDelayRespTx;
+	uint32_t pDelayRespRx;
+	uint32_t pDelayRespFollowUpTx;
+	uint32_t pDelayRespFollowUpRx;
+} PortPerfMonDataRecord;
+
+// IEEE1588-2019 Excelfore Additions
+typedef struct PortPerfMonSignalingDataRecord {
+	// uint16_t index;
+	// PMTimestamp PMTime;
+	uint32_t msgIntervalTx;
+	uint32_t msgIntervalRx;
+	uint32_t asCapableTx;
+	uint32_t asCapableRx;
+	uint32_t signalingRx;
+} PortPerfMonSignalingDataRecord;
+
+// IEEE1588-2019 J.5 Data Sets for Performance Monitoring
+// As per the standard each Data Record should have their own index and PMTime,
+// for simplicity, we operate on per port where each per port data record shares
+// the same index and same PMTime.
+// Moreover, gptp2 keeps the current data record only (index=0). Historical data
+// are not kept in application, they should be stored in database (e.g. uniconf)
+// instead.
+typedef struct PerfMonPortDS {
+	PMTimestamp lastUpdate[PERFMON_ALL_DR]; // last update time of current
+	uint8_t index[PERFMON_ALL_DR];
+	PMTimestamp PMTime[PERFMON_ALL_DR];
+	PortPerfMonPeerDelayDataRecord pdelayDR[PERFMON_ALL_DR];
+	PortPerfMonDataRecord portDR[PERFMON_ALL_DR];
+	PortPerfMonSignalingDataRecord signalingDR[PERFMON_ALL_DR];
+} PerfMonPortDS;
+typedef struct PerfMonClockDS {
+	PMTimestamp lastUpdate[PERFMON_ALL_DR]; // last update time of current
+	uint8_t index[PERFMON_ALL_DR];
+	PMTimestamp PMTime[PERFMON_ALL_DR];
+	ClockPerfMonDataRecord clockDR[PERFMON_ALL_DR];
+} PerfMonClockDS;
+
 // 10.2.3 Per-time-aware-system global variables
 typedef struct PerTimeAwareSystemGlobal {
 	bool BEGIN;
@@ -145,6 +261,14 @@ typedef struct PerTimeAwareSystemGlobal {
 	// Flag to determine if AVNU is followed over 802.1AS
 	bool conformToAvnu;
 	uint8_t gptpInstanceIndex; // this is the same data as the one in gptpman_data
+
+	// IEEE1588-2019 J.5 Data set for performance monitoring, per PTP instance data set
+	PerfMonClockDS *perfmonClockDS;
+	// IEEE1588-2019 J.4 Data collection periodicity
+	bool perfmonEnable; // perform performance-monitoring
+	uint32_t perfmonShortPeriod_ms; // 15m as per standards
+	uint32_t perfmonLongPeriod_ms; // 24h as per standards
+	uint32_t perfmonCurrentPeriod_ms; // updates current short and long data records
 } PerTimeAwareSystemGlobal;
 
 // 10.2.4 Per-port global variables
@@ -156,8 +280,8 @@ typedef struct PerPortGlobalForAllDomain {
 	bool computeNeighborRateRatio;
 	bool computeNeighborPropDelay;
 	bool portOper;
-        bool useMgtSettableLogAnnounceInterval;
-        int8_t mgtSettableLogAnnounceInterval;
+	bool useMgtSettableLogAnnounceInterval;
+	int8_t mgtSettableLogAnnounceInterval;
 	//14.8.25 useMgtSettableLogPdelayReqInterval
 	bool useMgtSettableLogPdelayReqInterval;
 	int8_t mgtSettableLogPdelayReqInterval;
@@ -196,6 +320,8 @@ struct PerPortGlobal {
 	// 14.8.41 mgtSettableOneStepTxOper
 	bool mgtSettableOneStepTxOper;
 
+	// IEEE1588-2019 J.5 Data set for performance monitoring
+	PerfMonPortDS *perfmonDS;
 };
 
 // 10.2.6 SiteSyncSync state machine
@@ -477,6 +603,7 @@ void ptas_glb_close(PerTimeAwareSystemGlobal **tasglb);
 
 void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 		 PerPortGlobalForAllDomain *forAllDomain,
+		 PerTimeAwareSystemGlobal *tasglb,
 		 uint8_t domainIndex, uint16_t portIndex);
 void pp_glb_close(PerPortGlobal **ppglb, int domainIndex);
 
@@ -484,7 +611,7 @@ void bmcs_ptas_glb_init(uint8_t gptpInstanceIndex, BmcsPerTimeAwareSystemGlobal 
                         PerTimeAwareSystemGlobal *ptasglb, uint8_t domainIndex);
 void bmcs_ptas_glb_update(uint8_t gptpInstanceIndex,
 			  BmcsPerTimeAwareSystemGlobal **btasglb,
-                          PerTimeAwareSystemGlobal *ptasglb,
+			  PerTimeAwareSystemGlobal *ptasglb,
 			  uint8_t domainIndex);
 void bmcs_ptas_glb_close(BmcsPerTimeAwareSystemGlobal **btasglb);
 

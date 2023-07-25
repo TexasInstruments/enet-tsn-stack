@@ -844,6 +844,7 @@ int gptpclock_mode_slave_main(uint8_t gptpInstanceIndex,
 	int i;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
 	GPTPCLOCK_FN_ENTRY(gcd, od, clockIndex, domainIndex);
+
 	for(i=0;i<ub_esarray_ele_nums(gcd->clds);i++){
 		od1 = (oneclock_data_t *)ub_esarray_get_ele(gcd->clds, i);
 		if(!od1 || (od1->clockIndex != od->clockIndex) ||

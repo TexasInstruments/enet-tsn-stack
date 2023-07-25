@@ -58,7 +58,7 @@ typedef void uc_dbald;
 typedef void uc_range;
 
 /* the size shouldn't be very big */
-#define UC_MAX_KEYSIZE 64
+#define UC_MAX_KEYSIZE 128
 #define UC_MAX_VALUEKEYS 8 // max number of value keys
 #define UC_MAX_VALUESIZE 256
 
@@ -99,6 +99,8 @@ void uc_dbal_close(uc_dbald *dbald, uint8_t callmode);
 int uc_dbal_getdb(uc_dbald *dbald, int toutms, uint8_t *key, uint32_t ksize);
 
 void uc_dbal_releasedb(uc_dbald *dbald);
+
+int uc_dbal_save(uc_dbald *dbald);
 
 // Update. if the key node doesn't exist, create a new node with the value.
 int uc_dbal_create(uc_dbald *dbald, void *key, uint32_t ksize, void *value,

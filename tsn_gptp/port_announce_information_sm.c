@@ -54,6 +54,7 @@
 #include "gptpclock.h"
 #include "port_announce_information_sm.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 #define SELECTED_STATE	    sm->ptasg->selectedState
 #define RESELECT	    sm->bptasg->reselect
@@ -100,6 +101,7 @@ struct port_announce_information_data{
 
 static uint8_t rcvdInfo(port_announce_information_data_t *sm)
 {
+	uint8_t info = OtherInfo;
 	/* Store the messagePriorityVector and stepRemoved received */
 	MESSAGE_PRIORITY.rootSystemIdentity.priority1 = RCVD_ANNOUNCE_PTR->grandmasterPriority1;
 	MESSAGE_PRIORITY.rootSystemIdentity.clockClass =
@@ -124,24 +126,23 @@ static uint8_t rcvdInfo(port_announce_information_data_t *sm)
 		if (memcmp(&PORT_PRIORITY, &MESSAGE_PRIORITY, sizeof(UInteger224))==0){
 			UB_LOG(UBL_DEBUGV, "port_announce_information:%s:rcvdInfo=%s\n",
 			       __func__, "RepeatedMasterInfo");
-			return RepeatedMasterInfo;
-		}
-
-		if ((uint8_t)SUPERIOR_PRIORITY == compare_priority_vectors(&MESSAGE_PRIORITY,
+			info = RepeatedMasterInfo;
+		}else if ((uint8_t)SUPERIOR_PRIORITY == compare_priority_vectors(&MESSAGE_PRIORITY,
 									   &PORT_PRIORITY)){
 			UB_LOG(UBL_DEBUGV, "port_announce_information:%s:rcvdInfo=%s\n",
 			       __func__, "SuperiorMasterInfo");
-			return SuperiorMasterInfo;
+			info = SuperiorMasterInfo;
+			PERFMON_PPMDR_RST(sm->ppg->perfmonDS, announceRx);
 		}
 		else
 		{
 			UB_LOG(UBL_DEBUGV, "port_announce_information:%s:rcvdInfo=%s\n",
 			       __func__, "InferiorMasterInfo");
-			return InferiorMasterInfo;
+			info = InferiorMasterInfo;
 		}
 	}
-	UB_LOG(UBL_DEBUGV, "port_announce_information:%s:rcvdInfo=%s\n", __func__, "OtherInfo");
-	return OtherInfo;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, announceRx);
+	return info;
 }
 
 static void recordOtherAnnounceInfo(port_announce_information_data_t *sm)

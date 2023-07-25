@@ -133,6 +133,12 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	case YANG_VTYPE_STRING:
 	case YANG_VTYPE_IEEE_CHASSIS_ID_TYPE:
 	case YANG_VTYPE_IEEE_PORT_ID_TYPE:
+	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
+	case YANG_VTYPE_REVISION_IDENTIFIER:
+	case YANG_VTYPE_INET_URI:
+	case YANG_VTYPE_UNION:
+		/* FIXME: Currently union is only used in ietf-yang-library module
+		 * where all unions are between to string data types */
 	case YANG_VTYPE_LEAFREF:
 		/* FIXME:
 		 * - Currently all leafs in our tree with leafref type
@@ -416,6 +422,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		}
 		break;
 	}
+	case YANG_VTYPE_DS_DATASTORE_REF:
 	case YANG_VTYPE_IDENTITYREF:
 	{
 		uint32_t data[1]={INVALID_IDENTIY_VALUE};
@@ -424,27 +431,27 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		if(ehints!=NULL){hints=ehints;}// ethints supercedes hints
 		if(NULL != hints) {
 			data[0]=yang_identityref_getval(vstr, hints);
-		}else{
-			if(!strncmp(vstr, "cc-", 3)) {
-				data[0]=yang_identityref_getval(vstr, "clock-class");
-			} else if(!strncmp(vstr, "ca-", 3)) {
-				data[0]=yang_identityref_getval(vstr, "clock-accuracy");
-			} else {
-				/* For other identity-ref, there is no pattern in the identiy string.
-				 * So currently there is no way but to compare the input string to
-				 * each identity string in each table
-				 */
-				int tblidx;
-				for(tblidx = 0; yang_identityref_list[tblidx].reftbl != NULL; tblidx++) {
-					/* skip identities that have pattern already checked above */
-					if ((strcmp(yang_identityref_list[tblidx].keyword, "clock-class")==0) ||
-					    (strcmp(yang_identityref_list[tblidx].keyword, "clock-accuracy")==0)) {
-						continue;
-					}
-					data[0]=yang_identityref_getval(vstr,
-					            (char*)yang_identityref_list[tblidx].keyword);
-					if (INVALID_IDENTIY_VALUE != data[0]){break;}
+		}else if(YANG_VTYPE_DS_DATASTORE_REF == vtype) {
+			data[0]=yang_identityref_getval(vstr, "datastore");
+		}else if(!strncmp(vstr, "cc-", 3)) {
+			data[0]=yang_identityref_getval(vstr, "clock-class");
+		}else if(!strncmp(vstr, "ca-", 3)) {
+			data[0]=yang_identityref_getval(vstr, "clock-accuracy");
+		}else {
+			/* For other identity-ref, there is no pattern in the identiy string.
+			 * So currently there is no way but to compare the input string to
+			 * each identity string in each table
+			 */
+			int tblidx;
+			for(tblidx = 0; yang_identityref_list[tblidx].reftbl != NULL; tblidx++) {
+				/* skip identities that have pattern already checked above */
+				if ((strcmp(yang_identityref_list[tblidx].keyword, "clock-class")==0) ||
+				    (strcmp(yang_identityref_list[tblidx].keyword, "clock-accuracy")==0)) {
+					continue;
 				}
+				data[0]=yang_identityref_getval(vstr,
+				            (char*)yang_identityref_list[tblidx].keyword);
+				if (INVALID_IDENTIY_VALUE != data[0]){break;}
 			}
 		}
 		if (INVALID_IDENTIY_VALUE == data[0]) {
@@ -462,12 +469,11 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	{
 		uint32_t data[1] = {0x00000000};
 		csize = 4;
-  		data[0] = strtol((const char*)vstr, NULL, 2);
+		data[0] = strtol((const char*)vstr, NULL, 2);
 
 		res=value_conv_destcopy(destd, data, size, csize);
-	 }
+	}
 		break;
-	case YANG_VTYPE_UNION:
 	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	case YANG_VTYPE_EMPTY:
 	case YANG_VTYPE_ENUM_END:
@@ -492,6 +498,10 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_IF_INTERFACE_REF:
 	case YANG_VTYPE_INTERFACE_STATE_REF:
 	case YANG_VTYPE_STRING:
+	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
+	case YANG_VTYPE_REVISION_IDENTIFIER:
+	case YANG_VTYPE_INET_URI:
+	case YANG_VTYPE_UNION:
 	case YANG_VTYPE_LEAFREF:
 	case YANG_VTYPE_X509C2N_TLS_FINGERPRINT:
 	case YANG_VTYPE_INET_IP_ADDRESS:
@@ -605,9 +615,16 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 		}
 		return vstr;
 	}
+	case YANG_VTYPE_DS_DATASTORE_REF:
 	case YANG_VTYPE_IDENTITYREF:
 		if(NULL != hints) {
 			char* rstr=yang_identityref_getstr(*((uint32_t*)value), hints);
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		}else if(YANG_VTYPE_DS_DATASTORE_REF == vtype) {
+			char* rstr=yang_identityref_getstr(*((uint32_t*)value), "datastore");
 			if (NULL != rstr) {
 				memset(vstr, 0, sizeof(vstr));
 				(void)strcpy(vstr, rstr);
@@ -616,7 +633,6 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 			UB_LOG(UBL_ERROR, "%s:cannot convert identityref without hints\n", __func__);
 		}
 		break;
-	case YANG_VTYPE_UNION:
 	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	case YANG_VTYPE_EMPTY:
 	case YANG_VTYPE_BITS:
@@ -635,6 +651,9 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_IF_INTERFACE_REF:
 	case YANG_VTYPE_INTERFACE_STATE_REF:
 	case YANG_VTYPE_STRING:
+	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
+	case YANG_VTYPE_REVISION_IDENTIFIER:
+	case YANG_VTYPE_INET_URI:
 	case YANG_VTYPE_IEEE_CHASSIS_ID_TYPE:
 	case YANG_VTYPE_YANG_DATE_AND_TIME:
 	case YANG_VTYPE_CLOCK_IDENTITY:
@@ -709,7 +728,6 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_IDENTITYREF:
 		csize=4;
 		break;
-	case YANG_VTYPE_UNION:
 	case YANG_VTYPE_LEAFREF:
 	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	case YANG_VTYPE_EMPTY:
@@ -941,13 +959,13 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	yang_db_access_para_t dbpara;
 	int res=0;
 	bool match;
-	uint8_t cap[UC_MAX_KEYSIZE];
+	uint8_t cap[YDBI_MAX_AP_DEPTH];
 
-	for(ksize=0;ksize<UC_MAX_KEYSIZE;ksize++){
+	for(ksize=0;ksize<YDBI_MAX_AP_DEPTH;ksize++){
 		if(ap[ksize]==255){break;}
 		cap[ksize]=ap[ksize];
 	}
-	if(ksize==0 || ksize==UC_MAX_KEYSIZE){return -1;}
+	if(ksize==0 || ksize==YDBI_MAX_AP_DEPTH){return -1;}
 	cap[ksize-1]+=1;
 	range=uc_get_range(dbald, ap, ksize, cap, ksize);
 	if(!range){
@@ -956,7 +974,7 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	}
 	while(true){
 		if(uc_get_keyvalue_in_range(dbald, range, &nkey, &nksize, &value, &vsize,
-					 UC_DBAL_FORWARD)!=0){break;}
+					    UC_DBAL_FORWARD)!=0){break;}
 		if(yang_db_extract_key(nkey, nksize, &aap, akvs, akss)){break;}
 
 		// check if it is copied data. Don't make 'copy of copy'.
@@ -1027,6 +1045,140 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 		}
 	}
 	uc_get_range_release(dbald, range);
+	return res;
+}
+
+static int listmove_keymod(uc_dbald *dbald, yang_db_access_para_t *dbpara,
+			   int keymod_rcode)
+{
+	int res;
+	switch(keymod_rcode){
+	case KEYMOD_NOMOVE:
+		return 0;
+	case KEYMOD_MOVE_NOOVERWRITE:
+		res=yang_db_action(dbald, NULL, dbpara);
+		if(!res){
+			dbpara->atype=YANG_DB_ACTION_READ_RELEASE;
+			yang_db_action(dbald, NULL, dbpara);
+			return 0;
+		}
+		// fall through
+	case KEYMOD_MOVE_OVERWRITE:
+		dbpara->atype=YANG_DB_ACTION_CREATE;
+		res=yang_db_action(dbald, NULL, dbpara);
+		if(res!=0){
+			UB_LOG(UBL_ERROR, "%s:failed to move an item\n", __func__);
+			yang_db_keyvaluedump_log(UBL_INFO,
+						 dbpara->aps, dbpara->kvs, dbpara->kss,
+						 dbpara->value, dbpara->vsize);
+			return -1;
+		}
+		return 1;
+	case KEYMOD_NOMOVE_DELETE:
+		return 1;
+	case KEYMOD_ERROR:
+	default:
+		return -1;
+	}
+}
+
+int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
+		     bool forward_direction, key_modifier_t keymod_cb)
+{
+	int i;
+	uc_range *range;
+	uint32_t ksize, nksize, vsize;
+	void *nkey=NULL, *value;
+	uint8_t *aap;
+	uint8_t mapsize, mkvsize;
+	void *akvs[YDBI_MAX_KV_DEPTH+1];
+	uint8_t akss[YDBI_MAX_KV_DEPTH];
+	yang_db_access_para_t dbpara;
+	int res=0;
+	uint8_t cap[YDBI_MAX_AP_DEPTH];
+	bool moved=true;
+	int direction;
+
+	for(ksize=0;ksize<YDBI_MAX_AP_DEPTH;ksize++){
+		if(ap[ksize]==255){break;}
+		cap[ksize]=ap[ksize];
+	}
+	if(ksize==0 || ksize==YDBI_MAX_AP_DEPTH){return -1;}
+	cap[ksize-1]+=1;
+	range=uc_get_range(dbald, ap, ksize, cap, ksize);
+	if(!range){
+		UB_LOG(UBL_INFO, "%s:no data to move\n", __func__);
+		return 0;
+	}
+	if(forward_direction){
+		direction=UC_DBAL_FORWARD;
+	}else{
+		direction=UC_DBAL_BACKWARD;
+		uc_move_bottom_in_range(dbald, range);
+	}
+	res=0;
+	while(true){
+		if(nkey!=NULL){
+			yang_db_extract_key_free(aap, akvs, akss);
+		}
+		if(res!=0){break;}
+		if(!moved){
+			if(uc_move_in_range(dbald, range, direction)){break;}
+		}
+		moved=false;
+		if(uc_get_keyvalue_in_range(dbald, range, &nkey, &nksize, &value, &vsize,
+					    UC_DBAL_NOMOVE)!=0){break;}
+		if(yang_db_extract_key(nkey, nksize, &aap, akvs, akss)){
+			res=-1;
+			break;
+		}
+		// after this point, next 'yang_db_extract_key_free' must be called.
+		// Don't break the loop. set 'res' and continue instead.
+		mapsize=0;
+		for(i=0;i<YDBI_MAX_AP_DEPTH;i++){
+			if(ap[i]==255){
+				mapsize=i;
+				break;
+			}
+			if(aap[i]==255){break;}
+		}
+		if(mapsize==0){
+			// a found node key is shorter than the search node key
+			continue;
+		}
+		mkvsize=0;
+		for(i=0;i<YDBI_MAX_KV_DEPTH;i++){
+			if(kvs[i]==NULL){
+				mkvsize=i; // source value key end first, okay
+				break;
+			}
+			if(akvs[i]==NULL){break;} // dest key value end first, ignore this
+			if(kss[i]!=akss[i]){break;} // key value size no match, ignore this
+		}
+		if(mkvsize==0){
+			// value keys have a diferent structure, ignore this.
+			continue;
+		}
+
+		memset(&dbpara, 0, sizeof(dbpara));
+		dbpara.onhw=YANG_DB_ONHW_NOACTION;
+		dbpara.atype=YANG_DB_ACTION_READ;
+		dbpara.aps=aap;
+		dbpara.kvs=akvs;
+		dbpara.kss=akss;
+		dbpara.value=value;
+		dbpara.vsize=vsize;
+		res=keymod_cb(dbpara.aps, dbpara.kvs, dbpara.kss);
+		res=listmove_keymod(dbald, &dbpara, res);
+		if(res==-1||res==0){continue;}
+		// delete the source item
+		if(uc_del_in_range(dbald, range, direction)!=0){
+			res=-1;
+			break;
+		}
+		moved=true;
+		res=0;
+	}
 	return res;
 }
 
@@ -1313,4 +1465,18 @@ int ydbi_set_foot(yang_db_item_access_t *ydbia, const char *fname,
 	}
 	(void)CB_THREAD_MUTEX_UNLOCK(ydbia->mutex);
 	return res;
+}
+
+int ydbi_request_savedb(yang_db_item_access_t *ydbia)
+{
+	uint8_t value=1;
+	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+	ydbia->dbpara.onhw=YANG_DB_ONHW_NOACTION;
+	ydbia->dbpara.aps[0]=XL4_DATA_RO;
+	ydbia->dbpara.aps[1]=UC_READY;
+	ydbia->dbpara.aps[2]=255u;
+	ydbia->dbpara.kvs[0]=NULL;
+	ydbia->dbpara.value=(void*)&value;
+	ydbia->dbpara.vsize=sizeof(uint8_t);
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_PUSH_NOTICE);
 }

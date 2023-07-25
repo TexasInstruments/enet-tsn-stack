@@ -107,6 +107,9 @@ const char *xl4_extmod_xl4gptp_enum_strings[]={
 	"ACTIVATE_ABNORMAL_HOOKS", 		// 48(0x30)
 	"RESET_FREQADJ_BECOMEGM", 		// 49(0x31)
 	"REPRESENT_PORT_NUMBER", 		// 50(0x32)
+	"PERFMON_SHORT_PERIOD", 		// 51(0x33)
+	"PERFMON_LONG_PERIOD", 		// 52(0x34)
+	"PERFMON_CURRENT_PERIOD", 		// 53(0x35)
 };
 
 uint8_t xl4_extmod_xl4gptp_get_enum(char *astr)
@@ -271,6 +274,15 @@ int xl4_extmod_xl4gptp_runconf_config_init(xl4_data_data_t *xdd, uc_dbald *dbald
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_REPRESENT_PORT_NUMBER;
 	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_PERFMON_SHORT_PERIOD;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_PERFMON_LONG_PERIOD;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_PERFMON_CURRENT_PERIOD;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_VALUEKEY;
 	aps[4] = XL4_EXTMOD_XL4GPTP_INSTANCE_INDEX;

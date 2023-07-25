@@ -57,6 +57,7 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-yang-library.h"
 #include "ietf-netconf-server.h"
 #include "ietf-keychain.h"
 
@@ -210,11 +211,11 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_ACCUMULATED_LATENCY;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[5] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[6] = EXCELFORE_TSN_REMOTE_PORT;
 	vtype=YANG_VTYPE_IF_INTERFACE_REF;
@@ -274,14 +275,12 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_ACCUMULATED_LATENCY;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0004_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-tf
 	//0005_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-tf/indication-list
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[5] = EXCELFORE_TSN_REMOTE_MSRP_TF;
 	aps[6] = EXCELFORE_TSN_REMOTE_INDICATION_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_DEST_ADDRESS;
@@ -311,12 +310,12 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_FAILUER_CODE;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0006_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-tf/admin-request-list
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[6] = EXCELFORE_TSN_REMOTE_ADMIN_REQUEST_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_DEST_ADDRESS;
 	vtype=YANG_VTYPE_IEEE_MAC_ADDRESS;
@@ -379,30 +378,29 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_FAILUER_CODE;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0008_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te
 	//0009_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/indication-list/stream-rank
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[5] = EXCELFORE_TSN_REMOTE_MSRP_TE;
 	aps[6] = EXCELFORE_TSN_REMOTE_INDICATION_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_STREAM_RANK;
 	aps[8] = EXCELFORE_TSN_REMOTE_RANK;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0010_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/indication-list/end-station-interfaces
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_END_STATION_INTERFACES;
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -411,7 +409,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0011_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/indication-list/data-frame-specification/ieee802-mac-addresses
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_DATA_FRAME_SPECIFICATION;
 	aps[8] = EXCELFORE_TSN_REMOTE_IEEE802_MAC_ADDRESSES;
 	aps[9] = EXCELFORE_TSN_REMOTE_DESTINATION_MAC_ADDRESS;
@@ -420,13 +417,11 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[9] = EXCELFORE_TSN_REMOTE_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_INDEX;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0012_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/indication-list/data-frame-specification/ieee802-vlan-tag
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_IEEE802_VLAN_TAG;
 	aps[9] = EXCELFORE_TSN_REMOTE_PRIORITY_CODE_POINT;
 	vtype=YANG_VTYPE_UINT8;
@@ -495,7 +490,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[11] = EXCELFORE_TSN_REMOTE_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 14, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[10] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[11] = EXCELFORE_TSN_REMOTE_INDEX;
 	vtype=YANG_VTYPE_UINT8;
@@ -508,7 +502,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 13, &vtype, 1)!=0){goto erexit;}
 	//0020_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/indication-list/interface-configuration/interface-list/config-list/ieee802-vlan-tag
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[9] = EXCELFORE_TSN_REMOTE_CONFIG_LIST;
 	aps[10] = EXCELFORE_TSN_REMOTE_IEEE802_VLAN_TAG;
 	aps[11] = EXCELFORE_TSN_REMOTE_PRIORITY_CODE_POINT;
@@ -540,6 +533,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -548,7 +542,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0026_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/indication-list
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_ACCUMULATED_LATENCY;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
@@ -717,16 +710,17 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = EXCELFORE_TSN_REMOTE_RANK;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0046_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/oper-request-list/end-station-interfaces
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_END_STATION_INTERFACES;
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -735,7 +729,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0047_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/oper-request-list/data-frame-specification/ieee802-mac-addresses
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_DATA_FRAME_SPECIFICATION;
 	aps[8] = EXCELFORE_TSN_REMOTE_IEEE802_MAC_ADDRESSES;
 	aps[9] = EXCELFORE_TSN_REMOTE_DESTINATION_MAC_ADDRESS;
@@ -744,13 +737,11 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[9] = EXCELFORE_TSN_REMOTE_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_INDEX;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0048_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/oper-request-list/data-frame-specification/ieee802-vlan-tag
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_IEEE802_VLAN_TAG;
 	aps[9] = EXCELFORE_TSN_REMOTE_PRIORITY_CODE_POINT;
 	vtype=YANG_VTYPE_UINT8;
@@ -819,7 +810,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[11] = EXCELFORE_TSN_REMOTE_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 14, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[10] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[11] = EXCELFORE_TSN_REMOTE_INDEX;
 	vtype=YANG_VTYPE_UINT8;
@@ -832,7 +822,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 13, &vtype, 1)!=0){goto erexit;}
 	//0056_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/oper-request-list/interface-configuration/interface-list/config-list/ieee802-vlan-tag
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[9] = EXCELFORE_TSN_REMOTE_CONFIG_LIST;
 	aps[10] = EXCELFORE_TSN_REMOTE_IEEE802_VLAN_TAG;
 	aps[11] = EXCELFORE_TSN_REMOTE_PRIORITY_CODE_POINT;
@@ -864,6 +853,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -872,7 +862,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0062_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-te/oper-request-list
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_ACCUMULATED_LATENCY;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
@@ -883,12 +872,12 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_FOUR_PACKED_EVENT;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0065_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-ls/admin-request-list
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[6] = EXCELFORE_TSN_REMOTE_ADMIN_REQUEST_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_FOUR_PACKED_EVENT;
 	vtype=YANG_VTYPE_UINT8;
@@ -903,19 +892,20 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_FOUR_PACKED_EVENT;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_STREAM_ID;
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0067_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le
 	//0068_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/indication-list/end-station-interfaces
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[5] = EXCELFORE_TSN_REMOTE_MSRP_LE;
 	aps[6] = EXCELFORE_TSN_REMOTE_INDICATION_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_END_STATION_INTERFACES;
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -928,7 +918,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0069_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/indication-list/user-to-network-requirements
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_USER_TO_NETWORK_REQUIREMENTS;
 	aps[8] = EXCELFORE_TSN_REMOTE_NUM_SEAMLESS_TREES;
 	vtype=YANG_VTYPE_UINT8;
@@ -958,7 +947,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[11] = EXCELFORE_TSN_REMOTE_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 14, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[10] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[11] = EXCELFORE_TSN_REMOTE_INDEX;
 	vtype=YANG_VTYPE_UINT8;
@@ -971,7 +959,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 13, &vtype, 1)!=0){goto erexit;}
 	//0072_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/indication-list/interface-configuration/interface-list/config-list/ieee802-vlan-tag
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[9] = EXCELFORE_TSN_REMOTE_CONFIG_LIST;
 	aps[10] = EXCELFORE_TSN_REMOTE_IEEE802_VLAN_TAG;
 	aps[11] = EXCELFORE_TSN_REMOTE_PRIORITY_CODE_POINT;
@@ -1003,6 +990,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -1011,7 +999,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0078_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/indication-list
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_ACCUMULATED_LATENCY;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
@@ -1122,6 +1109,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -1134,7 +1122,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_TSN_STREAM_ID_TYPE;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0091_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/oper-request-list/user-to-network-requirements
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_USER_TO_NETWORK_REQUIREMENTS;
 	aps[8] = EXCELFORE_TSN_REMOTE_NUM_SEAMLESS_TREES;
 	vtype=YANG_VTYPE_UINT8;
@@ -1164,7 +1151,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[11] = EXCELFORE_TSN_REMOTE_SOURCE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 14, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[10] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[11] = EXCELFORE_TSN_REMOTE_INDEX;
 	vtype=YANG_VTYPE_UINT8;
@@ -1177,7 +1163,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 13, &vtype, 1)!=0){goto erexit;}
 	//0094_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/oper-request-list/interface-configuration/interface-list/config-list/ieee802-vlan-tag
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[9] = EXCELFORE_TSN_REMOTE_CONFIG_LIST;
 	aps[10] = EXCELFORE_TSN_REMOTE_IEEE802_VLAN_TAG;
 	aps[11] = EXCELFORE_TSN_REMOTE_PRIORITY_CODE_POINT;
@@ -1209,6 +1194,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[8] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[9] = EXCELFORE_TSN_REMOTE_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;
@@ -1217,7 +1203,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
 	//0100_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-le/oper-request-list
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_ACCUMULATED_LATENCY;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
@@ -1228,7 +1213,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_SRCLASS_VID;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_SRCLASS_ID;
 	vtype=YANG_VTYPE_UINT8;
@@ -1237,6 +1221,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0103_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/msrp-dm/admin-request-list
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[6] = EXCELFORE_TSN_REMOTE_ADMIN_REQUEST_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_SRCLASS_VID;
 	vtype=YANG_VTYPE_UINT16;
@@ -1254,7 +1239,6 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_SRCLASS_VID;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_SRCLASS_ID;
 	vtype=YANG_VTYPE_UINT8;
@@ -1264,16 +1248,19 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0105_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/mvrp
 	//0106_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/mvrp/indication-list
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[5] = EXCELFORE_TSN_REMOTE_MVRP;
 	aps[6] = EXCELFORE_TSN_REMOTE_INDICATION_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_VLAN_ID;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0107_excelfore-tsn-remote/instances/instance/external-control-man/control-objects/mvrp/admin-request-list
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[6] = EXCELFORE_TSN_REMOTE_ADMIN_REQUEST_LIST;
 	aps[7] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
@@ -1287,11 +1274,13 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = EXCELFORE_TSN_REMOTE_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[7] = EXCELFORE_TSN_REMOTE_VALUEKEY;
 	aps[8] = EXCELFORE_TSN_REMOTE_VLAN_ID;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	//0109_excelfore-tsn-remote/instances/instance/external-control-man/control-objects
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[5] = EXCELFORE_TSN_REMOTE_EXTERNAL_CONTROL;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}

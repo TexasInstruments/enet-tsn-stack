@@ -126,7 +126,7 @@ void md_decompose_head(MDPTPMsgHeader *phead, PTPMsgHeader *head)
 	head->logMessageInterval = phead->logMessageInterval;
 }
 
-void md_header_template(uint8_t gptpInstanceIndex, PTPMsgHeader *head,
+void md_header_template(uint8_t gptpInstanceIndex, int portIndex, PTPMsgHeader *head,
 			PTPMsgType msgtype, uint16_t len,
 			PortIdentity *portId, uint16_t seqid, int8_t logMessageInterval)
 {
@@ -134,7 +134,7 @@ void md_header_template(uint8_t gptpInstanceIndex, PTPMsgHeader *head,
 	head->messageType=msgtype;
 	head->minorVersionPTP=gptpgcfg_get_yang_portds_intitem(
 		gptpInstanceIndex, IEEE1588_PTP_MINOR_VERSION_NUMBER,
-		0, 0, YDBI_STATUS); // use the data of port=0,domain=0
+		portIndex, 0, YDBI_STATUS); // use the data of port=0,domain=0
 	head->versionPTP=2;
 	head->messageLength=len;
 	head->domainIndex=0;
@@ -190,7 +190,7 @@ void *md_header_compose(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnetd,
 
 	(void)memcpy(portId.clockIdentity, thisClock, sizeof(ClockIdentity));
 	portId.portIndex = thisPort;
-	md_header_template(gptpInstanceIndex, &head, msgtype,
+	md_header_template(gptpInstanceIndex, thisPort, &head, msgtype,
 			   ssize, &portId, seqid, logMessageInterval);
 	md_compose_head(&head, sdata);
 	return sdata;
@@ -232,7 +232,7 @@ void md_followup_information_tlv_compose(uint8_t *tlv,
 }
 
 void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
-			MDEntityGlobalForAllDomain *forAllDomain)
+			MDEntityGlobalForAllDomain *forAllDomain, uint16_t portIndex)
 {
 	if(!*mdeglb){
 		*mdeglb=(MDEntityGlobal *)UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(MDEntityGlobal));
@@ -250,29 +250,29 @@ void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
 				IEEE1588_PTP_CURRENT_LOG_PDELAY_REQ_INTERVAL,
-				0, 0, YDBI_STATUS); // use the data of port=0,domain=0
+				portIndex, 0, YDBI_STATUS);
 		(*mdeglb)->forAllDomain->initialLogPdelayReqInterval =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
 				IEEE1588_PTP_INITIAL_LOG_PDELAY_REQ_INTERVAL,
-				0, 0, YDBI_CONFIG); // use the data of port=0,domain=0
+				portIndex, 0, YDBI_CONFIG);
 		(*mdeglb)->forAllDomain->pdelayReqInterval.nsec =
 			LOG_TO_NSEC((*mdeglb)->forAllDomain->initialLogPdelayReqInterval);
 		(*mdeglb)->forAllDomain->allowedLostResponses =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
 				IEEE1588_PTP_ALLOWED_LOST_RESPONSES,
-				0, 0, YDBI_CONFIG); // use the data of port=0,domain=0
+				portIndex, 0, YDBI_CONFIG);
 		(*mdeglb)->forAllDomain->allowedFaults =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
 				IEEE1588_PTP_ALLOWED_FAULTS,
-				0, 0, YDBI_CONFIG); // use the data of port=0,domain=0
+				portIndex, 0, YDBI_CONFIG);
 		(*mdeglb)->forAllDomain->neighborPropDelayThresh.nsec =
 			((uint64_t)gptpgcfg_get_yang_portds_int64item(
 				gptpInstanceIndex,
 				IEEE1588_PTP_MEAN_LINK_DELAY_THRESH,
-				0, 0, YDBI_CONFIG)>>16u); // use the data of port=0,domain=0
+				portIndex, 0, YDBI_CONFIG)>>16u);
 		(*mdeglb)->forAllDomain->neighborPropDelayMinLimit.nsec =
 			gptpgcfg_get_intitem(
 				gptpInstanceIndex,

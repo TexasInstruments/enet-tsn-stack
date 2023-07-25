@@ -390,12 +390,12 @@ void *md_header_compose(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnetd,
 			uint16_t ssize, ClockIdentity thisClock, uint16_t thisPort,
 			uint16_t seqid, int8_t logMessageInterval);
 void md_decompose_head(MDPTPMsgHeader *phead, PTPMsgHeader *head);
-void md_header_template(uint8_t gptpInstanceIndex, PTPMsgHeader *head,
+void md_header_template(uint8_t gptpInstanceIndex, int portIndex, PTPMsgHeader *head,
 			PTPMsgType msgtype, uint16_t len,
 			PortIdentity *portId, uint16_t seqid, int8_t logMessageInterval);
 
 void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
-			MDEntityGlobalForAllDomain *forAllDomain);
+			MDEntityGlobalForAllDomain *forAllDomain, uint16_t portIndex);
 void md_entity_glb_close(MDEntityGlobal **mdeglb, int domainIndex);
 
 void md_followup_information_tlv_compose(uint8_t *tlv,

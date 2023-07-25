@@ -56,6 +56,7 @@
 #include "md_abnormal_hooks.h"
 #include <math.h>
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -83,7 +84,6 @@ struct md_sync_send_data{
 	uint64_t tsync_ts; // for debug use
 	uint64_t pgap_ts; // for debug use
 	uint64_t tfup_ts; // for debug use
-	md_sync_send_stat_data_t statd;
 	uint64_t mock_txts64;
 };
 
@@ -124,7 +124,7 @@ static int setSyncTwoStep_txSync(md_sync_send_data_t *sm, uint64_t cts64)
 						  sm->ptasg->domainIndex);
 		res=-res;
 	}
-	sm->statd.sync_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, syncTx);
 	dts=cts64-sm->tsync_ts;
 	if(dts>175000000) {
 		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%dmsec\n",
@@ -154,7 +154,7 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 
 	sdata=gptpnet_get_sendbuf(sm->gpnetd, sm->portIndex-1);
 	(void)memset(sdata, 0, ssize);
-	md_header_template(GPTPINSTNUM, &head, FOLLOW_UP, ssize,
+	md_header_template(GPTPINSTNUM, sm->portIndex, &head, FOLLOW_UP, ssize,
 			   &RCVD_MDSYNC_PTR->sourcePortIdentity, SYNC_SEQUENCE_ID,
 			   sm->ppg->currentLogSyncInterval);
 	if(gptpclock_we_are_gm(GPTPINSTNUM, sm->domainIndex)){
@@ -204,7 +204,7 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 			 __func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000));
 	}
 	if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, ssize)==-1){return -1;}
-	sm->statd.sync_fup_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, followUpTx);
 	sm->tfup_ts=cts64;
 	return 0;
 }
@@ -442,14 +442,4 @@ void md_sync_send_sm_txts(md_sync_send_data_t *sm, event_data_txts_t *edtxts,
 			 sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
 	sm->sync_ts=edtxts->ts64;
 	(void)md_sync_send_sm(sm, cts64);
-}
-
-void md_sync_send_stat_reset(md_sync_send_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_sync_send_stat_data_t));
-}
-
-md_sync_send_stat_data_t *md_sync_send_get_stat(md_sync_send_data_t *sm)
-{
-	return &sm->statd;
 }

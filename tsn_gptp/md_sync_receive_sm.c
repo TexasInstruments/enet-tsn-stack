@@ -55,6 +55,7 @@
 #include "md_sync_receive_sm.h"
 #include <math.h>
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -74,7 +75,7 @@ struct md_sync_receive_data{
 	int domainIndex;
 	int portIndex;
 	MDSyncReceive mdSyncReceive;
-	uint64_t rts;
+	uint64_t syncEventIngressTimestamp;
 	union {
 		MDPTPMsgSync recSync;
 		MDPTPMsgSyncOneStep recOneStepSync;
@@ -82,7 +83,6 @@ struct md_sync_receive_data{
 	MDPTPMsgFollowUp recFollowUp;
 	uint64_t rsync_ts; // for debug use
 	uint64_t rfup_ts; // for debug use
-	md_sync_receive_stat_data_t statd;
 };
 
 #define RCVD_SYNC sm->thisSM->rcvdSync
@@ -99,6 +99,7 @@ struct md_sync_receive_data{
 
 static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 {
+	uint64_t nsec;
 	sm->mdSyncReceive.domainIndex =
 		md_domain_number2index(RCVD_SYNC_PTR->head.domainNumber);
 	sm->mdSyncReceive.seqid = ntohs(RCVD_SYNC_PTR->head.sequenceId_ns);
@@ -174,11 +175,31 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 		md_port_number2index(ntohs(RCVD_SYNC_PTR->head.sourcePortIdentity.portNumber_ns));
 	sm->mdSyncReceive.logMessageInterval = RCVD_SYNC_PTR->head.logMessageInterval;
 
-	sm->mdSyncReceive.upstreamTxTime.nsec = (sm->rts -
+	sm->mdSyncReceive.upstreamTxTime.nsec = (sm->syncEventIngressTimestamp -
 		((double)sm->ppg->forAllDomain->neighborPropDelay.nsec /
 		 sm->ppg->forAllDomain->neighborRateRatio) -
 		((double)sm->ppg->forAllDomain->delayAsymmetry.nsec /
 		 sm->mdSyncReceive.rateRatio));
+
+	/* IEEE1588-2019 MasterSlaveDelay calculation (J.2 Timestamping monitoring, p. 409)
+	 *  MasterSlaveDelay = syncEventIngressTimestamp - preciseOriginTimestamp - correctionField
+	*/
+	nsec = sm->syncEventIngressTimestamp -
+	       ((sm->mdSyncReceive.preciseOriginTimestamp.seconds.lsb*(uint64_t)UB_SEC_NS)+
+	       sm->mdSyncReceive.preciseOriginTimestamp.nanoseconds) -
+	       sm->mdSyncReceive.followUpCorrectionField.nsec;
+	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_masterSlaveDelay, nsec);
+
+	/* IEEE1588-2019 offsetFromMaster calculation (11.5.3.3)
+	 *  offsetFromMaster = syncEventIngressTimestamp - originTimestamp -
+	 *                     correctionField - ratio(syncEventIngressTimestamp-
+	 *                     upstreamTxTime)
+	 * Where variables used are members of MDSyncReceive structure.
+	*/
+	nsec = nsec - (sm->mdSyncReceive.rateRatio*
+	       (sm->syncEventIngressTimestamp - sm->mdSyncReceive.upstreamTxTime.nsec));
+	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_offsetFromMaster, nsec);
+
 	return &sm->mdSyncReceive;
 }
 
@@ -241,7 +262,7 @@ static void *waiting_for_follow_up_proc(md_sync_receive_data_t *sm, uint64_t cts
 		}
 		sm->rsync_ts=cts64;
 	}
-	sm->statd.sync_rec_valid++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, syncRx);
 	RCVD_SYNC = false;
 	sm->thisSM->upstreamSyncInterval.nsec =
 		LOG_TO_NSEC(RCVD_SYNC_PTR->head.logMessageInterval);
@@ -299,7 +320,7 @@ static void *waiting_for_sync_proc(md_sync_receive_data_t *sm, uint64_t cts64)
 		}
 		sm->rfup_ts=cts64;
 	}
-	sm->statd.sync_fup_rec_valid++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, followUpRx);
 	RCVD_FOLLOWUP = false;
 	sm->thisSM->txMDSyncReceivePtr = setMDSyncReceive(sm);
 	//UB_LOG(UBL_DEBUG, "%s:txMDSyncReceive\n", __func__);
@@ -420,8 +441,7 @@ void *md_sync_receive_sm_recv_sync(md_sync_receive_data_t *sm, event_data_recv_t
 		sizeof(MDPTPMsgSync):sizeof(MDPTPMsgSyncOneStep);
 	memcpy(&sm->u.recSync, edrecv->recbptr, size);
 	RCVD_SYNC_PTR = &sm->u.recSync;
-	sm->rts = edrecv->ts64;
-	sm->statd.sync_rec++;
+	sm->syncEventIngressTimestamp = edrecv->ts64;
 	return md_sync_receive_sm(sm, cts64);
 }
 
@@ -433,16 +453,5 @@ void *md_sync_receive_sm_recv_fup(md_sync_receive_data_t *sm, event_data_recv_t 
 	RCVD_FOLLOWUP=true;
 	memcpy(&sm->recFollowUp, edrecv->recbptr, sizeof(MDPTPMsgFollowUp));
 	RCVD_FOLLOWUP_PTR = &sm->recFollowUp;
-	sm->statd.sync_fup_rec++;
 	return md_sync_receive_sm(sm, cts64);
-}
-
-void md_sync_receive_stat_reset(md_sync_receive_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_sync_receive_stat_data_t));
-}
-
-md_sync_receive_stat_data_t *md_sync_receive_get_stat(md_sync_receive_data_t *sm)
-{
-	return &sm->statd;
 }

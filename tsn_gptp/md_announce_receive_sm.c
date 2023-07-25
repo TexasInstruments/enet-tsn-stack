@@ -54,6 +54,7 @@
 #include "gptpclock.h"
 #include "md_announce_receive_sm.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -71,7 +72,6 @@ struct md_announce_receive_data{
 	int domainIndex;
 	int portIndex;
 	PTPMsgAnnounce rcvdAnnounce;
-	md_announce_receive_stat_data_t statd;
 	int cmlds_mode;
 };
 
@@ -139,8 +139,7 @@ static void *recAnnounce(md_announce_receive_data_t *sm)
 			return NULL;
 		}
 	}
-
-	sm->statd.announce_rec_valid++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, announceForeignMasterRx);
 	return &sm->rcvdAnnounce;
 }
 
@@ -250,18 +249,7 @@ void *md_announce_receive_sm_mdAnnounceRec(md_announce_receive_data_t *sm,
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex);
 	RCVDRXANN=true;
-	sm->statd.announce_rec++;
 	RXANN=edrecv->recbptr;
 	sm->last_state=REACTION;
 	return md_announce_receive_sm(sm, cts64);
-}
-
-void md_announce_receive_stat_reset(md_announce_receive_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_announce_receive_stat_data_t));
-}
-
-md_announce_receive_stat_data_t *md_announce_receive_get_stat(md_announce_receive_data_t *sm)
-{
-	return &sm->statd;
 }

@@ -48,6 +48,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 #include <tsn_unibase/unibase.h>
+#include "gptp_perfmon.h"
 #include "mind.h"
 #include "mdeth.h"
 #include "gptpnet.h"

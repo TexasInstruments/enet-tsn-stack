@@ -55,6 +55,7 @@
 #include "md_pdelay_resp_sm.h"
 #include "md_abnormal_hooks.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -81,7 +82,6 @@ struct md_pdelay_resp_data{
 	uint64_t txPdelayResp_time;
 	int cmlds_mode;
 	int last_seqid;
-	md_pdelay_resp_stat_data_t statd;
 	uint64_t mock_txts64;
 };
 
@@ -205,7 +205,7 @@ static int waiting_for_pdelay_req_proc(md_pdelay_resp_data_t *sm)
 	sm->thisSM->txPdelayRespFollowUpPtr =
 		setPdelayRespFollowUp(sm);
 	if(txPdelayRespFollowUp(sm->gpnetd, sm->portIndex)==-1){return -1;}
-	sm->statd.pdelay_resp_fup_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayRespFollowUpTx);
 	return 0;
 }
 
@@ -226,7 +226,7 @@ static int sent_pdelay_resp_waiting_for_timestamp_proc(md_pdelay_resp_data_t *sm
 	res=txPdelayResp(sm->gpnetd, sm->portIndex);
 	if(res==-1){return -1;}
 	sm->txPdelayResp_time=cts64;
-	sm->statd.pdelay_resp_send++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayRespTx);
 	if(res<0){
 		sm->mock_txts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex,0);
 		res=-res;
@@ -345,7 +345,6 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 {
 	uint16_t recsqid;
 	UB_TLOG(UBL_DEBUGV, "%s:port=%d, state=%d\n",__func__, sm->portIndex, sm->state);
-	sm->statd.pdelay_req_rec++;
 	memcpy(&sm->rcvdPdelayReq, edrecv->recbptr, sizeof(MDPTPMsgPdelayReq));
 	sm->thisSM->rcvdPdelayReqPtr = &sm->rcvdPdelayReq;
 
@@ -386,7 +385,7 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 			return 0;
 		}
 	}
-	sm->statd.pdelay_req_rec_valid++;
+	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayReqRx);
 	sm->last_seqid=recsqid;
 	sm->thisSM->rcvdPdelayReq = true;
 	sm->ts2=edrecv->ts64;
@@ -418,12 +417,3 @@ void md_pdelay_resp_sm_txts(md_pdelay_resp_data_t *sm, event_data_txts_t *edtxts
 	(void)md_pdelay_resp_sm(sm, cts64);
 }
 
-void md_pdelay_resp_stat_reset(md_pdelay_resp_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_pdelay_resp_stat_data_t));
-}
-
-md_pdelay_resp_stat_data_t *md_pdelay_resp_get_stat(md_pdelay_resp_data_t *sm)
-{
-	return &sm->statd;
-}

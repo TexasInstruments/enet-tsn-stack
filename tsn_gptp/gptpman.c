@@ -87,6 +87,7 @@
 #include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
 #include "gptpconf/gptpgcfg.h"
 #include "gptpcommon.h"
+#include "gptp_perfmon.h"
 
 extern char *PTPMsgType_debug[16];
 extern char *gptpnet_event_debug[6];
@@ -446,8 +447,11 @@ static int gptpnet_cb_timeout(gptpman_data_t *gpmand, uint64_t cts64)
 			// asCapable might be set, inform other state machines
 			if((di!=0) && (!gpmand->tasds[di].tasglb->domainIndex)){continue;}
 			(void)sm_bmcs_domain_port_update(gpmand, di, pi, cts64);
+			gptp_port_perfmon(gpmand->tasds[di].ptds[pi].ppglb->perfmonDS, di, pi,
+				cts64, gpmand->tasds[di].tasglb);
 		}
 		(void)gm_stable_sm(gpmand->tasds[di].gmsd, cts64);
+		gptp_clock_perfmon(gpmand->tasds[di].tasglb->perfmonClockDS, cts64, gpmand->tasds[di].tasglb);
 	}
 	return 0;
 }
@@ -627,6 +631,7 @@ not_allowed_domain:
 	return 0;
 }
 
+
 static int gptpnet_cb(void *cb_data, int portIndex, gptpnet_event_t event,
 		      int64_t *event_ts64, void *event_data)
 {
@@ -727,15 +732,17 @@ static int gptpman_port_init(gptpman_data_t *gpmand, uint8_t di, int pi)
 {
 	gptpsm_tasd_t *tasd=&gpmand->tasds[di];
 	if(di==0u){
-		md_entity_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].mdeglb, NULL);
-		pp_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].ppglb, NULL, di, pi);
+		md_entity_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].mdeglb, NULL, pi);
+		pp_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].ppglb, NULL, tasd->tasglb, di, pi);
 	}else{
 		md_entity_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].mdeglb,
-				   gpmand->tasds[0].ptds[pi].mdeglb->forAllDomain);
+				   gpmand->tasds[0].ptds[pi].mdeglb->forAllDomain, pi);
 		pp_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].ppglb,
-			    gpmand->tasds[0].ptds[pi].ppglb->forAllDomain, di, pi);
+			    gpmand->tasds[0].ptds[pi].ppglb->forAllDomain, tasd->tasglb, di, pi);
 	}
 	bmcs_pp_glb_init(gpmand->gptpInstanceIndex, &tasd->ptds[pi].bppglb, di, pi);
+	gptp_port_perfmon_dr_reset(tasd->ptds[pi].ppglb->perfmonDS, PERFMON_ALL_DR,
+							di, pi, ub_mt_gettime64());
 	if(di==0u){
 		(void)domain_zero_port_sm_init(tasd, gpmand->gpnetd, pi);
 	}
@@ -783,6 +790,8 @@ int gptpman_domain_init(gptpman_data_t *gpmand, uint8_t domainIndex)
 
 	bmcs_ptas_glb_init(gpmand->gptpInstanceIndex,
 			   &gpmand->tasds[di].btasglb, gpmand->tasds[di].tasglb, di);
+
+	gptp_clock_perfmon_dr_reset(gpmand->tasds[di].tasglb->perfmonClockDS, PERFMON_ALL_DR, ub_mt_gettime64());
 
 	site_sync_sync_sm_init(&gpmand->tasds[di].sssd, di, gpmand->tasds[di].tasglb);
 	clock_master_sync_send_sm_init(&gpmand->tasds[di].cmssendd, di, gpmand->tasds[di].tasglb);

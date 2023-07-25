@@ -54,6 +54,7 @@
 #include "gptpclock.h"
 #include "md_signaling_send_sm.h"
 #include "md_abnormal_hooks.h"
+#include "gptp_perfmon.h"
 
 typedef enum {
 	INIT,
@@ -79,7 +80,6 @@ struct md_signaling_send_data{
 	md_signaling_type_t stype;
 	void *rcvd_txmsg;
 	uint16_t sequenceId;
-	md_signaling_send_stat_data_t statd;
 };
 
 #define PORT_OPER sm->ppg->forAllDomain->portOper
@@ -120,7 +120,6 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 {
 	int size;
 	void *sdata;
-	uint32_t *statp=NULL;
 	switch(sm->stype){
 	case MD_SIGNALING_MSG_INTERVAL_REQ:
 		size=sizeof(MDPTPMsgIntervalRequestTLV);
@@ -132,7 +131,8 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 	default:
 		return -1;
 	}
-	sdata=md_header_compose(GPTPINSTNUM, sm->gpnetd, sm->portIndex, SIGNALING, size,
+
+    sdata=md_header_compose(GPTPINSTNUM, sm->gpnetd, sm->portIndex, SIGNALING, size,
                             sm->ptasg->thisClock,
                             sm->ppg->thisPort,
                             sm->sequenceId,
@@ -145,18 +145,19 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 	switch(sm->stype){
 	case MD_SIGNALING_MSG_INTERVAL_REQ:
 		setup_msg_interval_req_tlv(sm, sdata);
-		statp=&sm->statd.signal_msg_interval_send;
+		// performance monitor incremented prior to actual send, should not be critical
+		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, msgIntervalTx);
 		break;
 	case MD_SIGNALING_GPTP_CAPABLE:
 		setup_gptp_capable_tlv(sm, sdata);
-		statp=&sm->statd.signal_gptp_capable_send;
+		// performance monitor incremented prior to actual send, should not be critical
+		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, asCapableTx);
 		break;
 	default:
 		return -1;
 	}
 	if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, size)==-1){return -2;}
 	sm->sequenceId++;
-	if(statp!=NULL){(*statp)++;}
 	return 0;
 }
 
@@ -292,14 +293,4 @@ void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *m
 	sm->rcvd_txmsg=msg;
 	sm->last_state=REACTION;
 	return md_signaling_send_sm(sm, cts64);
-}
-
-void md_signaling_send_stat_reset(md_signaling_send_data_t *sm)
-{
-	(void)memset(&sm->statd, 0, sizeof(md_signaling_send_stat_data_t));
-}
-
-md_signaling_send_stat_data_t *md_signaling_send_get_stat(md_signaling_send_data_t *sm)
-{
-	return &sm->statd;
 }
