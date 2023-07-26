@@ -223,7 +223,7 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE;
-	res=yang_value_conv(YANG_VTYPE_UINT8, "2",
+	res=yang_value_conv(YANG_VTYPE_UINT8, "10",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
@@ -235,19 +235,19 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE;
-	res=yang_value_conv(YANG_VTYPE_UINT8, "1",
+	res=yang_value_conv(YANG_VTYPE_UINT8, "10",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_CLOCK_COMPUTE_INTERVAL_MSEC;
-	res=yang_value_conv(YANG_VTYPE_UINT32, "100",
+	res=yang_value_conv(YANG_VTYPE_UINT32, "1000",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_UPDATE_MRATE_PPB;
-	res=yang_value_conv(YANG_VTYPE_UINT32, "5",
+	res=yang_value_conv(YANG_VTYPE_UINT32, "10",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
