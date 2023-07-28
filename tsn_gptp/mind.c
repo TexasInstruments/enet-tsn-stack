@@ -98,8 +98,8 @@ void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_SHORT_PERIOD, YDBI_CONFIG);
 		(*tasglb)->perfmonCurrentPeriod_ms = gptpgcfg_get_intitem(
 			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_CURRENT_PERIOD, YDBI_CONFIG);
-		(*tasglb)->gptpInstanceIndex = gptpInstanceIndex;
 	}
+	(*tasglb)->gptpInstanceIndex = gptpInstanceIndex;
 }
 
 void ptas_glb_close(PerTimeAwareSystemGlobal **tasglb)
@@ -366,4 +366,3 @@ void bmcs_pp_glb_close(BmcsPerPortGlobal **bppglb)
 	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, *bppglb);
 	*bppglb=NULL;
 }
-

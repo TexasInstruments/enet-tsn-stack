@@ -463,6 +463,10 @@ int gptpclock_add_clock(uint8_t gptpInstanceIndex, int clockIndex,
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
 	uint32_t state=0;
+	if(gcd==NULL){
+		UB_LOG(UBL_ERROR, "%s:no gcd[%d]\n", __func__, gptpInstanceIndex);
+		return -1;
+	}
 	if(!gcd->clds){return -1;}
 	for(i=0;i<ub_esarray_ele_nums(gcd->clds);i++){
 		od = (oneclock_data_t *)ub_esarray_get_ele(gcd->clds, i);
@@ -517,6 +521,10 @@ int gptpclock_del_clock(uint8_t gptpInstanceIndex, int clockIndex, uint8_t domai
 {
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
+	if(gcd==NULL){
+		UB_LOG(UBL_ERROR, "%s:no gcd[%d]\n", __func__, gptpInstanceIndex);
+		return -1;
+	}
 	if(!gcd->clds){return 0;}
 	od=get_clockod(gcd, clockIndex, domainIndex);
 	if(od!=NULL){
@@ -539,7 +547,7 @@ int gptpclock_init(uint8_t gptpInstanceIndex, int max_domains, int max_ports)
 	gptpclock_data_t *gcd;
 	if(gptpInstanceIndex>=gcdl_num){
 		gcdl=UB_SD_REGETMEM(GPTP_SMALL_ALLOC, gcdl,
-				   sizeof(gptpclock_data_t*)*(gptpInstanceIndex+1u));
+				    sizeof(gptpclock_data_t*)*(gptpInstanceIndex+1u));
 		if(ub_assert_fatal(gcdl, __func__, "realloc")){return -1;}
 		(void)memset(&gcdl[gcdl_num], 0,
 			     sizeof(gptpclock_data_t*)*(gptpInstanceIndex+1u-gcdl_num));
@@ -595,7 +603,6 @@ void gptpclock_close(uint8_t gptpInstanceIndex)
 	int i;
 	if((gptpInstanceIndex>=gcdl_num) || !gcdl[gptpInstanceIndex]){return;}
 	gcd=gcdl[gptpInstanceIndex];
-	if(!gcd){return;}
 
 	if(gcd->clds!=NULL){
 		while(!ub_esarray_pop_ele(gcd->clds, (ub_esarray_element_t *)&od)){
@@ -641,7 +648,7 @@ erexit:
 					   sizeof(gptpgcfg_data_t*)*(gcdl_num));
 		}
 	}
-	UB_LOG(UBL_DEBUGV, "%s:closed\n", __func__);
+	UB_LOG(UBL_DEBUG, "%s:closed\n", __func__);
 }
 
 int gptpclock_apply_offset(uint8_t gptpInstanceIndex,
@@ -895,6 +902,10 @@ uint8_t *gptpclock_clockid(uint8_t gptpInstanceIndex,
 {
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
+	if(gcd==NULL){
+		UB_LOG(UBL_ERROR, "%s:no gcdl[%d]\n", __func__, gptpInstanceIndex);
+		return NULL;
+	}
 	if(!gcd->clds){return NULL;}
 	od=get_clockod(gcd, clockIndex, domainIndex);
 	if(od==NULL){return NULL;}
@@ -907,6 +918,10 @@ int gptpclock_rate_same(uint8_t gptpInstanceIndex,
 {
 	oneclock_data_t *od, *od1;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
+	if(gcd==NULL){
+		UB_LOG(UBL_ERROR, "%s:no gcdl[%d]\n", __func__, gptpInstanceIndex);
+		return -1;
+	}
 	if(!gcd->clds){return -1;}
 	od=get_clockod(gcd, clockIndex, domainIndex);
 	if(od==NULL){return -1;}
@@ -1090,6 +1105,10 @@ int gptpclock_set_thisClock(uint8_t gptpInstanceIndex,
 	double adjrate;
 	int64_t ts64;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
+	if(gcd==NULL){
+		UB_LOG(UBL_ERROR, "%s:no gcdl[%d]\n", __func__, gptpInstanceIndex);
+		return -1;
+	}
 	if(clockIndex==0){
 		UB_LOG(UBL_ERROR,"%s:clockIndex=0 can't be thisClock\n", __func__);
 		return -1;

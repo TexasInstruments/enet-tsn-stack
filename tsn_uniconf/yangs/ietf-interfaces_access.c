@@ -342,12 +342,12 @@ int ydbi_get_ifupdown_ucnotice(yang_db_item_access_t *ydbia, char *netdev,
 		return -1;
 	}
 	res=uc_dbal_get(ydbia->dbald, key, ksize, &value, &vsize);
-	if(res || (vsize!=1) ){
+	if(res || (vsize!=4) ){
 		UB_LOG(UBL_ERROR, "%s:no value OR wrong vsize, res=%d, vsize=%d\n",
 		       __func__, res, vsize);
 		return -1;
 	}
-	if(*((uint8_t*)value)==1){
+	if(*((uint32_t*)value)==1){
 		*ifupdown=1;
 	}else{
 		*ifupdown=0;
