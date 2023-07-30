@@ -388,7 +388,7 @@ static void LLDEnetTxNotifyCb(void *cbArg)
 	hLLDma->txNotifyCb(hLLDma->txCbArg);
 }
 
-UB_SD_GETMEM_DEF(lldenet_mem, (int)sizeof(LLDTSync_t), 1);
+UB_SD_GETMEM_DEF(lldenet_mem, (int)sizeof(LLDEnet_t), 10);
 
 LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 {

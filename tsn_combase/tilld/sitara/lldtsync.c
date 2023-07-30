@@ -61,7 +61,7 @@ struct LLDTSync {
 	uint32_t coreId;
 };
 
-UB_SD_GETMEM_DEF(lldtsync_mem, (int)sizeof(LLDTSync_t), 1);
+UB_SD_GETMEM_DEF(lldtsync_mem, (int)sizeof(LLDTSync_t), 16);
 
 LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 {
