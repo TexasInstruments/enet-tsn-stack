@@ -355,8 +355,8 @@ static int instance_domain_Init(gptpgcfg_data_t *gycd, uint8_t gptpInstanceIndex
 		return -1;
 	}
 	if(gycd->max_domain<1u){gycd->max_domain=1;}
-	gycd->instance_domain_map=UB_SD_GETMEM(GPTP_SMALL_ALLOC,
-					       gycd->max_domain*sizeof(uint8_t));
+	gycd->instance_domain_map=(uint8_t*)UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+							 gycd->max_domain*sizeof(uint8_t));
 	if(ub_assert_fatal(gycd->instance_domain_map!=NULL, __func__, NULL)){return -1;}
 
 	if(yang_db_action(gycd->dbald, NULL, &dbpara)==0){
@@ -424,8 +424,8 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 		return -1;
 	}
 	if(gycdl_num<=gptpInstanceIndex){
-		gycdl=UB_SD_REGETMEM(GPTP_YANCONF_INST, gycdl,
-				    sizeof(gptpgcfg_data_t*)*(gptpInstanceIndex+1u));
+		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_INST, gycdl,
+							sizeof(gptpgcfg_data_t*)*(gptpInstanceIndex+1u));
 		if(ub_assert_fatal(gycdl, __func__, "realloc")){return -1;}
 		uint8_t i;
 		for(i=gycdl_num;i<=gptpInstanceIndex;i++){
@@ -433,7 +433,7 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 		}
 		gycdl_num=gptpInstanceIndex+1u;
 	}
-	gycd=UB_SD_GETMEM(GPTP_YANCONF_INST, sizeof(gptpgcfg_data_t));
+	gycd=(gptpgcfg_data_t*)UB_SD_GETMEM(GPTP_YANCONF_INST, sizeof(gptpgcfg_data_t));
 	if(ub_assert_fatal(gycd!=NULL, __func__, NULL)){return -1;}
 	(void)memset(gycd, 0, sizeof(gptpgcfg_data_t));
 	// 'tsn_uniconf' must run before this, to connect to the DB
@@ -494,8 +494,8 @@ void gptpgcfg_close(uint8_t gptpInstanceIndex)
 	gycdl[gptpInstanceIndex]=NULL;
 	if((gptpInstanceIndex+1u)==gycdl_num){
 		gycdl_num--;
-		gycdl=UB_SD_REGETMEM(GPTP_YANCONF_INST, gycdl,
-				     sizeof(gptpgcfg_data_t*)*gycdl_num);
+		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_INST, gycdl,
+							sizeof(gptpgcfg_data_t*)*gycdl_num);
 	}
 	UB_LOG(UBL_DEBUG, "%s:the instance was closed for gptpInstanceIndex=%d\n",
 	       __func__, gptpInstanceIndex);
@@ -713,7 +713,7 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
 	gycd=gycdl[gptpInstanceIndex];
 	if(!gycd->linksem){return -1;}
-	if(CB_SEM_TRYWAIT(gycd->linksem)!=0){return 1;}
+	if(CB_SEM_TRYWAIT((CB_SEM_T*)gycd->linksem)!=0){return 1;}
 	UB_TLOG(UBL_DEBUG, "%s:signaled by linksem\n", __func__);
 	res=uc_nc_get_notice_act(gycd->ucntd, gycd->dbald, gycd->semname, key, &ksize);
 	if(res!=0){

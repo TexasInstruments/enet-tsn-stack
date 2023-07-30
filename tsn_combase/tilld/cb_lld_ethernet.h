@@ -62,6 +62,10 @@
 #include "lldenet.h"
 #include "lldtsync.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define htons __htons
 #define ntohs __ntohs
 #define htonl __htonl
@@ -339,6 +343,9 @@ int cb_lld_get_link_state(CB_SOCKET_T cfd, const char *dev, uint32_t *linkstate)
  */
 int cb_lld_get_link_info(CB_SOCKET_T cfd, const char *dev, uint32_t *speed, uint32_t *duplex);
 
+#ifdef __cplusplus
+}
+#endif
 #endif //CB_LLD_ETHERNET_H
 
 /** @}*/

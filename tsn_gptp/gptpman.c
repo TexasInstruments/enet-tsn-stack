@@ -1034,24 +1034,24 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 
 	gpmand->max_ports=max_ports;
 
-	gpmand->tasds=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
-				   (unsigned int)max_domains * sizeof(gptpsm_tasd_t));
+	gpmand->tasds=(gptpsm_tasd_t*)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
+						   (unsigned int)max_domains * sizeof(gptpsm_tasd_t));
 	if(ub_assert_fatal(gpmand->tasds!=NULL, __func__, "malloc error")) {goto erexit;}
 	(void)memset(gpmand->tasds, 0, (unsigned int)max_domains * sizeof(gptpsm_tasd_t));
 
 	// reserve ptds(port data array) for the number of domain
 	for(i=0;i<max_domains;i++){
-		gpmand->tasds[i].ptds=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
+		gpmand->tasds[i].ptds=(gptpsm_ptd_t*)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
 						   (unsigned int)max_ports * sizeof(gptpsm_ptd_t));
 		if(ub_assert_fatal(gpmand->tasds[i].ptds!=NULL, __func__, "malloc")){break;}
 		(void)memset(gpmand->tasds[i].ptds, 0, (unsigned int)max_ports * sizeof(gptpsm_ptd_t));
 		// create per-port global lists
-		gpmand->tasds[i].ppglbl=UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+		gpmand->tasds[i].ppglbl=(PerPortGlobal**)UB_SD_GETMEM(GPTP_SMALL_ALLOC,
 						     (unsigned int)max_ports * sizeof(PerPortGlobal*));
 		if(ub_assert_fatal(gpmand->tasds[i].ppglbl!=NULL, __func__, "malloc")){break;}
 		(void)memset(gpmand->tasds[i].ppglbl, 0,
 			     (unsigned int)max_ports * sizeof(PerPortGlobal*));
-		gpmand->tasds[i].bppglbl=UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+		gpmand->tasds[i].bppglbl=(BmcsPerPortGlobal**)UB_SD_GETMEM(GPTP_SMALL_ALLOC,
 						      (unsigned int)max_ports * sizeof(BmcsPerPortGlobal*));
 		if(ub_assert_fatal(gpmand->tasds[i].bppglbl!=NULL, __func__, "malloc")){break;}
 		(void)memset(gpmand->tasds[i].bppglbl, 0,

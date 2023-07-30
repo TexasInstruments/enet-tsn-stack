@@ -240,7 +240,7 @@ static UC_NOTICE_SIG_T *create_new_putsemaphore(bool fromthread,
 			}
 		}
 	}
-	pnd.semname=UB_SD_GETMEM(UC_NOTICE_PUT, strlen(semname)+1u);
+	pnd.semname=(char*)UB_SD_GETMEM(UC_NOTICE_PUT, strlen(semname)+1u);
 	if(ub_assert_fatal(pnd.semname!=NULL, __func__, NULL)){return NULL;}
 	(void)memset(pnd.semname, 0, strlen(semname)+1u);
 	pnd.actcounter=actcounter;
@@ -332,7 +332,7 @@ static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *se
 	return res;
 }
 
-static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete)
+static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete_flg)
 {
 	uc_range *range;
 	uint8_t key1[2]={XL4_DATA_RO, UC_NOTICE_REG};
@@ -358,7 +358,7 @@ static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete)
 			action=*((uint8_t*)vdata);
 			if(action!=UC_NOTICE_DBVAL_ADD){continue;}
 			count++;
-			if(delete){
+			if(delete_flg){
 				UB_LOG(UBL_DEBUG,
 				       "%s:mark delete semname in the DB:%s\n",
 				       __func__, semname);
@@ -538,16 +538,15 @@ void uc_notice_close(uc_notice_data_t *ucntd, uint8_t callmode)
 	return;
 }
 
-// uc_client -> uniconf
-// a key is pushed to /XL4_DATA_RO/UC_ASKACTiON_REG/key, and signal the semaphore
-int uc_nc_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
-			 uint8_t *aps, void **kvs, uint8_t *kss)
+static int askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
+			  uint8_t *aps, void **kvs, uint8_t *kss, bool from_nc)
 {
 	int sval;
 	uint8_t preap[3]={XL4_DATA_RO, UC_ASKACTION_REG, 255};
-	uint8_t d=UC_ASKACTION_HW;
+	uint8_t d;
 	yang_db_access_para_t dbpara={0};
 	int res=-1;
+	d=from_nc?UC_ASKACTION_HW:UC_ASKACTION_NOHW;
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	dbpara.onhw=YANG_DB_ONHW_NOACTION;
 	dbpara.paps=preap;
@@ -569,21 +568,18 @@ int uc_nc_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	return res;
 }
 
+// uc_client -> uniconf
+// a key is pushed to /XL4_DATA_RO/UC_ASKACTiON_REG/key, and signal the semaphore
+int uc_nc_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
+			 uint8_t *aps, void **kvs, uint8_t *kss)
+{
+	return askaction_push(ucntd, dbald, aps, kvs, kss, true);
+}
+
 int uc_nu_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 			 uint8_t *aps, void **kvs, uint8_t *kss)
 {
-	uint8_t preap[3]={XL4_DATA_RO, UC_ASKACTION_REG, 255};
-	uint8_t d=UC_ASKACTION_NOHW;
-	yang_db_access_para_t dbpara={0};
-	dbpara.atype=YANG_DB_ACTION_CREATE;
-	dbpara.onhw=YANG_DB_ONHW_NOACTION;
-	dbpara.paps=preap;
-	dbpara.aps=aps;
-	dbpara.kvs=kvs;
-	dbpara.kss=kss;
-	dbpara.value=&d;
-	dbpara.vsize=1;
-	return yang_db_action(dbald, NULL, &dbpara);
+	return askaction_push(ucntd, dbald, aps, kvs, kss, false);
 }
 
 // 'uniconf' checks the semaphore and process notices to update HW configs.
@@ -627,7 +623,7 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 		if(kvs[i]==NULL){snindex=i-1; break;}
 	}
 	if(snindex<0){return -1;}
-	if((strlen(kvs[snindex])+1u) != kss[snindex]){
+	if((strlen((const char*)kvs[snindex])+1u) != kss[snindex]){
 		UB_LOG(UBL_ERROR, "%s:the last element in kvs must be a semaphore name\n",
 		       __func__);
 		return -1;
@@ -646,7 +642,7 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	}
 
 	CB_THREAD_MUTEX_LOCK(&ntmutex);
-	res=find_semname_in_putnoticelist(ucntd, kvs[snindex], paction, sem);
+	res=find_semname_in_putnoticelist(ucntd, (const char*)kvs[snindex], paction, sem);
 	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
 	if(res!=0){return -1;}
 	if(!aps){return 0;} // only semaphore registration.
@@ -727,7 +723,7 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 			action=0xff;
 			continue;
 		}
-		semname=yang_db_key_bottomp(nkey, nksize);
+		semname=(char*)yang_db_key_bottomp(nkey, nksize);
 		if(!semname){continue;}
 		nu_increment_refcounter(ucntd->fromthread, ucntd->putnotice_list,
 					&semname[1]);
@@ -738,7 +734,7 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 		memcpy(rkey, nkey, nksize);
 		// 'nkey' data may be changed in the next DB action(uc_dbal_create),
 		// the same 'semname' should be in the copied contents.
-		semname=yang_db_key_bottomp(rkey, nksize);
+		semname=(char*)yang_db_key_bottomp(rkey, nksize);
 		// ceate a new key: /XL4_DATA_RO/UC_NOTICE_ACT/aps,,,/kvs,,,/semname
 		// each cient has a different 'semname', this key becomes unique for the client
 		rkey[1]=UC_NOTICE_ACT;
@@ -780,7 +776,7 @@ int uc_nc_get_notice_act(uc_notice_data_t *ucntd, uc_dbald *dbald, const char *s
 	while(true){
 		if(uc_get_key_in_range(dbald, range, (void**)&nkey,
 				       &nksize, UC_DBAL_FORWARD)!=0){break;}
-		actsemname=yang_db_key_bottomp(nkey, nksize);
+		actsemname=(char*)yang_db_key_bottomp(nkey, nksize);
 		if(actsemname && !strcmp(&actsemname[1], semname)){
 			found=true;
 			break;

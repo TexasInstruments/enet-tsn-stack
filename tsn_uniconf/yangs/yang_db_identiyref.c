@@ -209,7 +209,7 @@ uint32_t yang_identityref_getval(char *identity_str, char *hints)
     int tblidx=yang_identityref_get_tblidx(hints);
     if(tblidx < 0) {
         UB_LOG(UBL_ERROR, "%s:unknown identityref hints=%s\n", __func__, hints);
-        goto end_operation;
+        return identity_val;
     }
     const yang_identity_map_t *reftbl = yang_identityref_list[tblidx].reftbl;
     uint32_t i;
@@ -219,7 +219,6 @@ uint32_t yang_identityref_getval(char *identity_str, char *hints)
             break;
         }
     }
-end_operation:
     return identity_val;
 }
 
@@ -229,7 +228,7 @@ char* yang_identityref_getstr(uint32_t identity_val, char *hints)
     int tblidx=yang_identityref_get_tblidx(hints);
     if(tblidx < 0) {
         UB_LOG(UBL_ERROR, "%s:unknown identityref hints=%s\n", __func__, hints);
-        goto end_operation;
+        return identity_str;
     }
     const yang_identity_map_t *reftbl = yang_identityref_list[tblidx].reftbl;
     uint32_t i;
@@ -239,6 +238,5 @@ char* yang_identityref_getstr(uint32_t identity_val, char *hints)
             break;
         }
     }
-end_operation:
     return identity_str;
 }

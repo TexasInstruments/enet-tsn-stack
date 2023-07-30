@@ -60,6 +60,9 @@
 
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define CB_MKTIME mktime
 
 /**
@@ -102,6 +105,10 @@ int cb_lld_usleep(uint32_t usec);
  * @return The current time in nanoseconds.
  */
 uint64_t cb_lld_gettime64(ub_clocktype_t ctype);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

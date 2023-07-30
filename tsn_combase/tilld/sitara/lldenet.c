@@ -329,7 +329,7 @@ static uint32_t LLDEnetReceiveRxReadyPkts(LLDEnetDma_t *hLLDma)
 static void LLDEnetRxNotifyCb(void *cbArg)
 {
 	uint32_t rxReadyCnt = 0U;
-	LLDEnetDma_t *hLLDma = cbArg;
+	LLDEnetDma_t *hLLDma = (LLDEnetDma_t*)cbArg;
 
 	if (hLLDma == NULL) {
 		return;
@@ -373,7 +373,7 @@ static uint32_t LLDEnetRetrieveTxDonePkts(LLDEnetDma_t *hLLDma)
 static void LLDEnetTxNotifyCb(void *cbArg)
 {
 	uint32_t pktCount;
-	LLDEnetDma_t *hLLDma = cbArg;
+	LLDEnetDma_t *hLLDma = (LLDEnetDma_t*)cbArg;
 
 	if (hLLDma == NULL) {
 		return;
@@ -388,6 +388,8 @@ static void LLDEnetTxNotifyCb(void *cbArg)
 	hLLDma->txNotifyCb(hLLDma->txCbArg);
 }
 
+UB_SD_GETMEM_DEF(lldenet_mem, (int)sizeof(LLDTSync_t), 1);
+
 LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 {
 	EnetApp_HandleInfo handleInfo;
@@ -400,19 +402,19 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 		return NULL;
 	}
 
-	hLLDEnet = malloc(sizeof(LLDEnet_t));
+	hLLDEnet = (LLDEnet_t*)UB_SD_GETMEM(lldenet_mem, sizeof(LLDEnet_t));
 	EnetAppUtils_assert(hLLDEnet != NULL);
 	memset(hLLDEnet, 0, sizeof(LLDEnet_t));
 
 	hLLDEnet->coreId = EnetSoc_getCoreId();
-	EnetApp_acquireHandleInfo(cfg->enetType, cfg->instId, &handleInfo);
-	EnetApp_coreAttach(cfg->enetType, cfg->instId,
-					   hLLDEnet->coreId, &attachInfo);
+	EnetApp_acquireHandleInfo((Enet_Type)cfg->enetType, cfg->instId, &handleInfo);
+	EnetApp_coreAttach((Enet_Type)cfg->enetType, cfg->instId,
+			   hLLDEnet->coreId, &attachInfo);
 	EnetAppUtils_assert(handleInfo.hEnet != NULL);
 
 	hLLDEnet->hEnet = handleInfo.hEnet;
 	hLLDEnet->coreKey = attachInfo.coreKey;
-	hLLDEnet->enetType = cfg->enetType;
+	hLLDEnet->enetType = (Enet_Type)cfg->enetType;
 	hLLDEnet->instId = cfg->instId;
 
 	if (!cfg->unusedDma) {
@@ -454,8 +456,7 @@ void LLDEnetClose(LLDEnet_t *hLLDEnet)
 	DmaClose(&hLLDEnet->dma);
 	EnetApp_coreDetach(hLLDEnet->enetType, hLLDEnet->instId,
 					   hLLDEnet->coreId, hLLDEnet->coreKey);
-	//FIXME: anything else need to be released?
-	free(hLLDEnet);
+	UB_SD_RELMEM(lldenet_mem, hLLDEnet);
 }
 
 int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *destMacAddr, uint32_t vlanId)
@@ -823,8 +824,8 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 	Enet_IoctlPrms prms;
 	int32_t status;
 	EnetTas_GenericInArgs inArgs;
-	EnetTas_ControlList adminList = {0};
-	EnetTas_SetAdminListInArgs adminListInArgs = {0};
+	EnetTas_ControlList adminList = {};
+	EnetTas_SetAdminListInArgs adminListInArgs = {};
 	cbl_tas_gate_cmd_entry_t *entry;
 	int i, noe;
 
@@ -929,7 +930,7 @@ int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void
 {
 	cbl_preempt_params_t *cpemp = (cbl_preempt_params_t *)reqPrm;
 	cbl_cb_event_t *nevent = (cbl_cb_event_t *)resPrm;
-	EnetMacPort_GenericInArgs egargs = {0};
+	EnetMacPort_GenericInArgs egargs = {};
 	Enet_IoctlPrms prms;
 	int32_t status, i;
 
@@ -982,7 +983,7 @@ int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void
 		UB_LOG(UBL_INFO, "FramePreemption actived \n");
 	}
 	
-	EnetMacPort_QueuePreemptCfg queueCfg = {0};
+	EnetMacPort_QueuePreemptCfg queueCfg = {};
 	ENET_IOCTL_SET_INOUT_ARGS(&prms, &egargs, &queueCfg);
 	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
 		   ENET_MACPORT_IOCTL_GET_QUEUE_PREEMPT_STATUS, &prms, status);

@@ -54,6 +54,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void uc_dbald;
 typedef void uc_range;
 
@@ -168,5 +172,9 @@ int uc_del_in_range(uc_dbald *dbald, uc_range *range, int direction);
 
 // wait for relese from any locked status
 int uc_wait_release(uc_dbald *dbald, int toutms);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

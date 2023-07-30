@@ -50,6 +50,9 @@
 #ifndef GPTPMAN_H_
 #define GPTPMAN_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 #ifdef GHINTEGRITY
 extern Semaphore g_gptpd_ready_semaphore;
 #define GPTP_READY_NOTICE CB_SEM_POST(&g_gptpd_ready_semaphore);
@@ -62,5 +65,9 @@ typedef struct gptpman_data gptpman_data_t;
 int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 		int max_ports, int max_domains, char *inittm, bool *stopgptp);
 void gptpman_stop(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

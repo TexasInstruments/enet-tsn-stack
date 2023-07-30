@@ -409,12 +409,12 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0027_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc/stream
+	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[5] = IEEE802_DOT1Q_TSN_CONFIG_UNI_STREAM_STATUS;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0028_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc
 	//0029_ieee802-dot1q-tsn-config-uni/tsn-uni/domain
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[3] = IEEE802_DOT1Q_TSN_CONFIG_UNI_CNC_ENABLED;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}

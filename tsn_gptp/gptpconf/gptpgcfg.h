@@ -55,6 +55,10 @@
 #include "tsn_uniconf/yangs/ieee1588-ptp.h"
 #include "../gptpnet.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct gptpgcfg_data gptpgcfg_data_t;
 
 #define XL4GPTP_MODULE "xl4gptp"
@@ -133,5 +137,9 @@ int gptpgcfg_set_asCapable(uint8_t gptpInstanceIndex, uint8_t domainIndex,
 			   uint16_t portIndex, bool asCapable);
 
 #endif // defined(GPTP_PRIVATE_H_) || defined(GPTP_STATIC_MEMORY_H_)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

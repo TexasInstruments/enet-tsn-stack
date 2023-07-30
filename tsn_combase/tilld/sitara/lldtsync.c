@@ -61,6 +61,8 @@ struct LLDTSync {
 	uint32_t coreId;
 };
 
+UB_SD_GETMEM_DEF(lldtsync_mem, (int)sizeof(LLDTSync_t), 1);
+
 LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 {
 	LLDTSync_t *hTSync;
@@ -70,15 +72,15 @@ LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 		return NULL;
 	}
 
-	hTSync = malloc(sizeof(LLDTSync_t));
+	hTSync = (LLDTSync_t*)UB_SD_GETMEM(lldtsync_mem, sizeof(LLDTSync_t));
 	EnetAppUtils_assert(hTSync != NULL);
 	memset(hTSync, 0, sizeof(LLDTSync_t));
 
-	hTSync->enetType = cfg->enetType;
+	hTSync->enetType = (Enet_Type)cfg->enetType;
 	hTSync->instId = cfg->instId;
 	hTSync->coreId = EnetSoc_getCoreId();
 
-	EnetApp_acquireHandleInfo(cfg->enetType, cfg->instId, &handleInfo);
+	EnetApp_acquireHandleInfo(hTSync->enetType, cfg->instId, &handleInfo);
 	hTSync->hEnet = handleInfo.hEnet;
 	EnetAppUtils_assert(hTSync->hEnet != NULL);
 
@@ -98,7 +100,7 @@ void LLDTSyncClose(LLDTSync_t *hTSync)
 	if (hTSync == NULL) {
 		return;
 	}
-	free(hTSync);
+	UB_SD_RELMEM(lldtsync_mem, hTSync);
 }
 
 int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
@@ -113,7 +115,7 @@ int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
 	}
 
 	memset(&inArgs, 0, sizeof(inArgs));
-	inArgs.msgType = msgType;
+	inArgs.msgType = (EnetTimeSync_MsgType)msgType;
 	inArgs.seqId   = seqId;
 	inArgs.portNum = rxPort;
 	inArgs.domain  = domain;
@@ -139,7 +141,7 @@ int LLDTSyncGetTxTime(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
 		return LLDENET_E_PARAM;
 	}
 
-	inArgs.msgType = msgType;
+	inArgs.msgType = (EnetTimeSync_MsgType)msgType;
 	inArgs.seqId = seqId;
 	inArgs.portNum = txPort;
 	inArgs.domain  = domain;

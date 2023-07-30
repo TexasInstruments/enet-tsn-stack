@@ -92,7 +92,7 @@ static int value_conv_destcopy(void **destd, void *srcd, uint32_t *size, uint32_
 	}
 	memcpy(*destd, srcd, csize);
 	if(asize>csize){
-		uint8_t *ud=*destd;
+		uint8_t *ud=(uint8_t*)*destd;
 		(void)memset(&ud[csize], 0, asize-csize);
 	}
 	*size=asize;
@@ -160,7 +160,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			vstr[res-1]=0;
 		}else{
 			csize=res+1;
-			data=(void*)vstr;
+			data=(char*)vstr;
 		}
 		res=value_conv_destcopy(destd, data, size, csize);
 		break;
@@ -176,7 +176,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			UB_LOG(UBL_ERROR, "%s:invalid tls fingerprint, %s\n", __func__, vstr);
 			res=-1;
 		} else {
-			char *data=(void*)vstr;;
+			char *data=(char*)vstr;;
 			res=(int)strlen(vstr);
 			csize=res+1;
 			res=value_conv_destcopy(destd, data, size, csize);
@@ -799,7 +799,7 @@ int yang_db_extract_key(void *key, uint32_t ksize, uint8_t **ap, kvs_t *kvs, uin
 		if(((uint8_t*)key)[i]==255u){break;}
 	}
 	an=i+1u;
-	*ap=UB_SD_GETMEM(YANGINIT_GEN_SMEM, an);
+	*ap=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, an);
 	if(ub_assert_fatal(*ap!=NULL, __func__, NULL)){return -1;}
 	for(i=0;i<an;i++){
 		(*ap)[i]=((uint8_t*)key)[i];
@@ -866,7 +866,7 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 	char astr[128]={0};
 	const char *mname;
 	const char *status;
-	if(!ub_clog_on(UB_LOGCAT, llevel)){return;}
+	if(!ub_clog_on(UB_LOGCAT, (ub_dbgmsg_level_t)llevel)){return;}
 	for(i=0;;i++) {
 		if(ap[i]==255u){break;}
 	}
@@ -887,12 +887,12 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 			     "/%d", ap[i]);
 		if(res<2){break;}
 	}
-	UB_LOG(llevel, "%s\n", astr);
+	UB_LOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 	if(!kpc){return;}
 	(void)strcpy(astr, "keys - ");
 	sp=strlen(astr);
 	for(j=0;kvs[j] && (sp<(int)sizeof(astr)-1);j++){
-		ap=kvs[j];
+		ap=(uint8_t*)kvs[j];
 		for(i=0;(i<(int)kss[j]) && ((sp+(i*3)+4)<(int)sizeof(astr));i++){
 			ub_byte2hexstr(ap[i], &astr[sp+(i*3)]);
 			if(i==(int)kss[j]-1){
@@ -904,7 +904,7 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 			}
 		}
 	}
-	UB_LOG(llevel, "%s\n", astr);
+	UB_LOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 }
 
 void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
@@ -914,7 +914,7 @@ void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	char astr[128]={0};
 	int sp;
 	uint32_t i;
-	if(!ub_clog_on(UB_LOGCAT, llevel)){return;}
+	if(!ub_clog_on(UB_LOGCAT, (ub_dbgmsg_level_t)llevel)){return;}
 	yang_db_keydump_log(llevel, ap, kvs, kss);
 	(void)strcpy(astr, "value - ");
 	sp=(int)strlen(astr);
@@ -923,9 +923,9 @@ void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 		astr[sp+(i*3)+2]=' ';
 	}
 	if(i==vsize){
-		UB_LOG(llevel, "%s\n", astr);
+		UB_LOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 	}else{
-		UB_LOG(llevel, "%s...\n", astr);
+		UB_LOG((ub_dbgmsg_level_t)llevel, "%s...\n", astr);
 	}
 }
 

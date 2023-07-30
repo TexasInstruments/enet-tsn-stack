@@ -266,10 +266,10 @@ static oneclock_data_t *get_clockod(gptpclock_data_t *gcd,
 				    int clockIndex, uint8_t domainIndex);
 
 #define GPTPCLOCK_FN_ENTRY(gcd,od,clockIndex,domainIndex) {		\
-		if(!(gcd)->clds){return -1;}				\
+		if(!(gcd)->clds){return (gmsync_status_t)-1;}		\
 		(od)=get_clockod(gcd, clockIndex, domainIndex);	\
-		if((od)==NULL){return -1;} \
-		if(!PTPFD_VALID((od)->ptpfd)){return -1;}	\
+		if((od)==NULL){return (gmsync_status_t)-1;}		\
+		if(!PTPFD_VALID((od)->ptpfd)){return (gmsync_status_t)-1;} \
 	}
 
 #ifdef HIGH_ACCURATE_CLOCKS_DIFF
@@ -546,7 +546,7 @@ int gptpclock_init(uint8_t gptpInstanceIndex, int max_domains, int max_ports)
 	char *shmem_name, *shmem_namep;
 	gptpclock_data_t *gcd;
 	if(gptpInstanceIndex>=gcdl_num){
-		gcdl=UB_SD_REGETMEM(GPTP_SMALL_ALLOC, gcdl,
+		gcdl=(gptpclock_data_t**)UB_SD_REGETMEM(GPTP_SMALL_ALLOC, gcdl,
 				    sizeof(gptpclock_data_t*)*(gptpInstanceIndex+1u));
 		if(ub_assert_fatal(gcdl, __func__, "realloc")){return -1;}
 		(void)memset(&gcdl[gcdl_num], 0,
@@ -555,7 +555,7 @@ int gptpclock_init(uint8_t gptpInstanceIndex, int max_domains, int max_ports)
 	}else{
 		if(gcdl[gptpInstanceIndex]!=NULL){return -1;}
 	}
-	gcd=UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(gptpclock_data_t));
+	gcd=(gptpclock_data_t*)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(gptpclock_data_t));
 	if(ub_assert_fatal(gcd!=NULL, __func__, NULL)){return -1;}
 	(void)memset(gcd, 0, sizeof(gptpclock_data_t));
 	gcdl[gptpInstanceIndex]=gcd;
@@ -644,8 +644,8 @@ erexit:
 	}else{
 		if(gptpInstanceIndex>=(gcdl_num-1u)){
 			gcdl_num--;
-			gcdl=UB_SD_REGETMEM(GPTP_SMALL_ALLOC, gcdl,
-					   sizeof(gptpgcfg_data_t*)*(gcdl_num));
+			gcdl=(gptpclock_data_t**)UB_SD_REGETMEM(GPTP_SMALL_ALLOC, gcdl,
+								sizeof(gptpgcfg_data_t*)*(gcdl_num));
 		}
 	}
 	UB_LOG(UBL_DEBUG, "%s:closed\n", __func__);
@@ -1087,7 +1087,7 @@ gmsync_status_t gptpclock_get_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIn
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
 	GPTPCLOCK_FN_ENTRY(gcd, od, 0, domainIndex); // gmsync is only on clockIndex=0
-	return od->pp->gmsync;
+	return (gmsync_status_t)od->pp->gmsync;
 }
 
 int gptpclock_get_gmchange_ind(uint8_t gptpInstanceIndex, int domainIndex)

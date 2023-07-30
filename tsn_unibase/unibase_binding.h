@@ -87,6 +87,10 @@
 #define UBB_GETENV getenv
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief initialize the internal memory_out function
  * @param mem	use this memory as a buffer for memory_out.
@@ -156,6 +160,10 @@ void ubb_set_gptp_gettime64(get64ts_t func);
  *       'ubb_memory_out_init' needs to be called separately
  */
 void ubb_unibase_easyinit(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @}*/

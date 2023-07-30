@@ -52,6 +52,10 @@
 
 #include "uc_notice.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct ucman_data {
 	const char *dbname;
 	const char **configfiles;
@@ -76,5 +80,9 @@ int uniconf_ready(const char *dbname, uint8_t callmode, int tout_ms);
 void uniconf_remove_dbfile(const char *dname);
 
 void uniconf_cleanup_status(uc_dbald *dbald);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

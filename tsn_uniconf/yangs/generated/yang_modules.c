@@ -221,7 +221,7 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
         astr=yang_modules_get_string(anums[0]);
         if(!astr){return -1;}
         rsize=(int)strlen(astr)+2;
-        *rstr=UB_SD_GETMEM(YANGINIT_GEN_SMEM, rsize);
+        *rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, rsize);
         if(ub_assert_fatal(*rstr!=NULL, __func__, NULL)){return -1;}
         (void)memset(*rstr, 0, rsize);
         *rstr[0]='/';
@@ -239,7 +239,7 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 		astr=xl4_data_get_modname(xdd, anums[1]);
 		if(!astr){goto erexit;}
 		rsize+=(int)strlen(astr)+1;
-		*rstr=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rsize);
+		*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rsize);
 		if(ub_assert_fatal(*rstr!=NULL, __func__, "realloc")){return -1;}
 		(void)strcat(*rstr, "/");
 		(void)strcat(*rstr, astr);
@@ -293,7 +293,7 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 		astr=get_string(anums[ec]);
 		if(!astr){break;}
 		rsize+=(int)strlen(astr)+1;
-		*rstr=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rsize);
+		*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rsize);
 		if(ub_assert_fatal(*rstr!=NULL, __func__, "realloc")){return -1;}
 		(void)strcat(*rstr, "/");
 		(void)strcat(*rstr, astr);

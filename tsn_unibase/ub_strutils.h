@@ -60,6 +60,10 @@
 #ifndef UB_STRUTILS_H_
 #define UB_STRUTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef uint8_t ub_bytearray8_t[8]; //!< 8-byte binary array
 typedef ub_bytearray8_t ub_streamid_t; //!< 8-byte binary array is used for Stream ID
 
@@ -194,5 +198,8 @@ int ub_command_line_parser(char *line, char *argv[], int maxargc);
  */
 int ub_strncpy(char *dest, const char *src, int maxlen);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
 /** @}*/

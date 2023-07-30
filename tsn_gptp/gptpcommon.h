@@ -103,12 +103,12 @@ UB_SD_GETMEM_DEF_EXTERN(GPTP_MEDIUM_ALLOC);
 #define INIT_SM_DATA(typed, typesm, sm)					\
 {									\
 	if(!*sm){							\
-		*sm=UB_SD_GETMEM(SM_DATA_INST, sizeof(typed));		\
+		*sm=(typed*)UB_SD_GETMEM(SM_DATA_INST, sizeof(typed));	\
 		(void)ub_assert_fatal(*sm!=NULL, __func__, "malloc1");	\
 	}								\
 	if(*sm!=NULL){							\
 		(void)memset(*sm, 0, sizeof(typed));			\
-		(*sm)->thisSM=UB_SD_GETMEM(SM_DATA_INST, sizeof(typesm));\
+		(*sm)->thisSM=(typesm*)UB_SD_GETMEM(SM_DATA_INST, sizeof(typesm)); \
 		if(!ub_assert_fatal((*sm)->thisSM!=NULL, __func__, "malloc2")){ \
 			(void)memset((*sm)->thisSM, 0, sizeof(typesm));	\
 		}							\

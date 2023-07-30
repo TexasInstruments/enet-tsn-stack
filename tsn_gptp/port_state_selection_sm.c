@@ -217,7 +217,8 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 	void *rval=NULL;
 	bool gmchange=false;
 
-	gmPathPriority=UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(UInteger224)*(uint32_t)sm->max_ports);
+	gmPathPriority=(UInteger224*)
+		UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(UInteger224)*(uint32_t)sm->max_ports);
 	if(ub_assert_fatal(gmPathPriority!=NULL, __func__, NULL)){return NULL;}
 	/* 10.3.12.2.3 */
 	// compute gmPathPriority vector for each port

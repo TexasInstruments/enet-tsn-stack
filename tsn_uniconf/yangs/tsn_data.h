@@ -52,6 +52,10 @@
 
 #include "../uc_dbal.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 enum {
 	YANG_VALUE_TYPES,
 	UC_READY,
@@ -110,5 +114,8 @@ int xl4_data_set_xl4ext(xl4_data_data_t *xdd, char *emodname,
 
 int xl4_data_remove_xl4ext(xl4_data_data_t *xdd, char *emodname);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

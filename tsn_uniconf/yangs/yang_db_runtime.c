@@ -483,7 +483,7 @@ yang_db_runtime_dataq_t *yang_db_runtime_init(xl4_data_data_t *xdd, uc_dbald *db
 					      uc_hwald *hwald)
 {
 	yang_db_runtime_dataq_t *ydrd;
-	ydrd=UB_SD_GETMEM(YANG_DB_RTINST, sizeof(yang_db_runtime_dataq_t));
+	ydrd=(yang_db_runtime_dataq_t*)UB_SD_GETMEM(YANG_DB_RTINST, sizeof(yang_db_runtime_dataq_t));
 	if(ub_assert_fatal(ydrd!=NULL, __func__, NULL)){return NULL;}
 	(void)memset(ydrd, 0, sizeof(yang_db_runtime_dataq_t));
 	ydrd->aps=&ydrd->apsd[2];
@@ -533,12 +533,12 @@ int yang_db_runtime_get_oneline(yang_db_runtime_dataq_t *ydrd,
 	int vtype;
 	int res;
 	if(line && *line){
-		lstr=UB_SD_GETMEM(YANGINIT_GEN_SMEM, strlen(line)+1u);
+		lstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, strlen(line)+1u);
 		if(ub_assert_fatal(lstr!=NULL, __func__, NULL)){return -1;}
 		memcpy(lstr, line, strlen(line)+1u);
 		res=proc_get_keys(ydrd, lstr);
 		UB_SD_RELMEM(YANGINIT_GEN_SMEM, lstr);
-		if(res!=0){
+		if(res!=0 && res!=2){
 			UB_LOG(UBL_ERROR, "%s:can't process line:%s\n", __func__, line);
 			return -1;
 		}
@@ -580,7 +580,7 @@ int yang_db_runtime_notice_register(yang_db_runtime_dataq_t *ydrd, uc_notice_dat
 	void *vtv;
 	uint32_t vts;
 	if(!line || !semname){return -1;}
-	lstr=UB_SD_GETMEM(YANGINIT_GEN_SMEM, strlen(line)+1u);
+	lstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, strlen(line)+1u);
 	if(ub_assert_fatal(lstr!=NULL, __func__, NULL)){return -1;}
 	memcpy(lstr, line, strlen(line)+1u);
 	res=proc_get_keys(ydrd, lstr);
@@ -716,7 +716,7 @@ int yang_db_runtime_get_vtype(uc_dbald *dbald, uint8_t *aps)
 		if(aps[i]==255u){break;}
 	}
 	if((i<1)||(i==255)){return -1;}
-	apsd=UB_SD_GETMEM(YANGINIT_GEN_SMEM, 2+i);
+	apsd=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 2+i);
 	if(ub_assert_fatal(apsd!=NULL, __func__, NULL)){return -1;}
 	(void)memset(apsd, 0, 2+i);
 	apsd[0]=XL4_DATA_RW;
@@ -743,7 +743,7 @@ static uc_range *get_vkrange(uc_dbald *dbald, uint8_t *aps, uint8_t **apsd)
 	}
 	if((i<1)||(i==255)){return NULL;}
 	ksize=i+4;
-	*apsd=UB_SD_GETMEM(YANGINIT_GEN_SMEM, 2*ksize);
+	*apsd=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 2*ksize);
 	if(ub_assert_fatal(*apsd!=NULL, __func__, NULL)){return NULL;}
 	(void)memset(*apsd, 0, 2*ksize);
 	for(j=0;j<2;j++){
@@ -851,7 +851,7 @@ int yang_db_runtime_getvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
 			UB_LOG(UBL_ERROR, "%s:wrong ksize=%d, kl+4=%d\n", __func__,
 			       size, kl+4);
 		}
-		v=UB_SD_GETMEM(YANGINIT_GEN_SMEM, size);
+		v=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, size);
 		for(i=0; i<size; i++) {
 			if (i==(kl+2u)) {
 				v[i]=((uint8_t*)value)[i+1];

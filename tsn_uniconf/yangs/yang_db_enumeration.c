@@ -240,7 +240,7 @@ uint32_t yang_enumeration_getval(char *enumeration_str, char *hints)
     int tblidx=yang_enumeration_get_tblidx(hints);
     if(tblidx < 0) {
         UB_LOG(UBL_ERROR, "%s:unknown enumeration hints=%s\n", __func__, hints);
-        goto end_operation;
+	return enumeration_val;
     }
     const char **strlist=yang_enumeration_str_map_list[tblidx].strlist;
     uint32_t sidx;
@@ -250,7 +250,6 @@ uint32_t yang_enumeration_getval(char *enumeration_str, char *hints)
             break;
         }
     }
-end_operation:
     return enumeration_val;
 }
 
@@ -260,12 +259,11 @@ char* yang_enumeration_getstr(uint32_t enumeration_val, char *hints)
     int tblidx=yang_enumeration_get_tblidx(hints);
     if(tblidx < 0) {
         UB_LOG(UBL_ERROR, "%s:unknown enumeration hints=%s\n", __func__, hints);
-        goto end_operation;
+	return enumeration_str;
     }
     const char **strlist=yang_enumeration_str_map_list[tblidx].strlist;
     if(enumeration_val < yang_enumeration_str_map_list[tblidx].strnum) {
         enumeration_str=(char*)strlist[enumeration_val];
     }
-end_operation:
     return enumeration_str;
 }

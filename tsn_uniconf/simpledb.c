@@ -293,7 +293,7 @@ static int deserialize_all(void *inf, struct ub_list *dblist)
 	int res;
 
 	while(true){
-		dbd=UB_SD_GETMEM(SIMPLEDB_DBDATAINST, sizeof(dbdata_t));
+		dbd=(dbdata_t*)UB_SD_GETMEM(SIMPLEDB_DBDATAINST, sizeof(dbdata_t));
 		if(ub_assert_fatal(dbd!=NULL, __func__, NULL)){return -1;}
 		(void)memset(dbd, 0, sizeof(dbdata_t));
 		res=deserialize_one(inf, dbd);
@@ -306,7 +306,7 @@ static int deserialize_all(void *inf, struct ub_list *dblist)
 			dbdata_clear(dbd);
 			continue;
 		}
-		node=UB_SD_GETMEM(SIMPLEDB_LISTNODE, sizeof(struct ub_list_node));
+		node=(struct ub_list_node*)UB_SD_GETMEM(SIMPLEDB_LISTNODE, sizeof(struct ub_list_node));
 		if(ub_assert_fatal(node!=NULL, __func__, NULL)){return -1;}
 		(void)memset(node, 0, sizeof(struct ub_list_node));
 		node->data=dbd;
@@ -371,14 +371,14 @@ static int onedb_put(struct ub_list *dblist, simpledb_keydata_t *kd,
 			UB_LOG(UBL_ERROR,"%s:the key doesn't exist\n", __func__);
 			return -1;
 		}
-		dbd=UB_SD_GETMEM(SIMPLEDB_DBDATAINST, sizeof(dbdata_t));
+		dbd=(dbdata_t*)UB_SD_GETMEM(SIMPLEDB_DBDATAINST, sizeof(dbdata_t));
 		if(ub_assert_fatal(dbd!=NULL, __func__, NULL)){return -1;}
 		(void)memset(dbd, 0, sizeof(dbdata_t));
 		dbd->kd.ksize=kd->ksize;
 		dbd->kd.kdata=UB_SD_GETMEM(SIMPLEDB_KDATAINST, kd->ksize);
 		if(ub_assert_fatal(dbd->kd.kdata!=NULL, __func__, NULL)){return -1;}
 		memcpy(dbd->kd.kdata, kd->kdata, kd->ksize);
-		cnode=UB_SD_GETMEM(SIMPLEDB_LISTNODE, sizeof(struct ub_list_node));
+		cnode=(struct ub_list_node*)UB_SD_GETMEM(SIMPLEDB_LISTNODE, sizeof(struct ub_list_node));
 		if(ub_assert_fatal(cnode!=NULL, __func__, NULL)){return -1;}
 		(void)memset(cnode, 0, sizeof(struct ub_list_node));
 		cnode->data=dbd;
@@ -431,7 +431,7 @@ simpledb_data_t *simpledb_open(const char *pfname)
 	void *inf=NULL;
 	simpledb_data_t *sdbd;
 	int res;
-	sdbd=UB_SD_GETMEM(SIMPLEDB_INSTMEM, sizeof(simpledb_data_t));
+	sdbd=(simpledb_data_t*)UB_SD_GETMEM(SIMPLEDB_INSTMEM, sizeof(simpledb_data_t));
 	if(ub_assert_fatal(sdbd!=NULL, __func__, NULL)){return NULL;}
 	(void)memset(sdbd, 0, sizeof(simpledb_data_t));
 	sdbd->pfname=pfname;
@@ -542,7 +542,7 @@ simpledb_range_t *simpledb_get_range(simpledb_data_t *sdbd,
 {
 	simpledb_range_t *rangedp;
 	dbdata_t *dbd;
-	rangedp=UB_SD_GETMEM(SIMPLEDB_RANGEINST, sizeof(simpledb_range_t));
+	rangedp=(simpledb_range_t*)UB_SD_GETMEM(SIMPLEDB_RANGEINST, sizeof(simpledb_range_t));
 	if(ub_assert_fatal(rangedp!=NULL, __func__, NULL)){return NULL;}
 	(void)memset(rangedp, 0, sizeof(simpledb_range_t));
 	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);

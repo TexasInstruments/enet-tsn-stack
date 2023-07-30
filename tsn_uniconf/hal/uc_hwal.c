@@ -213,11 +213,11 @@ static int get_queue_map_params(cbl_qmap_params_t *qmap, const char *ifname)
 	return 0;
 }
 
-static int init_traffic_classes(uc_hwald *hwald, cbl_cb_event_t *nevent, bool delete)
+static int init_traffic_classes(uc_hwald *hwald, cbl_cb_event_t *nevent, bool delete_flg)
 {
 	cbl_tcinit_params_t tip;
 	memset(&tip, 0, sizeof(tip));
-	tip.action=delete?CBL_ACTION_DEL:CBL_ACTION_SET;
+	tip.action=delete_flg?CBL_ACTION_DEL:CBL_ACTION_SET;
 	if(get_queue_map_params(&tip.qmap, nevent->ifname)!=0){
 		return 0; // no traffic class, no actions are needed
 	}
@@ -365,7 +365,7 @@ static int tc_hw_action(uc_hwald *hwald, const char *ifname, uint8_t *cbs_enable
 {
 	int res;
 	cbl_cb_event_t nevent;
-	bool delete;
+	bool delete_flg;
 	if((ifname==NULL) || (cbs_enabled==NULL)){
 		UB_LOG(UBL_ERROR, "%s:no value\n", __func__);
 		return -1;
@@ -373,15 +373,15 @@ static int tc_hw_action(uc_hwald *hwald, const char *ifname, uint8_t *cbs_enable
 	memset(&nevent, 0, sizeof(nevent));
 	memcpy(nevent.ifname, ifname, UB_MIN(CB_MAX_NETDEVNAME-1, strlen(ifname)));
 	if(*cbs_enabled==0){
-		delete=true;
+		delete_flg=true;
 	}else if(*cbs_enabled==1){
-		delete=false;
+		delete_flg=false;
 	}else{
 		return -1;
 	}
-	res=init_traffic_classes(hwald, &nevent, delete);
+	res=init_traffic_classes(hwald, &nevent, delete_flg);
 	if(res<1) return res;
-	nevent.eventflags=(!delete)?
+	nevent.eventflags=(!delete_flg)?
 		CBL_EVENT_TCHW_ENABLED:CBL_EVENT_TCHW_DISABLED;
 	return notice_cb(hwald, &nevent);
 }
@@ -900,7 +900,7 @@ uc_hwald *uc_hwal_open(uc_dbald *dbald)
 {
 	uc_hwald *hwald;
 	UB_LOG(UBL_INFO, "%s:\n", __func__);
-	hwald=UB_SD_GETMEM(UC_HWAL_NLINST, sizeof(uc_hwald));
+	hwald=(uc_hwald*)UB_SD_GETMEM(UC_HWAL_NLINST, sizeof(uc_hwald));
 	if(ub_assert_fatal(hwald!=NULL, __func__, NULL)){return NULL;}
 	memset(hwald, 0, sizeof(uc_hwald));
 	hwald->dbald=dbald;

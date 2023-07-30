@@ -223,7 +223,7 @@ typedef struct yang_db_item_access {
 	{								\
 		VSIZE=ydbi_get_item_##FTYPE(ydbi_access_handle(), &(RVAL), __VA_ARGS__); \
 		if((VSIZE)>0){						\
-			RES=RVAL;					\
+			RES=(char*)RVAL;					\
 			ydbi_get_item_release(ydbi_access_handle(), YDBI_KEEP_LOCK); \
 		}							\
 	}

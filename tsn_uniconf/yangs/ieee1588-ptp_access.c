@@ -236,11 +236,12 @@ int ydbi_portdevices_pt(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
 		}
 	}
 	uc_move_top_in_range(ydbia->dbald, range);
-	*portdevs=UB_SD_GETMEM(IEEE1588_DEVICES, ki*(sizeof(ieee1588_netdev_t*)));
+	*portdevs=(ieee1588_netdev_t*)UB_SD_GETMEM(IEEE1588_DEVICES,
+						   ki*(sizeof(ieee1588_netdev_t*)));
 	for(i=0;i<ki;i++){
 		if(uc_get_value_in_range(ydbia->dbald, range, &value,
 				       &vsize, UC_DBAL_FORWARD)){break;}
-		(*portdevs)[i]=UB_SD_GETMEM(IEEE1588_DEVICES, vsize);
+		(*portdevs)[i]=(ieee1588_netdev_t)UB_SD_GETMEM(IEEE1588_DEVICES, vsize);
 		memcpy((void*)(*portdevs)[i], value, vsize);
 	}
 	uc_get_range_release(ydbia->dbald, range);

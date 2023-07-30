@@ -75,8 +75,8 @@ combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg)
 	combase_link_data_t *cbld;
 	ub_macaddr_t srcmac;
 
-	cbld = UB_SD_GETMEM(CBL_DATA_INSTMEM,
-			    sizeof(struct combase_link_data));
+	cbld = (combase_link_data_t*)UB_SD_GETMEM(CBL_DATA_INSTMEM,
+						  sizeof(struct combase_link_data));
 	if (ub_assert_fatal(cbld!=NULL, __func__, NULL)) { return NULL; }
 	memset(cbld, 0, sizeof(struct combase_link_data));
 	cbld->event_cb = event_cb;
@@ -143,7 +143,7 @@ int cbl_query_linkstatus(combase_link_data_t *cbld, cbl_cb_event_t *nevent)
 
 int cbl_query_response(combase_link_data_t *cbld, int tout_ms)
 {
-	cbl_cb_event_t nevent = {0};
+	cbl_cb_event_t nevent = {};
 	int i;
 	uint32_t link_state = 0;
 

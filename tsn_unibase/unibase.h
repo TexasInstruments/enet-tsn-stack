@@ -81,6 +81,10 @@
 #include "ub_fileio.h"
 #include "ub_getmem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef CLOCK_MONOTONIC
 #define CLOCK_MONOTONIC CLOCK_REALTIME
 #endif
@@ -220,6 +224,10 @@ uint64_t ub_gptp_gettime64(void);
  */
 typedef int (*ub_protected_callback)(void*);
 int ub_protected_func(ub_protected_callback cbfunc, void *cbdata);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @}*/

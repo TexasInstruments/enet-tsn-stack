@@ -242,8 +242,9 @@ void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
 	if(forAllDomain!=NULL){
 		(*mdeglb)->forAllDomain = forAllDomain;
 	}else{
-		(*mdeglb)->forAllDomain = UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
-						       sizeof(MDEntityGlobalForAllDomain));
+		(*mdeglb)->forAllDomain =
+			(MDEntityGlobalForAllDomain*)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC,
+								  sizeof(MDEntityGlobalForAllDomain));
 		if(ub_assert_fatal((*mdeglb)->forAllDomain, __func__, "malloc error")){return;}
 		(void)memset((*mdeglb)->forAllDomain, 0, sizeof(MDEntityGlobalForAllDomain));
 		(*mdeglb)->forAllDomain->currentLogPdelayReqInterval =

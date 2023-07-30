@@ -61,6 +61,10 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct cb_lld_sem cb_lld_sem_t;
 typedef struct cb_lld_mutex cb_lld_mutex_t;
 typedef struct cb_lld_task cb_lld_task_t;
@@ -253,6 +257,10 @@ int cb_lld_task_join(CB_THREAD_T th, void **retval);
  * @param retval Exit value of the thread (unsupported).
  */
 void cb_lld_task_exit(void *retval);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CB_LLD_THREAD_H
 

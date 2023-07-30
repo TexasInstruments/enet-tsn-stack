@@ -55,6 +55,10 @@
 #include "../hal/uc_hwal.h"
 #include "../uc_notice.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct yang_db_runtime_data yang_db_runtime_dataq_t;
 
 yang_db_runtime_dataq_t *yang_db_runtime_init(xl4_data_data_t *xdd, uc_dbald *dbald,
@@ -137,5 +141,9 @@ int yang_db_runtime_getvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
  */
 int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
 			     void *waitv, uint32_t wvsize, int tout_ms);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

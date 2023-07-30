@@ -102,7 +102,7 @@ int cb_lld_sem_init(CB_SEM_T *sem, int pshared, unsigned int value)
 {
 	cb_lld_sem_t *cbsem;
 
-	cbsem = UB_SD_GETMEM(CB_LLDSEM_MMEM, sizeof(cb_lld_sem_t));
+	cbsem = (cb_lld_sem_t*)UB_SD_GETMEM(CB_LLDSEM_MMEM, sizeof(cb_lld_sem_t));
 	if (cbsem == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to get mem!\n", __func__);
 		return -1;
@@ -200,7 +200,7 @@ int cb_lld_mutex_init(CB_THREAD_MUTEX_T *mutex, CB_THREAD_MUTEXATTR_T attr)
 {
 	cb_lld_mutex_t *cbmutex;
 
-	cbmutex = UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
+	cbmutex = (cb_lld_mutex_t*)UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
 	if (cbmutex == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to get mem!\n", __func__);
 		return -1;
@@ -274,7 +274,7 @@ int cb_lld_global_mutex_init(void *mutex)
 	cb_lld_mutex_t *cbmutex;
 
 	if(*mt){ return 0; }
-	cbmutex = UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
+	cbmutex = (cb_lld_mutex_t*)UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
 	if (cbmutex == NULL) {
 		return -1;
 	}
@@ -291,7 +291,7 @@ error:
 
 static void task_fxn(void* a0)
 {
-	cb_lld_task_t *cbtask = a0;
+	cb_lld_task_t *cbtask = (cb_lld_task_t*)a0;
 	cbtask->func(cbtask->arg);
 	cbtask->exit = true;
 }
@@ -307,10 +307,10 @@ int cb_lld_task_create(CB_THREAD_T *th, void *vattr, void *(*func)(void*), void 
 {
 	TaskP_Params param;
 	cb_lld_task_t *cbtask;
-	cb_tsn_thread_attr_t *attr = vattr;
+	cb_tsn_thread_attr_t *attr = (cb_tsn_thread_attr_t*)vattr;
 	int32_t status;
 
-	cbtask = UB_SD_GETMEM(CB_LLDTASK_MMEM, sizeof(cb_lld_task_t));
+	cbtask = (cb_lld_task_t*)UB_SD_GETMEM(CB_LLDTASK_MMEM, sizeof(cb_lld_task_t));
 	if (cbtask == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to get mem!\n", __func__);
 		return -1;
@@ -326,7 +326,7 @@ int cb_lld_task_create(CB_THREAD_T *th, void *vattr, void *(*func)(void*), void 
 			param.priority = attr->pri;
 		}
 		if (attr->stack_addr != NULL) {
-			param.stack = attr->stack_addr;
+			param.stack = (uint8_t*)attr->stack_addr;
 		}
 	}
 	cbtask->func = func;
