@@ -61,7 +61,15 @@ struct LLDTSync {
 	uint32_t coreId;
 };
 
-UB_SD_GETMEM_DEF(lldtsync_mem, (int)sizeof(LLDTSync_t), 16);
+#ifndef CB_LLDTSYNC_MMEM
+#define CB_LLDTSYNC_MMEM lldtsync_mem
+#endif
+
+#ifndef CB_LLDTSYNC_INSTNUM
+#define CB_LLDTSYNC_INSTNUM 16
+#endif
+
+UB_SD_GETMEM_DEF(CB_LLDTSYNC_MMEM, (int)sizeof(LLDTSync_t), CB_LLDTSYNC_INSTNUM);
 
 LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 {
@@ -72,7 +80,7 @@ LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 		return NULL;
 	}
 
-	hTSync = (LLDTSync_t*)UB_SD_GETMEM(lldtsync_mem, sizeof(LLDTSync_t));
+	hTSync = (LLDTSync_t*)UB_SD_GETMEM(CB_LLDTSYNC_MMEM, sizeof(LLDTSync_t));
 	EnetAppUtils_assert(hTSync != NULL);
 	memset(hTSync, 0, sizeof(LLDTSync_t));
 
@@ -100,7 +108,7 @@ void LLDTSyncClose(LLDTSync_t *hTSync)
 	if (hTSync == NULL) {
 		return;
 	}
-	UB_SD_RELMEM(lldtsync_mem, hTSync);
+	UB_SD_RELMEM(CB_LLDTSYNC_MMEM, hTSync);
 }
 
 int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,

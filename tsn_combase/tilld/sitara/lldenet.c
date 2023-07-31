@@ -388,7 +388,15 @@ static void LLDEnetTxNotifyCb(void *cbArg)
 	hLLDma->txNotifyCb(hLLDma->txCbArg);
 }
 
-UB_SD_GETMEM_DEF(lldenet_mem, (int)sizeof(LLDEnet_t), 10);
+#ifndef CB_LLDENET_MMEM
+#define CB_LLDENET_MMEM lldenet_mem
+#endif
+
+#ifndef CB_LLDENET_INSTNUM
+#define CB_LLDENET_INSTNUM (10)
+#endif
+
+UB_SD_GETMEM_DEF(CB_LLDENET_MMEM, (int)sizeof(LLDEnet_t), CB_LLDENET_INSTNUM);
 
 LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 {
@@ -402,7 +410,7 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 		return NULL;
 	}
 
-	hLLDEnet = (LLDEnet_t*)UB_SD_GETMEM(lldenet_mem, sizeof(LLDEnet_t));
+	hLLDEnet = (LLDEnet_t*)UB_SD_GETMEM(CB_LLDENET_MMEM, sizeof(LLDEnet_t));
 	EnetAppUtils_assert(hLLDEnet != NULL);
 	memset(hLLDEnet, 0, sizeof(LLDEnet_t));
 
@@ -456,7 +464,7 @@ void LLDEnetClose(LLDEnet_t *hLLDEnet)
 	DmaClose(&hLLDEnet->dma);
 	EnetApp_coreDetach(hLLDEnet->enetType, hLLDEnet->instId,
 					   hLLDEnet->coreId, hLLDEnet->coreKey);
-	UB_SD_RELMEM(lldenet_mem, hLLDEnet);
+	UB_SD_RELMEM(CB_LLDENET_MMEM, hLLDEnet);
 }
 
 int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *destMacAddr, uint32_t vlanId)

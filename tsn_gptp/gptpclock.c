@@ -266,10 +266,10 @@ static oneclock_data_t *get_clockod(gptpclock_data_t *gcd,
 				    int clockIndex, uint8_t domainIndex);
 
 #define GPTPCLOCK_FN_ENTRY(gcd,od,clockIndex,domainIndex) {		\
-		if(!(gcd)->clds){return (gmsync_status_t)-1;}		\
+		if(!(gcd)->clds){return -1;}				\
 		(od)=get_clockod(gcd, clockIndex, domainIndex);	\
-		if((od)==NULL){return (gmsync_status_t)-1;}		\
-		if(!PTPFD_VALID((od)->ptpfd)){return (gmsync_status_t)-1;} \
+		if((od)==NULL){return -1;}				\
+		if(!PTPFD_VALID((od)->ptpfd)){return -1;}		\
 	}
 
 #ifdef HIGH_ACCURATE_CLOCKS_DIFF
@@ -1082,12 +1082,19 @@ int gptpclock_set_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex, uint32_
 	return 0;
 }
 
-gmsync_status_t gptpclock_get_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex)
+static int get_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex)
 {
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
 	GPTPCLOCK_FN_ENTRY(gcd, od, 0, domainIndex); // gmsync is only on clockIndex=0
-	return (gmsync_status_t)od->pp->gmsync;
+	return od->pp->gmsync;
+}
+
+gmsync_status_t gptpclock_get_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex)
+{
+	int status=get_gmsync(gptpInstanceIndex, domainIndex);
+	if(status<0){return GMSYNC_UNSYNC;}
+	return (gmsync_status_t)status;
 }
 
 int gptpclock_get_gmchange_ind(uint8_t gptpInstanceIndex, int domainIndex)
