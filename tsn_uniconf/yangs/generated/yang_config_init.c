@@ -55,18 +55,18 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
 #include "excelfore-tsn-remote.h"
+#include "excelfore-netconf-server.h"
+#include "ietf-netconf-monitoring.h"
 #include "ietf-yang-library.h"
-#include "ietf-netconf-server.h"
-#include "ietf-keychain.h"
 #include "ietf-interfaces_runconf.h"
 #include "ieee1588-ptp_runconf.h"
 #include "ieee802-dot1q-bridge_runconf.h"
 #include "ieee802-dot1ab-lldp_runconf.h"
 #include "ieee802-dot1q-tsn-config-uni_runconf.h"
 #include "excelfore-tsn-remote_runconf.h"
+#include "excelfore-netconf-server_runconf.h"
+#include "ietf-netconf-monitoring_runconf.h"
 #include "ietf-yang-library_runconf.h"
-#include "ietf-netconf-server_runconf.h"
-#include "ietf-keychain_runconf.h"
 // YANG_CONFIG_INIT
 int yang_config_init(uc_dbald *dbald, uc_hwald *hwald)
 {
@@ -77,18 +77,18 @@ int yang_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	res|=ieee802_dot1ab_lldp_config_init(dbald, hwald);
 	res|=ieee802_dot1q_tsn_config_uni_config_init(dbald, hwald);
 	res|=excelfore_tsn_remote_config_init(dbald, hwald);
+	res|=excelfore_netconf_server_config_init(dbald, hwald);
+	res|=ietf_netconf_monitoring_config_init(dbald, hwald);
 	res|=ietf_yang_library_config_init(dbald, hwald);
-	res|=ietf_netconf_server_config_init(dbald, hwald);
-	res|=ietf_keychain_config_init(dbald, hwald);
 	res|=ietf_interfaces_runconf_config_init(dbald, hwald);
 	res|=ieee1588_ptp_runconf_config_init(dbald, hwald);
 	res|=ieee802_dot1q_bridge_runconf_config_init(dbald, hwald);
 	res|=ieee802_dot1ab_lldp_runconf_config_init(dbald, hwald);
 	res|=ieee802_dot1q_tsn_config_uni_runconf_config_init(dbald, hwald);
 	res|=excelfore_tsn_remote_runconf_config_init(dbald, hwald);
+	res|=excelfore_netconf_server_runconf_config_init(dbald, hwald);
+	res|=ietf_netconf_monitoring_runconf_config_init(dbald, hwald);
 	res|=ietf_yang_library_runconf_config_init(dbald, hwald);
-	res|=ietf_netconf_server_runconf_config_init(dbald, hwald);
-	res|=ietf_keychain_runconf_config_init(dbald, hwald);
 	// MODULES_INIT_DONE
 	return res;
 }

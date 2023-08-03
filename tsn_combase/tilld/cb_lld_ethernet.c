@@ -53,6 +53,7 @@
 #include "combase_private.h"
 #include "cb_ethernet.h"
 #include "lld_ethernet_private.h"
+#include "cb_lld_thread.h"
 
 #define MAC_VALID(mac) (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
 
@@ -178,7 +179,6 @@ static int cb_alloc_mac_addr(const char *ifname,
 
 	CB_THREAD_MUTEX_LOCK(&alloc_mac_lock);
 	if ((res = find_mac_addr_bydev(sock, ifname, bmac)) != LLDENET_E_NOAVAIL) {
-		UB_LOG(UBL_INFO, "Mac addr has not been allocated\n");
 		CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
 		return (res == LLDENET_E_OK? 0: -1);
 	}
@@ -423,12 +423,12 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 	if (ndevs > MAX_NUMBER_ENET_DEVS) {
 		ndevs = MAX_NUMBER_ENET_DEVS;
 	}
-	if (!s_ndevmap_table_lock) {
+	if (!s_ndevmap_table_lock.lldmutex) {
 		if (CB_THREAD_MUTEX_INIT(&s_ndevmap_table_lock, NULL)) {
 			return -1;
 		}
 	}
-	if (!alloc_mac_lock) {
+	if (!alloc_mac_lock.lldmutex) {
 		if (CB_THREAD_MUTEX_INIT(&alloc_mac_lock, NULL)) {
 			CB_THREAD_MUTEX_DESTROY(&s_ndevmap_table_lock);
 			return -1;

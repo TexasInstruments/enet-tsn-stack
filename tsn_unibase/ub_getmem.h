@@ -54,59 +54,35 @@
 #define UB_CONCAT2_(A, B) A##B
 
 /*
- * The default is not thread safe.
- * To be thread safe,
- *   to use pthread mutex, define UB_SD_PTHREAD_MUTEX before including ub_getmem.h
- *   to use other mutex, define the following 3 macros.
-*/
-#ifdef UB_SD_PTHREAD_MUTEX
-#include <pthread.h>
-#define UB_SD_MUTEX_INIT(x) static pthread_mutex_t (x)=PTHREAD_MUTEX_INITIALIZER
-#define UB_SD_MUTEX_LOCK(x) pthread_mutex_lock(x)
-#define UB_SD_MUTEX_UNLOCK(x) pthread_mutex_unlock(x)
-#else
-#ifndef UB_SD_MUTEX_INIT
-#define UB_SD_MUTEX_INIT(x)
-#define UB_SD_MUTEX_LOCK(x)
-#define UB_SD_MUTEX_UNLOCK(x)
-#endif
-#endif
-
-/*
  * to be safe to cast any type of data, the fragmet is aligned to 'sizeof(void*)' size
  */
 #define UB_SD_ALIGN(x) ((((uint32_t)(x))+(sizeof(void*)-1u))&(~(sizeof(void*)-1u)))
 
 #ifdef UB_SD_STATIC
 void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
-		       int fragnum, uint16_t fragsize, const char *mname);
+		       int fragnum, uint16_t fragsize, const char *mname, bool nolock);
 void *ub_static_regetmem(void *p, size_t nsize, void *mem, uint16_t *busysizes,
 			 int fragnum, uint16_t fragsize, const char *mname);
 void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
 		      int fragnum, uint16_t fragsize);
 
 #define UB_SD_GETMEM_DEF(NAME, FRAGSIZE, FRAGNUM)			\
-	static uint8_t UB_CONCAT2(NAME, mem)[UB_SD_ALIGN(FRAGSIZE)*(uint32_t)FRAGNUM] \
+	static uint8_t UB_CONCAT2(NAME, mem)[UB_SD_ALIGN(FRAGSIZE)*(uint32_t)(FRAGNUM)] \
 		__attribute__ ((aligned (sizeof(void*))));		\
 	static uint16_t UB_CONCAT2(NAME, busysizes)[FRAGNUM]		\
 		__attribute__ ((aligned (sizeof(void*))));		\
-UB_SD_MUTEX_INIT(UB_CONCAT2(NAME,mutex));				\
 void *UB_CONCAT2(static_getmem, NAME)(size_t size)			\
 {									\
 	void *m;							\
-	UB_SD_MUTEX_LOCK(&UB_CONCAT2(NAME,mutex));			\
 	m=ub_static_getmem(size, UB_CONCAT2(NAME, mem), UB_CONCAT2(NAME, busysizes),\
-			   FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE), #NAME); \
-	UB_SD_MUTEX_UNLOCK(&UB_CONCAT2(NAME,mutex));			\
+			   FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE), #NAME, false); \
 	return m;							\
 }									\
 void *UB_CONCAT2(static_regetmem, NAME)(void *p, size_t nsize)		\
 {									\
 	void *m;							\
-	UB_SD_MUTEX_LOCK(&UB_CONCAT2(NAME,mutex));			\
 	m=ub_static_regetmem(p, nsize, UB_CONCAT2(NAME, mem), UB_CONCAT2(NAME, busysizes), \
 			    FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE), #NAME); \
-	UB_SD_MUTEX_UNLOCK(&UB_CONCAT2(NAME,mutex));			\
 	return m;							\
 }									\
 void UB_CONCAT2(static_relmem, NAME)(void *p)				\

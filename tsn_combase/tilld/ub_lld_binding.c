@@ -56,6 +56,7 @@
 #include "tsn_unibase/unibase.h"
 #include "tsn_unibase/unibase_binding.h"
 #include "combase.h"
+#include "fs_stdio.h"
 
 typedef struct memory_out_data {
 	char *buffer;
@@ -229,28 +230,50 @@ static int ubb_stdout(bool flush, const char *str)
 	return res;
 }
 
-static void *ubb_mutex_init(void)
+#ifndef UBB_STATIC_MUTEX_MAX
+#define UBB_STATIC_MUTEX_MAX 4
+#endif
+
+static int global_static_used;
+static CB_THREAD_MUTEX_T global_static_mutex[UBB_STATIC_MUTEX_MAX];
+static void *ubb_get_static_mutex(void)
 {
-	CB_THREAD_MUTEX_T mt;
-	if(ub_assert_fatal(CB_THREAD_MUTEX_INIT(&mt, NULL)==0,
-			   __func__, "CB_THREAD_MUTEX_INIT error")){return NULL;}
-	return mt;
+	if (global_static_used>=UBB_STATIC_MUTEX_MAX) { return NULL; }
+	if (CB_THREAD_MUTEX_INIT(&global_static_mutex[global_static_used], NULL) != 0) {
+		return NULL;
+	}
+	return &global_static_mutex[global_static_used++];
 }
 
-static int ubb_mutex_close(void *mt)
+/**
+ * @brief close the static mutex which is got by 'ubb_get_static_mutex'
+ */
+static int ubb_static_mutex_close(void *mt)
 {
+	int res, i, j;
 	if(!mt){return -1;}
-	return CB_THREAD_MUTEX_DESTROY((CB_THREAD_MUTEX_T *)&mt);
+	for(i=global_static_used-1;i>=0;i--){
+		if(mt==&global_static_mutex[i]){
+			res=CB_THREAD_MUTEX_DESTROY((CB_THREAD_MUTEX_T *)mt);
+			if(res){return res;}
+			for(j=i;j<global_static_used-1;j++){
+				global_static_mutex[j]=global_static_mutex[j+1];
+			}
+			global_static_used--;
+			return 0;
+		}
+	}
+	return -1;
 }
 
 static int ubb_mutex_lock(void *mt)
 {
-	return CB_THREAD_MUTEX_LOCK((CB_THREAD_MUTEX_T *)&mt);
+	return CB_THREAD_MUTEX_LOCK((CB_THREAD_MUTEX_T *)mt);
 }
 
 static int ubb_mutex_unlock(void *mt)
 {
-	return CB_THREAD_MUTEX_UNLOCK((CB_THREAD_MUTEX_T *)&mt);
+	return CB_THREAD_MUTEX_UNLOCK((CB_THREAD_MUTEX_T *)mt);
 }
 
 static get64ts_t gptp_gettime64=NULL;
@@ -275,27 +298,27 @@ static uint64_t ubb_gettime64(ub_clocktype_t ctype)
 
 static void* ubb_fioopen(const char *name, const char *mode)
 {
-	return fopen(name, mode);
+	return (void*)UB_FOPEN(name, mode);
 }
 
 static int ubb_fioclose(void *fio)
 {
-	return fclose((FILE*)fio);
+	return UB_FCLOSE(fio);
 }
 
 static int ubb_fioread(void *fio, void *ptr, int size)
 {
-	return fread(ptr, 1, size, (FILE*)fio);
+	return UB_FREAD(fio, ptr, size);
 }
 
 static int ubb_fiowrite(void *fio, const void *ptr, int size)
 {
-	return fwrite(ptr, 1, size, (FILE*)fio);
+	return UB_FWRITE(fio, ptr, size);
 }
 
 static int ubb_fioseek(void *fio, int offset)
 {
-	return fseek((FILE*)fio, offset, SEEK_SET);
+	return UB_FSEEK(fio, offset);
 }
 
 void ubb_default_initpara(unibase_init_para_t *init_para)
@@ -305,8 +328,8 @@ void ubb_default_initpara(unibase_init_para_t *init_para)
 	(void)memset(init_para, 0, sizeof(unibase_init_para_t));
 	init_para->cbset.console_out=ubb_stdout;
 	init_para->cbset.debug_out=ubb_memory_out;
-	init_para->cbset.mutex_init=ubb_mutex_init;
-	init_para->cbset.mutex_close=ubb_mutex_close;
+	init_para->cbset.get_static_mutex=ubb_get_static_mutex;
+	init_para->cbset.static_mutex_close=ubb_static_mutex_close;
 	init_para->cbset.mutex_lock=ubb_mutex_lock;
 	init_para->cbset.mutex_unlock=ubb_mutex_unlock;
 	init_para->cbset.gettime64=ubb_gettime64;
@@ -363,3 +386,4 @@ erexit:
 	(void)ubb_fioclose(outf);
 	return res;
 }
+

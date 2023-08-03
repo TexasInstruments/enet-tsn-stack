@@ -193,6 +193,22 @@ const char* conformance_type[] = {
 };
 const uint32_t conformance_type_num = sizeof(conformance_type)/sizeof(char*);
 
+const char* netconf_datastore_type[] = {
+    "running",
+    "candidate",
+    "startup",
+    NULL
+};
+const uint32_t netconf_datastore_type_num = sizeof(netconf_datastore_type)/sizeof(char*);
+
+const char* gmstate[] = {
+    "unsync",
+    "unstable",
+    "stable",
+    NULL
+};
+const uint32_t gmstate_num = sizeof(gmstate)/sizeof(char*);
+
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
  *----------------------------------------------------------------------------*/
@@ -204,12 +220,14 @@ const yang_enumeration_str_map_t yang_enumeration_str_map_list[] = {
     { tsn_uni_stream_status,    tsn_uni_stream_status_num,   "stream-status"      },
     { ieee802dq_control_reg,    ieee802dq_control_reg_num,   "control-reg"        },
     { ieee802dq_entry_stadyn,   ieee802dq_entry_stadyn_num,  "entry-stadyn"       },
-    { excelfore_mrp_protocol,   excelfore_mrp_protocol_num,  "mrp-protocol"       },
+    { excelfore_mrp_protocol,   excelfore_mrp_protocol_num,  "protocol"           },
     { frame_preemption_status,  frame_preemption_status_num, "preemption-status"  },
     { hold_request_status,      hold_request_status_num,     "hold-request"       },
     { private_key_algorithm,    private_key_algorithm_num,   "algorithm"          },
     { lldp_chassis_id_subtype,  lldp_chassis_id_subtype_num, "chassis-id-subtype" },
     { conformance_type,         conformance_type_num,        "conformance-type"   },
+    { netconf_datastore_type,   netconf_datastore_type_num,  "datastore"          },
+    { gmstate,                  gmstate_num,                 "gmstate"            },
     { NULL,                     0,                           NULL                 }
 };
 

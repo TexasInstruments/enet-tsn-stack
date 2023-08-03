@@ -234,25 +234,6 @@ static int ubb_stdout(bool flush, const char *str)
 	return res;
 }
 
-static void *ubb_mutex_init(void)
-{
-	pthread_mutex_t *mt;
-	mt=(pthread_mutex_t *)malloc(sizeof(pthread_mutex_t));
-	if(ub_assert_fatal(mt!=NULL, __func__, "malloc error")){return NULL;}
-	if(ub_assert_fatal(pthread_mutex_init(mt, NULL)==0,
-			   __func__, "pthread_mutex_init error")){return NULL;}
-	return mt;
-}
-
-static int ubb_mutex_close(void *mt)
-{
-	int res;
-	if(!mt){return -1;}
-	res=pthread_mutex_destroy((pthread_mutex_t *)mt);
-	free(mt);
-	return res;
-}
-
 static int ubb_mutex_lock(void *mt)
 {
 	return pthread_mutex_lock((pthread_mutex_t *)mt);
@@ -311,6 +292,48 @@ static int ubb_fioseek(void *fio, int offset)
 	return fseek((FILE*)fio, offset, SEEK_SET);
 }
 
+/**
+ * @brief get one static mutex instance from globally reserved area
+ * @note the returned pointer is already initialized.
+ *	 'mutex_init' or 'mutex_close' should not be called with this pointer.
+ *	 the maximum number of instances is set by UBB_STATIC_MUTEX_MAX
+ */
+#ifndef UBB_STATIC_MUTEX_MAX
+#define UBB_STATIC_MUTEX_MAX 4
+#endif
+static int global_static_used;
+static pthread_mutex_t global_static_mutex[UBB_STATIC_MUTEX_MAX];
+static void *ubb_get_static_mutex(void)
+{
+	if(global_static_used>=UBB_STATIC_MUTEX_MAX){return NULL;}
+	if(pthread_mutex_init(&global_static_mutex[global_static_used], NULL)!=0){
+		return NULL;
+	}
+	return &global_static_mutex[global_static_used++];
+}
+
+/**
+ * @brief close the static mutex which is got by 'ubb_get_static_mutex'
+ */
+static int ubb_static_mutex_close(void *mt)
+{
+	int res, i, j;
+	if(!mt){return -1;}
+	for(i=global_static_used-1;i>=0;i--){
+		if(mt==&global_static_mutex[i]){
+			res=pthread_mutex_destroy((pthread_mutex_t *)mt);
+			if(res){return res;}
+			for(j=i;j<global_static_used-1;j++){
+				global_static_mutex[j]=global_static_mutex[j+1];
+			}
+			global_static_used--;
+			return 0;
+		}
+	}
+	return -1;
+}
+
+
 void ubb_default_initpara(unibase_init_para_t *init_para)
 {
 	static const char *default_log_initstr=UBB_DEFAULT_LOG_INITSTR;
@@ -318,8 +341,8 @@ void ubb_default_initpara(unibase_init_para_t *init_para)
 	(void)memset(init_para, 0, sizeof(unibase_init_para_t));
 	init_para->cbset.console_out=ubb_stdout;
 	init_para->cbset.debug_out=ubb_memory_out;
-	init_para->cbset.mutex_init=ubb_mutex_init;
-	init_para->cbset.mutex_close=ubb_mutex_close;
+	init_para->cbset.get_static_mutex=ubb_get_static_mutex;
+	init_para->cbset.static_mutex_close=ubb_static_mutex_close;
 	init_para->cbset.mutex_lock=ubb_mutex_lock;
 	init_para->cbset.mutex_unlock=ubb_mutex_unlock;
 	init_para->cbset.gettime64=ubb_gettime64;

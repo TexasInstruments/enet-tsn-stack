@@ -51,7 +51,8 @@
 #define UB_LOGTSTYPE UB_CLOCK_MONOTONIC
 #include <string.h>
 #include "unibase.h"
-#include "ub_unittest_helper.c"
+#include "ub_cmocka_unittest.h"
+#include "unibase_binding.h"
 
 #define FLAGSIZE 80
 #define FLAGNUM 10
@@ -161,6 +162,18 @@ void test_alignment(void **state)
 	}
 	mem=UB_SD_GETMEM(test29, sizeof(void*)*2+1);
 	assert_null(mem);
+}
+
+static int setup(void **state)
+{
+	ubb_unibase_easyinit();
+	return 0;
+}
+
+static int teardown(void **state)
+{
+	unibase_close();
+	return 0;
 }
 
 int main(int argc, char *argv[])

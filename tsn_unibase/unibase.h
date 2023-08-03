@@ -137,8 +137,8 @@ typedef uint64_t (*ub_gettime64)(ub_clocktype_t ctype); //!< 64-bit timestamp fu
 typedef struct unibase_cb_set {
 	ub_console_out console_out; //!< console_out callback
 	ub_debug_out debug_out; //!< debug_out callback
-	ub_mutex_init mutex_init; //!< mutex_init callback
-	ub_mutex_close mutex_close; //!< mutex_close callback
+	ub_mutex_init get_static_mutex; //!< get_static_mutex callback
+	ub_mutex_close static_mutex_close; //!< static_mutex_close callback
 	ub_mutex_lock mutex_lock; //!< mutex_lock callback
 	ub_mutex_unlock mutex_unlock; //!< mutex_unlock callback
 	ub_gettime64 gettime64; //!< gettime64 callback

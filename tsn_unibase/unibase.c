@@ -79,10 +79,11 @@ int unibase_init(unibase_init_para_t *ub_init_para)
 	}
 	ubcd.locked++;
 	memcpy(&ubcd.cbset, &ub_init_para->cbset, sizeof(unibase_cb_set_t));
-	if(ubcd.cbset.mutex_init && ubcd.cbset.mutex_close &&
+	if(ubcd.cbset.get_static_mutex && ubcd.cbset.static_mutex_close &&
 	   ubcd.cbset.mutex_lock && ubcd.cbset.mutex_unlock) {
+		ubcd.ub_sd_mutex=ubcd.cbset.get_static_mutex();
+		ubcd.gmutex=ubcd.cbset.get_static_mutex();;
 		ubcd.threadding=true;
-		ubcd.gmutex=ubcd.cbset.mutex_init();
 	}
 	ub_log_init(ub_init_para->ub_log_initstr);
 	if(ubcd.cbset.console_out!=NULL){
@@ -96,7 +97,10 @@ void unibase_close(void)
 	if(!ubcd.locked){return;}
 	ubcd.locked--;
 	if(ubcd.locked>0){return;}
-	if(ubcd.threadding){ubcd.cbset.mutex_close(ubcd.gmutex);}
+	if(ubcd.threadding){
+		ubcd.cbset.static_mutex_close(ubcd.gmutex);
+		ubcd.cbset.static_mutex_close(ubcd.ub_sd_mutex);
+	}
 	(void)memset(&ubcd, 0, sizeof(ubcd));
 }
 

@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
 	optd.ucman.hwmod="";
 	optd.dlogfile="uniconf.log";
 	ubb_default_initpara(&init_para);
-	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46",
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:46,uconf:46",
 						   "UBL_UNICONF");
 	unibase_init(&init_para);
 	ubb_memory_out_init(NULL, 0);// start with zero, so that the memory is not allocated

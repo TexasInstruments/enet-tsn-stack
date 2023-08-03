@@ -96,7 +96,7 @@ int uc_notice_sig_check(bool thread, UC_NOTICE_SIG_T *sigp,
 	CB_SEM_T sem = (CB_SEM_T)sigp;
 	if(!tout_ms){
 		if(CB_SEM_TRYWAIT(&sem)!=0){
-			if(errno==EAGAIN){return 1;}
+			if(cb_lld_sem_wait_status(&sem)==TILLD_TIMEDOUT){return 1;}
 			goto erexit;
 		}
 	}else{
@@ -105,7 +105,7 @@ int uc_notice_sig_check(bool thread, UC_NOTICE_SIG_T *sigp,
 		ts64=(int64_t)ub_rt_gettime64()+(tout_ms*UB_MSEC_NS);
 		UB_NSEC2TS(ts64, ts);
 		if(CB_SEM_TIMEDWAIT(&sem, &ts)!=0){
-			if(errno==ETIMEDOUT){return 1;}
+			if(cb_lld_sem_wait_status(&sem)==TILLD_TIMEDOUT){return 1;}
 			goto erexit;
 		}
 	}

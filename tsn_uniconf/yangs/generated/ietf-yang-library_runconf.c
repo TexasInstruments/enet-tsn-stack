@@ -57,32 +57,26 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-server.h"
-#include "ietf-keychain.h"
+#include "ietf-netconf-monitoring.h"
 #include "excelfore-tsn-remote.h"
+#include "excelfore-netconf-server.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
 const char *ietf_yang_library_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"yang-library", 		// 2(0x2)
-	"module-set", 		// 3(0x3)
-	"name", 		// 4(0x4)
-	"module", 		// 5(0x5)
+	"modules-state", 		// 2(0x2)
+	"module-set-id", 		// 3(0x3)
+	"module", 		// 4(0x4)
+	"name", 		// 5(0x5)
 	"revision", 		// 6(0x6)
-	"namespace", 		// 7(0x7)
-	"location", 		// 8(0x8)
-	"submodule", 		// 9(0x9)
-	"feature", 		// 10(0xa)
-	"deviation", 		// 11(0xb)
-	"import-only-module", 		// 12(0xc)
-	"schema", 		// 13(0xd)
-	"datastore", 		// 14(0xe)
-	"content-id", 		// 15(0xf)
-	"modules-state", 		// 16(0x10)
-	"module-set-id", 		// 17(0x11)
-	"conformance-type", 		// 18(0x12)
+	"schema", 		// 7(0x7)
+	"namespace", 		// 8(0x8)
+	"feature", 		// 9(0x9)
+	"deviation", 		// 10(0xa)
+	"conformance-type", 		// 11(0xb)
+	"submodule", 		// 12(0xc)
 };
 
 uint8_t ietf_yang_library_get_enum(char *astr)
@@ -102,110 +96,18 @@ const char *ietf_yang_library_get_string(uint8_t anum)
 
 int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 {
-	uint8_t apsd[9]={XL4_DATA_RW, YANG_VALUE_TYPES, 0,};
+	uint8_t apsd[8]={XL4_DATA_RW, YANG_VALUE_TYPES, 0,};
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
-	//0000_ietf-yang-library/yang-library/module-set/module/submodule
+	//0000_ietf-yang-library/modules-state/module/deviation
 	aps[0] = IETF_YANG_LIBRARY_RO;
-	aps[1] = IETF_YANG_LIBRARY_YANG_LIBRARY;
-	aps[2] = IETF_YANG_LIBRARY_MODULE_SET;
-	aps[3] = IETF_YANG_LIBRARY_MODULE;
-	aps[4] = IETF_YANG_LIBRARY_SUBMODULE;
-	aps[5] = IETF_YANG_LIBRARY_REVISION;
-	vtype=YANG_VTYPE_REVISION_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[5] = IETF_YANG_LIBRARY_LOCATION;
-	vtype=YANG_VTYPE_INET_URI;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[5] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[6] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[5] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[4] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_STRING;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	//0001_ietf-yang-library/yang-library/module-set/module
-	aps[3] = IETF_YANG_LIBRARY_MODULE;
-	aps[4] = IETF_YANG_LIBRARY_REVISION;
-	vtype=YANG_VTYPE_REVISION_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_NAMESPACE;
-	vtype=YANG_VTYPE_INET_URI;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_LOCATION;
-	vtype=YANG_VTYPE_INET_URI;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_FEATURE;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_DEVIATION;
-	vtype=YANG_VTYPE_LEAFREF;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	//0002_ietf-yang-library/yang-library/module-set/import-only-module/submodule
-	aps[3] = IETF_YANG_LIBRARY_IMPORT_ONLY_MODULE;
-	aps[4] = IETF_YANG_LIBRARY_SUBMODULE;
-	aps[5] = IETF_YANG_LIBRARY_REVISION;
-	vtype=YANG_VTYPE_REVISION_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[5] = IETF_YANG_LIBRARY_LOCATION;
-	vtype=YANG_VTYPE_INET_URI;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[5] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[6] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[5] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	aps[5] = IETF_YANG_LIBRARY_REVISION;
-	vtype=YANG_VTYPE_UNION;
-	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0003_ietf-yang-library/yang-library/module-set/import-only-module
-	aps[4] = IETF_YANG_LIBRARY_NAMESPACE;
-	vtype=YANG_VTYPE_INET_URI;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	aps[4] = IETF_YANG_LIBRARY_LOCATION;
-	vtype=YANG_VTYPE_INET_URI;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	//0004_ietf-yang-library/yang-library/module-set
-	//0005_ietf-yang-library/yang-library/schema
-	aps[2] = IETF_YANG_LIBRARY_SCHEMA;
-	aps[3] = IETF_YANG_LIBRARY_MODULE_SET;
-	vtype=YANG_VTYPE_LEAFREF;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[4] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_STRING;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	//0006_ietf-yang-library/yang-library/datastore
-	aps[2] = IETF_YANG_LIBRARY_DATASTORE;
-	aps[3] = IETF_YANG_LIBRARY_SCHEMA;
-	vtype=YANG_VTYPE_LEAFREF;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IETF_YANG_LIBRARY_VALUEKEY;
-	aps[4] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_DS_DATASTORE_REF;
-	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	//0007_ietf-yang-library/yang-library
-	aps[2] = IETF_YANG_LIBRARY_CONTENT_ID;
-	vtype=YANG_VTYPE_STRING;
-	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
-	//0008_ietf-yang-library/modules-state/module/deviation
-	aps[0] = IETF_YANG_LIBRARY_RW;
 	aps[1] = IETF_YANG_LIBRARY_MODULES_STATE;
 	aps[2] = IETF_YANG_LIBRARY_MODULE;
 	aps[3] = IETF_YANG_LIBRARY_DEVIATION;
 	aps[4] = IETF_YANG_LIBRARY_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IETF_YANG_LIBRARY_RO;
 	aps[4] = IETF_YANG_LIBRARY_VALUEKEY;
 	aps[5] = IETF_YANG_LIBRARY_NAME;
 	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
@@ -220,7 +122,7 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[4] = IETF_YANG_LIBRARY_REVISION;
 	vtype=YANG_VTYPE_UNION;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
-	//0009_ietf-yang-library/modules-state/module/submodule
+	//0001_ietf-yang-library/modules-state/module/submodule
 	aps[3] = IETF_YANG_LIBRARY_SUBMODULE;
 	aps[4] = IETF_YANG_LIBRARY_SCHEMA;
 	vtype=YANG_VTYPE_INET_URI;
@@ -232,7 +134,7 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[5] = IETF_YANG_LIBRARY_REVISION;
 	vtype=YANG_VTYPE_UNION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0010_ietf-yang-library/modules-state/module
+	//0002_ietf-yang-library/modules-state/module
 	aps[3] = IETF_YANG_LIBRARY_SCHEMA;
 	vtype=YANG_VTYPE_INET_URI;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
@@ -245,7 +147,7 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[3] = IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	//0011_ietf-yang-library/modules-state
+	//0003_ietf-yang-library/modules-state
 	aps[2] = IETF_YANG_LIBRARY_MODULE_SET_ID;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}

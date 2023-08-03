@@ -52,8 +52,6 @@
 #include <tsn_unibase/unibase.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/yangs/ieee1588-ptp.h>
-#include <tsn_uniconf/yangs/ietf-yang-types.h>
-#include <tsn_uniconf/yangs/ietf-interfaces.h>
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 

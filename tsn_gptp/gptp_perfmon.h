@@ -56,6 +56,11 @@
 #include "gptpcommon.h"
 #include "gptpnet.h"
 
+#define SHORTINTV_START_IDX 0
+#define SHORTINTV_END_IDX 96
+#define LONGINTV_START_IDX 97
+#define LONGINTV_END_IDX 98
+
 /* PerfmanceMonitoringDataRecord */
 
 typedef enum {
@@ -127,7 +132,7 @@ typedef enum {
 	CPMDR_offsetFromMaster,
 } CPMDR_params_t;
 
-void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb);
+void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb, uint8_t di);
 void gptp_clock_perfmon_dr_reset(PerfMonClockDS *ds, uint8_t type, uint64_t cts);
 void gptp_clock_perfmon_dr_dump(PerfMonClockDS *ds, ub_dbgmsg_level_t lv, uint8_t id);
 void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, uint64_t v);

@@ -56,10 +56,10 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
+#include "ietf-netconf-monitoring.h"
 #include "ietf-yang-library.h"
-#include "ietf-netconf-server.h"
-#include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
+#include "excelfore-netconf-server.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
@@ -395,12 +395,10 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	//0026_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc/stream/failed-interfaces
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[5] = IEEE802_DOT1Q_TSN_CONFIG_UNI_FAILED_INTERFACES;
 	aps[6] = IEEE802_DOT1Q_TSN_CONFIG_UNI_DUMMY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RO;
 	aps[6] = IEEE802_DOT1Q_TSN_CONFIG_UNI_VALUEKEY;
 	aps[7] = IEEE802_DOT1Q_TSN_CONFIG_UNI_MAC_ADDRESS;
 	vtype=YANG_VTYPE_STRING;

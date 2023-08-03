@@ -49,20 +49,12 @@
 */
 #ifndef GPTP_STATIC_MEMORY_H_
 #define GPTP_STATIC_MEMORY_H_
-/*
-#include <tsn_unibase/unibase.h>
-#include <tsn_combase/cb_ethernet.h>
-#include <tsn_combase/cb_thread.h>
-#include <tsn_combase/cb_ipcsock.h>
-#include <tsn_combase/cb_ipcshmem.h>
-*/
+
 #include <tsn_combase/combase.h>
 
 #ifndef UB_LOGCAT
 #define UB_LOGCAT 2
 #define UB_LOGTSTYPE UB_CLOCK_REALTIME
 #endif
-
-#define UB_ESARRAY_DFNUM 256
 
 #endif

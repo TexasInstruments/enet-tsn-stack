@@ -82,12 +82,18 @@ void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
 		      int fragnum, uint16_t fragsize);
 
 void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
-		       int fragnum, uint16_t fragsize, const char *mname)
+		       int fragnum, uint16_t fragsize, const char *mname, bool nolock)
 {
 	int i;
 	int pi=-1;
 	int np=0;
+	void *res=NULL;
 	if(size==0u){return NULL;}
+	if(!nolock){
+		if(ubcd.cbset.mutex_lock && ubcd.ub_sd_mutex){
+			ubcd.cbset.mutex_lock(ubcd.ub_sd_mutex);
+		}
+	}
 	for(i=0;i<fragnum;){
 		if(!busysizes[i]) {
 			if(pi==-1) {pi=i;}
@@ -100,12 +106,20 @@ void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
 		}
 		if((np*(int)fragsize)>=(int)size){
 			busysizes[pi]=i-pi;
-			return &((uint8_t*)mem)[pi*(int)fragsize];
+			res=&((uint8_t*)mem)[pi*(int)fragsize];
+			break;
 		}
 	}
-	UB_LOG(UBL_ERROR, "%s:%s, can't find any fragment which has enough size=%d\n",
-	       __func__, mname, (int)size);
-	return NULL;
+	if(!nolock){
+		if(ubcd.cbset.mutex_unlock && ubcd.ub_sd_mutex){
+			ubcd.cbset.mutex_unlock(ubcd.ub_sd_mutex);
+		}
+	}
+	if(res==NULL){
+		UB_LOG(UBL_ERROR, "%s:%s, can't find any fragment which has enough size=%d\n",
+		       __func__, mname, (int)size);
+	}
+	return res;
 }
 
 void *ub_static_regetmem(void *p, size_t nsize, void *mem, uint16_t *busysizes,
@@ -114,40 +128,52 @@ void *ub_static_regetmem(void *p, size_t nsize, void *mem, uint16_t *busysizes,
 	uint16_t cbusy; // current busy size
 	uint16_t nbusy; // new busy size
 	int cpi; // current position index
-	void *np; // new pointer
+	void *np=NULL; // new pointer
 	int dp;
+	const char *ermes="";
 	if(p==NULL) {
-		return ub_static_getmem(nsize, mem, busysizes, fragnum, fragsize, mname);
+		return ub_static_getmem(nsize, mem, busysizes, fragnum, fragsize, mname, false);
 	}
 	if(nsize==0u){
 		ub_static_relmem(p, mem, busysizes, fragnum, fragsize);
 		return NULL;
 	}
 	// the next operation is checked to be in the same array, no violation of Misra-C Rule 18.2
+	if(ubcd.cbset.mutex_lock && ubcd.ub_sd_mutex){
+		ubcd.cbset.mutex_lock(ubcd.ub_sd_mutex);
+	}
 	dp=(uint8_t*)p-(uint8_t*)mem;
 	cpi=dp/(int)fragsize;
 	if((dp<0) || (cpi>=fragnum) || (cpi*(int)fragsize)!=dp) {
-		UB_LOG(UBL_ERROR, "%s:invalid pointer=%p", __func__, p);
-		return NULL;
+		ermes="invalid pointer";
+		goto erexit;
 	}
 	nbusy=((int)nsize+(int)fragsize-1)/(int)fragsize;
 	if(nbusy<=busysizes[cpi]){
 		busysizes[cpi]=nbusy;
-		return p;
+		np=p;
+		goto erexit;
 	}
 	cbusy=busysizes[cpi];
 	busysizes[cpi]=0u;
 	np=ub_static_getmem(nsize, mem, busysizes, fragnum,
-			    fragsize, mname);
+			    fragsize, mname, true);
 	if(np==NULL) {
 		// failed case, keep it busy with the original size
 		// this is the same behavior as the 'realloc'
 		busysizes[cpi]=cbusy;
-		UB_LOG(UBL_WARN, "%s:can't expand, pointer=%p", __func__, p);
-		return NULL;
+		ermes="can't expand, pointer";
+		goto erexit;
 	}
 	if(np!=p){
 		memmove(np, p, cbusy*fragsize);
+	}
+erexit:
+	if(ubcd.cbset.mutex_unlock && ubcd.ub_sd_mutex){
+		ubcd.cbset.mutex_unlock(ubcd.ub_sd_mutex);
+	}
+	if(np==NULL){
+		UB_LOG(UBL_ERROR, "%s:%s\n", __func__, ermes);
 	}
 	return np;
 }

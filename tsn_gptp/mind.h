@@ -212,7 +212,7 @@ typedef struct PortPerfMonSignalingDataRecord {
 // instead.
 typedef struct PerfMonPortDS {
 	PMTimestamp lastUpdate[PERFMON_ALL_DR]; // last update time of current
-	uint8_t index[PERFMON_ALL_DR];
+	uint16_t index[PERFMON_ALL_DR];
 	PMTimestamp PMTime[PERFMON_ALL_DR];
 	PortPerfMonPeerDelayDataRecord pdelayDR[PERFMON_ALL_DR];
 	PortPerfMonDataRecord portDR[PERFMON_ALL_DR];
@@ -220,7 +220,7 @@ typedef struct PerfMonPortDS {
 } PerfMonPortDS;
 typedef struct PerfMonClockDS {
 	PMTimestamp lastUpdate[PERFMON_ALL_DR]; // last update time of current
-	uint8_t index[PERFMON_ALL_DR];
+	uint16_t index[PERFMON_ALL_DR];
 	PMTimestamp PMTime[PERFMON_ALL_DR];
 	ClockPerfMonDataRecord clockDR[PERFMON_ALL_DR];
 } PerfMonClockDS;

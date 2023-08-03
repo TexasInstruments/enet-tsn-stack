@@ -128,7 +128,7 @@ int yang_db_runtime_getvkvtype(uc_dbald *dbald, uint8_t *aps, uint8_t vkindex,
 /**
  * @return value key node string of vkindex's key on aps node.
  * return -1: error
- * return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to releas.
+ * return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
  */
 int yang_db_runtime_getvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
 			     uint8_t *aps, uint8_t vkindex, char **rstr);
@@ -140,6 +140,14 @@ int yang_db_runtime_getvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
  */
 int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
 			     void *waitv, uint32_t wvsize, int tout_ms);
+
+/**
+ * @return 'key node string' and 'value key node string' of key
+ * return -1: error
+ * return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
+ */
+int yang_db_runtime_getkeyvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
+				void *key, uint32_t ksize, char **rstr);
 
 #ifdef __cplusplus
 }

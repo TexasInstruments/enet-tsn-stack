@@ -59,7 +59,7 @@ static int setup(void **state)
 	unibase_init_para_t init_para={
 		.cbset.console_out=test_console_out,
 		.cbset.debug_out=NULL,
-		.cbset.mutex_init=NULL,
+		.cbset.get_static_mutex=NULL,
 		.cbset.gettime64=NULL,
 		.ub_log_initstr="ubase:40",
 	};

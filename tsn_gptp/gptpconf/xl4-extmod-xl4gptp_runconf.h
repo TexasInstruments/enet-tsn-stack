@@ -51,7 +51,7 @@
 #ifndef XL4_EXTMOD_XL4GPTP_RUNCONF_H_
 #define XL4_EXTMOD_XL4GPTP_RUNCONF_H_
 
-#include "yang_db_access.h"
+#include "tsn_uniconf/yangs/yang_db_access.h"
 
 int xl4_extmod_xl4gptp_runconf_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwald *hwald);
 

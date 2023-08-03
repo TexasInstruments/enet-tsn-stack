@@ -289,7 +289,7 @@ static int set_netdev_linkstatus(uc_hwald *hwald, cbl_cb_event_t *nevent)
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE, YANG_DB_ONHW_NOACTION,
 				      NULL, aps, kvs, kss, NULL, 0};
 	uint8_t value[8];
-	int32_t res;
+	int32_t res, oper_status;
 	char *emes="";
 
 	UB_LOG(UBL_DEBUG, "%s:ifname=%s\n", __func__, nevent->ifname);
@@ -315,39 +315,42 @@ static int set_netdev_linkstatus(uc_hwald *hwald, cbl_cb_event_t *nevent)
 	// update IETF_INTERFACES_OPER_STATUS
 	aps[3]=IETF_INTERFACES_OPER_STATUS;
 	if(nevent->eventflags&CBL_EVENT_DEVUP){
-		res=1; //up
+		oper_status=1; //up
 	}else{
-		res=2; //down
+		oper_status=2; //down
 	}
 	UB_LOG(UBL_DEBUG, "%s:IETF_INTERFACES_OPER_STATUS %s, speed=%d, duplex=%s\n",
-	       __func__, (res==1)?"UP":"DOWN", nevent->u.linkst.speed,
+	       __func__, (oper_status==1)?"UP":"DOWN", nevent->u.linkst.speed,
 	       (nevent->u.linkst.duplex==1)?"full":"not-full");
 	dbpara.vsize=4;
-	dbpara.value=&res;
+	dbpara.value=&oper_status;
 	res=yang_db_action(hwald->dbald, NULL, &dbpara);
 	if(res){
 		emes="OPER_STATUS";
 		goto erexit;
 	}
-	// update IETF_INTERFACES_SPEED
-	aps[3]=IETF_INTERFACES_SPEED;
-	*((uint64_t*)value)=nevent->u.linkst.speed*1000000LL;
-	dbpara.vsize=8;
-	dbpara.value=value;
-	res=yang_db_action(hwald->dbald, NULL, &dbpara);
-	if(res){
-		emes="SPEED";
-		goto erexit;
-	}
-	// update IETF_INTERFACES_DUPLEX
-	aps[3]=IETF_INTERFACES_DUPLEX;
-	res=nevent->u.linkst.duplex; // 1:full, 2:half, 3:unknown
-	dbpara.vsize=4;
-	dbpara.value=&res;
-	res=yang_db_action(hwald->dbald, NULL, &dbpara);
-	if(res){
-		emes="DUPLEX";
-		goto erexit;
+	if(oper_status==1){
+		// update speed and duplex only at UP time
+		// update IETF_INTERFACES_SPEED
+		aps[3]=IETF_INTERFACES_SPEED;
+		*((uint64_t*)value)=nevent->u.linkst.speed*1000000LL;
+		dbpara.vsize=8;
+		dbpara.value=value;
+		res=yang_db_action(hwald->dbald, NULL, &dbpara);
+		if(res){
+			emes="SPEED";
+			goto erexit;
+		}
+		// update IETF_INTERFACES_DUPLEX
+		aps[3]=IETF_INTERFACES_DUPLEX;
+		res=nevent->u.linkst.duplex; // 1:full, 2:half, 3:unknown
+		dbpara.vsize=4;
+		dbpara.value=&res;
+		res=yang_db_action(hwald->dbald, NULL, &dbpara);
+		if(res){
+			emes="DUPLEX";
+			goto erexit;
+		}
 	}
 
 	// notice only OPER_STATUS, uc_client will read other status by this notice

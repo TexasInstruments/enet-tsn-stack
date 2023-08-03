@@ -333,7 +333,7 @@ int ydbi_get_ifupdown_ucnotice(yang_db_item_access_t *ydbia, char *netdev,
 
 	res=uc_nc_get_notice_act(ydbia->ucntd, ydbia->dbald, semname, key, &ksize);
 	if(res){
-		UB_LOG(UBL_ERROR, "%s:no data, res=%d\n", __func__, res);
+		UB_LOG(UBL_DEBUG, "%s:no data, res=%d\n", __func__, res);
 		return -1;
 	}
 	// key=/ietf-interfaces/interfaces/interface/oper-status 255 SIZE string

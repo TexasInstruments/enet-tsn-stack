@@ -54,6 +54,8 @@
 #include "xl4-extmod-xl4gptp_runconf.h"
 #include "tsn_uniconf/yangs/ieee1588-ptp.h"
 #include "../gptpnet.h"
+#include "../mind.h"
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,6 +137,16 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtn1
 
 int gptpgcfg_set_asCapable(uint8_t gptpInstanceIndex, uint8_t domainIndex,
 			   uint16_t portIndex, bool asCapable);
+
+int gptpgcfg_set_clock_perfmonDS(PerfMonClockDS *ds, uint8_t id, bool periodComplete,
+		uint8_t gptpInstanceIndex, uint8_t domainIndex);
+int gptpgcfg_deleteall_clock_perfmonDS(uint8_t gptpInstanceIndex, uint8_t domainIndex);
+int gptpgcfg_cascade_clock_perfmonDS(uint8_t id, uint8_t gptpInstanceIndex, uint8_t domainIndex);
+
+int gptpgcfg_set_port_perfmonDS(PerfMonPortDS *ds, uint8_t id, bool periodComplete,
+		uint8_t gptpInstanceIndex, uint8_t domainIndex, uint8_t portIndex);
+int gptpgcfg_deleteall_port_perfmonDS(uint8_t gptpInstanceIndex, uint8_t domainIndex, uint16_t portIndex);
+int gptpgcfg_cascade_port_perfmonDS(uint8_t id, uint8_t gptpInstanceIndex, uint8_t domainIndex, uint16_t portIndex);
 
 #endif // defined(GPTP_PRIVATE_H_) || defined(GPTP_STATIC_MEMORY_H_)
 

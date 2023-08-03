@@ -390,7 +390,7 @@ int ydbi_get_asCapable_ucnotice(yang_db_item_access_t *ydbia, uint8_t *gptpInsta
 
 	res=uc_nc_get_notice_act(ydbia->ucntd, ydbia->dbald, semname, key, &ksize);
 	if(res){
-		UB_LOG(UBL_ERROR, "%s:no data, res=%d\n", __func__, res);
+		UB_LOG(UBL_DEBUG, "%s:no data, res=%d\n", __func__, res);
 		return -1;
 	}
 	esize=9+sizeof(uint32_t)+1+sizeof(uint16_t)+1; // this calculation is by our key data spec
@@ -412,3 +412,168 @@ int ydbi_get_asCapable_ucnotice(yang_db_item_access_t *ydbia, uint8_t *gptpInsta
 	uc_dbal_get_release(ydbia->dbald, key, ksize, value, vsize);
 	return res;
 }
+
+int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint32_t gptpInstance,
+								uint16_t index, uint8_t confitem,
+								void *value, uint32_t vsize)
+{
+	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+
+	ydbia->dbpara.onhw=YANG_DB_ONHW_NOACTION;
+	ydbia->dbpara.aps[0] = IEEE1588_PTP_RO;
+	ydbia->dbpara.aps[1] = IEEE1588_PTP_PTP;
+	ydbia->dbpara.aps[2] = IEEE1588_PTP_INSTANCES;
+	ydbia->dbpara.aps[3] = IEEE1588_PTP_INSTANCE;
+	ydbia->dbpara.aps[4] = IEEE1588_PTP_PERFORMANCE_MONITORING_DS;
+	ydbia->dbpara.aps[5] = IEEE1588_PTP_RECORD_LIST;
+	ydbia->dbpara.aps[6] = confitem;
+	ydbia->dbpara.aps[7] = 255u;
+	ydbia->dbpara.kvs[0]=&gptpInstance;
+	ydbia->dbpara.kss[0]=sizeof(uint32_t);
+	ydbia->dbpara.kvs[1]=&index;
+	ydbia->dbpara.kss[1]=sizeof(uint16_t);
+	ydbia->dbpara.kvs[2]=NULL;
+
+	ydbia->dbpara.value=value;
+	ydbia->dbpara.vsize=vsize;
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
+}
+
+int ydbi_set_perfmon_port_item(yang_db_item_access_t *ydbia, uint32_t gptpInstance,
+							   uint16_t portIndex, uint8_t list,
+							   uint16_t index, uint8_t confitem,
+							   void *value, uint32_t vsize)
+{
+	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+
+	ydbia->dbpara.onhw=YANG_DB_ONHW_NOACTION;
+	ydbia->dbpara.aps[0] = IEEE1588_PTP_RO;
+	ydbia->dbpara.aps[1] = IEEE1588_PTP_PTP;
+	ydbia->dbpara.aps[2] = IEEE1588_PTP_INSTANCES;
+	ydbia->dbpara.aps[3] = IEEE1588_PTP_INSTANCE;
+	ydbia->dbpara.aps[4] = IEEE1588_PTP_PORTS;
+	ydbia->dbpara.aps[5] = IEEE1588_PTP_PORT;
+	ydbia->dbpara.aps[6] = IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS;
+	ydbia->dbpara.aps[7] = list;
+	ydbia->dbpara.aps[8] = confitem;
+	ydbia->dbpara.aps[9] = 255u;
+	ydbia->dbpara.kvs[0]=&gptpInstance;
+	ydbia->dbpara.kss[0]=sizeof(uint32_t);
+	ydbia->dbpara.kvs[1]=&portIndex;
+	ydbia->dbpara.kss[1]=sizeof(uint16_t);
+	ydbia->dbpara.kvs[2]=&index;
+	ydbia->dbpara.kss[2]=sizeof(uint16_t);
+	ydbia->dbpara.kvs[3]=NULL;
+
+	ydbia->dbpara.value=value;
+	ydbia->dbpara.vsize=vsize;
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
+}
+
+static keymod_rcode_t _keymod_list_del_all(uint8_t *ap, kvs_t *kvs, uint8_t *kss)
+{
+	return KEYMOD_NOMOVE_DELETE;
+}
+
+int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstance)
+{
+	int res;
+	int32_t instIndex;
+	uint8_t aps[7]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
+		IEEE1588_PTP_RECORD_LIST, 255};
+	void *kvs[2]={&instIndex, NULL};
+	uint8_t kss[1]={sizeof(uint32_t)};
+
+	instIndex=gptpInstance;
+	if(instIndex<0) return false;
+	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_FORWARD, _keymod_list_del_all);
+	return res;
+}
+
+int ydbi_clear_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uint8_t gptpInstance, uint16_t portIndex)
+{
+	int res;
+	int32_t instIndex;
+	uint8_t aps[9]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
+		IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS, list,
+		255};
+	void *kvs[3]={&instIndex, &portIndex, NULL};
+	uint8_t kss[2]={sizeof(uint32_t), sizeof(uint16_t)};
+
+	instIndex=gptpInstance;
+	if(instIndex<0) return false;
+	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_FORWARD, _keymod_list_del_all);
+	return res;
+}
+
+/**
+ * Moves performance-monitoring records with index=0..95->1..96.
+ * Note: When an outstanding records exists on index=96 and there is no index=95
+ * the old records remains. But this case should never happen for historical records
+ * since records must be cascaded without skipping indices.
+ */
+static keymod_rcode_t _keymod_list_clock_move(uint8_t *ap, kvs_t *kvs, uint8_t *kss)
+{
+	if((ap[4]!=IEEE1588_PTP_PERFORMANCE_MONITORING_DS)||
+		(ap[5]!=IEEE1588_PTP_RECORD_LIST)){return KEYMOD_ERROR;}
+	if(kvs[0]==NULL){return KEYMOD_ERROR;}
+
+	if(kss[1]!=sizeof(uint16_t)){return KEYMOD_ERROR;}
+	*((uint16_t*)kvs[1])+=1;
+	if(*((uint16_t*)kvs[1])>=97){return KEYMOD_NOMOVE;}
+	return KEYMOD_MOVE_OVERWRITE; // can overwrite
+}
+
+int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstance)
+{
+	int res;
+	int32_t instIndex=0;
+	uint8_t aps[8]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
+		IEEE1588_PTP_RECORD_LIST, 255, 255};
+	void *kvs[3]={&instIndex, NULL, NULL};
+	uint8_t kss[2]={sizeof(uint32_t), sizeof(uint16_t)};
+
+	instIndex=gptpInstance;
+	if(instIndex<0) return false;
+
+	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_BACKWARD, _keymod_list_clock_move);
+	return res;
+}
+
+static keymod_rcode_t _keymod_list_port_move(uint8_t *ap, kvs_t *kvs, uint8_t *kss)
+{
+	if((ap[4]!=IEEE1588_PTP_PORTS)||(ap[6]!=IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS)||
+		((ap[7]!=IEEE1588_PTP_RECORD_LIST)&&(ap[7]!=IEEE1588_PTP_RECORD_LIST_PEER_DELAY)))
+	{
+		return KEYMOD_ERROR;
+	}
+	if(kvs[0]==NULL){return KEYMOD_ERROR;}
+	if(kvs[1]==NULL){return KEYMOD_ERROR;}
+
+	if(kss[2]!=sizeof(uint16_t)){return KEYMOD_ERROR;}
+	*((uint16_t*)kvs[2])+=1;
+	if(*((uint16_t*)kvs[2])>=97){return KEYMOD_NOMOVE;}
+	return KEYMOD_MOVE_OVERWRITE; // can overwrite
+}
+
+int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uint8_t gptpInstance, uint16_t portIndex)
+{
+	int res;
+	int32_t instIndex=0;
+	uint8_t aps[10]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
+		IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS, list, 255, 255};
+
+	void *kvs[4]={&instIndex, &portIndex, NULL, NULL};
+	uint8_t kss[3]={sizeof(uint32_t), sizeof(uint16_t), sizeof(uint16_t)};
+
+	instIndex=gptpInstance;
+	if(instIndex<0) return false;
+
+	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_BACKWARD, _keymod_list_port_move);
+	return res;
+}
+

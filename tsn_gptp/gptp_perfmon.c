@@ -49,11 +49,10 @@
 */
 #include "gptp_perfmon.h"
 #include "gptpbasetypes.h"
+#include "gptpconf/gptpgcfg.h"
 #include "mind.h"
 #include "tsn_unibase/unibase_macros.h"
 #include <math.h>
-
-// TODO initialize all records in uniconf when gptp2d start
 
 static void perfmon_running_stat_add(PerfMonAncillaryDataRecord *anc, double x)
 {
@@ -101,9 +100,9 @@ static void perfmon_running_stat_add(PerfMonAncillaryDataRecord *anc, double x)
  * Then a new data record is submitted for index=0 (or 97).
  */
 static int gptp_port_perfmon_dr_submit(PerfMonPortDS *ds, uint8_t id,
-									   uint8_t di, uint8_t pi, uint64_t cts64)
+                                       uint8_t gptpInstanceIndex,
+                                       uint8_t di, uint8_t pi, uint64_t cts64)
 {
-	int res = 0;
 	UB_LOG(UBL_DEBUG, "%s: submit PerformanceMonitoringPortDS [%s] domain=%d port=%d\n",
 		__func__, id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval", di, pi);
 	/* IEE1588-2019 J.5.2.2 performanceMonitoringPortDS.recordList
@@ -112,16 +111,25 @@ static int gptp_port_perfmon_dr_submit(PerfMonPortDS *ds, uint8_t id,
 	 * - 24hour (long) measurement record current record at index 97
 	 *   thus, first historical records is at index 98
 	 */
-	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?1:98;
+	// cascade records
+	if(gptpgcfg_cascade_port_perfmonDS(id, gptpInstanceIndex, di, pi)){
+		UB_LOG(UBL_WARN, "%s: Unable to cascade historic records.\n", __func__);
+		return -1;
+	}
+	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?SHORTINTV_START_IDX+1:LONGINTV_START_IDX+1;
 	gptp_port_perfmon_dr_dump(ds, UBL_DEBUG, id, di, pi);
-	// TODO submit to uniconf as index=1 or index=98
-	// e.g. res = gptp_port_perfmon_writedb
-
+	// store current record, with periodComplete=true
+	if(gptpgcfg_set_port_perfmonDS(ds, id, true, gptpInstanceIndex, di, pi)){
+		UB_LOG(UBL_ERROR, "%s: Unable to submit current record.\n", __func__);
+		return -1;
+	}
 	gptp_port_perfmon_dr_reset(ds, id, di, pi, cts64);
-	gptp_port_perfmon_dr_dump(ds, UBL_DEBUGV, id, di, pi);
-	// TODO
-	// e.g. res = gptp_port_perfmon_writedb
-	return res;
+	if(gptpgcfg_set_port_perfmonDS(ds, id, false, gptpInstanceIndex, di, pi)){
+		UB_LOG(UBL_WARN, "%s: Unable to submit new empty current record.\n", __func__);
+		return -1;
+	}
+	return 0;
+
 }
 
 /**
@@ -132,14 +140,13 @@ static int gptp_port_perfmon_dr_submit(PerfMonPortDS *ds, uint8_t id,
  * This periodicity of this update is configurable by perfmonCurrentPeriod_ms.
  */
 static int gptp_port_perfmon_dr_update(PerfMonPortDS *ds, uint8_t id,
-									   uint8_t di, uint8_t pi)
+			uint8_t gptpInstanceIndex, uint8_t domainIndex, uint8_t portIndex)
 {
-	int res = 0;
 	UB_LOG(UBL_DEBUG, "%s: updating PerformanceMonitoringPortDS [%s] domain=%d port=%d\n",
-		__func__, id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval", di, pi);
-	gptp_port_perfmon_dr_dump(ds, UBL_DEBUG, id, di, pi);
-	// TODO update current data record
-	return res;
+		__func__, id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval",
+		domainIndex, portIndex);
+	gptp_port_perfmon_dr_dump(ds, UBL_DEBUGV, id, domainIndex, portIndex);
+	return gptpgcfg_set_port_perfmonDS(ds, id, false, gptpInstanceIndex, domainIndex, portIndex);
 }
 
 void gptp_port_perfmon(PerfMonPortDS *ds, int di, int pi, uint64_t cts64,
@@ -168,24 +175,24 @@ void gptp_port_perfmon(PerfMonPortDS *ds, int di, int pi, uint64_t cts64,
 	#endif
 
 	if(pts-ds->PMTime[PERFMON_SHORTINTV_DR]>=(tasglb->perfmonShortPeriod_ms/10)){
-		if(gptp_port_perfmon_dr_submit(ds, PERFMON_SHORTINTV_DR, di, pi, cts64)){
+		if(gptp_port_perfmon_dr_submit(ds, PERFMON_SHORTINTV_DR, tasglb->gptpInstanceIndex, di, pi, cts64)){
 			UB_LOG(UBL_ERROR, "%s: Error submitting short interval port=%d data record\n", __func__, pi);
 		}
 		ds->lastUpdate[PERFMON_SHORTINTV_DR]=pts;
 	}else if(pts-ds->lastUpdate[PERFMON_SHORTINTV_DR]>=(tasglb->perfmonCurrentPeriod_ms/10)){
-		if(gptp_port_perfmon_dr_update(ds, PERFMON_SHORTINTV_DR, di, pi)){
+		if(gptp_port_perfmon_dr_update(ds, PERFMON_SHORTINTV_DR, tasglb->gptpInstanceIndex, di, pi)){
 			UB_LOG(UBL_ERROR, "%s: Error updating short interval port=%d data record\n", __func__, pi);
 		}
 		ds->lastUpdate[PERFMON_SHORTINTV_DR]=pts;
 	}
 
 	if(pts-ds->PMTime[PERFMON_LONGINTV_DR]>=(tasglb->perfmonLongPeriod_ms/10)){
-		if(gptp_port_perfmon_dr_submit(ds, PERFMON_LONGINTV_DR, di, pi, cts64)){
+		if(gptp_port_perfmon_dr_submit(ds, PERFMON_LONGINTV_DR, tasglb->gptpInstanceIndex, di, pi, cts64)){
 			UB_LOG(UBL_ERROR, "%s: Error submitting long interval port=%d data record\n", __func__, pi);
 		}
 		ds->lastUpdate[PERFMON_LONGINTV_DR]=pts;
 	}else if(pts-ds->lastUpdate[PERFMON_LONGINTV_DR]>=(tasglb->perfmonCurrentPeriod_ms/10)){
-		if(gptp_port_perfmon_dr_update(ds, PERFMON_LONGINTV_DR, di, pi)){
+		if(gptp_port_perfmon_dr_update(ds, PERFMON_LONGINTV_DR, tasglb->gptpInstanceIndex, di, pi)){
 			UB_LOG(UBL_ERROR, "%s: Error submitting long interval port=%d data record\n", __func__, pi);
 		}
 		ds->lastUpdate[PERFMON_LONGINTV_DR]=pts;
@@ -247,7 +254,7 @@ static void gptp_port_perfmon_ppmsdr_reset(PortPerfMonSignalingDataRecord *dr){
 	memset(dr, 0, sizeof(PortPerfMonSignalingDataRecord));
 }
 
-static void gptp_port_perfmon_dr_reset_byid(PerfMonPortDS *ds, uint8_t id, uint32_t pmtime){
+static void gptp_port_perfmon_dr_reset_byid(PerfMonPortDS *ds, uint8_t id, uint32_t pmtime, uint64_t cts64){
 	gptp_port_perfmon_ppmpddr_reset(&(ds->pdelayDR[id]));
 	gptp_port_perfmon_ppmdr_reset(&(ds->portDR[id]));
 	gptp_port_perfmon_ppmsdr_reset(&(ds->signalingDR[id]));
@@ -255,8 +262,9 @@ static void gptp_port_perfmon_dr_reset_byid(PerfMonPortDS *ds, uint8_t id, uint3
 	 * - 15min (short) measurement record current record at index 0
 	 * - 24hour (long) measurement record current record at index 97
 	 */
-	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?0:97;
+	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?SHORTINTV_START_IDX:LONGINTV_START_IDX;
 	ds->PMTime[id]=pmtime;
+	ds->lastUpdate[id]=cts64;
 }
 
 /**
@@ -277,17 +285,17 @@ void gptp_port_perfmon_dr_reset(PerfMonPortDS *ds, uint8_t type, uint8_t di, uin
 	pmtime=((cts/10000000u)*10000000u)/(10*UB_MSEC_NS);
 	switch(type){
 		case PERFMON_ALL_DR:
-			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime);
-			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime);
+			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime, cts);
+			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime, cts);
 
 			gptp_port_perfmon_dr_dump(ds, UBL_DEBUGV, PERFMON_SHORTINTV_DR, di, pi);
 			gptp_port_perfmon_dr_dump(ds, UBL_DEBUGV, PERFMON_LONGINTV_DR, di, pi);
 			break;
 		case PERFMON_SHORTINTV_DR:
-			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime);
+			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime, cts);
 			break;
 		case PERFMON_LONGINTV_DR:
-			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime);
+			gptp_port_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime, cts);
 			break;
 	}
 }
@@ -336,9 +344,9 @@ void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, uint64
  * as index=1 (98 for long interval), cascading old records.
  * Then a new data record is submitted for index=0 (or 97).
  */
-static int gptp_clock_perfmon_dr_submit(PerfMonClockDS *ds, uint8_t id, uint64_t cts64)
+static int gptp_clock_perfmon_dr_submit(PerfMonClockDS *ds, uint8_t id,
+                                        uint8_t gptpInstanceIndex, uint8_t di, uint64_t cts64)
 {
-	int res = 0;
 	UB_LOG(UBL_DEBUG, "%s: submit PerformanceMonitoringClockDS [%s]\n",
 		__func__, id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval");
 	/* IEE1588-2019 J.5.1.2 performanceMOnitoringDS.recordList
@@ -347,16 +355,24 @@ static int gptp_clock_perfmon_dr_submit(PerfMonClockDS *ds, uint8_t id, uint64_t
 	 * - 24hour (long) measurement record current record at index 97
 	 *   thus, first historical records is at index 98
 	 */
-	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?1:98;
+	// cascade records
+	if(gptpgcfg_cascade_clock_perfmonDS(id, gptpInstanceIndex, di)){
+		UB_LOG(UBL_WARN, "%s: Unable to cascade historic records.\n", __func__);
+		return -1;
+	}
+	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?SHORTINTV_START_IDX+1:LONGINTV_START_IDX+1;
 	gptp_clock_perfmon_dr_dump(ds, UBL_DEBUG, id);
-	// TODO submit to uniconf as index=1 or index=98
-	// e.g. res = gptp_perfmon_writedb
-
+	// store current record, with periodComplete=true
+	if(gptpgcfg_set_clock_perfmonDS(ds, id, true, gptpInstanceIndex, di)){
+		UB_LOG(UBL_ERROR, "%s: Unable to submit current record.\n", __func__);
+		return -1;
+	}
 	gptp_clock_perfmon_dr_reset(ds, id, cts64);
-	gptp_clock_perfmon_dr_dump(ds, UBL_DEBUGV, id);
-	// TODO
-	// e.g. res = gptp_perfmon_writedb
-	return res;
+	if(gptpgcfg_set_clock_perfmonDS(ds, id, false, gptpInstanceIndex, di)){
+		UB_LOG(UBL_WARN, "%s: Unable to submit new empty current record.\n", __func__);
+		return -1;
+	}
+	return 0;
 }
 
 /**
@@ -366,16 +382,16 @@ static int gptp_clock_perfmon_dr_submit(PerfMonClockDS *ds, uint8_t id, uint64_t
  * in order to provide performance based tweaking.
  * This periodicity of this update is configurable by perfmonCurrentPeriod_ms.
  */
-static int gptp_clock_perfmon_dr_update(PerfMonClockDS *ds, uint8_t id)
+static int gptp_clock_perfmon_dr_update(PerfMonClockDS *ds, uint8_t id,
+                                        uint8_t gptpInstanceIndex, uint8_t domainIndex)
 {
-	int res = 0;
 	UB_LOG(UBL_DEBUG, "%s: updating PerformanceMonitoringPortDS [%s]\n",
 		__func__, id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval");
 	gptp_clock_perfmon_dr_dump(ds, UBL_DEBUG, id);
-	return res;
+	return gptpgcfg_set_clock_perfmonDS(ds, id, false, gptpInstanceIndex, domainIndex);
 }
 
-void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb)
+void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb, uint8_t di)
 {
 	if(!ds) return;
 	if(!tasglb) return;
@@ -388,24 +404,26 @@ void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGl
 	PMTimestamp pts=cts64/(UB_MSEC_NS*10);
 
 	if(pts-ds->PMTime[PERFMON_SHORTINTV_DR]>=(tasglb->perfmonShortPeriod_ms/10)){
-		if(gptp_clock_perfmon_dr_submit(ds, PERFMON_SHORTINTV_DR, cts64)){
+		if(gptp_clock_perfmon_dr_submit(ds, PERFMON_SHORTINTV_DR, tasglb->gptpInstanceIndex, di, cts64)){
 			UB_LOG(UBL_ERROR, "%s: Error submitting short interval clock data record\n", __func__);
 		}
 		ds->lastUpdate[PERFMON_SHORTINTV_DR]=pts;
 	}else if(pts-ds->lastUpdate[PERFMON_SHORTINTV_DR]>=(tasglb->perfmonCurrentPeriod_ms/10)){
-		if(gptp_clock_perfmon_dr_update(ds, PERFMON_SHORTINTV_DR)){
+		if(gptp_clock_perfmon_dr_update(ds, PERFMON_SHORTINTV_DR,
+		                                tasglb->gptpInstanceIndex, tasglb->domainIndex)){
 			UB_LOG(UBL_ERROR, "%s: Error updating short interval clock data record\n", __func__);
 		}
 		ds->lastUpdate[PERFMON_SHORTINTV_DR]=pts;
 	}
 
 	if(pts-ds->PMTime[PERFMON_LONGINTV_DR]>=(tasglb->perfmonLongPeriod_ms/10)){
-		if(gptp_clock_perfmon_dr_submit(ds, PERFMON_LONGINTV_DR, cts64)){
+		if(gptp_clock_perfmon_dr_submit(ds, PERFMON_LONGINTV_DR, tasglb->gptpInstanceIndex, di, cts64)){
 			UB_LOG(UBL_ERROR, "%s: Error submitting long interval clock data record\n", __func__);
 		}
 		ds->lastUpdate[PERFMON_LONGINTV_DR]=pts;
 	}else if(pts-ds->lastUpdate[PERFMON_LONGINTV_DR]>=(tasglb->perfmonCurrentPeriod_ms/10)){
-		if(gptp_clock_perfmon_dr_update(ds, PERFMON_LONGINTV_DR)){
+		if(gptp_clock_perfmon_dr_update(ds, PERFMON_LONGINTV_DR,
+		                                tasglb->gptpInstanceIndex, tasglb->domainIndex)){
 			UB_LOG(UBL_ERROR, "%s: Error submitting long interval clock data record\n", __func__);
 		}
 		ds->lastUpdate[PERFMON_LONGINTV_DR]=pts;
@@ -473,14 +491,15 @@ static void gptp_clock_perfmon_cpmdr_reset(ClockPerfMonDataRecord *dr)
 	dr->stdDevOffsetFromMaster.scaledNanoseconds=INVALID_TIMEINTERVAL_VALUE;
 }
 
-static void gptp_clock_perfmon_dr_reset_byid(PerfMonClockDS *ds, uint8_t id, uint32_t pmtime){
+static void gptp_clock_perfmon_dr_reset_byid(PerfMonClockDS *ds, uint8_t id, uint32_t pmtime, uint64_t cts64){
 	gptp_clock_perfmon_cpmdr_reset(&(ds->clockDR[id]));
 	/* IEE1588-2019 J.5.2.2 performanceMonitoringPortDS.recordList
 	 * - 15min (short) measurement record current record at index 0
 	 * - 24hour (long) measurement record current record at index 97
 	 */
-	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?0:97;
+	ds->index[id]=(id==PERFMON_SHORTINTV_DR)?SHORTINTV_START_IDX:LONGINTV_START_IDX;
 	ds->PMTime[id]=pmtime;
+	ds->lastUpdate[id]=cts64;
 }
 
 /**
@@ -496,17 +515,17 @@ void gptp_clock_perfmon_dr_reset(PerfMonClockDS *ds, uint8_t type, uint64_t cts)
 	pmtime=((cts/10000000u)*10000000u)/(10*UB_MSEC_NS);
 	switch(type){
 		case PERFMON_ALL_DR:
-			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime);
-			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime);
+			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime, cts);
+			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime, cts);
 
 			gptp_clock_perfmon_dr_dump(ds, UBL_DEBUGV, PERFMON_SHORTINTV_DR);
 			gptp_clock_perfmon_dr_dump(ds, UBL_DEBUGV, PERFMON_LONGINTV_DR);
 			break;
 		case PERFMON_SHORTINTV_DR:
-			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime);
+			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_SHORTINTV_DR, pmtime, cts);
 			break;
 		case PERFMON_LONGINTV_DR:
-			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime);
+			gptp_clock_perfmon_dr_reset_byid(ds, PERFMON_LONGINTV_DR, pmtime, cts);
 			break;
 	}
 }

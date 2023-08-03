@@ -247,6 +247,10 @@ static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t 
 	memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
 		   &dstMacAddr[0U], ENET_MAC_ADDR_LEN);
 
+	/* Set policer params for ARP EtherType matching */
+	setPolicerEntryInArgs.policerMatch.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_ETHERTYPE;
+	setPolicerEntryInArgs.policerMatch.etherType = 0x88F7U;
+	setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
 	setPolicerEntryInArgs.threadIdEn = true;
 	setPolicerEntryInArgs.threadId = hLLDma->rxFlowIdx;
 

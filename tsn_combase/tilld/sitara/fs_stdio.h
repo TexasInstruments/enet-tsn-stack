@@ -49,14 +49,23 @@
 */
 #ifndef FS_STDIO_H_
 #define FS_STDIO_H_
+
+#if !defined(DISABLE_FAT_FS)
 #include <FreeRTOS.h>
 #include <ff_mmcsd.h>
 #include <ff_stdio.h>
 
 #define UB_FOPEN	ff_fopen
-#define UB_FCLOSE	ff_fclose
+#define UB_FCLOSE(fio)			ff_fclose((FF_FILE*)fio)
 #define UB_FREAD(fio, buf, size)	ff_fread(buf, 1, size, (FF_FILE*)(fio))
 #define UB_FWRITE(fio, buf, size)	ff_fwrite(buf, 1, size, (FF_FILE*)(fio))
 #define UB_FSEEK(fio, offset)		ff_fseek((FF_FILE*)(fio), offset, SEEK_SET)
-
+#else
+#include <stdio.h>
+#define UB_FOPEN	fopen
+#define UB_FCLOSE(fio)			fclose((FILE*)fio)
+#define UB_FREAD(fio, buf, size)	fread(buf, 1, size, (FILE*)(fio))
+#define UB_FWRITE(fio, buf, size)	fwrite(buf, 1, size, (FILE*)(fio))
+#define UB_FSEEK(fio, offset)		fseek((FILE*)(fio), offset, SEEK_SET)
+#endif //!DISABLE_FAT_FS
 #endif

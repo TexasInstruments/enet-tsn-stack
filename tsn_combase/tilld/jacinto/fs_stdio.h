@@ -50,10 +50,16 @@
 #ifndef FS_STDIO_H_
 #define FS_STDIO_H_
 
-#define UB_FOPEN	fopen
-#define UB_FCLOSE	fclose
-#define UB_FREAD(fio, buf, size)	fread(buf, 1, size, (FILE*)(fio))
-#define UB_FWRITE(fio, buf, size)	fwrite(buf, 1, size, (FILE*)(fio))
-#define UB_FSEEK(fio, offset)		fseek((FILE*)(fio), offset, SEEK_SET)
+void     *fs_fopen(const char *pathname, const char *mode);
+int      fs_fclose(void *fio);
+int32_t  fs_fread(void *buff, uint32_t size, uint32_t nmemb, void *fio);
+int32_t  fs_fwrite(void *buff, uint32_t size, uint32_t nmemb, void *fio);
+int64_t  fs_fseek(void *fio, uint64_t offset);
+
+#define UB_FOPEN	                 fs_fopen
+#define UB_FCLOSE	                 fs_fclose
+#define UB_FREAD(fio, buf, size)	 fs_fread((void*)buf, 1, size, fio)
+#define UB_FWRITE(fio, buf, size)        fs_fwrite((void*)buf, 1, size, fio)
+#define UB_FSEEK(fio, offset)		 fs_fseek((void*)fio, offset)
 
 #endif

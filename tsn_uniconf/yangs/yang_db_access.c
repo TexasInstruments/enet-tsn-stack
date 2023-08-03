@@ -76,7 +76,7 @@ static char *get_two_vids(char *vstr, uint16_t *v1, uint16_t *v2)
 
 static int value_conv_destcopy(void **destd, void *srcd, uint32_t *size, uint32_t csize)
 {
-	void *oldp=*destd;
+	void *newp=*destd;
 	uint32_t asize=*size;
 	if(csize==0u){return -1;}
 	if(csize>asize){asize=csize;}
@@ -85,11 +85,9 @@ static int value_conv_destcopy(void **destd, void *srcd, uint32_t *size, uint32_
 		       __func__, asize);
 		return -1;
 	}
-	*destd=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, oldp, asize);
-	if(*destd==NULL){
-		*destd=oldp;
-		return -1;
-	}
+	newp=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, newp, asize);
+	if(ub_assert_fatal(newp!=NULL, __func__, NULL)){return -1;}
+	*destd=newp;
 	memcpy(*destd, srcd, csize);
 	if(asize>csize){
 		uint8_t *ud=(uint8_t*)*destd;
@@ -134,23 +132,25 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	case YANG_VTYPE_IEEE_CHASSIS_ID_TYPE:
 	case YANG_VTYPE_IEEE_PORT_ID_TYPE:
 	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
-	case YANG_VTYPE_REVISION_IDENTIFIER:
 	case YANG_VTYPE_INET_URI:
+	case YANG_VTYPE_INET_HOST:
 	case YANG_VTYPE_UNION:
 		/* FIXME: Currently union is only used in ietf-yang-library module
-		 * where all unions are between to string data types */
+		 * where all unions are between two string base data types
+		 * with difference only on regex */
 	case YANG_VTYPE_LEAFREF:
 		/* FIXME:
 		 * - Currently all leafs in our tree with leafref type
 		 *   is referencing a leaf with vtype string.
 		 * - So for now we access leafref as a string, but the vtype
 		 *   of leafref depends on the referenced leaf. */
-	case YANG_VTYPE_INET_IP_ADDRESS:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_TYPE:
 	case YANG_VTYPE_BINARY:
 		/* Binary in Yang are base64 encoded strings (RFC 6020 9.8.2) */
 	case YANG_VTYPE_YANG_DATE_AND_TIME:
 	case YANG_VTYPE_CLOCK_IDENTITY:
+	case YANG_VTYPE_YANG_XPATH1_0:
+	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	{
 		char *data;
 		res=(int)strlen(vstr);
@@ -218,6 +218,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	case YANG_VTYPE_IEEE_CHASSIS_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
+	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
 	{
 		char *endptr = NULL;
 		uint32_t data[1];
@@ -229,6 +230,8 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		value=strtol(vstr, &endptr, 0);
 		if (endptr != vstr) {
 			data[0]=(uint32_t)value;
+		} else if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
+			data[0]=yang_enumeration_getval(vstr, "datastore");
 		} else if (NULL != hints) {
 			data[0]=yang_enumeration_getval(vstr, hints);
 		}
@@ -390,7 +393,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	{
 		uint8_t *ud;
 		uint16_t data[2];
-		void *oldp;
+		void *newp;
 		uint32_t asize=*size; // allocation size
 		// "1,10-100,250,500-1000", this type of string comes
 		// conv to (1,1),(10,100),(250,250),(500,1000), add terminator (0,0)
@@ -401,13 +404,13 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			vstr=get_two_vids(vstr, &data[0], &data[1]);
 			csize+=2u*(uint32_t)sizeof(uint16_t);
 			if(csize>asize){asize=csize;}
-			oldp=*destd;
-			*destd=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, oldp, asize);
-			if(*destd==NULL){
-				*destd=oldp;
+			newp=*destd;
+			newp=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, newp, asize);
+			if(ub_assert_fatal(newp!=NULL, __func__, NULL)){
 				res=-1;
 				break;
 			}
+			*destd=newp;
 			*size=asize;
 			ud=(uint8_t*)*destd;
 			(void)memcpy(&ud[csize-(4u*sizeof(uint16_t))],
@@ -422,7 +425,6 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		}
 		break;
 	}
-	case YANG_VTYPE_DS_DATASTORE_REF:
 	case YANG_VTYPE_IDENTITYREF:
 	{
 		uint32_t data[1]={INVALID_IDENTIY_VALUE};
@@ -431,8 +433,6 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		if(ehints!=NULL){hints=ehints;}// ethints supercedes hints
 		if(NULL != hints) {
 			data[0]=yang_identityref_getval(vstr, hints);
-		}else if(YANG_VTYPE_DS_DATASTORE_REF == vtype) {
-			data[0]=yang_identityref_getval(vstr, "datastore");
 		}else if(!strncmp(vstr, "cc-", 3)) {
 			data[0]=yang_identityref_getval(vstr, "clock-class");
 		}else if(!strncmp(vstr, "ca-", 3)) {
@@ -455,7 +455,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			}
 		}
 		if (INVALID_IDENTIY_VALUE == data[0]) {
-			UB_LOG(UBL_ERROR, "%s:unknown identityref vstr=%s\n", __func__, vstr);
+			UB_LOG(UBL_ERROR, "%s:unknown identityref vstr='%s'\n", __func__, vstr);
 			res=-1;
 		}else{
 			csize=4;
@@ -474,7 +474,6 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		res=value_conv_destcopy(destd, data, size, csize);
 	}
 		break;
-	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	case YANG_VTYPE_EMPTY:
 	case YANG_VTYPE_ENUM_END:
 	default:
@@ -499,15 +498,16 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_INTERFACE_STATE_REF:
 	case YANG_VTYPE_STRING:
 	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
-	case YANG_VTYPE_REVISION_IDENTIFIER:
 	case YANG_VTYPE_INET_URI:
+	case YANG_VTYPE_INET_HOST:
 	case YANG_VTYPE_UNION:
 	case YANG_VTYPE_LEAFREF:
 	case YANG_VTYPE_X509C2N_TLS_FINGERPRINT:
-	case YANG_VTYPE_INET_IP_ADDRESS:
 	case YANG_VTYPE_BINARY:
 	case YANG_VTYPE_YANG_DATE_AND_TIME:
 	case YANG_VTYPE_CLOCK_IDENTITY:
+	case YANG_VTYPE_YANG_XPATH1_0:
+	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 		return (char*)value;
 	case YANG_VTYPE_BOOLEAN:
 		if(*((uint8_t*)value)!=0){
@@ -537,7 +537,14 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_MRP_PROTOCOL:
 	case YANG_VTYPE_ENUMERATION:
 	case YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM:
-		if (NULL != hints) {
+	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
+			char* rstr=yang_enumeration_getstr(*((uint32_t*)value), "datastore");
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		} else if (NULL != hints) {
 			char* rstr=yang_enumeration_getstr(*((uint32_t*)value), hints);
 			if (NULL != rstr) {
 				memset(vstr, 0, sizeof(vstr));
@@ -566,6 +573,7 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_YANG_COUNTER64:
 	case YANG_VTYPE_DELAY_MECHANISM:
 	case YANG_VTYPE_PORT_STATE:
+	case YANG_VTYPE_YANG_TIMESTAMP:
 		if(vsize==1u){(void)sprintf(vstr, "%"PRIu8, *((uint8_t*)value));}
 		else if(vsize==2u){(void)sprintf(vstr, "%"PRIu16, *((uint16_t*)value));}
 		else if(vsize==4u){(void)sprintf(vstr, "%"PRIu32, *((uint32_t*)value));}
@@ -615,16 +623,9 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 		}
 		return vstr;
 	}
-	case YANG_VTYPE_DS_DATASTORE_REF:
 	case YANG_VTYPE_IDENTITYREF:
 		if(NULL != hints) {
 			char* rstr=yang_identityref_getstr(*((uint32_t*)value), hints);
-			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
-			}
-		}else if(YANG_VTYPE_DS_DATASTORE_REF == vtype) {
-			char* rstr=yang_identityref_getstr(*((uint32_t*)value), "datastore");
 			if (NULL != rstr) {
 				memset(vstr, 0, sizeof(vstr));
 				(void)strcpy(vstr, rstr);
@@ -633,7 +634,6 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 			UB_LOG(UBL_ERROR, "%s:cannot convert identityref without hints\n", __func__);
 		}
 		break;
-	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	case YANG_VTYPE_EMPTY:
 	case YANG_VTYPE_BITS:
 	case YANG_VTYPE_ENUM_END:
@@ -652,11 +652,17 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_INTERFACE_STATE_REF:
 	case YANG_VTYPE_STRING:
 	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
-	case YANG_VTYPE_REVISION_IDENTIFIER:
 	case YANG_VTYPE_INET_URI:
+	case YANG_VTYPE_INET_HOST:
+	case YANG_VTYPE_UNION:
+	case YANG_VTYPE_LEAFREF:
 	case YANG_VTYPE_IEEE_CHASSIS_ID_TYPE:
+	case YANG_VTYPE_X509C2N_TLS_FINGERPRINT:
+	case YANG_VTYPE_BINARY:
 	case YANG_VTYPE_YANG_DATE_AND_TIME:
 	case YANG_VTYPE_CLOCK_IDENTITY:
+	case YANG_VTYPE_YANG_XPATH1_0:
+	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 		break;
 	case YANG_VTYPE_BOOLEAN:
 		csize=1;
@@ -671,6 +677,7 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_MRP_PROTOCOL:
 	case YANG_VTYPE_ENUMERATION:
 	case YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM:
+	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
 		csize=4;
 		break;
 	case YANG_VTYPE_INT64:
@@ -703,6 +710,7 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_YANG_ZERO_BASED_COUNTER32:
 	case YANG_VTYPE_DOT1QTYPES_VLAN_INDEX_TYPE:
 	case YANG_VTYPE_DOT1QTYPES_MSTID_TYPE:
+	case YANG_VTYPE_YANG_TIMESTAMP:
 		csize=4;
 		break;
 	case YANG_VTYPE_UINT64:
@@ -728,16 +736,41 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_IDENTITYREF:
 		csize=4;
 		break;
-	case YANG_VTYPE_LEAFREF:
-	case YANG_VTYPE_INSTANCE_IDENTIFIER:
 	case YANG_VTYPE_EMPTY:
-	case YANG_VTYPE_BINARY:
 	case YANG_VTYPE_BITS:
 	case YANG_VTYPE_ENUM_END:
 	default:
 		UB_LOG(UBL_ERROR, "%s:not supported vtype=%d\n", __func__, vtype);
+		break;
 	}
 	return csize;
+}
+
+bool yang_isstring_vtype(uint8_t vtype)
+{
+	bool isstring=false;
+	switch(vtype){
+	case YANG_VTYPE_DOT1QTYPES_NAME_TYPE:
+	case YANG_VTYPE_IF_INTERFACE_REF:
+	case YANG_VTYPE_INTERFACE_STATE_REF:
+	case YANG_VTYPE_STRING:
+	case YANG_VTYPE_YANG_YANG_IDENTIFIER:
+	case YANG_VTYPE_INET_URI:
+	case YANG_VTYPE_INET_HOST:
+	case YANG_VTYPE_UNION:
+	case YANG_VTYPE_LEAFREF:
+	case YANG_VTYPE_X509C2N_TLS_FINGERPRINT:
+	case YANG_VTYPE_BINARY:
+	case YANG_VTYPE_YANG_DATE_AND_TIME:
+	case YANG_VTYPE_CLOCK_IDENTITY:
+	case YANG_VTYPE_YANG_XPATH1_0:
+	case YANG_VTYPE_INSTANCE_IDENTIFIER:
+		isstring=true;
+		break;
+	default:
+		break;
+	}
+	return isstring;
 }
 
 uint32_t yang_db_create_key(uint8_t *pap, uint8_t *ap, kvs_t *kvs, uint8_t *kss, void *key)
@@ -1179,6 +1212,7 @@ int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 		moved=true;
 		res=0;
 	}
+	uc_get_range_release(dbald, range);
 	return res;
 }
 

@@ -51,7 +51,7 @@
 #ifndef XL4_EXTMOD_XL4GPTP_H_
 #define XL4_EXTMOD_XL4GPTP_H_
 
-#include "yang_db_access.h"
+#include "tsn_uniconf/yangs/yang_db_access.h"
 
 typedef enum {
 	XL4_EXTMOD_XL4GPTP_VALUEKEY, // 0(0x0)
@@ -108,6 +108,8 @@ typedef enum {
 	XL4_EXTMOD_XL4GPTP_PERFMON_SHORT_PERIOD, // 51(0x33)
 	XL4_EXTMOD_XL4GPTP_PERFMON_LONG_PERIOD, // 52(0x34)
 	XL4_EXTMOD_XL4GPTP_PERFMON_CURRENT_PERIOD, // 53(0x35)
+	XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_REFCLK_HZ, // 54(0x36)
+	XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_OUTIDX, // 55(0x37)
 	XL4_EXTMOD_XL4GPTP_ENUM_END,
 } xl4_extmod_xl4gptp_enum_t;
 

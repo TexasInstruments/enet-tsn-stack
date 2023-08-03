@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([xl4gptp], [1.2.3], [shiro@excelfore.com])
+AC_INIT([tsn_gptp], [1.2.3], [shiro@excelfore.com])
 AC_SUBST(PACKAGE_DESC,"Excelfore gptp daemon and libary")
 
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
@@ -56,6 +56,9 @@ PKG_CHECK_MODULES([x4unibase],[tsn_unibase],,
 PKG_CHECK_MODULES([x4combase],[tsn_combase],,
 	[AC_CHECK_HEADERS([tsn_combase/combase.h])]
 )
+PKG_CHECK_MODULES([x4uniconf],[tsn_uniconf],,
+	[AC_CHECK_HEADERS([tsn_uniconf/uc_dbal.h])]
+)
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdio.h stdlib.h string.h tsn_unibase/unibase.h tsn_combase/combase.h])
@@ -99,6 +102,6 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
 	Makefile
 	gptpconf/Makefile
-	xl4gptp.pc])
+	tsn_gptp.pc])
 
 AC_OUTPUT

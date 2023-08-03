@@ -57,15 +57,15 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-server.h"
-#include "ietf-keychain.h"
+#include "ietf-netconf-monitoring.h"
 #include "excelfore-tsn-remote.h"
+#include "excelfore-netconf-server.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
 int ietf_yang_library_config_init(uc_dbald *dbald, uc_hwald *hwald)
 {
-	uint8_t aps[7];
+	uint8_t aps[6];
 	int i;
 	int res=-1;
 	uint32_t vsize=0;
@@ -80,19 +80,13 @@ int ietf_yang_library_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(yang_db_action(dbald, hwald, &dbpara)==0){
 		if(dbpara.vsize==1 && (*(uint8_t*)dbpara.value==1)){return 0;}
 	}
+	dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+	yang_db_action(dbald, hwald, &dbpara);
 	dbpara.atype=YANG_DB_ACTION_CREATE;
-	//0000_ietf-yang-library/yang-library/module-set/module/submodule
-	//0001_ietf-yang-library/yang-library/module-set/module
-	//0002_ietf-yang-library/yang-library/module-set/import-only-module/submodule
-	//0003_ietf-yang-library/yang-library/module-set/import-only-module
-	//0004_ietf-yang-library/yang-library/module-set
-	//0005_ietf-yang-library/yang-library/schema
-	//0006_ietf-yang-library/yang-library/datastore
-	//0007_ietf-yang-library/yang-library
-	//0008_ietf-yang-library/modules-state/module/deviation
-	//0009_ietf-yang-library/modules-state/module/submodule
-	//0010_ietf-yang-library/modules-state/module
-	//0011_ietf-yang-library/modules-state
+	//0000_ietf-yang-library/modules-state/module/deviation
+	//0001_ietf-yang-library/modules-state/module/submodule
+	//0002_ietf-yang-library/modules-state/module
+	//0003_ietf-yang-library/modules-state
 	if(kvs[0]!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, kvs[0]);}
 	kvs[0] = NULL;
 	dbpara.atype=YANG_DB_ACTION_CREATE;

@@ -173,7 +173,8 @@ void uc_dbal_close(uc_dbald *dbald, uint8_t callmode)
 	if(!lmubd){return;}
 	if(UC_CALL_THREADSLAVE(callmode)){return;}
 	CB_THREAD_MUTEX_DESTROY(&lmubd->putlock);
-	// uc_dbal_releasedb
+	// the same as 'uc_dbal_releasedb',
+	// so 'uc_dbal_releasedb' is not needed when 'uc_dbal_close' is called
 	if(lmubd->txn){
 		mdb_txn_commit(lmubd->txn);
 		CB_SEM_POST(lmubd->relwait);
@@ -315,14 +316,14 @@ int uc_dbal_getdb(uc_dbald *dbald, int toutms, uint8_t *key, uint32_t ksize)
 	}
 	res=0;
 erexit:
-	if(res){
-		UB_TLOG(UBL_ERROR, "%s:%s, res=%d\n", __func__, ermes, res);
-		uc_dbal_releasedb(lmubd);
-	}
 	if((res==0) && (key!=NULL)){
 		db_capture_rec(lmubd, key, ksize);
 	}
 	CB_THREAD_MUTEX_UNLOCK(&lmubd->putlock);
+	if(res){
+		UB_TLOG(UBL_ERROR, "%s:%s, res=%d\n", __func__, ermes, res);
+		uc_dbal_releasedb(lmubd);
+	}
 	return res;
 }
 
@@ -335,11 +336,13 @@ void uc_dbal_releasedb(uc_dbald *dbald)
 		// no need to releasedb to create a different txn
 		return;
 	}
+	CB_THREAD_MUTEX_LOCK(&lmubd->putlock);
 	if(db_release_rec(lmubd)){
 		UB_LOG(UBL_WARN, "%s:can't record\n", __func__);
 	}
 	mdb_txn_commit(lmubd->txn);
 	lmubd->txn=NULL;
+	CB_THREAD_MUTEX_UNLOCK(&lmubd->putlock);
 	CB_SEM_POST(lmubd->relwait);
 }
 

@@ -50,7 +50,7 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "tsn_uniconf/yangs/yang_modules.h"
 #include "xl4-extmod-xl4gptp.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
@@ -73,6 +73,8 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	if(yang_db_action(dbald, hwald, &dbpara)==0){
 		if(dbpara.vsize==1 && (*(uint8_t*)dbpara.value==1)){return 0;}
 	}
+	dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+	yang_db_action(dbald, hwald, &dbpara);
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	//0000_xl4-extmod/xl4gptp/GPTP_INSTANCE
 	kss[0]=0; // INSTANCE_INDEX
@@ -374,6 +376,18 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_PERFMON_CURRENT_PERIOD;
 	res=yang_value_conv(YANG_VTYPE_UINT32, "3000",
+		&dbpara.value, &vsize, NULL);
+	if(res<0){goto erexit;}
+	dbpara.vsize=res;
+	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_REFCLK_HZ;
+	res=yang_value_conv(YANG_VTYPE_UINT32, "0",
+		&dbpara.value, &vsize, NULL);
+	if(res<0){goto erexit;}
+	dbpara.vsize=res;
+	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_OUTIDX;
+	res=yang_value_conv(YANG_VTYPE_UINT32, "0",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;

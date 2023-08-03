@@ -90,7 +90,13 @@ void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 		if(!(*tasglb)->perfmonClockDS){
 			(*tasglb)->perfmonClockDS=(PerfMonClockDS*)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerfMonClockDS));
 			if(ub_assert_fatal((*tasglb)->perfmonClockDS!=NULL, __func__, "malloc error")){return;}
-			gptp_clock_perfmon_dr_reset((*tasglb)->perfmonClockDS, PERFMON_ALL_DR, ub_mt_gettime64());
+			if(gptpgcfg_deleteall_clock_perfmonDS(gptpInstanceIndex, domainIndex)){
+				// non-fatal, performance monitoring will not be reflected to db
+				UB_LOG(UBL_WARN, "%s: domainIndex=%d cannot clear clock perfmon entries in db...\n",
+					__func__, domainIndex);
+			}
+			// reset current records
+			//gptp_clock_perfmon_dr_reset((*tasglb)->perfmonClockDS, PERFMON_ALL_DR, ub_mt_gettime64());
 		}
 		(*tasglb)->perfmonLongPeriod_ms = gptpgcfg_get_intitem(
 			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_LONG_PERIOD, YDBI_CONFIG);
@@ -225,6 +231,11 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 		(*ppglb)->perfmonDS=
 			(PerfMonPortDS*)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(PerfMonPortDS));
 		if(ub_assert_fatal((*ppglb)->perfmonDS!=NULL, __func__, "malloc error")){return;}
+		if(gptpgcfg_deleteall_port_perfmonDS(gptpInstanceIndex, domainIndex, portIndex)){
+				// non-fatal, performance monitoring will not be reflected to db
+				UB_LOG(UBL_WARN, "%s: domainIndex=%d cannot clear port=%d perfmon entries in db...\n",
+					__func__, domainIndex, portIndex);
+		}
 		gptp_port_perfmon_dr_reset((*ppglb)->perfmonDS, PERFMON_ALL_DR,
 			  domainIndex, portIndex, ub_mt_gettime64());
 	}

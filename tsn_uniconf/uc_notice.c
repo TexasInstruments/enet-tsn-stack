@@ -102,6 +102,7 @@
 #include <errno.h>
 #include "uc_notice.h"
 #include "yangs/yang_modules.h"
+#include "uc_static_memory.h"
 
 #define MAX_NOTICE_PUSH 1000
 
@@ -443,7 +444,7 @@ static void nu_clear_refcounter(bool fromthread, ub_esarray_cstd_t *putnotice_li
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
 		pnd->refcounter=0;
-		UB_LOG(UBL_DEBUG, "%s:%s cleared\n", __func__, pnd->semname);
+		UB_LOG(UBL_DEBUGV, "%s:%s cleared\n", __func__, pnd->semname);
 	}
 	return;
 }
@@ -458,7 +459,7 @@ static void nu_increment_refcounter(bool fromthread,
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
 		if(!strcmp(pnd->semname, semname)){
 			pnd->refcounter++;
-			UB_LOG(UBL_DEBUG, "%s:semname=%s, refcounter=%d\n", __func__,
+			UB_LOG(UBL_DEBUGV, "%s:semname=%s, refcounter=%d\n", __func__,
 			       semname, pnd->refcounter);
 			break;
 		}

@@ -340,7 +340,7 @@ static int setup1(void **state)
 	unibase_init_para_t init_para={
 		.cbset.console_out=test_console_out,
 		.cbset.debug_out=test_debug_out,
-		.cbset.mutex_init=NULL,
+		.cbset.get_static_mutex=NULL,
 		.cbset.gettime64=test_gettime64,
 		.ub_log_initstr="2,mod0:34r,mod1:45m,mod2:56g,mod3:23",
 	};
@@ -353,7 +353,7 @@ static int setup2(void **state)
 	unibase_init_para_t init_para={
 		.cbset.console_out=test_console_out,
 		.cbset.debug_out=test_debug_out,
-		.cbset.mutex_init=NULL,
+		.cbset.get_static_mutex=NULL,
 		.cbset.gettime64=test_gettime64,
 		.ub_log_initstr="mod0:34,mod1:56m",//3:WARN, 4:INFO
 	};
@@ -366,7 +366,7 @@ static int setup3(void **state)
 	unibase_init_para_t init_para={
 		.cbset.console_out=test_console_out,
 		.cbset.debug_out=test_debug_out,
-		.cbset.mutex_init=NULL,
+		.cbset.get_static_mutex=NULL,
 		.cbset.gettime64=test_gettime64,
 		//3:WARN, 4:INFO with RTS for all levels
 		.ub_log_initstr=ub_log_initstr_override(

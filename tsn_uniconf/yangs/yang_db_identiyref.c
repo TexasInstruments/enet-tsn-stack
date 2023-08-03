@@ -166,6 +166,24 @@ const yang_identity_map_t datastore[] = {
 };
 const uint32_t datastore_num = sizeof(datastore)/sizeof(datastore[0]);
 
+const yang_identity_map_t schema_format[] = {
+    { "xsd"     , 0x0 },
+    { "yang"    , 0x1 },
+    { "yin"     , 0x2 },
+    { "rng"     , 0x3 },
+    { "rnc"     , 0x4 }
+};
+const uint32_t schema_format_num = sizeof(schema_format)/sizeof(schema_format[0]);
+
+const yang_identity_map_t transport[] = {
+    { "netconf-ssh"             , 0x0 },
+    { "netconf-soap-over-beep"  , 0x1 },
+    { "netconf-soap-over-https" , 0x2 },
+    { "netconf-beep"            , 0x3 },
+    { "netconf-tls"             , 0x4 }
+};
+const uint32_t transport_num = sizeof(transport)/sizeof(transport[0]);
+
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
  *----------------------------------------------------------------------------*/
@@ -174,10 +192,12 @@ const yang_identityref_t yang_identityref_list[] = {
     { clock_class,      clock_class_num,      "clock-class"      },
     { clock_accuracy,   clock_accuracy_num,   "clock-accuracy"   },
     { time_source,      time_source_num,      "time-source"      },
-    { gate_operation,   gate_operation_num,   "gate-operation"   },
+    { gate_operation,   gate_operation_num,   "operation"        },
     { map_type,         map_type_num,         "map-type"         },
     { addr_family_map,  addr_family_map_num,  "address-family"   },
     { datastore,        datastore_num,        "datastore"        },
+    { schema_format,    schema_format_num,    "format"           },
+    { transport,        transport_num,        "transport"        },
     { NULL,             0,                    NULL               }
 };
 
@@ -208,7 +228,7 @@ uint32_t yang_identityref_getval(char *identity_str, char *hints)
     uint32_t identity_val = INVALID_IDENTIY_VALUE;
     int tblidx=yang_identityref_get_tblidx(hints);
     if(tblidx < 0) {
-        UB_LOG(UBL_ERROR, "%s:unknown identityref hints=%s\n", __func__, hints);
+        UB_LOG(UBL_ERROR, "%s:unknown identityref hints='%s'\n", __func__, hints);
         return identity_val;
     }
     const yang_identity_map_t *reftbl = yang_identityref_list[tblidx].reftbl;
@@ -227,7 +247,7 @@ char* yang_identityref_getstr(uint32_t identity_val, char *hints)
     char* identity_str=NULL;
     int tblidx=yang_identityref_get_tblidx(hints);
     if(tblidx < 0) {
-        UB_LOG(UBL_ERROR, "%s:unknown identityref hints=%s\n", __func__, hints);
+        UB_LOG(UBL_ERROR, "%s:unknown identityref hints='%s'\n", __func__, hints);
         return identity_str;
     }
     const yang_identity_map_t *reftbl = yang_identityref_list[tblidx].reftbl;

@@ -895,3 +895,124 @@ int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
 	uc_dbal_releasedb(ydrd->dbald);
 	return res;
 }
+
+static char *vkey_on_node(uc_dbald *dbald, xl4_data_data_t *xdd,
+			  uint8_t *caps, uint8_t ki,
+			  kvs_t *ckvs, uint8_t *ckss, uint8_t *kvi)
+{
+	int i, nkv;
+	uint8_t ap, vkey, vtype;
+	uint8_t raps[3]={caps[0]&0x7f,255,255};
+	char *astr, *vstr, *vkstr=NULL;
+	char *nstr=NULL;
+	int rlen=1;
+	char erstr[10];
+	char *rstr=NULL;
+	bool change_ap0=false;
+	// check if keyvalue is on this node
+	ap=caps[ki+1];
+	caps[ki+1]=255;
+	nkv=yang_db_runtime_getvknum(dbald, caps);
+	if(nkv<=0){
+		caps[0]^=0x80;
+		change_ap0=true;
+		nkv=yang_db_runtime_getvknum(dbald, caps);
+		if(nkv<=0){goto erexit;}
+	}
+	rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 8);
+	if(!rstr){goto erexit;}
+	rstr[0]=0;
+	for(i=0;i<nkv;i++){
+		if(yang_db_runtime_getvkvtype(dbald, caps, i, &vkey, &vtype)){
+			goto erexit;
+		}
+		raps[1]=vkey;
+		if(yang_modules_get_node_string(xdd, &nstr, raps)==0){
+			astr=strchr(&nstr[1], '/');
+			if(astr!=NULL){vkstr=astr+1;}
+		}
+		if(vkstr==NULL){
+			snprintf(erstr, sizeof(erstr), "%d", raps[1]);
+			vkstr=erstr;
+		}
+		rlen+=strlen(vkstr)+3;
+		rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, rstr, rlen);
+		if(ub_assert_fatal(rstr!=NULL, __func__, NULL)){goto erexit;}
+		if(i==0){strcat(rstr, "|");}
+		strcat(rstr, vkstr);
+		strcat(rstr, ":");
+		if(nstr!=NULL){
+			UB_SD_RELMEM(YANGINIT_GEN_SMEM, nstr);
+		}
+
+		vstr=yang_value_string(vtype, ckvs[*kvi], ckss[*kvi], 0, rstr);
+		(*kvi)++;
+		if(vstr!=NULL){
+			rlen+=strlen(vstr);
+			rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, rstr, rlen);
+			if(ub_assert_fatal(rstr!=NULL, __func__, NULL)){goto erexit;}
+			strcat(rstr, vstr);
+		}
+		strcat(rstr, "|");
+	}
+erexit:
+	caps[ki+1]=ap;
+	if(change_ap0){caps[0]^=0x80;}
+	return rstr;
+}
+
+int yang_db_runtime_getkeyvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
+				void *key, uint32_t ksize, char **rstr)
+{
+	uint8_t *caps;
+	uint8_t raps[3]={255,255,255};
+	uint8_t ckss[UC_MAX_VALUEKEYS];
+	kvs_t ckvs[UC_MAX_VALUEKEYS+1]; // +1 for NULL termination
+	uint8_t ki, kvi;
+	char erstr[10];
+	int rlen=1;
+	char *nstr=NULL, *vkstr, *pstr;
+	if(yang_db_extract_key(key, ksize, &caps, ckvs, ckss)!=0){return -1;}
+	raps[0]=caps[0];
+	kvi=0;
+	*rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 8);
+	if(!rstr){return -1;}
+	(*rstr)[0]=0;
+	for(ki=0;ki<ksize;ki++){
+		raps[1]=caps[ki+1];
+		if(raps[1]==255){break;}
+		if(ki>0){
+			vkstr=vkey_on_node(dbald, xdd, caps, ki, ckvs, ckss, &kvi);
+			if(vkstr){
+				rlen+=strlen(vkstr);
+				*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rlen);
+				if(ub_assert_fatal(*rstr!=NULL, __func__, NULL)){
+					UB_SD_RELMEM(YANGINIT_GEN_SMEM, vkstr);
+					break;
+				}
+				strcat(*rstr, vkstr);
+				UB_SD_RELMEM(YANGINIT_GEN_SMEM, vkstr);
+			}
+		}
+		if(yang_modules_get_node_string(xdd, &nstr, raps)==0){
+			pstr=(ki==0)?nstr:strchr(&nstr[1], '/');
+		}else{
+			if(ki==0){
+				snprintf(erstr, sizeof(erstr), "/%d/%d", raps[0], raps[1]);
+			}else{
+				snprintf(erstr, sizeof(erstr), "/%d", raps[1]);
+			}
+			pstr=erstr;
+		}
+		rlen+=strlen(pstr);
+		*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rlen);
+		if(ub_assert_fatal(*rstr!=NULL, __func__, NULL)){break;}
+		strcat(*rstr, pstr);
+		if(nstr!=NULL){
+			UB_SD_RELMEM(YANGINIT_GEN_SMEM, nstr);
+		}
+	}
+	yang_db_extract_key_free(caps, ckvs, ckss);
+	if(*rstr){return 0;}
+	return -1;
+}

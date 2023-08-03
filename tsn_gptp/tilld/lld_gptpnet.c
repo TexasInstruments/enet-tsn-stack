@@ -221,12 +221,8 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 	uint32_t ports[LLDENET_MAX_PORTS];
 	uint32_t nports = 0;
 
-	for(i = 0; netdev && netdev[i] && netdev[i][0]; i++) ;
-	if ( i == 0) {
+	if (num_ports == 0) {
 		UB_LOG(UBL_ERROR,"%s:at least one netdev need\n",__func__);
-		return NULL;
-	} else if (i > num_ports) {
-		UB_LOG(UBL_ERROR,"%s:too many netework devices\n",__func__);
 		return NULL;
 	}
 	gpnet = (gptpnet_data_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(gptpnet_data_t));
@@ -236,12 +232,13 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 	(void)memset(gpnet, 0, sizeof(gptpnet_data_t));
 	gpnet->gptpInstanceIndex=gptpInstanceIndex;
 	gpnet->num_netdevs = num_ports;
-	gpnet->netdevices = (netdevice_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, i * sizeof(netdevice_t));
+	gpnet->netdevices =
+		(netdevice_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, num_ports * sizeof(netdevice_t));
 	if(ub_assert_fatal(gpnet->netdevices, __func__, "malloc")){
 		UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, gpnet);
 		return NULL;
 	}
-	(void)memset(gpnet->netdevices, 0, i * sizeof(netdevice_t));
+	(void)memset(gpnet->netdevices, 0, num_ports * sizeof(netdevice_t));
 
 	for (i = 0; i < gpnet->num_netdevs; i++) {
 		res = onenet_init(gptpInstanceIndex, gpnet, &gpnet->netdevices[i], netdev[i]);
@@ -528,7 +525,7 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 {
 	int64_t ts64, tstout64;
 	struct timespec ts;
-	int wait_status;
+	int err;
 
 	ts64 = ub_mt_gettime64();
 	tstout64 = ts64-gpnet->last_ts64;
@@ -556,21 +553,21 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 
 	ts64=ub_rt_gettime64();
 	UB_NSEC2TS(ts64+tstout64, ts);
-	if (CB_SEM_TIMEDWAIT(&gpnet->semaphore, &ts) < 0) {
+	err = CB_SEM_TIMEDWAIT(&gpnet->semaphore, &ts);
+	gpnet->event_ts64 = ub_mt_gettime64();
+	if (err != 0) {
+		if (cb_lld_sem_wait_status(&gpnet->semaphore) == TILLD_TIMEDOUT) {
+			gpnet->next_tout64 = 0;
+			return gpnet->cb_func(gpnet->cb_data, 0,
+					      GPTPNET_EVENT_TIMEOUT,
+					      &gpnet->event_ts64, NULL);
+		}
 		UB_LOG(UBL_ERROR,"%s:CB_SEM_TIMEDWAIT error\n", __func__);
 		return -1;
 	}
-	gpnet->event_ts64 = ub_mt_gettime64();
-	/* get semaphore wait status */
-	wait_status = cb_lld_sem_wait_status(&gpnet->semaphore);
-	if (wait_status == 0) {
-		gpnet->next_tout64 = 0;
-		return gpnet->cb_func(gpnet->cb_data, 0,
-					GPTPNET_EVENT_TIMEOUT, &gpnet->event_ts64, NULL);
-	} else if (wait_status == 1) {
-		process_txts(gpnet);
-		process_rxdata(gpnet);
-	}
+	process_txts(gpnet);
+
+	process_rxdata(gpnet);
 
 	return 0;
 }

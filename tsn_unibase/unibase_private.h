@@ -79,6 +79,7 @@ typedef struct unibase_cstd {
 	ub_logmsg_data_t logmsgd_ovrd;
 	int log_categories;
 	void *gmutex;
+	void *ub_sd_mutex;
 	bool fatalerror;
 } unibase_cstd_t;
 

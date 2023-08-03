@@ -60,28 +60,33 @@
 #include <stdint.h>
 #include <string.h>
 #include <time.h>
+#include "lld_thread.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct cb_lld_sem cb_lld_sem_t;
-typedef struct cb_lld_mutex cb_lld_mutex_t;
 typedef struct cb_lld_task cb_lld_task_t;
+
+#define TILLD_SUCCESS       (0)
+#define TILLD_FAILURE       (-1)
+#define TILLD_TIMEDOUT      (-2)
 
 #define CB_THREAD_T cb_lld_task_t*
 #define CB_THREAD_CREATE cb_lld_task_create
 #define CB_THREAD_JOIN cb_lld_task_join
 #define CB_THREAD_EXIT cb_lld_task_exit
 
-#define CB_THREAD_MUTEX_T cb_lld_mutex_t*
+#define CB_THREAD_MUTEX_T cb_lld_mutex_t
 #define CB_THREAD_MUTEX_LOCK cb_lld_mutex_lock
 #define CB_THREAD_MUTEX_TRYLOCK cb_lld_mutex_trylock
 #define CB_THREAD_MUTEX_TIMEDLOCK cb_lld_mutex_timedlock
 #define CB_THREAD_MUTEX_UNLOCK cb_lld_mutex_unlock
 #define CB_THREAD_MUTEX_INIT cb_lld_mutex_init
 #define CB_THREAD_MUTEX_DESTROY cb_lld_mutex_destroy
-#define CB_STATIC_MUTEX_INITIALIZER(x) x=NULL
+#define CB_THREAD_IS_MUTEX_INITIALIZED(x) ((x).lldmutex!=NULL)
+#define CB_STATIC_MUTEX_INITIALIZER(x) x=TILLD_MUTEX_INITIALIZER
 #define CB_STATIC_MUTEX_CONSTRUCTOR(x) ub_protected_func(cb_lld_global_mutex_init,&(x))
 
 /* does not need to support these macros */
@@ -169,7 +174,9 @@ int cb_lld_sem_destroy(CB_SEM_T *sem);
  * @ref cb_lld_sem_wait(), @ref cb_lld_sem_trywait() and @ref cb_lld_sem_timedwait()
  *
  * @param sem Pointer to the semaphore.
- * @return 0 timeout, 1 semaphore was acquired, or -1 error.
+ * @return TILLD_SUCCESS: semaphore was acquired, 
+ * TILLD_FAILURE: on failure,
+ * TILLD_TIMEDOUT: on timeout.
  */
 int cb_lld_sem_wait_status(CB_SEM_T *sem);
 
@@ -223,14 +230,6 @@ int cb_lld_mutex_trylock(CB_THREAD_MUTEX_T *mutex);
 int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime);
 
 /**
- * @brief Initializes a global mutex, similar to the ref cb_lld_mutex_init() except
- * there is no log when error occur.
- * @param mutex Pointer to the mutex object.
- * @return 0 on success, -1 on error
-*/
-int cb_lld_global_mutex_init(void *mutex);
-
-/**
  * @brief Creates a new thread.
  * This function creates a new thread with the specified attributes and starts executing
  * the specified function with the provided argument.
@@ -258,6 +257,14 @@ int cb_lld_task_join(CB_THREAD_T th, void **retval);
  */
 void cb_lld_task_exit(void *retval);
 
+/**
+ * @brief Initialize a mutex, the api is called under a protection
+ * of unibase's gmutex. Thus, calling any unibase
+ * log macro (ie. UB_LOG) inside this function will cause a DEADLOCK.
+ * @param arg pointer to memory address of a mutex structure CB_THREAD_MUTEX_T
+ * @return 0: on success, -1 on error
+ */
+int cb_lld_global_mutex_init(void *arg);
 #ifdef __cplusplus
 }
 #endif
