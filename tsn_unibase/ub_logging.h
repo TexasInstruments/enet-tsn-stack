@@ -148,7 +148,6 @@ const char *ub_log_initstr_override(const char *ns, const char *os);
 /**
  * @brief initialize logging by a string
  * @param istr	initialization string
- * @return 0 on success, -1 on error
  * @note an example of string is like "ubase:34r,mod1:45m,mod2:56g,mod3:23"
  * 	each category string is separated by a comma, and the category
  *	initialization is a way in 'ub_log_add_category'

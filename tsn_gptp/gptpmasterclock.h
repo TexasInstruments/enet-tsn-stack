@@ -115,7 +115,6 @@ int gptpmasterclock_gmchange_ind(void);
 
 /**
  * @brief get maximum number of domains
- * @param void
  * @return returns availabe number of domains.
  */
 int gptpmasterclock_get_max_domains(void);

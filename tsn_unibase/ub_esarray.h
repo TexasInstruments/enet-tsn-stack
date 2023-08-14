@@ -98,7 +98,6 @@ ub_esarray_cstd_t *ub_esarray_init(int esunit, int elesize, int maxeles);
 /**
  * @brief close ub_esarray
  * @param eah	the data handle of ub_esarray object
- * @return void
  */
 void ub_esarray_close(ub_esarray_cstd_t *eah);
 

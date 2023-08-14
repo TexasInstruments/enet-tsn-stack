@@ -128,7 +128,6 @@ cb_timer_object_t *cb_timer_create(char *tname);
 /**
  * @brief close the timer
  * @param mtmo reference to cb_timer_object_t, returned by cb_timer_create().
- * @return void
  */
 void cb_timer_close(cb_timer_object_t *mtmo);
 

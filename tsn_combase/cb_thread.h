@@ -211,7 +211,6 @@ static inline bool cb_waitpoint_check(cb_waitpoint_t *wp, uint64_t time){
  * @param wp object reference to a waitpoint
  * @param time reference time, usually the current time
  * @param dosleep whether to wait on waitpoint condition or not
- * @return true if wait time has elapsed and not yet awoke, otherwise false
  *
  * This interface should be called within and cb_waitpoint_lock, which is then automatically
  * unlocked before entering blocking state and then automatically locked again when exiting the blocked state.

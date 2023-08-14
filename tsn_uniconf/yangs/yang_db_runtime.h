@@ -100,7 +100,6 @@ int yang_db_runtime_askaction(yang_db_runtime_dataq_t *ydrd,
  * @param value value pointer to return read value. it is reallocated inside the function.
  *	  it must be NULL or allocated address.
  * @param vsize value size
- * @param onhw action on hardware
  * @return -1:error, vtype>=0:success
  */
 int yang_db_runtime_get_oneline(yang_db_runtime_dataq_t *ydrd,

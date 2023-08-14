@@ -96,7 +96,6 @@ cb_xtimer_man_t *cb_xtimer_man_create(void);
 /**
  * @brief Delete a timer manager.
  * @param xtimer_man timer manager data
- * @return void
  */
 void cb_xtimer_man_delete(cb_xtimer_man_t *xtimer_man);
 
@@ -132,7 +131,6 @@ cb_xtimer_t *cb_xtimer_create(cb_xtimer_man_t *xtimer_man,
 /**
  * @brief Delete a timer.
  * @param xtimer a timer data
- * @return void
  */
 void cb_xtimer_delete(cb_xtimer_t *xtimer);
 
@@ -142,14 +140,12 @@ void cb_xtimer_delete(cb_xtimer_t *xtimer);
  * If this flag is set, the timer will be restarted when it expired.
  *
  * @param xtimer a timer data
- * @return void
  */
 void cb_xtimer_set_periodic(cb_xtimer_t *xtimer);
 
 /**
  * @brief Clear periodic timer flag.
  * @param xtimer a timer data
- * @return void
  */
 void cb_xtimer_clear_periodic(cb_xtimer_t *xtimer);
 
@@ -178,7 +174,6 @@ int cb_xtimer_start(cb_xtimer_t *xtimer, uint32_t timeout_us);
 /**
  * @brief Stop a running timer, the periodic flag is cleared as well.
  * @param xtimer a timer data
- * @return void
  */
 void cb_xtimer_stop(cb_xtimer_t *xtimer);
 
