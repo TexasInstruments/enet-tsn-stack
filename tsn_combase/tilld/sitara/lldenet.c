@@ -185,9 +185,12 @@ static int32_t DmaOpen(LLDEnetDma_t *hLLDma)
 	rxInArgs.notifyCb = LLDEnetRxNotifyCb;
 	rxInArgs.cbArg = hLLDma;
 	EnetApp_getRxDmaHandle(hLLDma->rxChId, &rxInArgs, &rxChInfo);
-
+#ifdef ENET_SOC_HOSTPORT_DMA_TYPE_UDMA
 	hLLDma->rxFlowStartIdx = rxChInfo.rxFlowStartIdx;
 	hLLDma->rxFlowIdx = rxChInfo.rxFlowIdx;
+#else
+	hLLDma->rxFlowIdx = rxChInfo.rxChNum;
+#endif
 	hLLDma->hRxCh = rxChInfo.hRxCh;
 	EnetAppUtils_assert(hLLDma->hRxCh != NULL);
 
@@ -504,12 +507,13 @@ int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFram
 		pktInfo->sgList.list[0].segmentFilledLen = frames[i].size;
 		pktInfo->appPriv = (void *)hLLDEnet;
 		pktInfo->txPortNum = (Enet_MacPort)ENET_MACPORT_NORM(frames[i].port);
+#ifdef ENET_SOC_HOSTPORT_DMA_TYPE_UDMA
 		if (frames[i].tc < 0) {
 			pktInfo->txPktTc = ENET_TRAFFIC_CLASS_INV;
 		} else {
 			pktInfo->txPktTc = frames[i].tc;
 		}
-
+#endif
 		EnetDma_checkPktState(&pktInfo->pktState, ENET_PKTSTATE_MODULE_APP,
 				ENET_PKTSTATE_APP_WITH_FREEQ, ENET_PKTSTATE_APP_WITH_DRIVER);
 
@@ -936,6 +940,9 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 
 int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm)
 {
+#if ENET_CFG_IS_OFF(CPSW_IET_INCL)
+    	return -1;
+#else
 	cbl_preempt_params_t *cpemp = (cbl_preempt_params_t *)reqPrm;
 	cbl_cb_event_t *nevent = (cbl_cb_event_t *)resPrm;
 	EnetMacPort_GenericInArgs egargs = {};
@@ -1007,6 +1014,6 @@ int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void
 	}	
 	nevent->u.preempt.preempt_active = 1;// frame preemption active
 	UB_LOG(UBL_INFO, "Frame preemption setup successfully!\n");
-
+#endif
 	return LLDENET_E_OK;
 }
