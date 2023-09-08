@@ -59,6 +59,9 @@
 extern "C" {
 #endif
 
+#define MAX_AP_DEPTH 32
+#define MAX_KV_DEPTH 10
+
 typedef struct yang_db_runtime_data yang_db_runtime_dataq_t;
 
 yang_db_runtime_dataq_t *yang_db_runtime_init(xl4_data_data_t *xdd, uc_dbald *dbald,
@@ -92,6 +95,20 @@ int yang_db_runtime_put_oneline(yang_db_runtime_dataq_t *ydrd,
 int yang_db_runtime_askaction(yang_db_runtime_dataq_t *ydrd,
 			      uc_notice_data_t *ucntd);
 
+
+/**
+ * @brief get a range from line
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param line key string
+ * @param kvs return value keys, it must have MAX_KV_DEPTH+1 of void pointer space
+ * @param kss return value key sizes, it must have MAX_KV_DEPTH of uint8_t space
+ * @param status true:get range from status('ro') area, false: get from config('rw') area
+ * @return ragne object:success, NULL:error
+ * @note returned ranage object must be released by calling uc_get_range_release
+ */
+uc_range *yang_db_runtime_range_fromline(yang_db_runtime_dataq_t *ydrd,
+					 const char* line, void **kvs, uint8_t *kss,
+					 bool status);
 
 /**
  * @brief get one node db data by a string line

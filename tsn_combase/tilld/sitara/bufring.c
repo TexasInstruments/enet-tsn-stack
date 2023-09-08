@@ -47,98 +47,128 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef GPTP_PERFMON_H_
-#define GPTP_PERFMON_H_
+#include "bufring.h"
+#include "combase_private.h"
 
-#include <tsn_unibase/unibase.h>
-#include "mind.h"
-#include "gptpconf/gptpgcfg.h"
-#include "gptpcommon.h"
-#include "gptpnet.h"
+#ifdef SOC_AM273X
+/* When device is not SOC_AM273X, we will not allocate this memory */
+UB_SD_GETMEM_DEF(CB_LLDENET_RXPKT_MMEM, ENET_MEM_LARGE_POOL_PKT_SIZE,
+				 ENET_MEM_NUM_RX_PKTS);
 
-#define SHORTINTV_START_IDX 0
-#define SHORTINTV_END_IDX 96
-#define LONGINTV_START_IDX 97
-#define LONGINTV_END_IDX 98
-
-/* PerfmanceMonitoringDataRecord */
-
-typedef enum {
-	PPMPDDR_meanLinkDelay,
-} PPMPDDR_params_t;
-
-void gptp_port_perfmon(PerfMonPortDS *ds, int domainIndex,
-					   int portIndex, uint64_t cts64,
-					   PerTimeAwareSystemGlobal *tasglb);
-void gptp_port_perfmon_dr_reset(PerfMonPortDS *ds, uint8_t type,
-		uint8_t di, uint8_t pi, uint64_t cts);
-void gptp_port_perfmon_dr_dump(PerfMonPortDS *ds, ub_dbgmsg_level_t lv,
-		uint8_t id, uint8_t di, uint8_t pi);
-void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, int64_t v);
-
-#define PERFMON_PPMPDDR_INC(ds, m) {\
-	if(ds){ \
-		(ds)->pdelayDR[PERFMON_SHORTINTV_DR].m++; \
-		(ds)->pdelayDR[PERFMON_LONGINTV_DR].m++; \
-	} \
+void InitBufRing(LLDEnetBufRing_t *ring)
+{
+	int i;
+	memset(ring, 0, sizeof(LLDEnetBufRing_t));
+	for (i = 0; i < CB_LLDENET_SUB_RX_RING_SIZE; i++) {
+		ring->pktBufs[i].buf = (LLDEnetPktBuf_t *)UB_SD_GETMEM(
+			CB_LLDENET_RXPKT_MMEM, ENET_MEM_LARGE_POOL_PKT_SIZE);
+		EnetAppUtils_assert(ring->pktBufs[i].buf != NULL);
+	}
 }
 
-#define PERFMON_PPMDR_INC(ds, m) {\
-	if(ds){ \
-		(ds)->portDR[PERFMON_SHORTINTV_DR].m++; \
-		(ds)->portDR[PERFMON_LONGINTV_DR].m++; \
-	} \
+void DeInitBufRing(LLDEnetBufRing_t *ring)
+{
+	int i;
+	for (i = 0; i < CB_LLDENET_SUB_RX_RING_SIZE; i++) {
+		if (ring->pktBufs[i].buf) {
+			UB_SD_RELMEM(CB_LLDENET_RXPKT_MMEM, ring->pktBufs);
+			ring->pktBufs[i].buf = NULL;
+		}
+	}
+	memset(ring, 0, sizeof(LLDEnetBufRing_t));
 }
 
-#define PERFMON_PPMSDR_INC(ds, m) {\
-	if(ds){ \
-		(ds)->signalingDR[PERFMON_SHORTINTV_DR].m++; \
-		(ds)->signalingDR[PERFMON_LONGINTV_DR].m++; \
-	} \
+static bool RingIsEmpty(uint32_t pi, uint32_t ci)
+{
+	if (pi == ci) {
+		return true;
+	}
+	return false;
 }
 
-#define PERFMON_PPMPDDR_RST(ds, m) {\
-	if(ds){ \
-		(ds)->pdelayDR[PERFMON_SHORTINTV_DR].m=0; \
-		(ds)->pdelayDR[PERFMON_LONGINTV_DR].m=0; \
-	} \
+static bool RingIsFull(uint32_t pi, uint32_t ci)
+{
+	if ((pi > ci && (pi - ci) == CB_LLDENET_SUB_RX_RING_SIZE - 1)
+		|| (ci > pi && (ci - pi) == 1)) {
+		return true;
+	}
+	return false;
 }
 
-#define PERFMON_PPMDR_RST(ds, m) {\
-	if(ds){ \
-		(ds)->portDR[PERFMON_SHORTINTV_DR].m=0; \
-		(ds)->portDR[PERFMON_LONGINTV_DR].m=0; \
-	} \
+bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
+{
+	uint32_t pi;
+	uint32_t ci;
+
+	pi = ring->pi;
+	ci = ring->ci;
+
+	if (RingIsFull(pi, ci)) {
+		UB_LOG(UBL_ERROR,"ring is full\n");
+		return false;
+	}
+
+	if (pktBuf->size > ENET_MEM_LARGE_POOL_PKT_SIZE) {
+		UB_LOG(UBL_ERROR,"pkt size too large\n");
+		return false;
+	}
+
+	memcpy(ring->pktBufs[pi].buf, pktBuf->buf, pktBuf->size);
+	ring->pktBufs[pi].size = pktBuf->size;
+	ring->pktBufs[pi].port = pktBuf->port;
+
+	pi++;
+	if (pi == CB_LLDENET_SUB_RX_RING_SIZE) {
+		pi = 0;
+	}
+	ring->pi = pi;
+	return true;
 }
 
-#define PERFMON_PPMSDR_RST(ds, m) {\
-	if(ds){ \
-		(ds)->signalingDR[PERFMON_SHORTINTV_DR].m=0; \
-		(ds)->signalingDR[PERFMON_LONGINTV_DR].m=0; \
-	} \
+bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
+{
+	uint32_t pi;
+	uint32_t ci;
+
+	pi = ring->pi;
+	ci = ring->ci;
+
+	if (RingIsEmpty(pi, ci)) {
+		UB_LOG(UBL_ERROR,"ring is empty\n");
+		return false;
+	}
+
+	if (pktBuf->size < ring->pktBufs[ci].size) {
+		UB_LOG(UBL_ERROR,"pkt size too small\n");
+		return false;
+	}
+
+	memcpy(pktBuf->buf, ring->pktBufs[ci].buf, ring->pktBufs[ci].size);
+	pktBuf->size = ring->pktBufs[ci].size;
+	pktBuf->port = ring->pktBufs[ci].port;
+
+	ci++;
+	if (ci == CB_LLDENET_SUB_RX_RING_SIZE) {
+		ci = 0;
+	}
+	ring->ci = ci;
+	return true;
 }
 
-#define PERFMON_PPMPDDR_ADD(ds, p, v) {\
-	gptp_port_perfmon_ppmpddr_add(ds, p, v); \
+#else //!SOC_AM273X
+void InitBufRing(LLDEnetBufRing_t *ring)
+{}
+
+void DeInitBufRing(LLDEnetBufRing_t *ring)
+{}
+
+bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
+{
+	return false;
 }
 
-
-/* ClockPerfmanceMonitoringDataRecord */
-
-typedef enum {
-	CPMDR_masterSlaveDelay,
-	CPMDR_slaveMasterDelay,
-	CPMDR_meanPathDelay,
-	CPMDR_offsetFromMaster,
-} CPMDR_params_t;
-
-void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb, uint8_t di);
-void gptp_clock_perfmon_dr_reset(PerfMonClockDS *ds, uint8_t type, uint64_t cts);
-void gptp_clock_perfmon_dr_dump(PerfMonClockDS *ds, ub_dbgmsg_level_t lv, uint8_t id);
-void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, int64_t v);
-
-#define PERFMON_CPMDR_ADD(ds, p, v) {\
-	gptp_clock_perfmon_cpmdr_add(ds, p, v); \
+bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
+{
+	return false;
 }
-
-#endif // GPTP_PERFMON_H_
+#endif //!SOC_AM273X

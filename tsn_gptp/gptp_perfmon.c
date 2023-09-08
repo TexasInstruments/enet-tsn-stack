@@ -54,7 +54,16 @@
 #include "tsn_unibase/unibase_macros.h"
 #include <math.h>
 
-static void perfmon_running_stat_add(PerfMonAncillaryDataRecord *anc, double x)
+// the next 2 functions are in gptpgcfg.c
+// to make gptpgcfg.h public, they are excluded from gptpgcfg.h and need 'extern' here
+extern int gptpgcfg_set_clock_perfmonDS(PerfMonClockDS *ds, uint8_t id, bool periodComplete,
+					uint8_t gptpInstanceIndex, uint8_t domainIndex);
+
+extern int gptpgcfg_set_port_perfmonDS(PerfMonPortDS *ds, uint8_t id, bool periodComplete,
+				       uint8_t gptpInstanceIndex, uint8_t domainIndex,
+				       uint8_t portIndex);
+
+static void perfmon_running_stat_add(PerfMonAncillaryDataRecord *anc, int64_t x)
 {
 	/* IEEE1588-2019 PTP Variance
 	 * The standards defines StdDev in section 7.6.3 specifying the the variance
@@ -75,18 +84,20 @@ static void perfmon_running_stat_add(PerfMonAncillaryDataRecord *anc, double x)
 	 *
 	 *  Reason is we would like to prevent keeping large data sets and keeping
 	 *  cummulative summation that may cause overflow.
+	 *
+	 *  Note: As a limitation on implementation, mean and variance are computed
+	 *  in int64_t resulting to floating point portion is intentionally dropped.
 	*/
 	anc->N++;
 	if(anc->N==1){
 		anc->prev_M = anc->M=x;
-		anc->prev_V = 0.0;
+		anc->prev_V = 0;
 	}else{
 		anc->M = anc->prev_M + (x - anc->prev_M) / anc->N;
 		anc->V = anc->prev_V + (x - anc->prev_M) * (x - anc->M);
 		anc->prev_M = anc->M;
 		anc->prev_V = anc->V;
 	}
-
 }
 
 /* PortPerfmanceMonitoringDataRecord */
@@ -300,7 +311,7 @@ void gptp_port_perfmon_dr_reset(PerfMonPortDS *ds, uint8_t type, uint8_t di, uin
 	}
 }
 
-static void gptp_port_perfmon_ppmpddr_dr_add(PortPerfMonPeerDelayDataRecord *dr, PPMPDDR_params_t p, uint64_t v)
+static void gptp_port_perfmon_ppmpddr_dr_add(PortPerfMonPeerDelayDataRecord *dr, PPMPDDR_params_t p, int64_t v)
 {
 	int64_t scaledns=v*SCALEDNS_FACTOR;
 	int64_t max=0, *drmax=NULL, min=0, *drmin=NULL, *drave=NULL, *drstd=NULL;
@@ -326,7 +337,7 @@ static void gptp_port_perfmon_ppmpddr_dr_add(PortPerfMonPeerDelayDataRecord *dr,
 	*drstd=sqrt(anc->V)*SCALEDNS_FACTOR;
 }
 
-void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, uint64_t v)
+void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, int64_t v)
 {
 	if(!ds) return;
 	gptp_port_perfmon_ppmpddr_dr_add(&ds->pdelayDR[PERFMON_SHORTINTV_DR], p, v);
@@ -530,7 +541,7 @@ void gptp_clock_perfmon_dr_reset(PerfMonClockDS *ds, uint8_t type, uint64_t cts)
 	}
 }
 
-static void gptp_clock_perfmon_cpmdr_dr_add(ClockPerfMonDataRecord *dr, CPMDR_params_t p, uint64_t v)
+static void gptp_clock_perfmon_cpmdr_dr_add(ClockPerfMonDataRecord *dr, CPMDR_params_t p, int64_t v)
 {
 	int64_t scaledns=v*SCALEDNS_FACTOR;
 	int64_t max=0, *drmax=NULL, min=0, *drmin=NULL, *drave=NULL, *drstd=NULL;
@@ -584,12 +595,9 @@ static void gptp_clock_perfmon_cpmdr_dr_add(ClockPerfMonDataRecord *dr, CPMDR_pa
 	*drstd=sqrt(anc->V)*SCALEDNS_FACTOR;
 }
 
-void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, uint64_t v)
+void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, int64_t v)
 {
 	if(!ds) return;
 	gptp_clock_perfmon_cpmdr_dr_add(&ds->clockDR[PERFMON_SHORTINTV_DR], p, v);
 	gptp_clock_perfmon_cpmdr_dr_add(&ds->clockDR[PERFMON_LONGINTV_DR], p, v);
 }
-
-
-

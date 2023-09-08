@@ -158,23 +158,31 @@ int ydbi_get_asCapable_ucnotice(yang_db_item_access_t *ydbia, uint8_t *gptpInsta
  * @brief Set value to ClockPerformanceMonitoringDataRecord confitem
  * @param index is the key for the data record
  */
-int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint32_t gptpInstance,
-		uint16_t index, uint8_t confitem, void *value, uint32_t vsize);
-
+int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
+                                uint8_t domainIndex, uint16_t index, uint8_t confitem,
+                                void *value, uint32_t vsize);
 
 /**
  * @brief Set value to PortPerformanceMonitoringDataRecord confitem
  * @param list is either IEEE1588_PTP_RECORD_LIST or IEEE1588_PTP_RECORD_LIST_PEER_DELAY
  * @param index is the key for the data record
  */
-int ydbi_set_perfmon_port_item(yang_db_item_access_t *ydbia, uint32_t gptpInstance,
-	uint16_t portIndex, uint8_t list, uint16_t index, uint8_t confitem,	void *value, uint32_t vsize);
+int ydbi_set_perfmon_port_item(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
+	uint8_t domainIndex, uint16_t portIndex, uint8_t list, uint16_t index,
+	uint8_t confitem, void *value, uint32_t vsize);
 
 /**
  * @brief delete all records under the clock performance-monitoring record-list
  * @return true for successful deletion, otherwise false
  */
-int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstance);
+int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia,
+		uint8_t gptpInstance, uint8_t domainIndex);
+
+/**
+ * @brief cascades ClockPerformanceMonitoringDataRecord in the range of index 0 to 96.
+ */
+int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia,
+		uint8_t gptpInstance, uint8_t domainIndex);
 
 /**
  * @brief delete all records under the port-peer-delay performance-monitoring record-list
@@ -183,16 +191,12 @@ int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstan
  * @return 0 for successful deletion, otherwise false
  */
 int ydbi_clear_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
-		uint8_t gptpInstance, uint16_t portIndex);
-
-/**
- * @brief cascades ClockPerformanceMonitoringDataRecord in the range of index 0 to 96.
- */
-int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstance);
+		uint8_t gptpInstance, uint8_t domainIndex, uint16_t portIndex);
 
 /**
  * @brief cascades PortPerformanceMonitoringDataRecord in the range of index 0 to 96.
  */
-int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uint8_t gptpInstance, uint16_t portIndex);
+int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
+		uint8_t gptpInstance, uint8_t domainIndex, uint16_t portIndex);
 
 #endif

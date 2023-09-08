@@ -63,32 +63,47 @@
 /**
  * no error
  */
-#define LLDENET_E_OK       (0)
+#define LLDENET_E_OK        (0)
 /**
  * param invalid
  */
-#define LLDENET_E_PARAM    (-1)
+#define LLDENET_E_PARAM     (-1)
 /**
  * no buffer
  */
-#define LLDENET_E_NOBUF    (-2)
+#define LLDENET_E_NOBUF     (-2)
 /**
  * small or invalid bufsize
  */
-#define LLDENET_E_BUFSIZE  (-3)
+#define LLDENET_E_BUFSIZE   (-3)
 /**
  * request for a not available resource
  */
-#define LLDENET_E_NOAVAIL  (-4)
+#define LLDENET_E_NOAVAIL   (-4)
 /**
  * dma error
  */
-#define LLDENET_E_DMA      (-5)
+#define LLDENET_E_DMA       (-5)
 /**
  * enet ioctl error
  */
-#define LLDENET_E_IOCTL    (-6)
-
+#define LLDENET_E_IOCTL     (-6)
+/**
+ * does not match expectation
+ */
+#define LLDENET_E_NOMATCH   (-7)
+/**
+ * general error
+ */
+#define LLDENET_E_FAILURE   (-8)
+/**
+ * The operation is denied
+ */
+#define LLDENET_E_DENY      (-9)
+/**
+ * The operation is unsupported
+ */
+#define LLDENET_E_UNSUPPORT (-10)
 /**
  * Maximum number of ports supported by the Enet LLD abstract layer
  */

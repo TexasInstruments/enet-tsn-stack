@@ -447,15 +447,11 @@ static int gptpnet_cb_timeout(gptpman_data_t *gpmand, uint64_t cts64)
 			// asCapable might be set, inform other state machines
 			if((di!=0) && (!gpmand->tasds[di].tasglb->domainIndex)){continue;}
 			(void)sm_bmcs_domain_port_update(gpmand, di, pi, cts64);
-			#if 0
 			gptp_port_perfmon(gpmand->tasds[di].ptds[pi].ppglb->perfmonDS, di, pi,
 				cts64, gpmand->tasds[di].tasglb);
-			#endif
 		}
 		(void)gm_stable_sm(gpmand->tasds[di].gmsd, cts64);
-		#if 0
 		gptp_clock_perfmon(gpmand->tasds[di].tasglb->perfmonClockDS, cts64, gpmand->tasds[di].tasglb, di);
-		#endif
 	}
 	return 0;
 }

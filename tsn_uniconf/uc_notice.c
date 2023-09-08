@@ -117,6 +117,7 @@ struct uc_notice_data {
 	bool fromthread;
 	UC_NOTICE_SIG_T *getnotice_sem;
 	ub_esarray_cstd_t *putnotice_list;
+	char semname[UC_SEMNAME_MAX];
 };
 
 enum {
@@ -469,17 +470,39 @@ static void nu_increment_refcounter(bool fromthread,
 
 static uc_notice_data_t sucntd;
 static CB_THREAD_MUTEX_T CB_STATIC_MUTEX_INITIALIZER(ntmutex);
+static int create_semname_with_dbname(char *semname, const char *dbname)
+{
+	const char *dnp;
+	if (!dbname){
+		UB_LOG(UBL_INFO, "%s:null dbname is specified.\n", __func__);
+		return 0;
+	}
+	dnp=strrchr(dbname, '/');
+	if(dnp==NULL){
+		dnp=dbname;
+	}else{
+		dnp=&dnp[1];
+	}
+	if(strlen(dnp)>=UC_SEMNAME_MAX-strlen(UC_GETNOTICE_SEM)){
+		UB_LOG(UBL_ERROR, "%s:dbname is too long\n", __func__);
+		return -1;
+	}
+	snprintf(semname, UC_SEMNAME_MAX, "%s%s", UC_GETNOTICE_SEM, dnp);
+	return 0;
+}
 
-uc_notice_data_t *uc_notice_init(uint8_t callmode)
+uc_notice_data_t *uc_notice_init(uint8_t callmode, const char *dbname)
 {
 	int master=0;
 	int res=-1;
+	if(create_semname_with_dbname(sucntd.semname, dbname)!=0){return NULL;}
 	CB_STATIC_MUTEX_CONSTRUCTOR(ntmutex);
 	CB_THREAD_MUTEX_LOCK(&ntmutex);
 	if(UC_CALL_UNICONF(callmode)!=0u){
 		// from 'uniconf'
 		sucntd.fromthread=(UC_CALL_THREAD(callmode)!=0u);
-		if(uc_notice_sig_open(sucntd.fromthread, &sucntd.getnotice_sem, &master, NULL)!=0){
+		if(uc_notice_sig_open(sucntd.fromthread,
+				      &sucntd.getnotice_sem, &master, sucntd.semname)!=0){
 			goto erexit;
 		}
 	}else{
@@ -498,7 +521,8 @@ uc_notice_data_t *uc_notice_init(uint8_t callmode)
 		}
 		// called from a process, initialize a new instance
 		sucntd.fromthread=false;
-		if(uc_notice_sig_open(sucntd.fromthread, &sucntd.getnotice_sem, NULL, NULL)!=0){
+		if(uc_notice_sig_open(sucntd.fromthread,
+				      &sucntd.getnotice_sem, NULL, sucntd.semname)!=0){
 			goto erexit;
 		}
 	}
@@ -532,7 +556,7 @@ void uc_notice_close(uc_notice_data_t *ucntd, uint8_t callmode)
 		ucntd->putnotice_list=NULL;
 	}
 	uc_notice_sig_close(ucntd->fromthread, ucntd->getnotice_sem,
-				    UC_CALL_UNICONF(callmode), NULL);
+				    UC_CALL_UNICONF(callmode), ucntd->semname);
 	ucntd->getnotice_sem=NULL;
 	ucntd->fromthread=false;
 	CB_THREAD_MUTEX_UNLOCK(&ntmutex);

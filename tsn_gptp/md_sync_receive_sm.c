@@ -99,7 +99,7 @@ struct md_sync_receive_data{
 
 static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 {
-	uint64_t nsec;
+	int64_t offset=0;
 	sm->mdSyncReceive.domainIndex =
 		md_domain_number2index(RCVD_SYNC_PTR->head.domainNumber);
 	sm->mdSyncReceive.seqid = ntohs(RCVD_SYNC_PTR->head.sequenceId_ns);
@@ -175,20 +175,20 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 		md_port_number2index(ntohs(RCVD_SYNC_PTR->head.sourcePortIdentity.portNumber_ns));
 	sm->mdSyncReceive.logMessageInterval = RCVD_SYNC_PTR->head.logMessageInterval;
 
-	sm->mdSyncReceive.upstreamTxTime.nsec = (sm->syncEventIngressTimestamp -
-		((double)sm->ppg->forAllDomain->neighborPropDelay.nsec /
+	sm->mdSyncReceive.upstreamTxTime.nsec = sm->syncEventIngressTimestamp -
+		(uint64_t)((double)sm->ppg->forAllDomain->neighborPropDelay.nsec /
 		 sm->ppg->forAllDomain->neighborRateRatio) -
-		((double)sm->ppg->forAllDomain->delayAsymmetry.nsec /
-		 sm->mdSyncReceive.rateRatio));
+		(uint64_t)((double)sm->ppg->forAllDomain->delayAsymmetry.nsec /
+		 sm->mdSyncReceive.rateRatio);
 
 	/* IEEE1588-2019 MasterSlaveDelay calculation (J.2 Timestamping monitoring, p. 409)
 	 *  MasterSlaveDelay = syncEventIngressTimestamp - preciseOriginTimestamp - correctionField
 	*/
-	nsec = sm->syncEventIngressTimestamp -
+	offset = sm->syncEventIngressTimestamp -
 	       ((sm->mdSyncReceive.preciseOriginTimestamp.seconds.lsb*(uint64_t)UB_SEC_NS)+
 	       sm->mdSyncReceive.preciseOriginTimestamp.nanoseconds) -
 	       sm->mdSyncReceive.followUpCorrectionField.nsec;
-	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_masterSlaveDelay, nsec);
+	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_masterSlaveDelay, offset);
 
 	/* IEEE1588-2019 offsetFromMaster calculation (11.5.3.3)
 	 *  offsetFromMaster = syncEventIngressTimestamp - originTimestamp -
@@ -196,9 +196,9 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 	 *                     upstreamTxTime)
 	 * Where variables used are members of MDSyncReceive structure.
 	*/
-	nsec = nsec - (sm->mdSyncReceive.rateRatio*
+	offset = offset - (sm->mdSyncReceive.rateRatio*
 	       (sm->syncEventIngressTimestamp - sm->mdSyncReceive.upstreamTxTime.nsec));
-	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_offsetFromMaster, nsec);
+	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_offsetFromMaster, offset);
 
 	return &sm->mdSyncReceive;
 }

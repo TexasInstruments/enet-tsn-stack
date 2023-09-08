@@ -47,98 +47,43 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef GPTP_PERFMON_H_
-#define GPTP_PERFMON_H_
+#ifndef BUFRING_H_
+#define BUFRING_H_
 
-#include <tsn_unibase/unibase.h>
-#include "mind.h"
-#include "gptpconf/gptpgcfg.h"
-#include "gptpcommon.h"
-#include "gptpnet.h"
+#include <enet_appmemutils.h>
+#include <enet_apputils.h>
+#include <stdint.h>
 
-#define SHORTINTV_START_IDX 0
-#define SHORTINTV_END_IDX 96
-#define LONGINTV_START_IDX 97
-#define LONGINTV_END_IDX 98
+#ifndef CB_LLDENET_RXPKT_MMEM
+#define CB_LLDENET_RXPKT_MMEM lldenet_pktmem
+#endif
 
-/* PerfmanceMonitoringDataRecord */
+#ifndef CB_LLDENET_SUB_RX_RING_SIZE
+#define CB_LLDENET_SUB_RX_RING_SIZE 4
+#endif
 
-typedef enum {
-	PPMPDDR_meanLinkDelay,
-} PPMPDDR_params_t;
+#ifndef ENET_MEM_LARGE_POOL_PKT_SIZE
+#define ENET_MEM_LARGE_POOL_PKT_SIZE ENET_UTILS_ALIGN(1536U, ENET_UTILS_CACHELINE_SIZE)
+#endif //ENET_MEM_LARGE_POOL_PKT_SIZE
 
-void gptp_port_perfmon(PerfMonPortDS *ds, int domainIndex,
-					   int portIndex, uint64_t cts64,
-					   PerTimeAwareSystemGlobal *tasglb);
-void gptp_port_perfmon_dr_reset(PerfMonPortDS *ds, uint8_t type,
-		uint8_t di, uint8_t pi, uint64_t cts);
-void gptp_port_perfmon_dr_dump(PerfMonPortDS *ds, ub_dbgmsg_level_t lv,
-		uint8_t id, uint8_t di, uint8_t pi);
-void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, int64_t v);
+#ifndef ENET_MEM_NUM_RX_PKTS
+#define ENET_MEM_NUM_RX_PKTS 16
+#endif //ENET_MEM_NUM_RX_PKTS
 
-#define PERFMON_PPMPDDR_INC(ds, m) {\
-	if(ds){ \
-		(ds)->pdelayDR[PERFMON_SHORTINTV_DR].m++; \
-		(ds)->pdelayDR[PERFMON_LONGINTV_DR].m++; \
-	} \
-}
+typedef struct {
+	void *buf;
+	int size;
+	int port;
+} LLDEnetPktBuf_t;
 
-#define PERFMON_PPMDR_INC(ds, m) {\
-	if(ds){ \
-		(ds)->portDR[PERFMON_SHORTINTV_DR].m++; \
-		(ds)->portDR[PERFMON_LONGINTV_DR].m++; \
-	} \
-}
+typedef struct {
+	uint32_t ci, pi;
+	LLDEnetPktBuf_t pktBufs[CB_LLDENET_SUB_RX_RING_SIZE];
+} LLDEnetBufRing_t;
 
-#define PERFMON_PPMSDR_INC(ds, m) {\
-	if(ds){ \
-		(ds)->signalingDR[PERFMON_SHORTINTV_DR].m++; \
-		(ds)->signalingDR[PERFMON_LONGINTV_DR].m++; \
-	} \
-}
+void InitBufRing(LLDEnetBufRing_t *ring);
+void DeInitBufRing(LLDEnetBufRing_t *ring);
+bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
+bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
 
-#define PERFMON_PPMPDDR_RST(ds, m) {\
-	if(ds){ \
-		(ds)->pdelayDR[PERFMON_SHORTINTV_DR].m=0; \
-		(ds)->pdelayDR[PERFMON_LONGINTV_DR].m=0; \
-	} \
-}
-
-#define PERFMON_PPMDR_RST(ds, m) {\
-	if(ds){ \
-		(ds)->portDR[PERFMON_SHORTINTV_DR].m=0; \
-		(ds)->portDR[PERFMON_LONGINTV_DR].m=0; \
-	} \
-}
-
-#define PERFMON_PPMSDR_RST(ds, m) {\
-	if(ds){ \
-		(ds)->signalingDR[PERFMON_SHORTINTV_DR].m=0; \
-		(ds)->signalingDR[PERFMON_LONGINTV_DR].m=0; \
-	} \
-}
-
-#define PERFMON_PPMPDDR_ADD(ds, p, v) {\
-	gptp_port_perfmon_ppmpddr_add(ds, p, v); \
-}
-
-
-/* ClockPerfmanceMonitoringDataRecord */
-
-typedef enum {
-	CPMDR_masterSlaveDelay,
-	CPMDR_slaveMasterDelay,
-	CPMDR_meanPathDelay,
-	CPMDR_offsetFromMaster,
-} CPMDR_params_t;
-
-void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb, uint8_t di);
-void gptp_clock_perfmon_dr_reset(PerfMonClockDS *ds, uint8_t type, uint64_t cts);
-void gptp_clock_perfmon_dr_dump(PerfMonClockDS *ds, ub_dbgmsg_level_t lv, uint8_t id);
-void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, int64_t v);
-
-#define PERFMON_CPMDR_ADD(ds, p, v) {\
-	gptp_clock_perfmon_cpmdr_add(ds, p, v); \
-}
-
-#endif // GPTP_PERFMON_H_
+#endif

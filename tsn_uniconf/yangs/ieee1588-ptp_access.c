@@ -413,10 +413,14 @@ int ydbi_get_asCapable_ucnotice(yang_db_item_access_t *ydbia, uint8_t *gptpInsta
 	return res;
 }
 
-int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint32_t gptpInstance,
-								uint16_t index, uint8_t confitem,
-								void *value, uint32_t vsize)
+int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
+                                uint8_t domainIndex, uint16_t index, uint8_t confitem,
+                                void *value, uint32_t vsize)
 {
+	int32_t instIndex;
+
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
+	if(instIndex<0){return -1;}
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
 
 	ydbia->dbpara.onhw=YANG_DB_ONHW_NOACTION;
@@ -428,7 +432,7 @@ int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint32_t gptpInsta
 	ydbia->dbpara.aps[5] = IEEE1588_PTP_RECORD_LIST;
 	ydbia->dbpara.aps[6] = confitem;
 	ydbia->dbpara.aps[7] = 255u;
-	ydbia->dbpara.kvs[0]=&gptpInstance;
+	ydbia->dbpara.kvs[0]=&instIndex;
 	ydbia->dbpara.kss[0]=sizeof(uint32_t);
 	ydbia->dbpara.kvs[1]=&index;
 	ydbia->dbpara.kss[1]=sizeof(uint16_t);
@@ -439,11 +443,15 @@ int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint32_t gptpInsta
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
-int ydbi_set_perfmon_port_item(yang_db_item_access_t *ydbia, uint32_t gptpInstance,
-							   uint16_t portIndex, uint8_t list,
-							   uint16_t index, uint8_t confitem,
-							   void *value, uint32_t vsize)
+int ydbi_set_perfmon_port_item(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
+                               uint8_t domainIndex,	uint16_t portIndex, uint8_t list,
+                               uint16_t index, uint8_t confitem,
+                               void *value, uint32_t vsize)
 {
+	int32_t instIndex;
+
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
+	if(instIndex<0){return -1;}
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
 
 	ydbia->dbpara.onhw=YANG_DB_ONHW_NOACTION;
@@ -457,7 +465,7 @@ int ydbi_set_perfmon_port_item(yang_db_item_access_t *ydbia, uint32_t gptpInstan
 	ydbia->dbpara.aps[7] = list;
 	ydbia->dbpara.aps[8] = confitem;
 	ydbia->dbpara.aps[9] = 255u;
-	ydbia->dbpara.kvs[0]=&gptpInstance;
+	ydbia->dbpara.kvs[0]=&instIndex;
 	ydbia->dbpara.kss[0]=sizeof(uint32_t);
 	ydbia->dbpara.kvs[1]=&portIndex;
 	ydbia->dbpara.kss[1]=sizeof(uint16_t);
@@ -475,26 +483,28 @@ static keymod_rcode_t _keymod_list_del_all(uint8_t *ap, kvs_t *kvs, uint8_t *kss
 	return KEYMOD_NOMOVE_DELETE;
 }
 
-int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstance)
+int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia,
+                                uint8_t gptpInstance, uint8_t domainIndex)
 {
 	int res;
-	int32_t instIndex;
+	int32_t instIndex=0;
 	uint8_t aps[7]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
 		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
 		IEEE1588_PTP_RECORD_LIST, 255};
 	void *kvs[2]={&instIndex, NULL};
 	uint8_t kss[1]={sizeof(uint32_t)};
 
-	instIndex=gptpInstance;
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
 	if(instIndex<0) return false;
 	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_FORWARD, _keymod_list_del_all);
 	return res;
 }
 
-int ydbi_clear_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uint8_t gptpInstance, uint16_t portIndex)
+int ydbi_clear_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
+                               uint8_t gptpInstance, uint8_t domainIndex, uint16_t portIndex)
 {
 	int res;
-	int32_t instIndex;
+	int32_t instIndex=0;
 	uint8_t aps[9]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
 		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
 		IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS, list,
@@ -502,7 +512,7 @@ int ydbi_clear_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uint8
 	void *kvs[3]={&instIndex, &portIndex, NULL};
 	uint8_t kss[2]={sizeof(uint32_t), sizeof(uint16_t)};
 
-	instIndex=gptpInstance;
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
 	if(instIndex<0) return false;
 	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_FORWARD, _keymod_list_del_all);
 	return res;
@@ -526,7 +536,8 @@ static keymod_rcode_t _keymod_list_clock_move(uint8_t *ap, kvs_t *kvs, uint8_t *
 	return KEYMOD_MOVE_OVERWRITE; // can overwrite
 }
 
-int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInstance)
+int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia,
+                                  uint8_t gptpInstance, uint8_t domainIndex)
 {
 	int res;
 	int32_t instIndex=0;
@@ -536,7 +547,7 @@ int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia, uint8_t gptpInst
 	void *kvs[3]={&instIndex, NULL, NULL};
 	uint8_t kss[2]={sizeof(uint32_t), sizeof(uint16_t)};
 
-	instIndex=gptpInstance;
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
 	if(instIndex<0) return false;
 
 	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_BACKWARD, _keymod_list_clock_move);
@@ -559,7 +570,8 @@ static keymod_rcode_t _keymod_list_port_move(uint8_t *ap, kvs_t *kvs, uint8_t *k
 	return KEYMOD_MOVE_OVERWRITE; // can overwrite
 }
 
-int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uint8_t gptpInstance, uint16_t portIndex)
+int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
+                                 uint8_t gptpInstance, uint8_t domainIndex, uint16_t portIndex)
 {
 	int res;
 	int32_t instIndex=0;
@@ -570,7 +582,7 @@ int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list, uin
 	void *kvs[4]={&instIndex, &portIndex, NULL, NULL};
 	uint8_t kss[3]={sizeof(uint32_t), sizeof(uint16_t), sizeof(uint16_t)};
 
-	instIndex=gptpInstance;
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
 	if(instIndex<0) return false;
 
 	res=yang_db_listmove(ydbia->dbald, aps, kvs, kss, LISTMOVE_BACKWARD, _keymod_list_port_move);

@@ -66,34 +66,62 @@ static int get_result_num(char *pstr, int *num)
 	return 0;
 }
 
-static void test_write_read(void **state)
+static int one_write_read(char *kstr, char *vstr)
 {
 	char pstr[1024];
+	char kkstr[128];
 	FILE *fo;
 	int res;
-	// check if unicof is started
-	sprintf(pstr, "./uniconfmon -p "UCTEST_DBNAME" -w 10 -i -1 -n /");
-	fo=popen(pstr, "w");
-	res=pclose(fo);
-	assert_int_equal(res, 0);
+	bool delmode=false;
+
+	strcpy(kkstr, kstr);
+	if(kkstr[strlen(kkstr)-1]=='-'){delmode=true;}
 	// write a value
-	sprintf(pstr, "./uniconfmon -p "UCTEST_DBNAME
-		" -i -1 -n \"/ietf-interfaces/interfaces/interface|name:cbeth0|/speed\" 500");
+	if(vstr){
+		sprintf(pstr, "./uniconfmon -p "UCTEST_DBNAME
+			" -i -1 -n \"%s\" %s", kkstr, vstr);
+	}else{
+		sprintf(pstr, "./uniconfmon -p "UCTEST_DBNAME
+			" -i -1 -n \"%s\"", kkstr);
+	}
 	fo=popen(pstr, "w");
 	res=pclose(fo);
 	assert_int_equal(res, 0);
 	// read back the value
+	if(delmode){
+		kkstr[strlen(kkstr)-1]=0;
+	}
 	sprintf(pstr, "./uniconfmon -p "UCTEST_DBNAME
-		" -i -1 -n \"/ietf-interfaces/interfaces/interface|name:cbeth0|/speed\"");
+		" -i -1 -n \"%s\"", kkstr);
 	fo=popen(pstr, "r");
 	while(true){
 		res=fread(pstr, 1, sizeof(pstr)-1, fo);
-		if(res<=0) break;
+		if(res<=0){
+			res=-1;
+			break;
+		}
 		pstr[res]=0;
 		if(get_result_num(pstr, &res)==0) break;
 	}
 	pclose(fo);
+	return res;
+}
+
+static void test_write_read(void **state)
+{
+	char *pstr="./uniconfmon -p "UCTEST_DBNAME" -w 10 -i -1 -n /";
+	FILE *fo;
+	int res;
+	// check if unicof is started
+	fo=popen(pstr, "w");
+	res=pclose(fo);
+	assert_int_equal(res, 0);
+
+	res=one_write_read("/ietf-interfaces/interfaces/interface|name:cbeth0|/speed", "500");
 	assert_int_equal(res, 500);
+
+	res=one_write_read("/ietf-interfaces/interfaces/interface|name:cbeth0|/speed-", NULL);
+	assert_int_equal(res, -1);
 }
 
 static int setup(void **state)

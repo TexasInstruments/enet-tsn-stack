@@ -231,7 +231,13 @@ static void DmaClose(LLDEnetDma_t *hLLDma)
 	}
 }
 
-static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t vlanId)
+static bool IsMacAddrSet(uint8_t *mac)
+{
+	return ((mac[0]|mac[1]|mac[2]|mac[3]|mac[4]|mac[5]) != 0);
+}
+
+int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
+				  uint32_t vlanId, uint32_t ethType)
 {
 	Enet_IoctlPrms prms;
 	CpswAle_SetPolicerEntryOutArgs setPolicerEntryOutArgs;
@@ -239,17 +245,30 @@ static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t 
 	LLDEnetDma_t *hLLDma = &hLLDEnet->dma;
 	int32_t status;
 
+	if ((hLLDEnet == NULL) || (dstMacAddr == NULL)) {
+		return LLDENET_E_PARAM;
+	}
+	if ((IsMacAddrSet(dstMacAddr) == false) && (ethType == 0)) {
+		return LLDENET_E_PARAM;
+	}
+
 	memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
-	setPolicerEntryInArgs.policerMatch.policerMatchEnMask =
-		CPSW_ALE_POLICER_MATCH_MACDST;
-	setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.portNum = 0U;
-	setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = vlanId;
-	memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
-		   &dstMacAddr[0U], ENET_MAC_ADDR_LEN);
+
+	if (IsMacAddrSet(dstMacAddr) == true) {
+		setPolicerEntryInArgs.policerMatch.policerMatchEnMask =
+			CPSW_ALE_POLICER_MATCH_MACDST;
+		setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.portNum = 0U;
+		setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = vlanId;
+		memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
+			&dstMacAddr[0U], ENET_MAC_ADDR_LEN);
+	}
 
 	/* Set policer params for ARP EtherType matching */
-	setPolicerEntryInArgs.policerMatch.policerMatchEnMask |= CPSW_ALE_POLICER_MATCH_ETHERTYPE;
-	setPolicerEntryInArgs.policerMatch.etherType = 0x88F7U;
+	if (ethType > 0) {
+		setPolicerEntryInArgs.policerMatch.policerMatchEnMask |=
+			CPSW_ALE_POLICER_MATCH_ETHERTYPE;
+		setPolicerEntryInArgs.policerMatch.etherType = ethType;
+	}
 	setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
 	setPolicerEntryInArgs.threadIdEn = true;
 	setPolicerEntryInArgs.threadId = hLLDma->rxFlowIdx;
@@ -262,11 +281,6 @@ static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t 
 		return LLDENET_E_IOCTL;
 	}
 	return 0;
-}
-
-static bool IsMacAddrSet(uint8_t *mac)
-{
-	return ((mac[0]|mac[1]|mac[2]|mac[3]|mac[4]|mac[5]) != 0);
 }
 
 static uint32_t LLDEnetReceiveRxReadyPkts(LLDEnetDma_t *hLLDma)
@@ -306,8 +320,7 @@ static void LLDEnetRxNotifyCb(void *cbArg)
 	}
 
 	rxReadyCnt = LLDEnetReceiveRxReadyPkts(hLLDma);
-	EnetAppUtils_assert(rxReadyCnt != 0U);
-	if (hLLDma->rxNotifyCb == NULL) {
+	if ((rxReadyCnt == 0U) || (hLLDma->rxNotifyCb == NULL)) {
 		return;
 	}
 	hLLDma->rxNotifyCb(hLLDma->rxCbArg);
@@ -350,9 +363,7 @@ static void LLDEnetTxNotifyCb(void *cbArg)
 	}
 
 	pktCount = LLDEnetRetrieveTxDonePkts(hLLDma);
-	EnetAppUtils_assert(pktCount != 0U);
-
-	if (hLLDma->txNotifyCb == NULL) {
+	if ((pktCount == 0U) || (hLLDma->txNotifyCb == NULL)) {
 		return;
 	}
 	hLLDma->txNotifyCb(hLLDma->txCbArg);
@@ -388,7 +399,8 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 	hLLDEnet->coreKey = attachInfo.coreKey;
 	hLLDEnet->enetType = (Enet_Type)cfg->enetType;
 
-	if (!cfg->unusedDma) {
+	/* We only support both channels used or unused DMA */
+	if ((cfg->unusedDmaRx == false) && (cfg->unusedDmaTx == false)) {
 		hLLDEnet->dma.hUdmaDrv = handleInfo.hUdmaDrv;
 		hLLDEnet->dma.hLLDEnet = hLLDEnet;
 		hLLDEnet->dma.nRxPkts = cfg->nRxPkts;
@@ -409,10 +421,10 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 		hLLDEnet->dma.rxCbArg = cfg->rxCbArg;
 
 		DmaOpen(&hLLDEnet->dma);
-	}
-	if (IsMacAddrSet(cfg->dstMacAddr)) {
-		res = FilterVlanDestMac(hLLDEnet, cfg->dstMacAddr, cfg->vlanId);
-		EnetAppUtils_assert(res == 0);
+		if (IsMacAddrSet(cfg->dstMacAddr) || (cfg->ethType > 0)) {
+			res = LLDEnetFilter(hLLDEnet, cfg->dstMacAddr, cfg->vlanId, cfg->ethType);
+			EnetAppUtils_assert(res == 0);
+		}
 	}
 
 	return hLLDEnet;
@@ -430,14 +442,6 @@ void LLDEnetClose(LLDEnet_t *hLLDEnet)
 	//Need to confirm with TI
 	//EnetMcm_releaseCmdIf(hLLDEnet->enetType, &hLLDEnet->hMcmCmdIf);
 	free(hLLDEnet);
-}
-
-int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *destMacAddr, uint32_t vlanId)
-{
-	if ((hLLDEnet == NULL) || (destMacAddr == NULL)) {
-		return LLDENET_E_PARAM;
-	}
-	return FilterVlanDestMac(hLLDEnet, destMacAddr, vlanId);
 }
 
 int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFrames)
@@ -547,6 +551,10 @@ void LLDEnetCfgInit(LLDEnetCfg_t *cfg)
 	memset(cfg, 0, sizeof(LLDEnetCfg_t));
 	cfg->dmaTxChId = -1;
 	cfg->dmaRxChId = -1;
+	cfg->dmaRxOwner = true;
+	cfg->dmaRxShared = false;
+	cfg->unusedDmaTx = false;
+	cfg->unusedDmaRx = false;
 }
 
 bool LLDEnetIsPortUp(LLDEnet_t *hLLDEnet, uint8_t portNum)
@@ -646,12 +654,18 @@ int LLDEnetSetRxNotifyCb(LLDEnet_t *hLLDEnet, void (*rxNotifyCb)(void *arg), voi
 	return LLDENET_E_OK;
 }
 
+int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
+		void (*rxDefaultDataCb)(void *data, int size, int port, void *arg), void *arg)
+{
+	return LLDENET_E_UNSUPPORT;
+}
+
 int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 {
-	return LLDENET_E_NOAVAIL;
+	return LLDENET_E_UNSUPPORT;
 }
 
 int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm)
 {
-	return LLDENET_E_NOAVAIL;
+	return LLDENET_E_UNSUPPORT;
 }

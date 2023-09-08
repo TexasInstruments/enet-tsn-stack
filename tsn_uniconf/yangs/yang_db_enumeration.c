@@ -175,6 +175,7 @@ const char* private_key_algorithm[] = {
 const uint32_t private_key_algorithm_num = sizeof(private_key_algorithm)/sizeof(char*);
 
 const char* lldp_chassis_id_subtype[] = {
+    NULL,   // chassis-component start from 1
     "chassis-component",
     "interface-alias",
     "port-component",
@@ -185,6 +186,38 @@ const char* lldp_chassis_id_subtype[] = {
     NULL
 };
 const uint32_t lldp_chassis_id_subtype_num = sizeof(lldp_chassis_id_subtype)/sizeof(char*);
+
+const char* lldp_port_id_subtype[] = {
+    NULL,   // interface-alias start from 1
+    "interface-alias",
+    "port-component",
+    "mac-address",
+    "network-address",
+    "interface-name",
+    "agent-circuit-id",
+    "local",
+    NULL
+};
+const uint32_t lldp_port_id_subtype_num = sizeof(lldp_port_id_subtype)/sizeof(char*);
+
+const char* lldp_admin_status[] = {
+    NULL,
+    "tx-only",
+    "rx-only",
+    "tx-and-rx",
+    "disabled",
+    NULL
+};
+const uint32_t lldp_admin_status_num = sizeof(lldp_admin_status)/sizeof(char*);
+
+const char* lldp_man_addr_if_subtype[] = {
+    NULL,
+    "unknown",
+    "port-ref",
+    "system-port-number",
+    NULL
+};
+const uint32_t lldp_man_addr_if_subtype_num = sizeof(lldp_man_addr_if_subtype)/sizeof(char*);
 
 const char* conformance_type[] = {
     "implement",
@@ -224,7 +257,12 @@ const yang_enumeration_str_map_t yang_enumeration_str_map_list[] = {
     { frame_preemption_status,  frame_preemption_status_num, "preemption-status"  },
     { hold_request_status,      hold_request_status_num,     "hold-request"       },
     { private_key_algorithm,    private_key_algorithm_num,   "algorithm"          },
+    /*LLDP enums*/
     { lldp_chassis_id_subtype,  lldp_chassis_id_subtype_num, "chassis-id-subtype" },
+    { lldp_port_id_subtype,     lldp_port_id_subtype_num,    "port-id-subtype"    },
+    { lldp_admin_status,        lldp_admin_status_num,       "admin-status"       },
+    { lldp_man_addr_if_subtype, lldp_man_addr_if_subtype_num,"if-subtype"         },
+    /*LLDP enums end*/
     { conformance_type,         conformance_type_num,        "conformance-type"   },
     { netconf_datastore_type,   netconf_datastore_type_num,  "datastore"          },
     { gmstate,                  gmstate_num,                 "gmstate"            },

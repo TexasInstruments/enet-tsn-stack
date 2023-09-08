@@ -260,24 +260,6 @@ int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime)
 	return lld_mutex_trylock(mutex, timeout_msec);
 }
 
-// WARNING! The following function will be called inside the API
-// `ub_protected_func` which shares the same global mutex named `gmutex`
-// with log module in the unibase library. Thus, calling any unibase
-// log macro (ie. UB_LOG) inside this function will cause a DEADLOCK.
-int cb_lld_global_mutex_init(void *arg)
-{
-	CB_THREAD_MUTEX_T *mutex = (CB_THREAD_MUTEX_T*)arg;
-	if (mutex->lldmutex != NULL) {
-		// Mutex has been initialized.
-		return 0;
-	}
-	mutex->lldmutex = MutexP_create(&mutex->mobj);
-	if (mutex->lldmutex == NULL) {
-		return -1;
-	}
-	return 0;
-}
-
 static void task_fxn(void* a0, void* a1)
 {
 	cb_lld_task_t *cbtask = (cb_lld_task_t *) a0;

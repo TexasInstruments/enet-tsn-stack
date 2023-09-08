@@ -101,7 +101,10 @@ typedef struct {
 	 * If all bytes of dstMacAddr are 0, no filter is applied.
 	 */
 	uint32_t vlanId;
-
+	/**
+	 * Ethernet Type to filter RX packets.
+	 */
+	uint32_t ethType;
 	/**
 	 * Number of buffers allocated for transmit packets
 	 * Set to 0 to use the default value assigned by the implementation.
@@ -127,11 +130,31 @@ typedef struct {
 	 * Set to -1 for dynamic allocation, only supported by Jacinto.
 	 */
 	int dmaRxChId;
-
 	/**
-	 *  true: won't use DMA; false: will use DMA
+	 * true: won't use DMA RX; false: will use DMA RX
+	 * This is used when there is no interest in receiving data.
 	 */
-	bool unusedDma;
+	bool unusedDmaRx;
+	/**
+	 * true: won't use DMA TX; false: will use DMA TX
+	 * This is used when there is no interest in sending data.
+	 */
+	bool unusedDmaTx;
+	/**
+	 * Only the Sitara AM273x supports this param.
+	 * true: the dmaRxChId is shared between apps; false: not shared
+	 */
+	bool dmaRxShared;
+	/**
+	 * Only the Sitara AM273x supports this param.
+	 * true: the LLDEnet_t owns this RX DMA channel, it has the full permission to access
+	 * the SDK DMA API; false: the LLDEnet_t is unable to to call SDK RX DMA API
+	 * This is used when there are multiple LLDEnet_t shares the same DMA RX channel.
+	 * User has to make sure only one LLDEnet_t has dmaRxOwner is set to true if the
+	 * DMA channel share function is used.
+	 * Currently TX DMA channel share is not supported.
+	 */
+	bool dmaRxOwner;
 } LLDEnetCfg_t;
 
 /**
@@ -185,9 +208,11 @@ void LLDEnetClose(LLDEnet_t *hLLDEnet);
  * @param hLLDEnet Pointer to the LLDEnet instance.
  * @param dstMacAddr Destination MAC address to filter.
  * @param vlanId VLAN ID to filter.
+ * @param ethType Ethernet type to filter (e.g. PTP ethernet type is 0x88F7).
  * @return LLDENET_E_OK if successful, an error code otherwise.
  */
-int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t vlanId);
+int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
+				  uint32_t vlanId, uint32_t ethType);
 
 /**
  * @brief Allocates a source MAC address.
@@ -231,6 +256,9 @@ int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFram
  * @param hLLDEnet Pointer to the LLDEnet instance.
  * @param frame Pointer to the LLDEnetFrame_t structure to store the received frame.
  * @return LLDENET_E_OK if successful, an error code otherwise.
+ * @note The LLDENET_E_NOMATCH error when this function has data but does not match
+ * the data filter. This can happens when the RX DMA is shared between multiple
+ * data flows.
  */
 int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame);
 
@@ -274,6 +302,19 @@ int LLDEnetSetTxNotifyCb(LLDEnet_t *hLLDEnet, void (*txNotifyCb)(void *arg), voi
  * @return LLDENET_E_OK if successful, an error code otherwise.
  */
 int LLDEnetSetRxNotifyCb(LLDEnet_t *hLLDEnet, void (*rxNotifyCb)(void *arg), void *arg);
+
+/**
+ * @brief Sets the receive data callback function for LLDEnet when filter does not match.
+ * This callback is supported only when using the RX DMA shared channel.
+ * Currently, only Sitara AM273x is supported for this feature.
+ *
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @param rxDefaultDataCb Pointer to the receive data callback function.
+ * @param arg Argument to be passed to the callback function.
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
+		void (*rxDefaultDataCb)(void *data, int size, int port, void *arg), void *arg);
 
 /**
  * @brief Set parameters for schedule traffic

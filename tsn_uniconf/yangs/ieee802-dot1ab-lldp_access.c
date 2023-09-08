@@ -48,9 +48,9 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 #include "ieee802-dot1ab-lldp_access.h"
-
-#include <tsn_uniconf/yangs/yang_modules.h>
-#include <tsn_uniconf/yangs/ieee802-dot1ab-lldp.h>
+#include "yang_modules.h"
+#include "ieee802-dot1ab-lldp.h"
+#include "ieee802-dot1ab-lldp_access.h"
 
 /*functions prototype*/
 static void set_dpara_k1vk0(yang_db_access_para_t *dbpara,  uint8_t k1, bool status);
@@ -126,9 +126,9 @@ int ydbi_get_item_abk2vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t k1,
  * @brief Get val base on n key from LLDP until end
  * Also provided vkn as attribute
  */
-int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia, 
-                            void **rval, 
-                            uint8_t kn[], 
+int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia,
+                            void **rval,
+                            uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,
@@ -140,8 +140,8 @@ int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia,
 }
 
 
-int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,  
-                            uint8_t kn[], 
+int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,
+                            uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,
@@ -158,8 +158,8 @@ int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,
 	return err;
 }
 
-int ydbi_del_item_abknvkn(yang_db_item_access_t *ydbia,  
-                            uint8_t kn[], 
+int ydbi_del_item_abknvkn(yang_db_item_access_t *ydbia,
+                            uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,

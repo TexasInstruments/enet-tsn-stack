@@ -1,236 +1,236 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <xl4-extmod xmlns="xl4-extmod">
-  <xl4gptp>
-    <GPTP_INSTANCE type="list" keys="INSTANCE_INDEX">
-      <INSTANCE_INDEX type="uint8">0</INSTANCE_INDEX>
+	<xl4gptp>
+		<GPTP_INSTANCE type="list" keys="INSTANCE_INDEX">
+			<INSTANCE_INDEX type="uint8">0</INSTANCE_INDEX>
 
-      <!--  set -1 for normal operation -->
-      <TEST_SYNC_REC_PORT type="int8">-1</TEST_SYNC_REC_PORT>
+			<!--	set -1 for normal operation -->
+			<TEST_SYNC_REC_PORT type="int8">-1</TEST_SYNC_REC_PORT>
 
-      <!--  set -1 for normal operation -->
-      <TEST_SYNC_SEND_PORT type="int8">-1</TEST_SYNC_SEND_PORT>
+			<!--	set -1 for normal operation -->
+			<TEST_SYNC_SEND_PORT type="int8">-1</TEST_SYNC_SEND_PORT>
 
-      <!-- Number of clock instances depends on the number of port multiply by the
-           number of domains. Number of port is static but number of domain can change
-           dynamically.  -->
-      <MAX_DOMAIN_NUMBER type="int8">1</MAX_DOMAIN_NUMBER>
+			<!-- Number of clock instances depends on the number of port multiply by the
+					 number of domains. Number of port is static but number of domain can change
+					 dynamically.	 -->
+			<MAX_DOMAIN_NUMBER type="int8">1</MAX_DOMAIN_NUMBER>
 
-      <!--  use "" for the first detected ptpdev -->
-      <MASTER_PTPDEV type="string">""</MASTER_PTPDEV>
+			<!--	use "" for the first detected ptpdev -->
+			<MASTER_PTPDEV type="string">""</MASTER_PTPDEV>
 
-      <!-- 20msec, give up if no TxTS in this time -->
-      <TXTS_LOST_TIME type="uint32">20000000</TXTS_LOST_TIME>
+			<!-- 20msec, give up if no TxTS in this time -->
+			<TXTS_LOST_TIME type="uint32">20000000</TXTS_LOST_TIME>
 
-      <!-- Protocol-defined priority for all outgoing packets.
-           This can be used to assign network queues for use on a per-protocol basis.
-           Note that this does not add VLAN tag to the outgoing packets. Refer to
-           SO_PRIORITY for relevant information.  -->
-      <SOCKET_TXPRIORITY type="int8">0</SOCKET_TXPRIORITY>
+			<!-- Protocol-defined priority for all outgoing packets.
+					 This can be used to assign network queues for use on a per-protocol basis.
+					 Note that this does not add VLAN tag to the outgoing packets. Refer to
+					 SO_PRIORITY for relevant information.	-->
+			<SOCKET_TXPRIORITY type="int8">0</SOCKET_TXPRIORITY>
 
-      <!-- to set up the second domain, set this number for the clockIndex which is used
-           for the second domain. For the second domin, only thisClock and master clock
-           are added. CONF_CMLDS_MODE must be set to use multiple domains.
-           set -1 not to use the second domain.
-           1 to use the first ptpdevice -->
-      <FIRST_DOMAIN_THIS_CLOCK type="int8">1</FIRST_DOMAIN_THIS_CLOCK>
+			<!-- to set up the second domain, set this number for the clockIndex which is used
+					 for the second domain. For the second domin, only thisClock and master clock
+					 are added. CONF_CMLDS_MODE must be set to use multiple domains.
+					 set -1 not to use the second domain.
+					 1 to use the first ptpdevice -->
+			<FIRST_DOMAIN_THIS_CLOCK type="int8">1</FIRST_DOMAIN_THIS_CLOCK>
 
-      <SECOND_DOMAIN_THIS_CLOCK type="int8">-1</SECOND_DOMAIN_THIS_CLOCK>
+			<SECOND_DOMAIN_THIS_CLOCK type="int8">-1</SECOND_DOMAIN_THIS_CLOCK>
 
-      <SECOND_DOMAIN_NUMBER type="int8">1</SECOND_DOMAIN_NUMBER>
+			<SECOND_DOMAIN_NUMBER type="int8">1</SECOND_DOMAIN_NUMBER>
 
-      <!-- set 1 for single clock with multiple ports.  Switches are likely in that mode  -->
-      <SINGLE_CLOCK_MODE type="uint8">1</SINGLE_CLOCK_MODE>
+			<!-- set 1 for single clock with multiple ports.	Switches are likely in that mode	-->
+			<SINGLE_CLOCK_MODE type="uint8">0</SINGLE_CLOCK_MODE>
 
-      <!-- AFTERSEND_GUARDTIME, is a guard time not to send the next packet in this time.
-           This is needed for the other end. Some devices don't have queue for RxTs.
-           if Sync and FollowUp comes in very short time, FollowUp RxTs overwrites Sync RxTs.
-           Actually FollowUp RxTs is not needed, but many devices capture Ts for all PTP messages.
-           For Intel i210, this value must be set for TxTs.  1000000 for Minnow board.
-           nsec unit -->
-      <AFTERSEND_GUARDTIME type="uint32">300000</AFTERSEND_GUARDTIME>
+			<!-- AFTERSEND_GUARDTIME, is a guard time not to send the next packet in this time.
+					 This is needed for the other end. Some devices don't have queue for RxTs.
+					 if Sync and FollowUp comes in very short time, FollowUp RxTs overwrites Sync RxTs.
+					 Actually FollowUp RxTs is not needed, but many devices capture Ts for all PTP messages.
+					 For Intel i210, this value must be set for TxTs.	 1000000 for Minnow board.
+					 nsec unit -->
+			<AFTERSEND_GUARDTIME type="uint32">300000</AFTERSEND_GUARDTIME>
 
-      <!-- gptpnet_extra_timeout call use this value when 'toutns=0'
-           default=1msec -->
-      <GPTPNET_EXTRA_TOUTNS type="uint32">1000000</GPTPNET_EXTRA_TOUTNS>
+			<!-- gptpnet_extra_timeout call use this value when 'toutns=0'
+					 default=1msec -->
+			<GPTPNET_EXTRA_TOUTNS type="uint32">1000000</GPTPNET_EXTRA_TOUTNS>
 
-      <!-- absolute value of clock rate adjustment shouldn't go beyond this value
-           ppb unit -->
-      <MAX_ADJUST_RATE_ON_CLOCK type="uint32">1000000</MAX_ADJUST_RATE_ON_CLOCK>
+			<!-- absolute value of clock rate adjustment shouldn't go beyond this value
+					 ppb unit -->
+			<MAX_ADJUST_RATE_ON_CLOCK type="uint32">1000000</MAX_ADJUST_RATE_ON_CLOCK>
 
-      <!-- setting this value, TAS(Domain 0 only) becomes asCapable without PdelayResponse,
-           the value should be estimated Pdelay in nsec.  -->
-      <NEIGHBOR_PROP_DELAY type="int8">0</NEIGHBOR_PROP_DELAY>
+			<!-- setting this value, TAS(Domain 0 only) becomes asCapable without PdelayResponse,
+					 the value should be estimated Pdelay in nsec.	-->
+			<NEIGHBOR_PROP_DELAY type="int8">0</NEIGHBOR_PROP_DELAY>
 
-      <!-- -1 for nomal operation
-           stting this value, BMCS is skipped and the port states are statically configured.
-           value 0: port0 is SLAVE and the others are MASTER, which means this Device is GM.
-           positive number 'N': port N is SLAVE and the other are MASTER, a connected device
-           on port N is GM.  -->
-      <STATIC_PORT_STATE_SLAVE_PORT type="int8">-1</STATIC_PORT_STATE_SLAVE_PORT>
+			<!-- -1 for nomal operation
+					 stting this value, BMCS is skipped and the port states are statically configured.
+					 value 0: port0 is SLAVE and the others are MASTER, which means this Device is GM.
+					 positive number 'N': port N is SLAVE and the other are MASTER, a connected device
+					 on port N is GM.	 -->
+			<STATIC_PORT_STATE_SLAVE_PORT type="int8">-1</STATIC_PORT_STATE_SLAVE_PORT>
 
-      <!-- Option to conform to AVNU instead of 802.1AS specification in case of
-           conflict.
-           By default, set 0 such that 802.1AS behavior is followed for items where
-           conforming to AVNU will violate the 802.1AS specifications.
+			<!-- Option to conform to AVNU instead of 802.1AS specification in case of
+					 conflict.
+					 By default, set 0 such that 802.1AS behavior is followed for items where
+					 conforming to AVNU will violate the 802.1AS specifications.
 
-           The following is a list of known AVNU requirements that violates 802.1AS:
-	   - gPTP.br.c.24.1 - Appending path trace TLV - over max length
-	   802.1AS requires PathTrace field to exist with length=0 in cases where TLV
-	   pathTrace is empty.
-	   AVNU on the other hand, requires the PathTrace field to be absent.
-	   - gPTP.com.c.18.1 / gPTP.com.c.15.7 - AVnu alliance requires in addition that
-	   devices cease transmit of PDelayReq when 3 successive request are responded
-	   with multiple response. -->
-      <FOLLOW_AVNU type="int8">0</FOLLOW_AVNU>
+					 The following is a list of known AVNU requirements that violates 802.1AS:
+					 - gPTP.br.c.24.1 - Appending path trace TLV - over max length
+					 802.1AS requires PathTrace field to exist with length=0 in cases where TLV
+					 pathTrace is empty.
+					 AVNU on the other hand, requires the PathTrace field to be absent.
+					 - gPTP.com.c.18.1 / gPTP.com.c.15.7 - AVnu alliance requires in addition that
+					 devices cease transmit of PDelayReq when 3 successive request are responded
+					 with multiple response. -->
+			<FOLLOW_AVNU type="int8">0</FOLLOW_AVNU>
 
-      <!-- Option to perform quick restart of BMCS on master's configuration change
-           0 - disabled (default) means that BMCS follows 802.1AS-Rev standards
-	   where slave waits for timeout before finding new master when most recent
-	   master changes configuration.
-           1 - enabled will perform quick switch when Announce from current master
-	   suddenly changes, this includes:
-           - disconnection of current master in upstream resulting to change in priority
-           - external configuration change of current master resulting to change in priority -->
-      <BMCS_QUICK_UPDATE_MODE type="int8">0</BMCS_QUICK_UPDATE_MODE>
+			<!-- Option to perform quick restart of BMCS on master's configuration change
+					 0 - disabled (default) means that BMCS follows 802.1AS-Rev standards
+					 where slave waits for timeout before finding new master when most recent
+					 master changes configuration.
+					 1 - enabled will perform quick switch when Announce from current master
+					 suddenly changes, this includes:
+					 - disconnection of current master in upstream resulting to change in priority
+					 - external configuration change of current master resulting to change in priority -->
+			<BMCS_QUICK_UPDATE_MODE type="int8">0</BMCS_QUICK_UPDATE_MODE>
 
-      <!-- 11.2.15 Common Mean Link Delay Service
-           0 for PTP-instance-specific, 1 for CMLDS -->
-      <CMLDS_MODE type="int8">0</CMLDS_MODE>
+			<!-- 11.2.15 Common Mean Link Delay Service
+					 0 for PTP-instance-specific, 1 for CMLDS -->
+			<CMLDS_MODE type="int8">0</CMLDS_MODE>
 
-      <!-- Lower limit for peer delay in nanoseconds, computed values lower than this
-           will mark the port as non asCapable -->
-      <NEIGHBOR_PROPDELAY_MINLIMIT type="int32">0</NEIGHBOR_PROPDELAY_MINLIMIT>
+			<!-- Lower limit for peer delay in nanoseconds, computed values lower than this
+					 will mark the port as non asCapable -->
+			<NEIGHBOR_PROPDELAY_MINLIMIT type="int32">0</NEIGHBOR_PROPDELAY_MINLIMIT>
 
-      <!-- set Domain0's priority1 for 254(lowest) for this time after initialization
-           E.G. setting 12, the first 12 seconds of Domain0 uses priority1=254 -->
-      <INITIAL_SLAVE_TIME type="uint32">0</INITIAL_SLAVE_TIME>
+			<!-- set Domain0's priority1 for 254(lowest) for this time after initialization
+					 E.G. setting 12, the first 12 seconds of Domain0 uses priority1=254 -->
+			<INITIAL_SLAVE_TIME type="uint32">0</INITIAL_SLAVE_TIME>
 
-      <!-- msec unit, criterion to set GM stable,
-	   INITIAL_* is used when all ports are not asCapable -->
-      <INITIAL_GM_STABLE_TIME type="uint32">1000</INITIAL_GM_STABLE_TIME>
+			<!-- msec unit, criterion to set GM stable,
+					 INITIAL_* is used when all ports are not asCapable -->
+			<INITIAL_GM_STABLE_TIME type="uint32">1000</INITIAL_GM_STABLE_TIME>
 
-      <NORMAL_GM_STABLE_TIME type="uint32">10000</NORMAL_GM_STABLE_TIME>
+			<NORMAL_GM_STABLE_TIME type="uint32">10000</NORMAL_GM_STABLE_TIME>
 
-      <!-- ptp clock offset and freq adjustment
-           IIR filter coefficients
-           reciprocal number is used -->
-      <FREQ_OFFSET_IIR_ALPHA_START_VALUE type="uint8">2</FREQ_OFFSET_IIR_ALPHA_START_VALUE>
+			<!-- ptp clock offset and freq adjustment
+					 IIR filter coefficients
+					 reciprocal number is used -->
+			<FREQ_OFFSET_IIR_ALPHA_START_VALUE type="uint8">2</FREQ_OFFSET_IIR_ALPHA_START_VALUE>
 
-      <!-- reciprocal number is used -->
-      <FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE type="uint8">10</FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE>
+			<!-- reciprocal number is used -->
+			<FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE type="uint8">10</FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE>
 
-      <!-- reciprocal number is used -->
-      <PHASE_OFFSET_IIR_ALPHA_START_VALUE type="uint8">2</PHASE_OFFSET_IIR_ALPHA_START_VALUE>
+			<!-- reciprocal number is used -->
+			<PHASE_OFFSET_IIR_ALPHA_START_VALUE type="uint8">2</PHASE_OFFSET_IIR_ALPHA_START_VALUE>
 
-      <!-- reciprocal number is used -->
-      <PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE type="uint8">10</PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE>
+			<!-- reciprocal number is used -->
+			<PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE type="uint8">10</PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE>
 
-      <!-- compute phase and freq every this time -->
-      <CLOCK_COMPUTE_INTERVAL_MSEC type="uint32">1000</CLOCK_COMPUTE_INTERVAL_MSEC>
+			<!-- compute phase and freq every this time -->
+			<CLOCK_COMPUTE_INTERVAL_MSEC type="uint32">1000</CLOCK_COMPUTE_INTERVAL_MSEC>
 
-      <!-- update freq offset only when the abs of diff to the new rate is bigger than this -->
-      <FREQ_OFFSET_UPDATE_MRATE_PPB type="uint32">10</FREQ_OFFSET_UPDATE_MRATE_PPB>
+			<!-- update freq offset only when the abs of diff to the new rate is bigger than this -->
+			<FREQ_OFFSET_UPDATE_MRATE_PPB type="uint32">10</FREQ_OFFSET_UPDATE_MRATE_PPB>
 
-      <!-- Stable adjustment determination and thresholds
-	   freq. adjustment is considered stable if delta of adj rate is
-	   less then this threshold -->
-      <FREQ_OFFSET_STABLE_PPB type="uint32">100</FREQ_OFFSET_STABLE_PPB>
+			<!-- Stable adjustment determination and thresholds
+					 freq. adjustment is considered stable if delta of adj rate is
+					 less then this threshold -->
+			<FREQ_OFFSET_STABLE_PPB type="uint32">100</FREQ_OFFSET_STABLE_PPB>
 
-      <!-- freq. adjustment transition to unstable if delta of adj rate exceeds this threshold
-           in addition, either TIMELEAP_FUTURE or TIMELEAP_PAST status event is set to notify
-           the transition to unstable state -->
-      <FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB type="uint32">800</FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB>
+			<!-- freq. adjustment transition to unstable if delta of adj rate exceeds this threshold
+					 in addition, either TIMELEAP_FUTURE or TIMELEAP_PAST status event is set to notify
+					 the transition to unstable state -->
+			<FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB type="uint32">800</FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB>
 
-      <!-- switch active domain automatically to stable domain
-           2: even the current active domain is stable, if any lower number of domain is stable
-           switch the active domain to the lowest number of stable domain
-           by this, the active domain eventually go to domain '0', and all devices use
-           domain '0' as the active domain.
-           1: if the current doamin becomes unstable, switch to the lowest number of stable domain
-           0: no switching -->
-      <ACTIVE_DOMAIN_AUTO_SWITCH type="uint8">2</ACTIVE_DOMAIN_AUTO_SWITCH>
+			<!-- switch active domain automatically to stable domain
+					 2: even the current active domain is stable, if any lower number of domain is stable
+					 switch the active domain to the lowest number of stable domain
+					 by this, the active domain eventually go to domain '0', and all devices use
+					 domain '0' as the active domain.
+					 1: if the current doamin becomes unstable, switch to the lowest number of stable domain
+					 0: no switching -->
+			<ACTIVE_DOMAIN_AUTO_SWITCH type="uint8">2</ACTIVE_DOMAIN_AUTO_SWITCH>
 
-      <!-- 1:use TSN scheduling, 0: no use -->
-      <TSN_SCHEDULE_ON type="uint8">0</TSN_SCHEDULE_ON>
+			<!-- 1:use TSN scheduling, 0: no use -->
+			<TSN_SCHEDULE_ON type="uint8">0</TSN_SCHEDULE_ON>
 
-      <!--  100msec -->
-      <TSN_SCHEDULE_ALIGNTIME type="uint32">100000000</TSN_SCHEDULE_ALIGNTIME>
+			<!--	100msec -->
+			<TSN_SCHEDULE_ALIGNTIME type="uint32">100000000</TSN_SCHEDULE_ALIGNTIME>
 
-      <!--  10msec -->
-      <TSN_SCHEDULE_CYCLETIME type="uint32">10000000</TSN_SCHEDULE_CYCLETIME>
+			<!--	10msec -->
+			<TSN_SCHEDULE_CYCLETIME type="uint32">10000000</TSN_SCHEDULE_CYCLETIME>
 
-      <!-- a file name to save debug log memory at the end of gptp2d run -->
-      <DEBUGLOG_MEMORY_FILE type="string">/tmp/gptp2d_debugmem.log</DEBUGLOG_MEMORY_FILE>
+			<!-- a file name to save debug log memory at the end of gptp2d run -->
+			<DEBUGLOG_MEMORY_FILE type="string">/tmp/gptp2d_debugmem.log</DEBUGLOG_MEMORY_FILE>
 
-      <!-- size of the debug log memory. if this is '0', no debug log memory is used
-           Kbytes -->
-      <DEBUGLOG_MEMORY_SIZE type="uint32">64</DEBUGLOG_MEMORY_SIZE>
+			<!-- size of the debug log memory. if this is '0', no debug log memory is used
+					 Kbytes -->
+			<DEBUGLOG_MEMORY_SIZE type="uint32">64</DEBUGLOG_MEMORY_SIZE>
 
-      <!-- when the over ip mode is used, use this port number as the starting port
-           each network port uses two ports: source port and destination port.
-           SPN: this number, i:the index of network port
-           if SPN is even, source=SPN+i*2, dest=SPN+1+i*2
-           if SPN is odd, source=SPN+i*2, dest=SPN-1+i*2 -->
-      <OVIP_MODE_STRT_PORTNO type="uint16">5018</OVIP_MODE_STRT_PORTNO>
+			<!-- when the over ip mode is used, use this port number as the starting port
+					 each network port uses two ports: source port and destination port.
+					 SPN: this number, i:the index of network port
+					 if SPN is even, source=SPN+i*2, dest=SPN+1+i*2
+					 if SPN is odd, source=SPN+i*2, dest=SPN-1+i*2 -->
+			<OVIP_MODE_STRT_PORTNO type="uint16">5018</OVIP_MODE_STRT_PORTNO>
 
-      <!-- for nomal use, set "". then it uses GPTP_MASTER_CLOCK_SHARED_MEM as hardcoded value.
-           when the over ip mode is used, multiple gptp2d can be run.
-           Only in such case, the shared mem name must be changed. -->
-      <MASTER_CLOCK_SHARED_MEM type="string">""</MASTER_CLOCK_SHARED_MEM>
+			<!-- for nomal use, set "". then it uses GPTP_MASTER_CLOCK_SHARED_MEM as hardcoded value.
+					 when the over ip mode is used, multiple gptp2d can be run.
+					 Only in such case, the shared mem name must be changed. -->
+			<MASTER_CLOCK_SHARED_MEM type="string">""</MASTER_CLOCK_SHARED_MEM>
 
-      <!-- for the over ip mode testing, this clock rate(ppb unit) change is applied. -->
-      <PTPVFD_CLOCK_RATE type="int32">0</PTPVFD_CLOCK_RATE>
+			<!-- for the over ip mode testing, this clock rate(ppb unit) change is applied. -->
+			<PTPVFD_CLOCK_RATE type="int32">0</PTPVFD_CLOCK_RATE>
 
-      <!-- low-pass-filter threshold value for calculating the average ts2diff
-           (time spend to setup the clock value)
-           500usec -->
-      <MAX_CONSEC_TS_DIFF type="uint32">500000</MAX_CONSEC_TS_DIFF>
+			<!-- low-pass-filter threshold value for calculating the average ts2diff
+					 (time spend to setup the clock value)
+					 500usec -->
+			<MAX_CONSEC_TS_DIFF type="uint32">500000</MAX_CONSEC_TS_DIFF>
 
-      <!-- ts2diff(time spent to setup the clock value) is measured at the top,
-           the value is compensated by this percentage to cancel cache effect -->
-      <TS2DIFF_CACHE_FACTOR type="uint16">150</TS2DIFF_CACHE_FACTOR>
+			<!-- ts2diff(time spent to setup the clock value) is measured at the top,
+					 the value is compensated by this percentage to cancel cache effect -->
+			<TS2DIFF_CACHE_FACTOR type="uint16">150</TS2DIFF_CACHE_FACTOR>
 
-      <!-- This should be 0. When the shared memory is not available and only a single domain
-           is used, setting this value to '1' makes the adjustment apply on HW clock.
-           There is a risk of disrupted timestamps;
-	   happening errors might be covered in tolerance level. -->
-      <USE_HW_PHASE_ADJUSTMENT type="uint8">1</USE_HW_PHASE_ADJUSTMENT>
+			<!-- This should be 0. When the shared memory is not available and only a single domain
+					 is used, setting this value to '1' makes the adjustment apply on HW clock.
+					 There is a risk of disrupted timestamps;
+					 happening errors might be covered in tolerance level. -->
+			<USE_HW_PHASE_ADJUSTMENT type="uint8">0</USE_HW_PHASE_ADJUSTMENT>
 
-      <!-- a small phase adjustment is done by a frequency change -->
-      <PHASE_ADJUSTMENT_BY_FREQ type="uint8">1</PHASE_ADJUSTMENT_BY_FREQ>
+			<!-- a small phase adjustment is done by a frequency change -->
+			<PHASE_ADJUSTMENT_BY_FREQ type="uint8">1</PHASE_ADJUSTMENT_BY_FREQ>
 
-      <!-- Setting to '1', the md_abnormal_hooks layer is activated.
-           Even if this is activated, no actions happens until abnormal events are registered. -->
-      <ACTIVATE_ABNORMAL_HOOKS type="uint8">0</ACTIVATE_ABNORMAL_HOOKS>
+			<!-- Setting to '1', the md_abnormal_hooks layer is activated.
+					 Even if this is activated, no actions happens until abnormal events are registered. -->
+			<ACTIVATE_ABNORMAL_HOOKS type="uint8">0</ACTIVATE_ABNORMAL_HOOKS>
 
-      <!-- Setting to '1', set frequency adjustment rate '0' when this device becomes GM.
-           this may make a jump of frequency from the previous GM to this new GM, but it
-           can correct the rate when the previous GM has a bad rate. -->
-      <RESET_FREQADJ_BECOMEGM type="uint8">0</RESET_FREQADJ_BECOMEGM>
+			<!-- Setting to '1', set frequency adjustment rate '0' when this device becomes GM.
+					 this may make a jump of frequency from the previous GM to this new GM, but it
+					 can correct the rate when the previous GM has a bad rate. -->
+			<RESET_FREQADJ_BECOMEGM type="uint8">0</RESET_FREQADJ_BECOMEGM>
 
-      <!-- when port data can't be found, try this port.
-           Set -1 not to use this number -->
-      <REPRESENT_PORT_NUMBER type="int8">1</REPRESENT_PORT_NUMBER>
+			<!-- when port data can't be found, try this port.
+					 Set -1 not to use this number -->
+			<REPRESENT_PORT_NUMBER type="int8">1</REPRESENT_PORT_NUMBER>
 
-      <!-- Performance monitoring short periodicity, 15m (900000 in ms)
-           as per IEEE1588-2019 standards -->
-      <PERFMON_SHORT_PERIOD type="uint32">900000</PERFMON_SHORT_PERIOD>
+			<!-- Performance monitoring short periodicity, 15m (900000 in ms)
+					 as per IEEE1588-2019 standards -->
+			<PERFMON_SHORT_PERIOD type="uint32">900000</PERFMON_SHORT_PERIOD>
 
-      <!-- Performance monitoring short periodicity, 24h (8.64e+7 in ms)
-           as per IEEE1588-2019 standards -->
-      <PERFMON_LONG_PERIOD type="uint32">86400000</PERFMON_LONG_PERIOD>
+			<!-- Performance monitoring short periodicity, 24h (8.64e+7 in ms)
+					 as per IEEE1588-2019 standards -->
+			<PERFMON_LONG_PERIOD type="uint32">86400000</PERFMON_LONG_PERIOD>
 
-      <!-- Performance monitoring period for updating current record, 3s (3000 in ms)
-           non-standard, but to allow adjustment of update frequency to manage processing load
-           this value is added as configuration item. -->
-      <PERFMON_CURRENT_PERIOD type="uint32">3000</PERFMON_CURRENT_PERIOD>
+			<!-- Performance monitoring period for updating current record, 3s (3000 in ms)
+					 non-standard, but to allow adjustment of update frequency to manage processing load
+					 this value is added as configuration item. -->
+			<PERFMON_CURRENT_PERIOD type="uint32">3000</PERFMON_CURRENT_PERIOD>
 
-       <!-- Reference clock in unit of hz for measuring PPS signal -->
-      <CONF_TILLD_PPS_REFCLK_HZ type="uint32">0</CONF_TILLD_PPS_REFCLK_HZ>
+			<!-- Reference clock in unit of hz for measuring PPS signal -->
+			<CONF_TILLD_PPS_REFCLK_HZ type="uint32">0</CONF_TILLD_PPS_REFCLK_HZ>
 
-      <!-- TI ENET LLD PPS output event index -->
-      <CONF_TILLD_PPS_OUTIDX type="uint32">0</CONF_TILLD_PPS_OUTIDX>
-    </GPTP_INSTANCE>
+			<!-- TI ENET LLD PPS output event index -->
+			<CONF_TILLD_PPS_OUTIDX type="uint32">0</CONF_TILLD_PPS_OUTIDX>
+		</GPTP_INSTANCE>
 
-  </xl4gptp>
+	</xl4gptp>
 </xl4-extmod>

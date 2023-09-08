@@ -96,7 +96,7 @@ void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 					__func__, domainIndex);
 			}
 			// reset current records
-			//gptp_clock_perfmon_dr_reset((*tasglb)->perfmonClockDS, PERFMON_ALL_DR, ub_mt_gettime64());
+			gptp_clock_perfmon_dr_reset((*tasglb)->perfmonClockDS, PERFMON_ALL_DR, ub_mt_gettime64());
 		}
 		(*tasglb)->perfmonLongPeriod_ms = gptpgcfg_get_intitem(
 			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_PERFMON_LONG_PERIOD, YDBI_CONFIG);

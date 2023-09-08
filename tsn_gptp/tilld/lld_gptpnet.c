@@ -492,6 +492,10 @@ static int process_rxdata(gptpnet_data_t *gpnet)
 		if (res <= 0) {
 			break;
 		}
+		/* indicate that the call receive data but for other apps */
+		if (res == 0xFFFF) {
+			continue;
+		}
 		provide_rxframe(gpnet, (uint8_t*)&gpnet->rxbuf, res, macport);
 	}
 	return 0;

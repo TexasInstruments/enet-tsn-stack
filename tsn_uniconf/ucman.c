@@ -101,7 +101,7 @@ void *uniconf_main(void *ptr)
 	}
 	if(ydrd!=NULL){UC_RUNCONF_CLOSE(ydrd);}
 
-	ucd.ucntd=uc_notice_init(ucmd->ucmode);
+	ucd.ucntd=uc_notice_init(ucmd->ucmode, ucmd->dbname);
 	if(!ucd.ucntd){goto erexit;}
 	ydbi_access_init(ucd.dbald, ucd.xdd, ucd.ucntd);
 	uc_dbal_releasedb(ucd.dbald);
@@ -142,7 +142,7 @@ void *uniconf_main(void *ptr)
 	}
 	ucmd->rval=0;
 erexit:
-	if(ucd.dbald!=NULL){uc_dbal_del(ucd.dbald, uc_rap, 2);}
+	if(ucd.dbald!=NULL){uc_dbal_del(ucd.dbald, uc_rap, 3);}
 	UB_TLOG(UBL_INFO, "%s:closing\n", __func__);
 	*ucmd->stoprun=true;
 	if(ucmd->ucmanstart!=NULL){

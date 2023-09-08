@@ -58,6 +58,7 @@
 #include "gptpman.h"
 #include <getopt.h>
 #include "gptpconf/gptpgcfg.h"
+#include "gptpconf/xl4-extmod-xl4gptp.h"
 #include "tsn_uniconf/uc_dbal.h"
 #include "tsn_uniconf/hal/uc_hwal.h"
 #include "tsn_uniconf/uc_notice.h"

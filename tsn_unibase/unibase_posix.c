@@ -301,15 +301,23 @@ static int ubb_fioseek(void *fio, int offset)
 #ifndef UBB_STATIC_MUTEX_MAX
 #define UBB_STATIC_MUTEX_MAX 4
 #endif
-static int global_static_used;
 static pthread_mutex_t global_static_mutex[UBB_STATIC_MUTEX_MAX];
+static bool global_static_flag[UBB_STATIC_MUTEX_MAX];
 static void *ubb_get_static_mutex(void)
 {
-	if(global_static_used>=UBB_STATIC_MUTEX_MAX){return NULL;}
-	if(pthread_mutex_init(&global_static_mutex[global_static_used], NULL)!=0){
-		return NULL;
+	int i;
+	pthread_mutex_t *mt=NULL;
+
+	for(i=0;i<UBB_STATIC_MUTEX_MAX;i++){
+		if(!global_static_flag[i]){
+			mt=&global_static_mutex[i];
+			break;
+		}
 	}
-	return &global_static_mutex[global_static_used++];
+	if(!mt){return NULL;}
+	if(pthread_mutex_init(mt, NULL)!=0){return NULL;}
+	global_static_flag[i]=true;
+	return mt;
 }
 
 /**
@@ -317,22 +325,18 @@ static void *ubb_get_static_mutex(void)
  */
 static int ubb_static_mutex_close(void *mt)
 {
-	int res, i, j;
+	int i;
+
 	if(!mt){return -1;}
-	for(i=global_static_used-1;i>=0;i--){
-		if(mt==&global_static_mutex[i]){
-			res=pthread_mutex_destroy((pthread_mutex_t *)mt);
-			if(res){return res;}
-			for(j=i;j<global_static_used-1;j++){
-				global_static_mutex[j]=global_static_mutex[j+1];
-			}
-			global_static_used--;
+	for(i=0;i<UBB_STATIC_MUTEX_MAX;i++){
+		if(global_static_flag[i] && mt==&global_static_mutex[i]){
+			pthread_mutex_destroy((pthread_mutex_t *)mt);
+			global_static_flag[i]=false;
 			return 0;
 		}
 	}
 	return -1;
 }
-
 
 void ubb_default_initpara(unibase_init_para_t *init_para)
 {

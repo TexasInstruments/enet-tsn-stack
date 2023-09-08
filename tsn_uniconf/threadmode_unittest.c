@@ -204,7 +204,7 @@ static int setup(void **state)
 
 	dbald=uc_dbal_open(UCTEST_DBNAME, "w", UC_CALLMODE_THREAD);
 	xdd=xl4_data_init(dbald);
-	ucntd=uc_notice_init(UC_CALLMODE_THREAD);
+	ucntd=uc_notice_init(UC_CALLMODE_THREAD, UCTEST_DBNAME);
 	ydbi_access_init(dbald, xdd, ucntd);
 	return 0;
 }

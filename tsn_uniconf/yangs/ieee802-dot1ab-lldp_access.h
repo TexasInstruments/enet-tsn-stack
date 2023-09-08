@@ -49,7 +49,7 @@
 */
 #ifndef IEEE802_DOT1AB_LLDP_ACCESS_H_
 #define IEEE802_DOT1AB_LLDP_ACCESS_H_
-#include <tsn_uniconf/yangs/yang_db_access.h>
+#include "yang_db_access.h"
 
 typedef struct
 {
@@ -65,9 +65,9 @@ int ydbi_get_item_abk2vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t k1,
  * @brief Get val base on n key from LLDP until end
  * Also provided vkn as attribute
  */
-int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia, 
-                            void **rval, 
-                            uint8_t kn[], 
+int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia,
+                            void **rval,
+                            uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,
@@ -77,8 +77,8 @@ int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia,
  * @brief Set val base on n key from LLDP until end
  * Also provided vkn as attribute
  */
-int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,  
-                            uint8_t kn[], 
+int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,
+                            uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,
@@ -91,8 +91,8 @@ int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,
  * @brief Set val base on n key from LLDP until end
  * Also provided vkn as attribute
  */
-int ydbi_del_item_abknvkn(yang_db_item_access_t *ydbia,  
-                            uint8_t kn[], 
+int ydbi_del_item_abknvkn(yang_db_item_access_t *ydbia,
+                            uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,

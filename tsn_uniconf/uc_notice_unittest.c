@@ -298,7 +298,7 @@ static void *child_proc(void *ptr)
 
 	dbald=uc_dbal_open(TESTDBFILE, "r", runmode);
 	assert_non_null(dbald);
-	ucntd=uc_notice_init(runmode);
+	ucntd=uc_notice_init(runmode, TESTDBFILE);
 	assert_non_null(ucntd);
 
 	// 2-c, wait a signal from
@@ -472,7 +472,7 @@ static void test_action_push(uint8_t runmode)
 	uniconf_remove_dbfile(TESTDBFILE);
 	dbald=uc_dbal_open(TESTDBFILE, "w", UC_CALLMODE_UNICONF | runmode);
 	assert_non_null(dbald);
-	ucntd=uc_notice_init(UC_CALLMODE_UNICONF | runmode);
+	ucntd=uc_notice_init(UC_CALLMODE_UNICONF | runmode, TESTDBFILE);
 	assert_non_null(ucntd);
 	res=init_db(dbald);
 	assert_int_equal(res, 0);

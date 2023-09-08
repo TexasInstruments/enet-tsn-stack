@@ -81,15 +81,24 @@ int unibase_init(unibase_init_para_t *ub_init_para)
 	memcpy(&ubcd.cbset, &ub_init_para->cbset, sizeof(unibase_cb_set_t));
 	if(ubcd.cbset.get_static_mutex && ubcd.cbset.static_mutex_close &&
 	   ubcd.cbset.mutex_lock && ubcd.cbset.mutex_unlock) {
-		ubcd.ub_sd_mutex=ubcd.cbset.get_static_mutex();
-		ubcd.gmutex=ubcd.cbset.get_static_mutex();;
 		ubcd.threadding=true;
+		ubcd.ub_sd_mutex=ubcd.cbset.get_static_mutex();
+		if(!ubcd.ub_sd_mutex){goto erexit;}
+		ubcd.gmutex=ubcd.cbset.get_static_mutex();
+		if(!ubcd.gmutex){goto erexit;}
+		ubcd.func_mutex=ubcd.cbset.get_static_mutex();
+		if(!ubcd.func_mutex){goto erexit;}
+		ubcd.esarray_mutex=ubcd.cbset.get_static_mutex();
+		if(!ubcd.esarray_mutex){goto erexit;}
 	}
 	ub_log_init(ub_init_para->ub_log_initstr);
 	if(ubcd.cbset.console_out!=NULL){
 		ubcd.cbset.console_out(true, "unibase-"TSNPKGVERSION"\n");
 	}
 	return 0;
+erexit:
+	unibase_close();
+	return -1;
 }
 
 void unibase_close(void)
@@ -98,8 +107,10 @@ void unibase_close(void)
 	ubcd.locked--;
 	if(ubcd.locked>0){return;}
 	if(ubcd.threadding){
-		ubcd.cbset.static_mutex_close(ubcd.gmutex);
-		ubcd.cbset.static_mutex_close(ubcd.ub_sd_mutex);
+		if(ubcd.gmutex){ubcd.cbset.static_mutex_close(ubcd.gmutex);}
+		if(ubcd.ub_sd_mutex){ubcd.cbset.static_mutex_close(ubcd.ub_sd_mutex);}
+		if(ubcd.func_mutex){ubcd.cbset.static_mutex_close(ubcd.func_mutex);}
+		if(ubcd.esarray_mutex){ubcd.cbset.static_mutex_close(ubcd.esarray_mutex);}
 	}
 	(void)memset(&ubcd, 0, sizeof(ubcd));
 }
@@ -139,8 +150,8 @@ uint64_t ub_gptp_gettime64(void)
 int ub_protected_func(ub_protected_callback cbfunc, void *cbdata)
 {
 	int res;
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.gmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.func_mutex);}
 	res=cbfunc(cbdata);
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.gmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.func_mutex);}
 	return res;
 }

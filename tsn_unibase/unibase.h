@@ -216,11 +216,8 @@ uint64_t ub_mt_gettime64(void);
 uint64_t ub_gptp_gettime64(void);
 
 /**
- * @brief call cbfunc with an internal mutex:'gmutex' protection
+ * @brief call cbfunc with an internal mutex protection
  * @return cbfunc return code
- * @note DON'T call ub_log_* functions or UB_LOG,UB_TLOG macros inside 'cbfunc'
- *       'gmutex' is used to protect the logging functions.
- *       A deadlock happens, if it is called.
  */
 typedef int (*ub_protected_callback)(void*);
 int ub_protected_func(ub_protected_callback cbfunc, void *cbdata);

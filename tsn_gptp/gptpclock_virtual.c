@@ -50,6 +50,7 @@
 #include "gptpclock_virtual.h"
 #include "gptpclock.h"
 #include "gptpconf/gptpgcfg.h"
+#include "gptpconf/xl4-extmod-xl4gptp.h"
 
 #define PTPVDEV_MAX_NAME 16
 #define MAX_VPTPD (GPTP_VIRTUAL_PTPDEV_FDMAX-GPTP_VIRTUAL_PTPDEV_FDBASE+1)

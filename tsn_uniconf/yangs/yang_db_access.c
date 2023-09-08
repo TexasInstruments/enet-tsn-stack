@@ -234,6 +234,9 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			data[0]=yang_enumeration_getval(vstr, "datastore");
 		} else if (NULL != hints) {
 			data[0]=yang_enumeration_getval(vstr, hints);
+		} else {
+			UB_LOG(UBL_ERROR, "%s:no hints for value, return -1\n", __func__);
+			data[0]=(uint32_t)-1;
 		}
 		csize=4;
 		ADJUST_ENDIAN(data, sizeof(long int)-csize, csize);
@@ -491,6 +494,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t index, char *hints)
 {
 	static char vstr[64];
+	if(value==NULL){return NULL;}
 	vstr[0]=0;
 	switch(vtype){
 	case YANG_VTYPE_DOT1QTYPES_NAME_TYPE:
@@ -765,6 +769,8 @@ bool yang_isstring_vtype(uint8_t vtype)
 	case YANG_VTYPE_CLOCK_IDENTITY:
 	case YANG_VTYPE_YANG_XPATH1_0:
 	case YANG_VTYPE_INSTANCE_IDENTIFIER:
+	case YANG_VTYPE_IEEE_PORT_ID_TYPE:
+	case YANG_VTYPE_IEEE_CHASSIS_ID_TYPE:
 		isstring=true;
 		break;
 	default:
@@ -1187,6 +1193,7 @@ int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 			}
 			if(akvs[i]==NULL){break;} // dest key value end first, ignore this
 			if(kss[i]!=akss[i]){break;} // key value size no match, ignore this
+			if(memcmp(kvs[i],akvs[i],kss[i])){break;} // key value no match, ignore this
 		}
 		if(mkvsize==0){
 			// value keys have a diferent structure, ignore this.

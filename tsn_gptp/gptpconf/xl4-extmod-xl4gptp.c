@@ -141,7 +141,7 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_SINGLE_CLOCK_MODE;
-	res=yang_value_conv(YANG_VTYPE_UINT8, "1",
+	res=yang_value_conv(YANG_VTYPE_UINT8, "0",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
@@ -333,7 +333,7 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_USE_HW_PHASE_ADJUSTMENT;
-	res=yang_value_conv(YANG_VTYPE_UINT8, "1",
+	res=yang_value_conv(YANG_VTYPE_UINT8, "0",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;

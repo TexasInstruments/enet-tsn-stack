@@ -164,7 +164,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	int res=-1;
 	uint8_t vtype;
 	//0000_excelfore-tsn-remote/tsn-remote/instances/instance/update
-	aps[0] = EXCELFORE_TSN_REMOTE_RO;
+	aps[0] = EXCELFORE_TSN_REMOTE_RW;
 	aps[1] = EXCELFORE_TSN_REMOTE_TSN_REMOTE;
 	aps[2] = EXCELFORE_TSN_REMOTE_INSTANCES;
 	aps[3] = EXCELFORE_TSN_REMOTE_INSTANCE;
@@ -178,6 +178,7 @@ int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[5] = EXCELFORE_TSN_REMOTE_REQUEST_STATUS;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
+	aps[0] = EXCELFORE_TSN_REMOTE_RO;
 	aps[5] = EXCELFORE_TSN_REMOTE_RESULT_STATUS;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}

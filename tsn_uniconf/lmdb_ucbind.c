@@ -69,7 +69,7 @@ typedef struct lmdb_ucbind_data {
 #define DPERM_MODE 0777
 #define FPERM_MODE 0666
 
-#define LMDB_INTERNAL_TXN_WAIT 100
+#define LMDB_INTERNAL_TXN_WAIT 200
 #define TXN_RECAPTURE(x, d, s)						\
 	if(!lmubd->txn && uc_dbal_getdb(dbald, LMDB_INTERNAL_TXN_WAIT, d, s)){ \
 	UB_LOG(UBL_ERROR, "%s:no access\n", __func__);			\

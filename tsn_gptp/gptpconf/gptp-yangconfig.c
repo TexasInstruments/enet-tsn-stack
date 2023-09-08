@@ -247,7 +247,7 @@ int gptp_yangconfig_config_add(uc_dbald *dbald, uc_hwald *hwald)
 	//0003_ieee1588-ptp/ptp/instances/instance/ports/port
 	aps[6] = IEEE1588_PTP_UNDERLYING_INTERFACE;
 	aps[7] = 255;
-	res=yang_value_conv(YANG_VTYPE_IF_INTERFACE_REF, "tilld0",
+	res=yang_value_conv(YANG_VTYPE_IF_INTERFACE_REF, "cbeth0",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;

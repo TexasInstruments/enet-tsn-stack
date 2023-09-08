@@ -51,6 +51,7 @@
 #define GPTPCOMMON_H_
 #include "gptpbasetypes.h"
 #include "gptpconf/gptpgcfg.h"
+#include "gptpconf/xl4-extmod-xl4gptp.h"
 
 void eui48to64(const uint8_t *eui48, uint8_t *eui64, const uint8_t *insert);
 

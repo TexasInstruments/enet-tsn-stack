@@ -78,8 +78,10 @@ typedef struct unibase_cstd {
 	ub_logmsg_data_t logmsgd[MAX_LOGMSG_CATEGORIES];
 	ub_logmsg_data_t logmsgd_ovrd;
 	int log_categories;
-	void *gmutex;
-	void *ub_sd_mutex;
+	void *gmutex; // for ub_logging
+	void *ub_sd_mutex; // for ub_getmem
+	void *func_mutex; //for ub_protected_func()
+	void *esarray_mutex; //for ub_esarray.c
 	bool fatalerror;
 } unibase_cstd_t;
 

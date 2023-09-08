@@ -156,8 +156,8 @@ static int get_tc_cbs_parameters(cbl_cbs_params_t *cbsp, uint8_t tc,
 	return 0;
 }
 
-/* traffic class initialization happesn by writing to 'tc-hw-ready'.
- * All the needed parameters must be set up before writing to 'tc-hw-ready'.
+/* traffic class initialization happesn by writing to 'cbs-enabled'.
+ * All the needed parameters must be set up before writing to 'cbs-enabled'.
  * Currently we don't support 'list available-traffic-class', and
  * set up the initialization parameters as static values.
  * the pysical queue related parameters must be better to set up
@@ -817,7 +817,7 @@ static int ietf_interfaces_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, ui
 	if(aps[3]==IETF_INTERFACES_BRIDGE_PORT &&
 	   aps[4]==IETF_INTERFACES_TRAFFIC_CLASS &&
 	   aps[5]==IETF_INTERFACES_CBS_ENABLED){
-		// kvs[0] is the network device name, value is tc_hw_ready
+		// kvs[0] is the network device name, value is 0:disable, 1:enable
 		return tc_hw_action(hwald, (const char*)kvs[0], (uint8_t*)value);
 	}
 

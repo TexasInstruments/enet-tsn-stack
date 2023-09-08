@@ -87,17 +87,17 @@
 
 #define UC_INIT_COPY_INSTANCE_PRE "COPY_INSTANCE_"
 
-#define YANG_DB_READ_SETUP(dbpara, aps, kvs, kss)	\
-	dbpara.aps=aps;					\
-	dbpara.kvs=kvs;					\
-	dbpara.kss=kss;					\
+#define YANG_DB_READ_SETUP(dbpara, _aps, _kvs, _kss)	\
+	dbpara.aps=(_aps);				\
+	dbpara.kvs=(_kvs);				\
+	dbpara.kss=(_kss);				\
 	dbpara.atype=YANG_DB_ACTION_READ;		\
 	dbpara.onhw=YANG_DB_ONHW_NOACTION;
 
-#define YANG_DB_WRITE_SETUP(dbpara, aps, kvs, kss)	\
-	dbpara.aps=aps;					\
-	dbpara.kvs=kvs;					\
-	dbpara.kss=kss;					\
+#define YANG_DB_WRITE_SETUP(dbpara, _aps, _kvs, _kss)	\
+	dbpara.aps=(_aps);				\
+	dbpara.kvs=(_kvs);				\
+	dbpara.kss=(_kss);				\
 	dbpara.atype=YANG_DB_ACTION_CREATE;		\
 	dbpara.onhw=YANG_DB_ONHW_NOACTION;
 

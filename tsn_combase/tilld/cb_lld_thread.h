@@ -77,7 +77,6 @@ typedef struct cb_lld_task cb_lld_task_t;
 #define CB_THREAD_CREATE cb_lld_task_create
 #define CB_THREAD_JOIN cb_lld_task_join
 #define CB_THREAD_EXIT cb_lld_task_exit
-
 #define CB_THREAD_MUTEX_T cb_lld_mutex_t
 #define CB_THREAD_MUTEX_LOCK cb_lld_mutex_lock
 #define CB_THREAD_MUTEX_TRYLOCK cb_lld_mutex_trylock
@@ -87,7 +86,7 @@ typedef struct cb_lld_task cb_lld_task_t;
 #define CB_THREAD_MUTEX_DESTROY cb_lld_mutex_destroy
 #define CB_THREAD_IS_MUTEX_INITIALIZED(x) ((x).lldmutex!=NULL)
 #define CB_STATIC_MUTEX_INITIALIZER(x) x=TILLD_MUTEX_INITIALIZER
-#define CB_STATIC_MUTEX_CONSTRUCTOR(x) ub_protected_func(cb_lld_global_mutex_init,&(x))
+#define CB_STATIC_MUTEX_CONSTRUCTOR(x) ub_protected_func(cb_lld_mutex_init_protect,&(x))
 
 /* does not need to support these macros */
 #define CB_THREAD_MUTEXATTR_T void*
@@ -174,7 +173,7 @@ int cb_lld_sem_destroy(CB_SEM_T *sem);
  * @ref cb_lld_sem_wait(), @ref cb_lld_sem_trywait() and @ref cb_lld_sem_timedwait()
  *
  * @param sem Pointer to the semaphore.
- * @return TILLD_SUCCESS: semaphore was acquired, 
+ * @return TILLD_SUCCESS: semaphore was acquired,
  * TILLD_FAILURE: on failure,
  * TILLD_TIMEDOUT: on timeout.
  */
@@ -188,6 +187,21 @@ int cb_lld_sem_wait_status(CB_SEM_T *sem);
  * @return 0 on success, or -1 on error.
  */
 int cb_lld_mutex_init(CB_THREAD_MUTEX_T *mutex, CB_THREAD_MUTEXATTR_T attr);
+
+/**
+ * @brief Initializes a mutex that will be protected by the @ref ub_protected_func().
+ *
+ * This function is primarily designed for initializing a mutex used in conjunction
+ * with the @ref ub_protected_func(). For general use cases, consider utilizing
+ * the @ref cb_lld_mutex_init() function instead.
+ *
+ * @param mutex Pointer to a mutex of type CB_THREAD_MUTEX_T.
+ * @return 0 on success, or -1 on error.
+ */
+static inline int cb_lld_mutex_init_protect(void *mutex)
+{
+	return cb_lld_mutex_init((CB_THREAD_MUTEX_T *)mutex, NULL);
+}
 
 /**
  * @brief Destroys a mutex.
@@ -257,14 +271,6 @@ int cb_lld_task_join(CB_THREAD_T th, void **retval);
  */
 void cb_lld_task_exit(void *retval);
 
-/**
- * @brief Initialize a mutex, the api is called under a protection
- * of unibase's gmutex. Thus, calling any unibase
- * log macro (ie. UB_LOG) inside this function will cause a DEADLOCK.
- * @param arg pointer to memory address of a mutex structure CB_THREAD_MUTEX_T
- * @return 0: on success, -1 on error
- */
-int cb_lld_global_mutex_init(void *arg);
 #ifdef __cplusplus
 }
 #endif

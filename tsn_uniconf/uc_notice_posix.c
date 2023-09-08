@@ -53,11 +53,9 @@
 
 UB_SD_GETMEM_DEF_EXTERN(UC_NOTICE_PUT);
 
-#define UC_GETNOTICE_SEM "/xl4uc_getnotice"
-
 int uc_notice_sig_open(bool thread, UC_NOTICE_SIG_T **sigp, int *master, const char *name)
 {
-	if(!name){name=UC_GETNOTICE_SEM;}
+	if(!name){return -1;}
 	if(thread){
 		UB_TLOG(UBL_DEBUG,"%s:thread, master=%p\n", __func__, master);
 		if(!master){
@@ -84,7 +82,8 @@ int uc_notice_sig_open(bool thread, UC_NOTICE_SIG_T **sigp, int *master, const c
 			*sigp=CB_SEM_OPEN(name, 0);
 		}
 		if((CB_SEM_T*)*sigp==CB_SEM_FAILED){
-			UB_LOG(UBL_ERROR, "%s:can't open a named semaphore\n", __func__);
+			UB_LOG(UBL_ERROR, "%s:can't open a named semaphore:%s\n",
+			       __func__, name);
 			*sigp=NULL;
 			return -1;
 		}
@@ -95,7 +94,7 @@ int uc_notice_sig_open(bool thread, UC_NOTICE_SIG_T **sigp, int *master, const c
 void uc_notice_sig_close(bool thread, UC_NOTICE_SIG_T *sigp, bool master, const char *name)
 {
 	if(!sigp){return;}
-	if(!name){name=UC_GETNOTICE_SEM;}
+	if(!name){return;}
 	if(master){
 		if(thread){
 			CB_SEM_DESTROY((CB_SEM_T*)sigp);

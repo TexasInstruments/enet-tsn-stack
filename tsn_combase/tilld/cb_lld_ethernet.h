@@ -66,10 +66,18 @@
 extern "C" {
 #endif
 
+#ifndef htons
 #define htons __htons
+#endif
+#ifndef ntohs
 #define ntohs __ntohs
+#endif
+#ifndef htonl
 #define htonl __htonl
+#endif
+#ifndef ntohl
 #define ntohl __ntohl
+#endif
 
 #define MAX_NUMBER_ENET_DEVS LLDENET_MAX_PORTS
 
@@ -83,7 +91,10 @@ extern "C" {
 /* does not support */
 #define CB_IN_ADDR_T void*
 
+#ifndef IFNAMSIZ
 #define IFNAMSIZ        16
+#endif
+
 #define ETH_ALEN		6		/* Octets in one ethernet addr	 */
 #define ETH_HLEN		14		/* Total octets in header.	 */
 #define ETH_DATA_LEN	1500	/* Max. octets in payload	 */
@@ -212,9 +223,37 @@ typedef struct {
 	 */
 	int dmaRxChId;
 	/**
-	 * true: won't use DMA, false: use DMA
+	 * >0: won't use DMA RX; 0: will use DMA RX
+	 * 0 or positive value will be updated to LLDEnetCfg_t
 	 */
-	bool unusedDma;
+	int unusedDmaRx;
+	/**
+	 * >0: won't use DMA TX; 0: will use DMA TX
+	 * 0 or positive value will be updated to LLDEnetCfg_t
+	 */
+	int unusedDmaTx;
+	/**
+	 * Only Sitara AM273x support this param.
+	 * >0: the dmaRxChId is shared between apps; 0: not shared
+	 * 0 or positive value will be updated to LLDEnetCfg_t
+	 */
+	int dmaRxShared;
+	/**
+	 * Only Sitara AM273x support this param.
+	 * >0: the socket owns this RX DMA channel; 0: not own
+	 * 0 or positive value will be updated to LLDEnetCfg_t
+	 */
+	int dmaRxOwner;
+	/**
+	 * Only Sitara AM273x support this param.
+	 * Default RX data callback when there is no matching RX filter.
+	 */
+	void (*rxDefaultDataCb)(void *data, int size, int port, void *cbArg);
+	/**
+	 * Only Sitara AM273x support this param.
+	 * Default RX data callback arg
+	 */
+	void *rxDefaultCbArg;
 } cb_socket_lldcfg_update_t;
 
 /**
@@ -282,7 +321,7 @@ int cb_lld_sendto(CB_SOCKET_T sfd, void *sdata, int psize, int flags,
  * @param buf packet buffer
  * @param size buffer size
  * @param port RX port
- * @return 0: OK, <0: error, detailed error will be printed out.
+ * @return <0: error; 0: No data available; 0xFFFF: Unmatched data filter; >0: data len
  */
 int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size, int *port);
 
@@ -305,6 +344,17 @@ int cb_lld_set_txnotify_cb(CB_SOCKET_T sfd, void (*txnotify_cb)(void *arg), void
  * @return 0: OK, <0: error, detailed error will be printed out
  */
 int cb_lld_set_rxnotify_cb(CB_SOCKET_T sfd, void (*rxnotify_cb)(void *arg), void *arg);
+
+/**
+ * @brief Set the default RX data callback that is invoked when an RX packet does not
+ * match any filters.
+ * @param sfd socket fd
+ * @param default_rxdata_cb callback
+ * @param arg callback argument
+ * @return 0: OK, <0: error, detailed error will be printed out
+ */
+int cb_lld_set_default_rxdata_cb(CB_SOCKET_T sfd,
+		void (*default_rxdata_cb)(void *data, int size, int port, void *arg), void *arg);
 
 /**
  * @brief Get enet type and instance that is set via cb_lld_init_devs_table()
