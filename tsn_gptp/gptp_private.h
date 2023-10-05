@@ -53,7 +53,9 @@
 #include <tsn_combase/combase.h>
 
 // UB_LOGCAT category 3 for this layer
+#ifndef UB_LOGCAT
 #define UB_LOGCAT 3
+#define
 #define UB_LOGTSTYPE UB_CLOCK_REALTIME
 
 #endif

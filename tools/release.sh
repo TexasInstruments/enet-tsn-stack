@@ -24,10 +24,8 @@ main()
     remove_files=(
         "cb_tmevent.c"
         "cb_ipcsock"
-        "cb_xtimer"
         "cb_crc"
         "cb_ipcshmem.c"
-        "cb_xtimer"
         "cb_thread.c"
         "cb_ethernet.c"
         "cb_inet"
