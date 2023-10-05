@@ -55,7 +55,12 @@ main()
         cat $f > $dst_dir/$f
     done
 
+    cp -f .gitignore $dst_dir/
     cp -f README.md $dst_dir/
+    cp -f LICENSE.md $dst_dir/
+    cp -f CONTRIBUTING.md $dst_dir/
+    cp -rf docs $dst_dir/
+    cp -rf docs_src $dst_dir/
     popd
 
 };main $@

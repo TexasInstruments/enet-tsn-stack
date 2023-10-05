@@ -1,0 +1,2 @@
+Placeholder for the TSN internal documentation that should not be made public.
+Public documents should be placed in docs/ or docs_src/ directory
