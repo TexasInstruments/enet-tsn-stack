@@ -50,7 +50,7 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "tsn_uniconf/yangs/yang_modules.h"
 #include "xl4-extmod-xl4gptp.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
@@ -110,6 +110,8 @@ const char *xl4_extmod_xl4gptp_enum_strings[]={
 	"PERFMON_SHORT_PERIOD", 		// 51(0x33)
 	"PERFMON_LONG_PERIOD", 		// 52(0x34)
 	"PERFMON_CURRENT_PERIOD", 		// 53(0x35)
+	"CONF_TILLD_PPS_REFCLK_HZ", 		// 54(0x36)
+	"CONF_TILLD_PPS_OUTIDX", 		// 55(0x37)
 };
 
 uint8_t xl4_extmod_xl4gptp_get_enum(char *astr)
@@ -282,6 +284,12 @@ int xl4_extmod_xl4gptp_runconf_config_init(xl4_data_data_t *xdd, uc_dbald *dbald
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_PERFMON_CURRENT_PERIOD;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_REFCLK_HZ;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_OUTIDX;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_VALUEKEY;

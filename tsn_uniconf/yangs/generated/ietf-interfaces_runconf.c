@@ -56,10 +56,10 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-netconf-monitoring.h"
 #include "ietf-yang-library.h"
-#include "ietf-netconf-server.h"
-#include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
+#include "excelfore-netconf-server.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
@@ -108,47 +108,48 @@ const char *ietf_interfaces_enum_strings[]={
 	"pqueue-map",		// 39(0x27)
 	"pqueue",		// 40(0x28)
 	"duplex",		// 41(0x29)
+	"discon-workaround-time",		// 42(0x2a)
 	// augmented by ieee802-dot1q-sched-bridge
-	"gate-parameter-table",		// 42(0x2a)
-	"queue-max-sdu-table",		// 43(0x2b)
-	"queue-max-sdu",		// 44(0x2c)
-	"transmission-overrun",		// 45(0x2d)
-	"gate-enabled",		// 46(0x2e)
-	"admin-gate-states",		// 47(0x2f)
-	"oper-gate-states",		// 48(0x30)
-	"admin-control-list",		// 49(0x31)
-	"gate-control-entry",		// 50(0x32)
-	"index",		// 51(0x33)
-	"operation-name",		// 52(0x34)
-	"time-interval-value",		// 53(0x35)
-	"gate-states-value",		// 54(0x36)
-	"oper-control-list",		// 55(0x37)
-	"admin-cycle-time",		// 56(0x38)
-	"numerator",		// 57(0x39)
-	"denominator",		// 58(0x3a)
-	"oper-cycle-time",		// 59(0x3b)
-	"admin-cycle-time-extension",		// 60(0x3c)
-	"oper-cycle-time-extension",		// 61(0x3d)
-	"admin-base-time",		// 62(0x3e)
-	"seconds",		// 63(0x3f)
-	"nanoseconds",		// 64(0x40)
-	"oper-base-time",		// 65(0x41)
-	"config-change",		// 66(0x42)
-	"config-change-time",		// 67(0x43)
-	"tick-granularity",		// 68(0x44)
-	"current-time",		// 69(0x45)
-	"config-pending",		// 70(0x46)
-	"config-change-error",		// 71(0x47)
-	"supported-list-max",		// 72(0x48)
-	"supported-cycle-max",		// 73(0x49)
-	"supported-interval-max",		// 74(0x4a)
+	"gate-parameter-table",		// 43(0x2b)
+	"queue-max-sdu-table",		// 44(0x2c)
+	"queue-max-sdu",		// 45(0x2d)
+	"transmission-overrun",		// 46(0x2e)
+	"gate-enabled",		// 47(0x2f)
+	"admin-gate-states",		// 48(0x30)
+	"oper-gate-states",		// 49(0x31)
+	"admin-control-list",		// 50(0x32)
+	"gate-control-entry",		// 51(0x33)
+	"index",		// 52(0x34)
+	"operation-name",		// 53(0x35)
+	"time-interval-value",		// 54(0x36)
+	"gate-states-value",		// 55(0x37)
+	"oper-control-list",		// 56(0x38)
+	"admin-cycle-time",		// 57(0x39)
+	"numerator",		// 58(0x3a)
+	"denominator",		// 59(0x3b)
+	"oper-cycle-time",		// 60(0x3c)
+	"admin-cycle-time-extension",		// 61(0x3d)
+	"oper-cycle-time-extension",		// 62(0x3e)
+	"admin-base-time",		// 63(0x3f)
+	"seconds",		// 64(0x40)
+	"nanoseconds",		// 65(0x41)
+	"oper-base-time",		// 66(0x42)
+	"config-change",		// 67(0x43)
+	"config-change-time",		// 68(0x44)
+	"tick-granularity",		// 69(0x45)
+	"current-time",		// 70(0x46)
+	"config-pending",		// 71(0x47)
+	"config-change-error",		// 72(0x48)
+	"supported-list-max",		// 73(0x49)
+	"supported-cycle-max",		// 74(0x4a)
+	"supported-interval-max",		// 75(0x4b)
 	// augmented by ieee802-dot1q-preemption-bridge
-	"frame-preemption-parameters",		// 75(0x4b)
-	"frame-preemption-status-table",		// 76(0x4c)
-	"hold-advance",		// 77(0x4d)
-	"release-advance",		// 78(0x4e)
-	"preemption-active",		// 79(0x4f)
-	"hold-request",		// 80(0x50)
+	"frame-preemption-parameters",		// 76(0x4c)
+	"frame-preemption-status-table",		// 77(0x4d)
+	"hold-advance",		// 78(0x4e)
+	"release-advance",		// 79(0x4f)
+	"preemption-active",		// 80(0x50)
+	"hold-request",		// 81(0x51)
 };
 
 uint8_t ietf_interfaces_get_enum(char *astr)
@@ -520,6 +521,11 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[3] = IETF_INTERFACES_DUPLEX;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IETF_INTERFACES_RW;
+	aps[3] = IETF_INTERFACES_DISCON_WORKAROUND_TIME;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IETF_INTERFACES_RO;
 	aps[1] = IETF_INTERFACES_VALUEKEY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 4, &vtype, 1)!=0){goto erexit;}

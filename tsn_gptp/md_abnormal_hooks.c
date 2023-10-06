@@ -52,6 +52,7 @@
 #include "gptpnet.h"
 #include "mdeth.h"
 #include "md_abnormal_hooks.h"
+#include "gptpcommon.h"
 
 extern char *PTPMsgType_debug[16];
 

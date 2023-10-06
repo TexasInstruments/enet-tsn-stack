@@ -291,11 +291,13 @@ static int computeGmRateRatio(clock_master_sync_receive_data_t *sm,
 		   YDBI_CONFIG)) {
 		// Notify only when previous rate passed stable criteria
 		if(sm->rate_stable!=0){
-			sm->unstable_ts64=ub_mt_gettime64();
 			UB_LOG(UBL_INFO,
 			       "clock_master_sync_receive:%s:domainIndex=%d unstable rate=%dppb (%s)\n",
 			       __func__, sm->ptasg->domainIndex, ppb,
 			       (ppb>0)?"timeleap_future":"timeleap_past");
+		}
+		if(sm->rate_stable >= FREQ_OFFSET_STABLE_TRNS){
+			sm->unstable_ts64=ub_mt_gettime64();
 		}
 		sm->rate_stable=0;
 		sm->alpha = 1.0/gptpgcfg_get_intitem(

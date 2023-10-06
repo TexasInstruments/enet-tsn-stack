@@ -56,10 +56,10 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee1588-ptp.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
+#include "ietf-netconf-monitoring.h"
 #include "ietf-yang-library.h"
-#include "ietf-netconf-server.h"
-#include "ietf-keychain.h"
 #include "excelfore-tsn-remote.h"
+#include "excelfore-netconf-server.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
@@ -80,6 +80,8 @@ int ieee802_dot1ab_lldp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(yang_db_action(dbald, hwald, &dbpara)==0){
 		if(dbpara.vsize==1 && (*(uint8_t*)dbpara.value==1)){return 0;}
 	}
+	dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+	yang_db_action(dbald, hwald, &dbpara);
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	//0000_ieee802-dot1ab-lldp/lldp/remote-statistics
 	//0001_ieee802-dot1ab-lldp/lldp/local-system-data

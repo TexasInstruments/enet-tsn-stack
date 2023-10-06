@@ -53,6 +53,7 @@
 #include "combase_private.h"
 #include "cb_ethernet.h"
 #include "lld_ethernet_private.h"
+#include "cb_lld_thread.h"
 
 #define MAC_VALID(mac) (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
 
@@ -92,39 +93,57 @@ static void bufsize_to_num_pkts(uint32_t bufsize, uint32_t *npkts)
 	*npkts = bufsize / CB_LLD_MAX_ETH_FRAME_SIZE;
 }
 
-static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg)
+static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
+				cb_socket_lldcfg_update_t *update_cfg)
 {
-	cb_socket_lldcfg_update_t update_cfg;
-
 	if (s_socket_lldcfg_update_cb == NULL) {
 		return 0;
 	}
-	memset(&update_cfg, 0, sizeof(update_cfg));
-	update_cfg.dev = llrawp->dev;
-	update_cfg.proto = llrawp->proto;
-	update_cfg.vlanid = llrawp->vlanid;
-	update_cfg.dmaTxChId = -1;
-	update_cfg.dmaRxChId = -1;
-	if (s_socket_lldcfg_update_cb(&update_cfg) < 0) {
+	update_cfg->dev = llrawp->dev;
+	update_cfg->proto = llrawp->proto;
+	update_cfg->vlanid = llrawp->vlanid;
+	update_cfg->dmaTxChId = -1;
+	update_cfg->dmaRxChId = -1;
+	update_cfg->unusedDmaRx = -1;
+	update_cfg->unusedDmaTx = -1;
+	update_cfg->dmaRxShared = -1;
+	update_cfg->dmaRxOwner = -1;
+	if (s_socket_lldcfg_update_cb(update_cfg) < 0) {
 		UB_LOG(UBL_ERROR,"%s:update lldcfg failed\n", __func__);
 		return -1;
 	}
-	if (update_cfg.nTxPkts > 0) {
-		ecfg->nTxPkts = update_cfg.nTxPkts;
+	if (update_cfg->nTxPkts > 0) {
+		ecfg->nTxPkts = update_cfg->nTxPkts;
 	}
-	if (update_cfg.nRxPkts > 0) {
-		ecfg->nRxPkts = update_cfg.nRxPkts;
+	if (update_cfg->nRxPkts > 0) {
+		ecfg->nRxPkts = update_cfg->nRxPkts;
 	}
-	if (update_cfg.pktSize > 0) {
-		ecfg->pktSize = update_cfg.pktSize;
+	if (update_cfg->pktSize > 0) {
+		ecfg->pktSize = update_cfg->pktSize;
 	}
-	if (update_cfg.dmaTxChId >= 0) {
-		ecfg->dmaTxChId = update_cfg.dmaTxChId;
+	if (update_cfg->dmaTxChId >= 0) {
+		ecfg->dmaTxChId = update_cfg->dmaTxChId;
 	}
-	if (update_cfg.dmaRxChId >= 0) {
-		ecfg->dmaRxChId = update_cfg.dmaRxChId;
+	if (update_cfg->dmaRxChId >= 0) {
+		ecfg->dmaRxChId = update_cfg->dmaRxChId;
 	}
-	ecfg->unusedDma = update_cfg.unusedDma;
+	if (llrawp->proto == ETH_P_NETLINK) {
+		ecfg->unusedDmaRx = true; /* always not use DMA */
+		ecfg->unusedDmaTx = true; /* always not use DMA */
+	} else {
+		if (update_cfg->unusedDmaRx >= 0) {
+			ecfg->unusedDmaRx = (update_cfg->unusedDmaRx > 0) ? true : false;
+		}
+		if (update_cfg->unusedDmaTx >= 0) {
+			ecfg->unusedDmaTx = (update_cfg->unusedDmaTx > 0) ? true : false;
+		}
+		if (update_cfg->dmaRxShared >= 0) {
+			ecfg->dmaRxShared = (update_cfg->dmaRxShared > 0) ? true : false;
+		}
+		if (update_cfg->dmaRxOwner >= 0) {
+			ecfg->dmaRxOwner = (update_cfg->dmaRxOwner > 0) ? true : false;
+		}
+	}
 
 	return 0;
 }
@@ -155,7 +174,7 @@ static int find_mac_addr_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bm
 
 	/**
 	 * Note: The find_netdev_map locks and unlocks the s_ndevmap_table_lock
-	 * but since the find_netdev_map returns address of an element 
+	 * but since the find_netdev_map returns address of an element
 	 * from the global table, we have to lock that mutex again here to ensure
 	 * no other threads modify the table while we are copying mac address.
 	 */
@@ -178,7 +197,6 @@ static int cb_alloc_mac_addr(const char *ifname,
 
 	CB_THREAD_MUTEX_LOCK(&alloc_mac_lock);
 	if ((res = find_mac_addr_bydev(sock, ifname, bmac)) != LLDENET_E_NOAVAIL) {
-		UB_LOG(UBL_INFO, "Mac addr has not been allocated\n");
 		CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
 		return (res == LLDENET_E_OK? 0: -1);
 	}
@@ -203,6 +221,10 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 {
 	lld_socket_t *sock = NULL;
 	LLDEnetCfg_t ecfg;
+	cb_socket_lldcfg_update_t update_cfg;
+	memset(&update_cfg, 0, sizeof(cb_socket_lldcfg_update_t));
+
+	UB_LOG(UBL_INFO, "%s:combase-"TSNPKGVERSION"\n", __func__);
 
 	if ((llrawp == NULL) || (fd == NULL)) {
 		UB_LOG(UBL_ERROR,"%s:invalid param\n", __func__);
@@ -223,10 +245,11 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	cb_lld_get_type_instance(&ecfg.enetType, &ecfg.instId);
 	bufsize_to_num_pkts(llrawp->sndbuf, &ecfg.nTxPkts);
 	bufsize_to_num_pkts(llrawp->rcvbuf, &ecfg.nRxPkts);
-	if (update_enet_cfg(llrawp, &ecfg) < 0) {
+	ecfg.ethType = llrawp->proto;
+	ecfg.vlanId = llrawp->vlanid;
+	if (update_enet_cfg(llrawp, &ecfg, &update_cfg) < 0) {
 		goto error;
 	}
-	ecfg.unusedDma = (llrawp->proto == ETH_P_NETLINK)? true: false;
 	UB_LOG(UBL_INFO,"%s:dmaTxChId=%d dmaRxChId=%d nTxPkts=%u nRxPkts=%u pktSize=%u\n",
 		   __func__, ecfg.dmaTxChId, ecfg.dmaRxChId,
 		   ecfg.nTxPkts, ecfg.nRxPkts, ecfg.pktSize);
@@ -236,6 +259,7 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 		goto error;
 	}
 	sock->vlanid = llrawp->vlanid;
+	sock->eth_type = llrawp->proto;
 	if (cb_alloc_mac_addr(llrawp->dev, sock, bmac)) {
 		goto error;
 	}
@@ -244,6 +268,12 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 		memcpy(addr->sll_addr, bmac, ETH_ALEN);
 		addr->macport = cb_lld_netdev_to_macport((char *)llrawp->dev);
 		addr->tcid = 0;
+	}
+	if (update_cfg.rxDefaultDataCb != NULL) {
+		if (cb_lld_set_default_rxdata_cb(sock, update_cfg.rxDefaultDataCb,
+					update_cfg.rxDefaultCbArg) < 0) {
+			goto error;
+		}
 	}
 
 	*fd = sock;
@@ -312,7 +342,8 @@ int cb_reg_multicast_address(CB_SOCKET_T fd, const char *dev,
 	}
 	if (del == 0) {
 		/* register multicast and vlan */
-		result = LLDEnetFilter(fd->lldenet, (uint8_t *)mcastmac, fd->vlanid);
+		result = LLDEnetFilter(fd->lldenet, (uint8_t *)mcastmac,
+							   fd->vlanid, fd->eth_type);
 	} else {
 		//Unsupported
 	}
@@ -423,12 +454,12 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 	if (ndevs > MAX_NUMBER_ENET_DEVS) {
 		ndevs = MAX_NUMBER_ENET_DEVS;
 	}
-	if (!s_ndevmap_table_lock) {
+	if (!s_ndevmap_table_lock.lldmutex) {
 		if (CB_THREAD_MUTEX_INIT(&s_ndevmap_table_lock, NULL)) {
 			return -1;
 		}
 	}
-	if (!alloc_mac_lock) {
+	if (!alloc_mac_lock.lldmutex) {
 		if (CB_THREAD_MUTEX_INIT(&alloc_mac_lock, NULL)) {
 			CB_THREAD_MUTEX_DESTROY(&s_ndevmap_table_lock);
 			return -1;
@@ -542,6 +573,9 @@ int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size, int *port)
 		if (res == LLDENET_E_NOAVAIL) {
 			return 0;
 		}
+		if (res == LLDENET_E_NOMATCH) {
+			return 0xFFFF;
+		}
 		UB_LOG(UBL_ERROR,"%s:received error %d\n", __func__, res);
 		return -1;
 	}
@@ -570,6 +604,21 @@ int cb_lld_set_rxnotify_cb(CB_SOCKET_T sfd, void (*rxnotify_cb)(void *arg), void
 		return -1;
 	}
 	LLDEnetSetRxNotifyCb(sfd->lldenet, rxnotify_cb, arg);
+	return 0;
+}
+
+int cb_lld_set_default_rxdata_cb(CB_SOCKET_T sfd,
+	void (*default_rxdata_cb)(void *data, int size, int port, void *arg), void *arg)
+{
+	if ((sfd == NULL) || (default_rxdata_cb == NULL)) {
+		UB_LOG(UBL_ERROR,"%s:invalid param\n", __func__);
+		return -1;
+	}
+	if(LLDEnetSetDefaultRxDataCb(sfd->lldenet, default_rxdata_cb, arg) != LLDENET_E_OK){
+		UB_LOG(UBL_ERROR,"%s:unable to set default rx cb, maybe already set?\n",
+			   __func__);
+		return -1;
+	}
 	return 0;
 }
 

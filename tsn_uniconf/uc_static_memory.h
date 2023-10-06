@@ -50,17 +50,9 @@
 #ifndef UC_STATIC_MEMORY_H_
 #define UC_STATIC_MEMORY_H_
 
-/*
- * in uc_notice, 1 instacne, data size=20, max number of notices 10?
- * in xl4_data.c, 1 instance, data size=33, max number of xl4extmod 4?
- */
-#define UB_ESARRAY_INSTNUM 2
-#define UB_ESARRAY_DFNUM 15
-#define UB_ESARRAY_DFSIZE 20
-
-// 500 data items must be enough for most of applications.
+// 1200 data items must be enough for most of applications.
 // to save memory, the number can be smaller.
-#define	SIMPLEDB_DBDATANUM 500
+#define	SIMPLEDB_DBDATANUM 1200
 
 // the number of handling data ranges should be small, 4 must be enough.
 #define SIMPLEDB_RANGENUM 4

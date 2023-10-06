@@ -72,7 +72,6 @@ struct ub_esarray_cstd {
 	int element_nums;
 	int max_element_nums;
 	uint8_t *data;
-	void *fmutex;
 	bool data_lock;
 };
 
@@ -179,19 +178,15 @@ ub_esarray_cstd_t *ub_esarray_init(int expnd_unit, int element_size, int max_ele
 	eah->element_size = UB_SD_ALIGN(element_size);
 	eah->uaelement_size = element_size;
 	eah->max_element_nums = max_element_nums;
-	if(ubcd.threadding) {
-		eah->fmutex=ubcd.cbset.mutex_init();
-		ubcd.cbset.mutex_lock(eah->fmutex);
-	}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	(void)get_newele_nomutex(eah); // start with allocting the first block
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	eah->element_nums=0;
 	return eah;
 }
 
 void ub_esarray_close(ub_esarray_cstd_t *eah)
 {
-	if(ubcd.threadding){ubcd.cbset.mutex_close(eah->fmutex);}
 	if(eah->data!=NULL){UB_SD_RELMEM(UB_ESARRAY_DATAMEM, eah->data);}
 	UB_SD_RELMEM(UB_ESARRAY_INSTMEM, eah);
 }
@@ -200,13 +195,13 @@ int ub_esarray_add_ele(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 {
 	void *pt;
 	int res=-1;
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	pt = get_newele_nomutex(eah);
 	if(pt == NULL){goto erexit;}
 	memcpy(pt, ed, eah->uaelement_size);
 	res=0;
 erexit:
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return res;
 }
 
@@ -218,14 +213,14 @@ int ub_esarray_pop_ele(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 		UB_LOG(UBL_ERROR, "%s: data is locked\n", __func__);
 		return -1;
 	}
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	resd = ub_esarray_get_ele(eah, 0);
 	if(resd==NULL){goto erexit;}
 	memcpy(ed, resd, eah->uaelement_size);
 	(void)del_index_nomutex(eah, 0);
 	res = 0;
 erexit:
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return res;
 }
 
@@ -238,14 +233,14 @@ int ub_esarray_pop_last_ele(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 		return -1;
 	}
 	if(!eah->element_nums){return res;}
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	resd = ub_esarray_get_ele(eah, eah->element_nums-1);
 	if(resd==NULL){goto erexit;}
 	memcpy(ed, resd, eah->uaelement_size);
 	(void)del_index_nomutex(eah, eah->element_nums-1);
 	res = 0;
 erexit:
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return res;
 }
 
@@ -257,7 +252,7 @@ int ub_esarray_del_ele(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 		UB_LOG(UBL_ERROR, "%s: data is locked\n", __func__);
 		return -1;
 	}
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	for(i=0;i<eah->element_nums;i++){
 		if(!memcmp(&eah->data[eah->element_size * i], ed, eah->uaelement_size)){break;}
 	}
@@ -267,7 +262,7 @@ int ub_esarray_del_ele(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 	}else{
 		res=del_index_nomutex(eah, i);
 	}
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return res;
 }
 
@@ -284,10 +279,10 @@ int ub_esarray_del_ele(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 int ub_esarray_data_lock(ub_esarray_cstd_t *eah)
 {
 	bool res;
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	res=!eah->data_lock;
 	eah->data_lock=true;
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	if(!res){
 		UB_LOG(UBL_WARN, "%s:already locked\n", __func__);
 		return -1;
@@ -298,10 +293,10 @@ int ub_esarray_data_lock(ub_esarray_cstd_t *eah)
 int ub_esarray_data_unlock(ub_esarray_cstd_t *eah)
 {
 	bool res;
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	res=eah->data_lock; // if already unlocked, return false;
 	eah->data_lock=false;
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	if(!res){
 		UB_LOG(UBL_WARN, "%s:already unlocked\n", __func__);
 		return -1;
@@ -318,9 +313,9 @@ ub_esarray_element_t *ub_esarray_get_newele(ub_esarray_cstd_t *eah)
 {
 	void *ele;
 	if(!eah){return NULL;}
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	ele=get_newele_nomutex(eah);
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return ele;
 }
 
@@ -338,9 +333,9 @@ int ub_esarray_del_index(ub_esarray_cstd_t *eah, int index)
 		UB_LOG(UBL_ERROR, "%s: data is locked\n", __func__);
 		return -1;
 	}
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	res=del_index_nomutex(eah, index);
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return res;
 }
 
@@ -353,7 +348,7 @@ int ub_esarray_del_pointer(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 		UB_LOG(UBL_ERROR, "%s: data is locked\n", __func__);
 		return -1;
 	}
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.esarray_mutex);}
 	for(i=0;i<eah->element_nums;i++){
 		if((&eah->data[eah->element_size * i]) == ed){break;}
 	}
@@ -363,6 +358,6 @@ int ub_esarray_del_pointer(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed)
 	}else{
 		res=del_index_nomutex(eah, i);
 	}
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(eah->fmutex);}
+	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.esarray_mutex);}
 	return res;
 }

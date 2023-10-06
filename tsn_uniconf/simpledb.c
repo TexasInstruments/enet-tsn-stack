@@ -51,6 +51,7 @@
 #include <tsn_combase/cb_thread.h>
 #include "uc_dbal.h"
 #include "simpledb.h"
+#include "uc_static_memory.h"
 
 typedef struct dbdata{
 	uint8_t refcounter; // when this locked(>0), it becomes read only

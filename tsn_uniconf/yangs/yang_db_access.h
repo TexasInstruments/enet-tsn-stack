@@ -87,17 +87,17 @@
 
 #define UC_INIT_COPY_INSTANCE_PRE "COPY_INSTANCE_"
 
-#define YANG_DB_READ_SETUP(dbpara, aps, kvs, kss)	\
-	dbpara.aps=aps;					\
-	dbpara.kvs=kvs;					\
-	dbpara.kss=kss;					\
+#define YANG_DB_READ_SETUP(dbpara, _aps, _kvs, _kss)	\
+	dbpara.aps=(_aps);				\
+	dbpara.kvs=(_kvs);				\
+	dbpara.kss=(_kss);				\
 	dbpara.atype=YANG_DB_ACTION_READ;		\
 	dbpara.onhw=YANG_DB_ONHW_NOACTION;
 
-#define YANG_DB_WRITE_SETUP(dbpara, aps, kvs, kss)	\
-	dbpara.aps=aps;					\
-	dbpara.kvs=kvs;					\
-	dbpara.kss=kss;					\
+#define YANG_DB_WRITE_SETUP(dbpara, _aps, _kvs, _kss)	\
+	dbpara.aps=(_aps);				\
+	dbpara.kvs=(_kvs);				\
+	dbpara.kss=(_kss);				\
 	dbpara.atype=YANG_DB_ACTION_CREATE;		\
 	dbpara.onhw=YANG_DB_ONHW_NOACTION;
 
@@ -159,7 +159,8 @@ typedef struct yang_db_item_access {
  * 2 character abbreviations
  *  if: ietf-interfaces, qb: ieee802-dot1q-bridge, pt: ieee1588-ptp,
  *  mr: xmrpd, tu: ieee802-dot1q-tsn-config-uni, tr: excelfore-tsn-remote,
- *  nc: ietf-netconf-server, kc: ietf-keychain yl: ietf-yang-library
+ *  nc: excelfore-netconf-server, yl: ietf-yang-library
+ *  nm: ietf-netconf-monitoring
  *  [kN] k1:1-key access, k2:2-key access,,,
  *  [vkN] vk0:vk1=1-value_key access, vk2:2-value_key access,,,
  ************************************/
@@ -372,6 +373,13 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
  		useful for parsing leaf-list.
  */
 int yang_sizeof_vtype(uint8_t vtype);
+
+/**
+ * @brief check if vtype is a string base data type
+ * @param	vtype: yang vtype (yang_vtype_enum_t) that you want to check.
+ * @note	return true if vtype is a string base data type, else false
+ */
+bool yang_isstring_vtype(uint8_t vtype);
 
 /**
  * @brief Action(YANG_DB_ACTION_*) set in dbpara->atype

@@ -52,8 +52,6 @@
 #include <tsn_unibase/unibase.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/yangs/ieee1588-ptp.h>
-#include <tsn_uniconf/yangs/ietf-yang-types.h>
-#include <tsn_uniconf/yangs/ietf-interfaces.h>
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
@@ -249,7 +247,7 @@ int gptp_yangconfig_config_add(uc_dbald *dbald, uc_hwald *hwald)
 	//0003_ieee1588-ptp/ptp/instances/instance/ports/port
 	aps[6] = IEEE1588_PTP_UNDERLYING_INTERFACE;
 	aps[7] = 255;
-	res=yang_value_conv(YANG_VTYPE_IF_INTERFACE_REF, "tilld0",
+	res=yang_value_conv(YANG_VTYPE_IF_INTERFACE_REF, "cbeth0",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;

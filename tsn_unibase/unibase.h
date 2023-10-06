@@ -137,8 +137,8 @@ typedef uint64_t (*ub_gettime64)(ub_clocktype_t ctype); //!< 64-bit timestamp fu
 typedef struct unibase_cb_set {
 	ub_console_out console_out; //!< console_out callback
 	ub_debug_out debug_out; //!< debug_out callback
-	ub_mutex_init mutex_init; //!< mutex_init callback
-	ub_mutex_close mutex_close; //!< mutex_close callback
+	ub_mutex_init get_static_mutex; //!< get_static_mutex callback
+	ub_mutex_close static_mutex_close; //!< static_mutex_close callback
 	ub_mutex_lock mutex_lock; //!< mutex_lock callback
 	ub_mutex_unlock mutex_unlock; //!< mutex_unlock callback
 	ub_gettime64 gettime64; //!< gettime64 callback
@@ -216,11 +216,8 @@ uint64_t ub_mt_gettime64(void);
 uint64_t ub_gptp_gettime64(void);
 
 /**
- * @brief call cbfunc with an internal mutex:'gmutex' protection
+ * @brief call cbfunc with an internal mutex protection
  * @return cbfunc return code
- * @note DON'T call ub_log_* functions or UB_LOG,UB_TLOG macros inside 'cbfunc'
- *       'gmutex' is used to protect the logging functions.
- *       A deadlock happens, if it is called.
  */
 typedef int (*ub_protected_callback)(void*);
 int ub_protected_func(ub_protected_callback cbfunc, void *cbdata);

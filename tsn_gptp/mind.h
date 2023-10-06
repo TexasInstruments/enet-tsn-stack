@@ -122,10 +122,10 @@ typedef uint32_t PMTimestamp; // ms unit
 // Ancillary data required to compute parameters on standard Data Records
 typedef struct PerfMonAncillaryDataRecord {
 	uint32_t N; // number of entries
-	double prev_M; // previous mean
-	double M; // running mean
-	double prev_V; // previous variance
-	double V; //  running variance
+	int64_t prev_M; // previous mean
+	int64_t M; // running mean
+	int64_t prev_V; // previous variance
+	int64_t V; //  running variance
 } PerfMonAncillaryDataRecord;
 
 // IEEE1588-2019 Tbl J.1 ClockPerfMonDataRecord
@@ -212,7 +212,7 @@ typedef struct PortPerfMonSignalingDataRecord {
 // instead.
 typedef struct PerfMonPortDS {
 	PMTimestamp lastUpdate[PERFMON_ALL_DR]; // last update time of current
-	uint8_t index[PERFMON_ALL_DR];
+	uint16_t index[PERFMON_ALL_DR];
 	PMTimestamp PMTime[PERFMON_ALL_DR];
 	PortPerfMonPeerDelayDataRecord pdelayDR[PERFMON_ALL_DR];
 	PortPerfMonDataRecord portDR[PERFMON_ALL_DR];
@@ -220,7 +220,7 @@ typedef struct PerfMonPortDS {
 } PerfMonPortDS;
 typedef struct PerfMonClockDS {
 	PMTimestamp lastUpdate[PERFMON_ALL_DR]; // last update time of current
-	uint8_t index[PERFMON_ALL_DR];
+	uint16_t index[PERFMON_ALL_DR];
 	PMTimestamp PMTime[PERFMON_ALL_DR];
 	ClockPerfMonDataRecord clockDR[PERFMON_ALL_DR];
 } PerfMonClockDS;

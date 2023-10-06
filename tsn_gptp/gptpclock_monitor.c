@@ -58,6 +58,7 @@ static int verbose;
 static int oneshot;
 static int dcdiff;
 static char *shmem_name;
+static int sgap;
 
 static int64_t get_two_ts_diff(int64_t *ts64, int64_t *rts64, int di)
 {
@@ -249,8 +250,9 @@ static int set_options(int argc, char *argv[])
 		{"oneshot", no_argument, 0, 'o'},
 		{"diff", required_argument, 0, 'd'},
 		{"shmem", required_argument, 0, 's'},
+		{"sgap", no_argument, 0, 'g'},
 	};
-	while((oc=getopt_long(argc, argv, "hvod:s:", long_options, NULL))!=-1){
+	while((oc=getopt_long(argc, argv, "hvod:s:g", long_options, NULL))!=-1){
 		switch(oc){
 		case 'v':
 			verbose=1;
@@ -263,6 +265,9 @@ static int set_options(int argc, char *argv[])
 			break;
 		case 's':
 			shmem_name=optarg;
+			break;
+		case 'g':
+			sgap=1;
 			break;
 		case 'h':
 		default:
@@ -283,6 +288,10 @@ int main(int argc, char *argv[])
 	unibase_init(&init_para);
 	if(set_options(argc, argv)){return 1;}
 	if(gptpmasterclock_init(shmem_name)){return 1;}
+	if(sgap){
+		printf("clockgap=%"PRIi64"\n", gptpmasterclock_getts64()-ub_rt_gettime64());
+		goto mexit;
+	}
 	while(true){
 		res=main_loop();
 		if(res==2){
@@ -294,6 +303,7 @@ int main(int argc, char *argv[])
 		if(res){break;}
 		if(oneshot){break;}
 	}
+mexit:
 	gptpmasterclock_close();
 	return 0;
 }

@@ -82,6 +82,8 @@ typedef enum {
 	GPTPNET_EVENT_DEVDOWN,
 	GPTPNET_EVENT_RECV,
 	GPTPNET_EVENT_TXTS,
+	GPTPNET_EVENT_GUARDUP,
+	GPTPNET_EVENT_GUARDDOWN,
 } gptpnet_event_t;
 
 /*
@@ -121,6 +123,7 @@ typedef struct gptpnet_data_netlink {
 	uint8_t up;
 	char devname[XL4_DATA_ABS_MAX_NETDEVS];
 	char ptpdev[XL4_DATA_ABS_MAX_NETDEVS];
+	uint64_t downts;
 } gptpnet_data_netlink_t;
 
 typedef gptpnet_data_netlink_t event_data_netlink_t;

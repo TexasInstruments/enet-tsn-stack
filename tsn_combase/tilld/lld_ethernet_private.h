@@ -53,6 +53,7 @@
 struct lld_socket {
 	LLDEnet_t *lldenet;
 	uint16_t vlanid;
+	uint16_t eth_type;
 	char devname[IFNAMSIZ];
 	uint8_t alloc_srcmac[ETH_ALEN];
 };

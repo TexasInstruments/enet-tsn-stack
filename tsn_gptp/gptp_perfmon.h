@@ -56,6 +56,11 @@
 #include "gptpcommon.h"
 #include "gptpnet.h"
 
+#define SHORTINTV_START_IDX 0
+#define SHORTINTV_END_IDX 96
+#define LONGINTV_START_IDX 97
+#define LONGINTV_END_IDX 98
+
 /* PerfmanceMonitoringDataRecord */
 
 typedef enum {
@@ -69,7 +74,7 @@ void gptp_port_perfmon_dr_reset(PerfMonPortDS *ds, uint8_t type,
 		uint8_t di, uint8_t pi, uint64_t cts);
 void gptp_port_perfmon_dr_dump(PerfMonPortDS *ds, ub_dbgmsg_level_t lv,
 		uint8_t id, uint8_t di, uint8_t pi);
-void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, uint64_t v);
+void gptp_port_perfmon_ppmpddr_add(PerfMonPortDS *ds, PPMPDDR_params_t p, int64_t v);
 
 #define PERFMON_PPMPDDR_INC(ds, m) {\
 	if(ds){ \
@@ -127,10 +132,10 @@ typedef enum {
 	CPMDR_offsetFromMaster,
 } CPMDR_params_t;
 
-void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb);
+void gptp_clock_perfmon(PerfMonClockDS *ds, uint64_t cts64, PerTimeAwareSystemGlobal *tasglb, uint8_t di);
 void gptp_clock_perfmon_dr_reset(PerfMonClockDS *ds, uint8_t type, uint64_t cts);
 void gptp_clock_perfmon_dr_dump(PerfMonClockDS *ds, ub_dbgmsg_level_t lv, uint8_t id);
-void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, uint64_t v);
+void gptp_clock_perfmon_cpmdr_add(PerfMonClockDS *ds, CPMDR_params_t p, int64_t v);
 
 #define PERFMON_CPMDR_ADD(ds, p, v) {\
 	gptp_clock_perfmon_cpmdr_add(ds, p, v); \

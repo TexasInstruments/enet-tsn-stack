@@ -57,6 +57,9 @@
 
 #define UC_NOTICE_PUT uc_notice_put
 
+#define UC_SEMNAME_MAX 48
+#define UC_GETNOTICE_SEM "/xl4uc_getntc"
+
 /* how many number of signals, when 'uc_client' needs to be signaled?
  * This is a list of semaphore pointers */
 #define UC_NOTICE_SIGM uc_notice_sigm
@@ -84,7 +87,7 @@ int uc_notice_sig_check(bool thread, UC_NOTICE_SIG_T *sigp, int tout_ms, const c
  * @brief initialize 'uc_notice'
  * @param callmode
  */
-uc_notice_data_t *uc_notice_init(uint8_t callmode);
+uc_notice_data_t *uc_notice_init(uint8_t callmode, const char *dbname);
 
 /**
  * @brief close 'uc_notice'

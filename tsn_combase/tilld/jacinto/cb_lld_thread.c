@@ -51,21 +51,18 @@
  * cb_lld_thread.c
  */
 #include <stdlib.h>
+#include <stdbool.h>
 #include <ti/osal/TaskP.h>
 #include <ti/osal/MutexP.h>
 #include <ti/osal/SemaphoreP.h>
+#include <ti/osal/DebugP.h>
 #include <tsn_unibase/ub_getmem.h>
 #include "combase_private.h"
 #include "cb_thread.h"
 
-struct cb_lld_mutex {
-	MutexP_Object mobj;
-	MutexP_Handle lldmutex;
-};
-
 struct cb_lld_sem {
 	SemaphoreP_Handle lldsem;
-	/* -1: error, 0: timedout, 1: wait done */
+	/* store waiting status of semaphore, value is the likes of TILLD_SUCCESS..TILLD_TIMEDOUT */
 	int wait_status;
 };
 
@@ -82,13 +79,6 @@ struct cb_lld_task {
 #endif
 UB_SD_GETMEM_DEF(CB_LLDSEM_MMEM, (int)sizeof(cb_lld_sem_t),
 		 CB_LLDSEM_INSTNUM);
-
-#define CB_LLDMUTEX_MMEM cb_lldmutex
-#ifndef CB_LLDMUTEX_INSTNUM
-#define CB_LLDMUTEX_INSTNUM 20
-#endif
-UB_SD_GETMEM_DEF(CB_LLDMUTEX_MMEM, (int)sizeof(cb_lld_mutex_t),
-		 CB_LLDMUTEX_INSTNUM);
 
 #define CB_LLDTASK_MMEM cb_lldtask
 #ifndef CB_LLDTASK_INSTNUM
@@ -122,24 +112,21 @@ error:
 	return -1;
 }
 
-/* returns only 0 or -1 to make it compatible with the sem_timedwait() call.
- * to get wait_status please use #cb_lld_sem_wait_status()
- */
 int lld_sem_trywait(cb_lld_sem_t *cbsem, uint32_t timeout_msec)
 {
 	SemaphoreP_Status status;
 
 	status = SemaphoreP_pend(cbsem->lldsem, timeout_msec);
-	if ((status != SemaphoreP_OK) && (status != SemaphoreP_TIMEOUT)) {
-		UB_LOG(UBL_ERROR,"%s:failed %d!\n", __func__, status);
-		cbsem->wait_status = -1;
+	if (status != SemaphoreP_OK) {
+		cbsem->wait_status = (status == SemaphoreP_TIMEOUT)?
+			TILLD_TIMEDOUT: TILLD_FAILURE;
+		if (status != SemaphoreP_TIMEOUT) {
+			UB_LOG(UBL_ERROR,"%s:failed %d!\n", __func__, status);
+		}
 		return -1;
 	}
-	if (status == SemaphoreP_TIMEOUT) {
-		cbsem->wait_status = 0;
-	} else {
-		cbsem->wait_status = 1;
-	}
+	cbsem->wait_status = TILLD_SUCCESS;
+
 	return 0;
 }
 
@@ -208,48 +195,38 @@ int cb_lld_sem_destroy(CB_SEM_T *sem)
 	return 0;
 }
 
-int cb_lld_mutex_init(CB_THREAD_MUTEX_T *mutex, CB_THREAD_MUTEXATTR_T attr)
+int cb_lld_mutex_init(CB_THREAD_MUTEX_T *cbmutex, CB_THREAD_MUTEXATTR_T attr)
 {
-	cb_lld_mutex_t *cbmutex;
-
-	cbmutex = (cb_lld_mutex_t*) UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
-	if (cbmutex == NULL) {
-		UB_LOG(UBL_ERROR,"%s:failed to get mem!\n", __func__);
-		return -1;
-	}
 	memset(cbmutex, 0, sizeof(cb_lld_mutex_t));
 	cbmutex->lldmutex = MutexP_create(&cbmutex->mobj);
 	if (cbmutex->lldmutex == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to MutexP_create()!\n", __func__);
 		goto error;
 	}
-	*mutex = cbmutex;
 	return 0;
 error:
-	UB_SD_RELMEM(CB_LLDMUTEX_MMEM, cbmutex);
+	cb_lld_mutex_destroy(cbmutex);
 	return -1;
 }
 
-int cb_lld_mutex_destroy(CB_THREAD_MUTEX_T *mutex)
+int cb_lld_mutex_destroy(CB_THREAD_MUTEX_T *cbmutex)
 {
-	cb_lld_mutex_t *cbmutex = *mutex;
-
 	if (cbmutex->lldmutex != NULL) {
 		MutexP_delete(cbmutex->lldmutex);
 		cbmutex->lldmutex = NULL;
 	}
-	UB_SD_RELMEM(CB_LLDMUTEX_MMEM, cbmutex);
-
 	return 0;
 }
 
-static int lld_mutex_trylock(cb_lld_mutex_t *cbmutex, uint32_t timeout_msec)
+static int lld_mutex_trylock(CB_THREAD_MUTEX_T *cbmutex, uint32_t timeout_msec)
 {
 	MutexP_Status status;
 
 	status = MutexP_lock(cbmutex->lldmutex, timeout_msec);
-	if ((status != MutexP_OK) && (status != MutexP_FAILURE)) {
-		UB_LOG(UBL_ERROR,"%s:failed %d!\n", __func__, status);
+	if (status != MutexP_OK) {
+		if (status != MutexP_TIMEOUT) {
+			UB_LOG(UBL_ERROR,"%s:failed %d!\n", __func__, status);
+		}
 		return -1;
 	}
 	return 0;
@@ -257,12 +234,11 @@ static int lld_mutex_trylock(cb_lld_mutex_t *cbmutex, uint32_t timeout_msec)
 
 int cb_lld_mutex_lock(CB_THREAD_MUTEX_T *mutex)
 {
-	return lld_mutex_trylock(*mutex, MutexP_WAIT_FOREVER);
+	return lld_mutex_trylock(mutex, MutexP_WAIT_FOREVER);
 }
 
-int cb_lld_mutex_unlock(CB_THREAD_MUTEX_T *mutex)
+int cb_lld_mutex_unlock(CB_THREAD_MUTEX_T *cbmutex)
 {
-	cb_lld_mutex_t *cbmutex = *mutex;
 	MutexP_Status status;
 
 	status = MutexP_unlock(cbmutex->lldmutex);
@@ -275,39 +251,13 @@ int cb_lld_mutex_unlock(CB_THREAD_MUTEX_T *mutex)
 
 int cb_lld_mutex_trylock(CB_THREAD_MUTEX_T *mutex)
 {
-	return lld_mutex_trylock(*mutex, 0);
+	return lld_mutex_trylock(mutex, 0);
 }
 
 int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime)
 {
 	uint32_t timeout_msec = abs_realtime_to_msec(abstime);
-	return lld_mutex_trylock(*mutex, timeout_msec);
-}
-
-// WARNING! The following function will be called inside the API
-// `ub_protected_func` which shares the same global mutex named `gmutex`
-// with log module in the unibase library. Thus, calling any unibase
-// log macro (ie. UB_LOG) inside this function will cause a DEADLOCK.
-int cb_lld_global_mutex_init(void *mutex)
-{
-	cb_lld_mutex_t **mt = (cb_lld_mutex_t **)mutex;
-	cb_lld_mutex_t *cbmutex;
-
-	if(*mt){ return 0; }
-	cbmutex = UB_SD_GETMEM(CB_LLDMUTEX_MMEM, sizeof(cb_lld_mutex_t));
-	if (cbmutex == NULL) {
-		return -1;
-	}
-	memset(cbmutex, 0, sizeof(cb_lld_mutex_t));
-	cbmutex->lldmutex = MutexP_create(&cbmutex->mobj);
-	if (cbmutex->lldmutex == NULL) {
-		goto error;
-	}
-	*mt = cbmutex;
-	return 0;
-error:
-	UB_SD_RELMEM(CB_LLDMUTEX_MMEM, cbmutex);
-	return -1;
+	return lld_mutex_trylock(mutex, timeout_msec);
 }
 
 static void task_fxn(void* a0, void* a1)

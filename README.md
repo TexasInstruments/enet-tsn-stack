@@ -42,13 +42,7 @@ Ethernet TSN Stack is a generic TSN stack that aims to provide a unified TSN lay
 - enet_tsn_example: Example application for Time-Sensitive Networking (TSN).
 
 ## Usage
-Even though TSN-STACK is a seperate repository, it is not independent. It has dependencies to other repositories such as [MCU_PLUS_SDK](https://github.com/TexasInstruments/mcupsdk-core), [Ethernet Low Level Driver](https://github.com/TexasInstruments/mcupsdk-enet-lld), [FreeRTOS](https://github.com/TexasInstruments/mcupsdk-FreeRTOS-Kernel). It uses the build system from MCU_PLUS_SDK and hence please refer to MCU_PLUS_SDK [documentation](https://software-dl.ti.com/mcu-plus-sdk/esd/AM243X/latest/exports/docs/api_guide_am243x/index.html) about compilation, documentation generation and usage.
-
-## Reference
-- [MCU PLUS SDK documentation for AM243x](https://software-dl.ti.com/mcu-plus-sdk/esd/AM243X/latest/exports/docs/api_guide_am243x/index.html)
-- [MCU PLUS SDK documentation for AM64x](https://software-dl.ti.com/mcu-plus-sdk/esd/AM64X/latest/exports/docs/api_guide_am64x/index.html)
-- [MCU PLUS SDK documentation for AM263x](https://software-dl.ti.com/mcu-plus-sdk/esd/AM263X/latest/exports/docs/api_guide_am263x/index.html)
-- [PDK documentation for Jacinto platforms](https://software-dl.ti.com/jacinto7/esd/processor-sdk-rtos-jacinto7/latest/exports/docs/psdk_rtos/docs/user_guide/index.html)
+Enen though TSN-STACK is a seperate repository, it is not independent. It has dependencies to other repositories such as MCU_PLUS_SDK, FreeRTOS. It uses the build system from MCU_PLUS_SDK and hence please refer to MCU_PLUS_SDK for instructions about compilation, documentation generation and usage.
 
 ## Contributing to the project
 

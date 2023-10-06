@@ -54,7 +54,6 @@
 #define LLD_GPTP_PRIVATE_H_
 
 #include <tsn_combase/combase.h>
-#include "gptpnet.h"
 #include <tsn_uniconf/yangs/ietf-interfaces_access.h>
 
 // UB_LOGCAT category 2 for this layer

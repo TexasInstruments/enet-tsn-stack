@@ -67,13 +67,15 @@ char *PTPMsgType_debug[16] = {
 	"RESERVED_14",
 	"RESERVED_15",
 };
-char *gptpnet_event_debug[6] = {
+char *gptpnet_event_debug[8] = {
 	"GPTPNET_EVENT_NONE",
 	"GPTPNET_EVENT_TIMEOUT",
 	"GPTPNET_EVENT_DEVUP",
 	"GPTPNET_EVENT_DEVDOWN",
 	"GPTPNET_EVENT_RECV",
 	"GPTPNET_EVENT_TXTS",
+	"GPTPNET_EVENT_GUARDUP",
+	"GPTPNET_EVENT_GUARDDOWN",
 };
 char *PTPPortState_debug[10] = {
 	"",

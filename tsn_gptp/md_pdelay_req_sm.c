@@ -864,7 +864,7 @@ void md_pdelay_req_sm_recv_resp(md_pdelay_req_data_t *sm, event_data_recv_t *edr
 				uint64_t cts64)
 {
 	uint32_t tsec, tns;
-	uint64_t slaveMasterDelay;
+	int64_t slaveMasterDelay;
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d\n",__func__, sm->portIndex);
 	RCVD_PDELAY_RESP = true;
 	memcpy(&sm->recPdelayResp, edrecv->recbptr, sizeof(MDPTPMsgPdelayResp));
