@@ -50,6 +50,24 @@
 #ifndef CLOCK_MASTER_SYNC_RECEIVE_SM_H_
 #define CLOCK_MASTER_SYNC_RECEIVE_SM_H_
 
+struct clock_master_sync_receive_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	int state;
+	int last_state;
+	ClockMasterSyncReceiveSM *thisSM;
+	int domainIndex;
+	double mrate;
+	uint64_t last_lts;
+	uint64_t last_mts;
+	int gmadjppb;
+	double alpha;
+	int rate_stable;
+	int64_t offsetGM;
+	int offsetGM_stable;
+	int gmchange_ind;
+	uint64_t unstable_ts64;
+};
+
 typedef struct clock_master_sync_receive_data clock_master_sync_receive_data_t;
 
 void *clock_master_sync_receive_sm(clock_master_sync_receive_data_t *sm, uint64_t cts64);

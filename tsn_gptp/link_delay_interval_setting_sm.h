@@ -50,6 +50,16 @@
 #ifndef LINK_DELAY_INTERVAL_SETTING_SM_H_
 #define LINK_DELAY_INTERVAL_SETTING_SM_H_
 
+struct link_delay_interval_setting_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	MDEntityGlobal *mdeg;
+	int state;
+	int last_state;
+	LinkDelayIntervalSettingSM *thisSM;
+	int portIndex;
+};
+
 typedef struct link_delay_interval_setting_data link_delay_interval_setting_data_t;
 
 void *link_delay_interval_setting_sm(link_delay_interval_setting_data_t *sm, uint64_t cts64);

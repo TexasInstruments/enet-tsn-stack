@@ -69,7 +69,17 @@ yang_db_runtime_dataq_t *yang_db_runtime_init(xl4_data_data_t *xdd, uc_dbald *db
 
 void yang_db_runtime_close(yang_db_runtime_dataq_t *ydrd);
 
-int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname);
+
+/**
+ * @brief read from a config file, and set data.
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param fname config file name
+ * @param ucntd uc_notice handle to ask an action to uniconf.
+ *              if NULL no action is pushed.
+ * @return -1:error, 0:success
+ */
+int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname,
+			     uc_notice_data_t *ucntd);
 
 // return vtype, return -1 if error
 int yang_db_runtime_get_vtype(uc_dbald *dbald, uint8_t *aps);
@@ -165,6 +175,23 @@ int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
  */
 int yang_db_runtime_getkeyvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
 				void *key, uint32_t ksize, char **rstr);
+
+/**
+ * @return N>=0:set node and need N value keys, -1:set one value key, -2:pass leaf, -3:error
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param reset reset ydrd->api to start over
+ * @param kstr key stting
+ * @param vstr value string, if this is NULL, kstr should be node
+ */
+int yang_db_runtime_proc_nodestring(yang_db_runtime_dataq_t *ydrd, bool reset,
+				    char *kstr, char *vstr);
+
+/*
+ * @brief call yang_db_runtime_getkeyvkstr with the internal ydrd state
+ * return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
+ */
+int yang_db_runtime_state_keyvkstr(yang_db_runtime_dataq_t *ydrd, char **rstr);
+
 
 #ifdef __cplusplus
 }

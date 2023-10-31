@@ -65,16 +65,6 @@ typedef enum {
 	REACTION,
 }gm_stable_state_t;
 
-struct gm_stable_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	gm_stable_state_t state;
-	gm_stable_state_t last_state;
-	int domainIndex;
-	uint64_t gm_stable_time;
-	uint64_t gm_stable_timer_time;
-	ClockIdentity clockIdentity;
-	bool gm_change;
-};
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
 static gm_stable_state_t allstate_condition(gm_stable_data_t *sm)
@@ -82,7 +72,7 @@ static gm_stable_state_t allstate_condition(gm_stable_data_t *sm)
 	if(sm->ptasg->BEGIN || !sm->ptasg->asCapableOrAll ) {
 		return INITIALIZE;
 	}
-	return sm->state;
+	return (gm_stable_state_t)sm->state;
 }
 
 static void *initialize_proc(gm_stable_data_t *sm)

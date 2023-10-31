@@ -56,8 +56,7 @@
 #include <tsn_combase/combase.h>
 #include <tsn_uniconf/yangs/ietf-interfaces_access.h>
 
-// UB_LOGCAT category 2 for this layer
-#define UB_LOGCAT 2
+#define UB_LOGCAT 3
 #define UB_LOGTSTYPE UB_CLOCK_REALTIME
 
 #define PTPFD_TYPE LLDTSync_t*

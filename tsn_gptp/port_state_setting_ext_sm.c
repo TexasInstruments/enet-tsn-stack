@@ -67,21 +67,6 @@ typedef enum {
 	REACTION,
 }port_state_setting_ext_state_t;
 
-struct port_state_setting_ext_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal **ppgl;
-	BmcsPerTimeAwareSystemGlobal *bptasg;
-	BmcsPerPortGlobal **bppgl;
-	port_state_setting_ext_state_t state;
-	port_state_setting_ext_state_t last_state;
-	PortStateSettingExtSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	int max_ports;
-
-	UInteger224 messagePriority;
-};
-
 void resetStateDisabledTree(port_state_setting_ext_data_t *sm)
 {
 	int i;
@@ -208,7 +193,7 @@ static port_state_setting_ext_state_t allstate_condition(port_state_setting_ext_
 	   (sm->bptasg->externalPortConfiguration == VALUE_ENABLED)) {
 		return INITIALIZE;
 	}
-	return sm->state;
+	return (port_state_setting_ext_state_t)sm->state;
 }
 
 static void *initialize_proc(port_state_setting_ext_data_t *sm)

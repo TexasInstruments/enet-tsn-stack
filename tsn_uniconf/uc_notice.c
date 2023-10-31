@@ -365,8 +365,6 @@ static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete_
 				       "%s:mark delete semname in the DB:%s\n",
 				       __func__, semname);
 				action=UC_NOTICE_DBVAL_DEL;
-				(void)uc_dbal_get_release(dbald, nkey, nksize,
-							  vdata, vsize);
 				if(uc_dbal_create(dbald, nkey, nksize,
 						  &action, vsize)!=0){
 					UB_LOG(UBL_ERROR, "%s:can't delete\n", __func__);

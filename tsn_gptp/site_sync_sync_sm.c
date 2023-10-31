@@ -63,17 +63,6 @@ typedef enum {
 	REACTION,
 }site_sync_sync_state_t;
 
-struct site_sync_sync_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	site_sync_sync_state_t state;
-	site_sync_sync_state_t last_state;
-	SiteSyncSyncSM *thisSM;
-	int domainIndex;
-	PortSyncSync portSyncSync;
-	uint64_t site_sync_timeout;
-	uint64_t site_sync_sendtime;
-};
-
 #define RCVD_PSSYNC sm->thisSM->rcvdPSSync
 #define RCVD_PSSYNC_PTR sm->thisSM->rcvdPSSyncPtr
 #define TX_PSSYNC_PTR_SSS sm->thisSM->txPSSyncPtrSSS
@@ -88,7 +77,7 @@ static site_sync_sync_state_t allstate_condition(site_sync_sync_data_t *sm)
 		sm->last_state=REACTION;
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (site_sync_sync_state_t)sm->state;
 }
 
 static void *initializing_proc(site_sync_sync_data_t *sm)

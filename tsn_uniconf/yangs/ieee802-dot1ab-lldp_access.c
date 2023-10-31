@@ -104,7 +104,7 @@ static void set_dpara_knvkn(yang_db_access_para_t *dbpara,
         dbpara->kvs[i] = attrs[i].vk;
         dbpara->kss[i] = attrs[i].vk_sz;
         dbpara->kvs[i+1] = NULL;
-        UB_LOG(UBL_DEBUG, "%s: vkey size[%d] \n", __func__, attrs[i].vk_sz);
+        // UB_LOG(UBL_DEBUG, "%s: vkey size[%d] \n", __func__, attrs[i].vk_sz);
     }
 }
 
@@ -121,6 +121,27 @@ int ydbi_get_item_abk2vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t k1,
 	set_dpara_k2vk0(&ydbia->dbpara, k1, k2, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
+
+int ydbi_set_item_abk1vk0(yang_db_item_access_t *ydbia, void *rval, uint32_t vsize, uint8_t k1,  bool status, uint8_t notice)
+{
+    if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+    set_dpara_k1vk0(&ydbia->dbpara, k1, status);
+    ydbia->dbpara.value=rval;
+	ydbia->dbpara.vsize=vsize;
+	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
+	return err;
+}
+
+int ydbi_set_item_abk2vk0(yang_db_item_access_t *ydbia, void *rval, uint32_t vsize, uint8_t k1, uint8_t k2, bool status, uint8_t notice)
+{
+    if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+    set_dpara_k2vk0(&ydbia->dbpara, k1, k2, status);
+    ydbia->dbpara.value=rval;
+	ydbia->dbpara.vsize=vsize;
+	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
+	return err;
+}
+
 
 /**
  * @brief Get val base on n key from LLDP until end

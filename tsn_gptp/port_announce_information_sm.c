@@ -85,20 +85,6 @@ typedef enum {
 	REACTION,
 }port_announce_information_state_t;
 
-struct port_announce_information_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	BmcsPerTimeAwareSystemGlobal *bptasg;
-	BmcsPerPortGlobal *bppg;
-	port_announce_information_state_t state;
-	port_announce_information_state_t last_state;
-	PortAnnounceInformationSM *thisSM;
-	int domainIndex;
-	int portIndex;
-
-	UScaledNs syncReceiptTimeoutTime;
-};
-
 static uint8_t rcvdInfo(port_announce_information_data_t *sm)
 {
 	uint8_t info = OtherInfo;
@@ -175,7 +161,7 @@ static port_announce_information_state_t allstate_condition(port_announce_inform
 	     !sm->ptasg->instanceEnable) && (sm->bptasg->externalPortConfiguration == VALUE_DISABLED)) {
 		return DISABLED;
 	}
-	return sm->state;
+	return (port_announce_information_state_t)sm->state;
 }
 
 static void *disabled_proc(port_announce_information_data_t *sm, uint64_t cts64)
@@ -203,7 +189,7 @@ static port_announce_information_state_t disabled_condition(port_announce_inform
 	if (RCVD_MSG){
 		return DISABLED;
 	}
-	return sm->state;
+	return (port_announce_information_state_t)sm->state;
 }
 
 static void *aged_proc(port_announce_information_data_t *sm)

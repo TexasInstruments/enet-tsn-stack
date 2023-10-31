@@ -70,28 +70,6 @@ typedef enum {
 	REACTION,
 }md_pdelay_req_state_t;
 
-struct md_pdelay_req_data{
-	gptpnet_data_t *gpnetd;
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	MDEntityGlobal *mdeg;
-	md_pdelay_req_state_t state;
-	md_pdelay_req_state_t last_state;
-	MDPdelayReqSM *thisSM;
-	int portIndex;
-	uint64_t t1ts64;
-	uint64_t t2ts64;
-	uint64_t t3ts64;
-	uint64_t t4ts64;
-	MDPTPMsgPdelayReq txPdeayReq;
-	MDPTPMsgPdelayResp recPdelayResp;
-	MDPTPMsgPdelayRespFollowUp recPdelayRespFup;
-	int cmlds_mode;
-	uint64_t mock_txts64;
-	uint64_t prev_t1ts64;
-	uint64_t prev_t2ts64;
-};
-
 #define RCVD_PDELAY_RESP sm->thisSM->rcvdPdelayResp
 #define RCVD_PDELAY_RESP_PTR sm->thisSM->rcvdPdelayRespPtr
 #define RCVD_PDELAY_RESP_FOLLOWUP sm->thisSM->rcvdPdelayRespFollowUp
@@ -215,7 +193,7 @@ static md_pdelay_req_state_t allstate_condition(md_pdelay_req_data_t *sm)
 {
 	if(sm->ptasg->BEGIN || !sm->ppg->forAllDomain->portOper ||
 	   !sm->thisSM->portEnabled0){return NOT_ENABLED;}
-	return sm->state;
+	return (md_pdelay_req_state_t)sm->state;
 }
 
 static void *not_enabled_proc(md_pdelay_req_data_t *sm)

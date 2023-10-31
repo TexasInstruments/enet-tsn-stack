@@ -69,17 +69,6 @@ typedef enum {
 	REACTION,
 }port_sync_sync_receive_state_t;
 
-struct port_sync_sync_receive_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	port_sync_sync_receive_state_t state;
-	port_sync_sync_receive_state_t last_state;
-	PortSyncSyncReceiveSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	PortSyncSync portSyncSync;
-};
-
 static void setPSSyncPSSR(port_sync_sync_receive_data_t *sm, double rateRatio, uint64_t cts64)
 {
 	uint64_t interval;
@@ -137,7 +126,7 @@ static port_sync_sync_receive_state_t allstate_condition(port_sync_sync_receive_
 		sm->last_state=REACTION;
 		return DISCARD;
 	}
-	return sm->state;
+	return (port_sync_sync_receive_state_t)sm->state;
 }
 
 static void *discard_proc(port_sync_sync_receive_data_t *sm)

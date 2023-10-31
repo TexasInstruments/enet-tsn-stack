@@ -47,34 +47,71 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-/* Automatically generated file.  Don't edit this file.*/
-#ifndef EXCELFORE_NETCONF_SERVER_H_
-#define EXCELFORE_NETCONF_SERVER_H_
+/*
+ * rx_state_machine.h Handle rx state machine
+ *
+ *  Created on: Jun 20, 2023
+ *      Author: hoangloc
+ */
 
-#include "yang_db_access.h"
+#ifndef XL4LLDP_RX_STATE_MACHINE_H_
+#define XL4LLDP_RX_STATE_MACHINE_H_
 
-typedef enum {
-	EXCELFORE_NETCONF_SERVER_VALUEKEY, // 0(0x0)
-	EXCELFORE_NETCONF_SERVER_DUMMY, // 1(0x1)
-	EXCELFORE_NETCONF_SERVER_X4NCONF_SERVER, // 2(0x2)
-	EXCELFORE_NETCONF_SERVER_TRANSPORT, // 3(0x3)
-	EXCELFORE_NETCONF_SERVER_TLS, // 4(0x4)
-	EXCELFORE_NETCONF_SERVER_PORT, // 5(0x5)
-	EXCELFORE_NETCONF_SERVER_SERVER_CERT, // 6(0x6)
-	EXCELFORE_NETCONF_SERVER_SERVER_KEY, // 7(0x7)
-	EXCELFORE_NETCONF_SERVER_CAPATH, // 8(0x8)
-	EXCELFORE_NETCONF_SERVER_CERT_TO_NAME, // 9(0x9)
-	EXCELFORE_NETCONF_SERVER_ID, // 10(0xa)
-	EXCELFORE_NETCONF_SERVER_FINGERPRINT, // 11(0xb)
-	EXCELFORE_NETCONF_SERVER_MAP_TYPE, // 12(0xc)
-	EXCELFORE_NETCONF_SERVER_NAME, // 13(0xd)
-	EXCELFORE_NETCONF_SERVER_SSH, // 14(0xe)
-	EXCELFORE_NETCONF_SERVER_USE_UNIX_DOMAIN_SOCKET, // 15(0xf)
-	EXCELFORE_NETCONF_SERVER_SUB_IPC_PORT, // 16(0x10)
-	EXCELFORE_NETCONF_SERVER_SUB_SOCKET_NAME, // 17(0x11)
-	EXCELFORE_NETCONF_SERVER_ENUM_END,
-} excelfore_netconf_server_enum_t;
+typedef enum
+{
+	LLDP_WAIT_PORT_OPERATIONAL,
+	RX_LLDP_INITIALIZE,
+	DELETE_AGED_INFO,
+	DELETE_AGED_INFO_IN_INITIALIZE,	//!< Section 9.2.9 missed one aged-out on RX_LLDP_INITIALIZE state
+	RX_WAIT_FOR_FRAME,
+	RX_FRAME,
+	DELETE_INFO,
+	UPDATE_INFO,
+	REMOTE_CHANGES,
+	// For Rx Extended 
+	RX_EXTENDED,
+	RX_XPDU_REQUEST,
+	LAST_STATE
+} RXState;
 
-int excelfore_netconf_server_config_init(uc_dbald *dbald, uc_hwald *hwald);
+typedef enum
+{
+	PORT_ENABLE,                    //!< network interface enable
+	RX_PORT_DISABLE,                    //!< network interface disabled
+	RX_INFO_AGE_TTL_EXPIRED,        //!< Time to live timer expired but not received data from [portid-chassid]
+	RX_ENABLED,         			//!< adminStatus = rxtx or rxOnly or sendManifest = TRUE
+	RX_DISABLED,        			//!< adminStatus = disable or txOnly or sendManifest = FALSE
+	FRAME_RECEIVED,     //!< recvFrame = True and rxInfoAge = FALSE
+	TTL_EXPIRED,     //!< recvFrame = True and rxInfoAge = FALSE
+	RX_TYPE_XREQ,     //!< receive request send LLDP PDU
+	RX_TYPE_NORMAL,           //!< receive Normal remote TLVs
+	RX_TYPE_XPDU,           //!< receive XPDU or MANIFEST
+	RX_TYPE_MANF,           //!< receive XPDU or MANIFEST
+	RX_TYPE_SHUTDOWN,               //!< receive SHUTDOWN
+	RX_TYPE_MALFORM,               //!< receive incorrect format
+	RX_MANIFEST_COMPLETED,             //!< rxExtended = FALSE and manifest completed = TRUE
+	RX_MANIFEST_NOT_COMPLETED,             //!< rxExtended = FALSE and manifest completed = TRUE
+	RX_SOMETHING_CHANGED,                     //!< Something changed on remote side
+	RX_BAD_FRAME,                   //!< 
+	RX_NOTHING_CHANGED,              //!< 
+	RX_UCT,                             //!< Done process, comeback to waiting for frame
+	LAST_EVENT
+} RXEvent;
 
-#endif
+struct _hw_interface ;
+struct event_queue ;
+//typedef of function pointer
+typedef void (*lldp_rx_event_handle)(struct _hw_interface* interface, RXState pre_state);
+
+//structure of state and event with event handler
+typedef struct
+{
+	RXState rxState; //!< current state
+	RXEvent event;   //!< incomming event
+	lldp_rx_event_handle pfStateMachineEvnentHandler; // corresponding handle
+	RXState rxNextState; //!< current state
+} rxStateMachine;
+
+void interface_rx_sm_process(RXEvent ev, struct _hw_interface* interface);
+
+#endif /* XL4LLDP_RX_STATE_MACHINE_H_ */

@@ -307,6 +307,7 @@ static void test_append(void **state)
 	uint32_t vsize=strlen(value)+1;
 	uint32_t rlen;
 	char *rv;
+	int res;
 	kd.kdata="key1";
 	kd.ksize=strlen((char*)kd.kdata);
 	sdbd=simpledb_open(NULL);
@@ -319,6 +320,20 @@ static void test_append(void **state)
 	assert_string_equal(rv, "value1");
 	assert_string_equal(rv+7, "value2");
 	simpledb_get_release(sdbd, &kd);
+
+	res=simpledb_get(sdbd, &kd, (void**)&rv, &rlen);
+	assert_int_equal(res, 0);
+	res=simpledb_put(sdbd, &kd, value, vsize, SIMPLEDB_FLAG_CREATE);
+	assert_int_equal(res, -1); // it is locked, and fails to write
+	res=simpledb_wait_release(sdbd, 1);
+	assert_int_equal(res, 0); // the last release set the semaphore, and no timeout
+	res=simpledb_wait_release(sdbd, 1);
+	assert_int_equal(res, -1); // get timeout
+	simpledb_get_release(sdbd, &kd); // release the lock
+	res=simpledb_wait_release(sdbd, 1);
+	assert_int_equal(res, 0);
+	res=simpledb_put(sdbd, &kd, value, vsize, SIMPLEDB_FLAG_CREATE);
+	assert_int_equal(res, 0);
 
 	simpledb_close(sdbd);
 }

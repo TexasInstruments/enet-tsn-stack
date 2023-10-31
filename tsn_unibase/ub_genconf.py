@@ -50,8 +50,12 @@ class DefaultHeader(object):
 
         try:
             if vstr.find("0x")==0:
-                a=int(vstr,16)
                 base=16
+                if vstr[-1]=="l":  # long
+                    a=int(vstr[:-1],16)
+                    return ("int64",a,base)
+                else:
+                    a=int(vstr,16)
             else:
                 a=int(vstr)
                 base=10

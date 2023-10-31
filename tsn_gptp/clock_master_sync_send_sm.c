@@ -62,15 +62,6 @@ typedef enum {
 	REACTION,
 }clock_master_sync_send_state_t;
 
-struct clock_master_sync_send_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	clock_master_sync_send_state_t state;
-	clock_master_sync_send_state_t last_state;
-	ClockMasterSyncSendSM *thisSM;
-	int domainIndex;
-	PortSyncSync portSyncSync;
-};
-
 #define SYNC_SEND_TIME sm->thisSM->syncSendTime
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
@@ -119,7 +110,7 @@ static clock_master_sync_send_state_t allstate_condition(clock_master_sync_send_
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable ) {
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (clock_master_sync_send_state_t)sm->state;
 }
 
 static void *initializing_proc(clock_master_sync_send_data_t *sm, uint64_t cts64)

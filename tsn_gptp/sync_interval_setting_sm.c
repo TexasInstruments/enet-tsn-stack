@@ -63,16 +63,6 @@ typedef enum {
 	REACTION,
 }sync_interval_setting_state_t;
 
-struct sync_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	sync_interval_setting_state_t state;
-	sync_interval_setting_state_t last_state;
-	SyncIntervalSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 
@@ -81,7 +71,7 @@ static sync_interval_setting_state_t allstate_condition(sync_interval_setting_da
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable || !PORT_OPER ||
 	   !PTP_PORT_ENABLED ||
 	   sm->ppg->useMgtSettableLogSyncInterval){return NOT_ENABLED;}
-	return sm->state;
+	return (sync_interval_setting_state_t)sm->state;
 }
 
 static void *not_enabled_proc(sync_interval_setting_data_t *sm)

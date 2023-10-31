@@ -47,29 +47,61 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-/* Automatically generated file.  Don't edit this file.*/
-#ifndef IETF_YANG_LIBRARY_H_
-#define IETF_YANG_LIBRARY_H_
+ /*
+ * socket_util.h
+ */
+#ifndef XL4LLDP_SOCKET_UTIL_H_
+#define XL4LLDP_SOCKET_UTIL_H_
+#include <tsn_unibase/unibase.h>
+#include <tsn_combase/combase.h>
+#include <tsn_combase/cb_ethernet.h>
 
-#include "yang_db_access.h"
+#define MAX_LLDP_SIZE       (1500)
 
-typedef enum {
-	IETF_YANG_LIBRARY_VALUEKEY, // 0(0x0)
-	IETF_YANG_LIBRARY_DUMMY, // 1(0x1)
-	IETF_YANG_LIBRARY_MODULES_STATE, // 2(0x2)
-	IETF_YANG_LIBRARY_MODULE_SET_ID, // 3(0x3)
-	IETF_YANG_LIBRARY_MODULE, // 4(0x4)
-	IETF_YANG_LIBRARY_NAME, // 5(0x5)
-	IETF_YANG_LIBRARY_REVISION, // 6(0x6)
-	IETF_YANG_LIBRARY_SCHEMA, // 7(0x7)
-	IETF_YANG_LIBRARY_NAMESPACE, // 8(0x8)
-	IETF_YANG_LIBRARY_FEATURE, // 9(0x9)
-	IETF_YANG_LIBRARY_DEVIATION, // 10(0xa)
-	IETF_YANG_LIBRARY_CONFORMANCE_TYPE, // 11(0xb)
-	IETF_YANG_LIBRARY_SUBMODULE, // 12(0xc)
-	IETF_YANG_LIBRARY_ENUM_END,
-} ietf_yang_library_enum_t;
+struct _hw_interface;
 
-int ietf_yang_library_config_init(uc_dbald *dbald, uc_hwald *hwald);
+/// @brief Wrapper Socket structure uses for both TI_LLD and Posix
+typedef struct lldp_socket
+{
+	int fd;                                  //!< For posix, is CB_SOCKET_T, but for TILLD, is MAC Port
+	CB_SOCKADDR_LL_T addr;                   //!< Local socket address
+	ub_macaddr_t bmac;                       //!< Local MAC address
+	size_t mtu;                              //!< MTU size
+	uint8_t     recv_buf[MAX_LLDP_SIZE];     //!< Recv buffer
+	int    recv_len;                    	 //!< Recv len
 
+	bool is_recv_available;					 //!< This flag is turn ON once rx available
+} lldp_socket_t;
+
+/// @brief 
+/// @param lldpsock 
+/// @param name 
+/// @return 
+int lldp_raw_socket_open(struct _hw_interface* interface);
+
+/// @brief 
+/// @param lldpsock 
+/// @return 
+int lldp_raw_socket_close(struct _hw_interface* interface);
+
+/// @brief Try receive packet within timeout
+/// @param hw_if_list 
+/// @param timeout_usec 
+/// @return 
+int try_recv_packet(struct ub_list* hw_if_list, int timeout_usec);
+/// @brief Once txNow is true. This function will be called from txStateMachine
+/// @param  
+/// @param buf 
+/// @param len 
+/// @param pcv 
+/// @return 
+int lldp_send_packet(struct _hw_interface* interface, uint8_t* buf, size_t len, uint16_t pcv);
+
+/// @brief Init static variable inside socket_util (currently specific for TILLD)
+/// @param  
+void init_socket_utils(void);
+
+/// @brief DeInit static variable inside socket_util (currently specific for TILLD)
+/// @param  
+void deinit_socket_utils(void);
 #endif

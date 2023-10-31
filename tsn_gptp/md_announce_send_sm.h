@@ -50,6 +50,18 @@
 #ifndef MD_ANNOUNCE_SEND_SM_H_
 #define MD_ANNOUNCE_SEND_SM_H_
 
+struct md_announce_send_data{
+	gptpnet_data_t *gpnetd;
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	BmcsPerPortGlobal *bppg;
+	int state;
+	int last_state;
+	MDAnnounceSendSM *thisSM;
+	int domainIndex;
+	int portIndex;
+};
+
 typedef struct md_announce_send_data md_announce_send_data_t;
 
 void *md_announce_send_sm(md_announce_send_data_t *sm, uint64_t cts64);

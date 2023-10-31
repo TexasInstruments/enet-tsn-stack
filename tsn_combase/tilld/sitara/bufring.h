@@ -85,5 +85,6 @@ void InitBufRing(LLDEnetBufRing_t *ring);
 void DeInitBufRing(LLDEnetBufRing_t *ring);
 bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
 bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
+bool BufRingIsEmpty(LLDEnetBufRing_t *ring);
 
 #endif

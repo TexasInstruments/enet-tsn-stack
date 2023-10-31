@@ -50,6 +50,20 @@
 #ifndef PORT_ANNOUNCE_TRANSMIT_SM_H_
 #define PORT_ANNOUNCE_TRANSMIT_SM_H_
 
+struct port_announce_transmit_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	BmcsPerTimeAwareSystemGlobal *bptasg;
+	BmcsPerPortGlobal *bppg;
+	int state;
+	int last_state;
+	PortAnnounceTransmitSM *thisSM;
+	int domainIndex;
+	int portIndex;
+
+	PTPMsgAnnounce announceTx;
+};
+
 typedef struct port_announce_transmit_data port_announce_transmit_data_t;
 
 void *port_announce_transmit_sm(port_announce_transmit_data_t *sm, uint64_t cts64);

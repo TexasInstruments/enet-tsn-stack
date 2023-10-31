@@ -63,18 +63,6 @@ typedef enum {
 	REACTION,
 }md_announce_receive_state_t;
 
-struct md_announce_receive_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	md_announce_receive_state_t state;
-	md_announce_receive_state_t last_state;
-	MDAnnounceReceiveSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	PTPMsgAnnounce rcvdAnnounce;
-	int cmlds_mode;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 #define AS_CAPABLE sm->ppg->asCapable
@@ -150,7 +138,7 @@ static md_announce_receive_state_t allstate_condition(md_announce_receive_data_t
 		sm->last_state=REACTION;
 		return INITIALIZE;
 	}
-	return sm->state;
+	return (md_announce_receive_state_t)sm->state;
 }
 
 static void *initialize_proc(md_announce_receive_data_t *sm)

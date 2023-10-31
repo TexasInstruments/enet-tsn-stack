@@ -63,16 +63,6 @@ typedef enum {
 	REACTION,
 }link_delay_interval_setting_state_t;
 
-struct link_delay_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	MDEntityGlobal *mdeg;
-	link_delay_interval_setting_state_t state;
-	link_delay_interval_setting_state_t last_state;
-	LinkDelayIntervalSettingSM *thisSM;
-	int portIndex;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define USE_MGTSETTABLE_LOG_PDELAY_REQ_INTERVAL \
 	sm->ppg->forAllDomain->useMgtSettableLogPdelayReqInterval
@@ -86,7 +76,7 @@ static link_delay_interval_setting_state_t allstate_condition(
 {
 	if(sm->ptasg->BEGIN || !sm->thisSM->portEnabled3 ||
 	   !PORT_OPER ||  USE_MGTSETTABLE_LOG_PDELAY_REQ_INTERVAL){return NOT_ENABLED;}
-	return sm->state;
+	return (link_delay_interval_setting_state_t)sm->state;
 }
 
 static void *not_enabled_proc(link_delay_interval_setting_data_t *sm)

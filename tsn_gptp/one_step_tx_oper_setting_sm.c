@@ -63,17 +63,6 @@ typedef enum {
 	REACTION,
 }one_step_tx_oper_setting_state_t;
 
-struct one_step_tx_oper_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	MDEntityGlobal *mdeg;
-	one_step_tx_oper_setting_state_t state;
-	one_step_tx_oper_setting_state_t last_state;
-	OneStepTxOperSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 #define USE_MGT_SETTABLE_ONE_STEP_TX_OPER sm->ppg->useMgtSettableOneStepTxOper
@@ -88,7 +77,7 @@ static one_step_tx_oper_setting_state_t allstate_condition(one_step_tx_oper_sett
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable ||
 	   !PORT_OPER || !PTP_PORT_ENABLED ||
 	   USE_MGT_SETTABLE_ONE_STEP_TX_OPER ){return NOT_ENABLED;}
-	return sm->state;
+	return (one_step_tx_oper_setting_state_t)sm->state;
 }
 
 static void *not_enabled_proc(one_step_tx_oper_setting_data_t *sm)

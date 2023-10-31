@@ -50,20 +50,23 @@
 #include "uniconf_unittest_helper.h"
 
 #define UCTEST_DBNAME ".uniconftestdb"
+#define UCTEST_XML_CONF "../../tsn_uniconf/yangs/testdata/ietf-interfaces.xml"
 
 /* uniconfmon result output is "uniconfmon result_string" format.
    find result_string part, and conver it to integer */
-static int get_result_num(char *pstr, int *num)
+static char *get_result_num(char *pstr, int *num)
 {
 	char *rstr;
 	rstr=strstr(pstr, "uniconfmon ");
-	if(!rstr){return -1;}
+	if(!rstr){return NULL;}
 	memmove(pstr, rstr+11, strlen(rstr+11)+1);
 	rstr=strchr(pstr, '\n');
-	if(!rstr){return -1;}
+	if(!rstr){return NULL;}
 	*rstr=0;
-	*num=strtol(pstr, NULL, 0);
-	return 0;
+	if(num!=NULL){
+		*num=strtol(pstr, NULL, 0);
+	}
+	return pstr;
 }
 
 static int one_write_read(char *kstr, char *vstr)
@@ -101,10 +104,34 @@ static int one_write_read(char *kstr, char *vstr)
 			break;
 		}
 		pstr[res]=0;
-		if(get_result_num(pstr, &res)==0) break;
+		if(get_result_num(pstr, &res)!=NULL) break;
 	}
 	pclose(fo);
 	return res;
+}
+
+static char *one_read(char *kstr)
+{
+	char pstr[1024];
+	FILE *fo;
+	int res;
+	char *rd;
+
+	sprintf(pstr, "./uniconfmon -p "UCTEST_DBNAME
+		" -i -1 -n \"%s\"", kstr);
+	fo=popen(pstr, "r");
+	while(true){
+		res=fread(pstr, 1, sizeof(pstr)-1, fo);
+		if(res<=0){
+			res=-1;
+			break;
+		}
+		pstr[res]=0;
+		rd=get_result_num(pstr, NULL);
+		if(rd!=NULL){break;}
+	}
+	pclose(fo);
+	return rd;
 }
 
 static void test_write_read(void **state)
@@ -122,6 +149,24 @@ static void test_write_read(void **state)
 
 	res=one_write_read("/ietf-interfaces/interfaces/interface|name:cbeth0|/speed-", NULL);
 	assert_int_equal(res, -1);
+}
+
+static void test_conf_read(void **state)
+{
+	char *pstr="./uniconfmon -p "UCTEST_DBNAME" -c "UCTEST_XML_CONF;
+	FILE *fo;
+	char *res;
+	// check if unicof is started
+	fo=popen(pstr, "w");
+	assert_int_equal(pclose(fo), 0);
+
+	res=one_read("/ietf-interfaces/interfaces/interface|name:eth0|/enabled");
+	assert_non_null(res);
+	assert_string_equal(res, "true");
+	res=one_read("/ietf-interfaces/interfaces/interface|name:eth0|/bridge-port/"
+		     "gate-parameter-table/queue-max-sdu-table|traffic-class:0|/queue-max-sdu");
+	assert_non_null(res);
+	assert_string_equal(res, "750");
 }
 
 static int setup(void **state)
@@ -154,6 +199,7 @@ int main(int argc, char *argv[])
 {
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_write_read),
+		cmocka_unit_test(test_conf_read),
 	};
 	return cmocka_run_group_tests(tests, setup, teardown);
 }

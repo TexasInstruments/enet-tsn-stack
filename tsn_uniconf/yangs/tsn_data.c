@@ -85,7 +85,7 @@ const char *xl4_data_enum_strings[XL4_DATA_ENUM_END]={
 
 /* generally used statically allocated memory.
    this should be used only for quickly released cases. */
-UB_SD_GETMEM_DEF(YANGINIT_GEN_SMEM, 8, 128);
+UB_SD_GETMEM_DEF(YANGINIT_GEN_SMEM, 8, 320);
 
 static xl4extmod_data_t *find_xl4emd(ub_esarray_cstd_t *xl4mods, char *emodname, uint8_t emodid)
 {

@@ -29,7 +29,7 @@
 
 			<!-- to set up the second domain, set this number for the clockIndex which is used
 					 for the second domain. For the second domin, only thisClock and master clock
-					 are added. CONF_CMLDS_MODE must be set to use multiple domains.
+					 are added. CMLDS_MODE must be set to use multiple domains.
 					 set -1 not to use the second domain.
 					 1 to use the first ptpdevice -->
 			<FIRST_DOMAIN_THIS_CLOCK type="int8">1</FIRST_DOMAIN_THIS_CLOCK>

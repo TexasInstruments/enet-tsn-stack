@@ -50,6 +50,13 @@
 #ifndef COMBASE_LINUX_H__
 #define COMBASE_LINUX_H__
 
+/**
+ * Duplex values which are used by xl4 modules
+ */
+#define CB_DUPLEX_FULL		(1)
+#define CB_DUPLEX_HALF		(2)
+#define CB_DUPLEX_UNKNOWN	(3)
+
 typedef struct cbl_linkstatus{
 	ub_macaddr_t address;
 	uint32_t speed;

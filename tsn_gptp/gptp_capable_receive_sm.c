@@ -63,16 +63,6 @@ typedef enum {
 	REACTION,
 }gptp_capable_receive_state_t;
 
-struct gptp_capable_receive_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	gptp_capable_receive_state_t state;
-	gptp_capable_receive_state_t last_state;
-	gPtpCapableReceiveSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 // ??? !domainEnabled, Figure 10-20—gPtpCapableReceive state machine
@@ -84,7 +74,7 @@ static gptp_capable_receive_state_t allstate_condition(gptp_capable_receive_data
 
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable || !DOMAIN_ENABLED ||
 	   !PORT_OPER || !PTP_PORT_ENABLED){return NOT_ENABLED;}
-	return sm->state;
+	return (gptp_capable_receive_state_t)sm->state;
 }
 
 static void *not_enabled_proc(gptp_capable_receive_data_t *sm)

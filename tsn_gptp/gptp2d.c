@@ -57,6 +57,7 @@
 #include "mdeth.h"
 #include "gptpman.h"
 #include <getopt.h>
+#include "gptpcommon.h"
 #include "gptpconf/gptpgcfg.h"
 #include "gptpconf/xl4-extmod-xl4gptp.h"
 #include "tsn_uniconf/uc_dbal.h"
@@ -65,6 +66,7 @@
 #include "tsn_uniconf/ucman.h"
 #include "tsn_uniconf/yangs/tsn_data.h"
 #include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
+#include "tsn_uniconf/yangs/ietf-interfaces_access.h"
 
 typedef struct gptpdpd {
 	const char **netdevs;
@@ -75,11 +77,11 @@ typedef struct gptpoptd {
 	const char **conf_files;
 	const char *db_file;
 	int netdnum;
-	int domain_num;
 	char *inittm;
 	int instnum;
 	bool ucthread;
 	int numconf;
+	uint16_t ucmonport;
 } gptpoptd_t;
 
 static int print_usage(char *pname, gptpoptd_t *gpoptd)
@@ -89,8 +91,6 @@ static int print_usage(char *pname, gptpoptd_t *gpoptd)
 	UB_CONSOLE_PRINT("%s [options]\n", s);
 	UB_CONSOLE_PRINT("-h|--help: this help\n");
 	UB_CONSOLE_PRINT("-d|--devs \"eth0,eth1,...\": comma separated network devices\n");
-	UB_CONSOLE_PRINT("-n|--dnum number: max number of network devices\n");
-	UB_CONSOLE_PRINT("-m|--domain number: max number of domain\n");
 	UB_CONSOLE_PRINT("-p|--dbname: database file\n");
 	UB_CONSOLE_PRINT("-c|--conf: config file\n");
 	UB_CONSOLE_PRINT("\tuse multiple times for multiple configuration files\n");
@@ -99,6 +99,7 @@ static int print_usage(char *pname, gptpoptd_t *gpoptd)
 	UB_CONSOLE_PRINT("-t|--inittm year:month:date:hour:minute:second: set initial time\n");
 	UB_CONSOLE_PRINT("-i|--instnum instance_number:set an instance number(default=0)\n");
 	UB_CONSOLE_PRINT("-u|--ucthread: run uniconf in a thread\n");
+	UB_CONSOLE_PRINT("--ucmon port_number: run uniconfmon in uniconf with this udp port\n");
 	return -1;
 }
 
@@ -109,16 +110,15 @@ static int set_options(gptpoptd_t *gpoptd, int argc, char *argv[])
 	struct option long_options[] = {
 		{"help", no_argument, 0, 'h'},
 		{"devs", required_argument, 0, 'd'},
-		{"dnum", required_argument, 0, 'n'},
-		{"domain", required_argument, 0, 'm'},
 		{"conf", required_argument, 0, 'c'},
 		{"dbname", required_argument, 0, 'p'},
 		{"inittm", required_argument, 0, 't'},
 		{"instnum", required_argument, 0, 'i'},
 		{"ucthread", no_argument, 0, 'u'},
+		{"ucmon", required_argument, 0, 0},
 		{NULL, 0, 0, 0},
 	};
-	while((oc=getopt_long(argc, argv, "hd:n:c:m:t:i:p:u", long_options, NULL))!=-1){
+	while((oc=getopt_long(argc, argv, "hd:c:t:i:p:u", long_options, NULL))!=-1){
 		switch(oc){
 		case 'd':
 			gpoptd->devlist=optarg;
@@ -133,12 +133,6 @@ static int set_options(gptpoptd_t *gpoptd, int argc, char *argv[])
 		case 'p':
 			gpoptd->db_file=optarg;
 			break;
-		case 'n':
-			gpoptd->netdnum=strtol(optarg, NULL, 0);
-			break;
-		case 'm':
-			gpoptd->domain_num=strtol(optarg, NULL, 0);
-			break;
 		case 't':
 			gpoptd->inittm=optarg;
 			break;
@@ -147,6 +141,9 @@ static int set_options(gptpoptd_t *gpoptd, int argc, char *argv[])
 			break;
 		case 'u':
 			gpoptd->ucthread=true;
+			break;
+		case 0:
+			gpoptd->ucmonport=strtol(optarg, NULL, 0);
 			break;
 		case 'h':
 		default:
@@ -196,7 +193,11 @@ static int get_netdevices(gptpdpd_t *gpdpd, gptpoptd_t *gpoptd)
 		}
 	}
 	for(i=0;i<gpoptd->netdnum;i++){
+		uint8_t up=1;
 		UB_LOG(UBL_DEBUG, "use network device:%s\n", gpdpd->netdevs[i]);
+		YDBI_SET_ITEM(ifk1vk0, (char*)gpdpd->netdevs[i],
+			      IETF_INTERFACES_ENABLED, YDBI_CONFIG,
+			      &up, 1, YDBI_PUSH_NOTICE);
 	}
 	return 0;
 }
@@ -245,13 +246,16 @@ int GPTP2D_MAIN(int argc, char *argv[])
 		ucmd.ucmanstart=UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(CB_SEM_T));
 		if(ub_assert_fatal(ucmd.ucmanstart!=NULL, __func__, NULL)){return -1;}
 		memset(ucmd.ucmanstart, 0, sizeof(CB_SEM_T));
-		ucmd.hwmod="NONE";
+		ucmd.hwmod="";
+		if(gpoptd.ucmonport!=0){
+			ucmd.ucmon_thread_port=gpoptd.ucmonport;
+		}
 		CB_SEM_INIT(ucmd.ucmanstart, 0, 0);
 		CB_THREAD_CREATE(&ucthreadt, NULL, uniconf_main, &ucmd);
 		CB_SEM_WAIT(ucmd.ucmanstart);
 	}
 	res=gptpgcfg_init(gpoptd.db_file, gpoptd.conf_files, gpoptd.instnum,
-				 gpoptd.ucthread);
+				gpoptd.ucthread, NULL);
 	if(gpoptd.conf_files){
 		UB_SD_RELMEM(GPTP_SMALL_ALLOC, gpoptd.conf_files);
 		gpoptd.conf_files=NULL;
@@ -275,7 +279,7 @@ int GPTP2D_MAIN(int argc, char *argv[])
 	}
 
 	gptpman_run(gpoptd.instnum, gpdpd.netdevs, gpoptd.netdnum,
-		    gpoptd.domain_num, gpoptd.inittm, &stopgptp);
+		    gpoptd.inittm, &stopgptp);
 	UB_TLOG(UBL_INFO,"gptp2d going to close\n");
 	res=0;
 erexit:

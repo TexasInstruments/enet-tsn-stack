@@ -63,14 +63,6 @@ typedef enum {
 	REACTION,
 }clock_slave_sync_state_t;
 
-struct clock_slave_sync_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	clock_slave_sync_state_t state;
-	clock_slave_sync_state_t last_state;
-	ClockSlaveSyncSM *thisSM;
-	int domainIndex;
-};
-
 #define RCVD_PSSYNC sm->thisSM->rcvdPSSync
 #define RCVD_PSSYNC_PTR sm->thisSM->rcvdPSSyncPtr
 #define RCVD_LOCAL_CLOCK_TICK sm->thisSM->rcvdLocalClockTick
@@ -93,7 +85,7 @@ static clock_slave_sync_state_t allstate_condition(clock_slave_sync_data_t *sm)
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable ) {
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (clock_slave_sync_state_t)sm->state;
 }
 
 static void *initializing_proc(clock_slave_sync_data_t *sm)

@@ -185,7 +185,6 @@ static void *one_thread(void *ptr)
 		runmode=UC_CALLMODE_THREAD;
 	}
 
-	uniconf_remove_dbfile(".uc_dbal_unittestdb");
 	udbd=uc_dbal_open(".uc_dbal_unittestdb", "w", runmode);
 	if(thd->thread_num==0){
 		for(i=1;i<NUMBER_OF_THREADS;i++) CB_SEM_POST(thd->sem_un2uc);

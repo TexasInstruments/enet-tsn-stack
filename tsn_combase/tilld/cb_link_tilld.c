@@ -58,6 +58,7 @@ struct combase_link_data {
 	cbl_cb_t event_cb;
 	void *cb_arg;
 	char *netdevs[MAX_NUMBER_ENET_DEVS];
+	uint32_t netdev_opersts[MAX_NUMBER_ENET_DEVS]; // keep current operation status
 	int numof_netdevs;
 };
 
@@ -96,6 +97,10 @@ combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg)
 				    NULL, NULL, srcmac) < 0) {
 			goto errexit;
 		}
+	}
+
+	for (i = 0; i < cbld->numof_netdevs; i++) {
+		cbld->netdev_opersts[i] = 0xFFFFFFFF;
 	}
 
 	return cbld;
@@ -148,24 +153,31 @@ int cbl_query_response(combase_link_data_t *cbld, int tout_ms)
 	uint32_t link_state = 0;
 
 	for (i = 0; i < cbld->numof_netdevs; i++) {
-		if (cb_lld_get_link_state(cbld->sock,
-					  cbld->netdevs[i],
-					  &link_state)) {
+		if (cb_lld_get_link_state(cbld->sock, cbld->netdevs[i], &link_state)) {
 			return -1;
 		}
+		if (cbld->netdev_opersts[i] == link_state){continue;}
 		strncpy(nevent.ifname, cbld->netdevs[i], strlen(cbld->netdevs[i]));
+		nevent.eventflags=CBL_EVENT_CHECKENABLED;
+		if(cbld->event_cb(cbld->cb_arg, &nevent)){
+			return 0; //ifname is not enabled, ignore it.
+		}
 		if (link_state) {
 			if (cb_lld_get_link_info(cbld->sock, nevent.ifname,
 						 &nevent.u.linkst.speed, &nevent.u.linkst.duplex)) {
-				UB_LOG(UBL_WARN,"%s:failed to get speed and duplex : %s\n",
+				UB_LOG(UBL_ERROR,"%s:failed to get speed and duplex : %s\n",
 				       __func__, nevent.ifname);
 			}
 			nevent.eventflags = CBL_EVENT_DEVUP;
-			UB_LOG(UBL_DEBUG, "%s:DEVUP, speed=%d, duplex=%d\n",
-			       __func__, nevent.u.linkst.speed, nevent.u.linkst.duplex);
+			UB_LOG(UBL_INFO, "%s:%s: link UP, speed=%d, duplex=%d !!!!\n", __func__,
+				   cbld->netdevs[i], nevent.u.linkst.speed, nevent.u.linkst.duplex);
 		} else {
 			nevent.eventflags=CBL_EVENT_DEVDOWN;
+			UB_LOG(UBL_INFO, "%s:%s link DOWN !!!!\n", __func__, cbld->netdevs[i]);
 		}
+
+		cbld->netdev_opersts[i] = link_state;
+		nevent.ifindex=i+1; //if-index range "1..2147483647"
 		cb_get_mac_bydev(cbld->sock, nevent.ifname, nevent.u.linkst.address);
 		cbld->event_cb(cbld->cb_arg, &nevent);
 	}

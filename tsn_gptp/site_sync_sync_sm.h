@@ -50,6 +50,17 @@
 #ifndef SITE_SYNC_SYNC_SM_H_
 #define SITE_SYNC_SYNC_SM_H_
 
+struct site_sync_sync_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	int state;
+	int last_state;
+	SiteSyncSyncSM *thisSM;
+	int domainIndex;
+	PortSyncSync portSyncSync;
+	uint64_t site_sync_timeout;
+	uint64_t site_sync_sendtime;
+};
+
 typedef struct site_sync_sync_data site_sync_sync_data_t;
 
 void *site_sync_sync_sm(site_sync_sync_data_t *sm, uint64_t cts64);

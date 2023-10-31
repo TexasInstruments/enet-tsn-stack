@@ -50,6 +50,14 @@
 #ifndef CLOCK_MASTER_SYNC_OFFSET_SM_H_
 #define CLOCK_MASTER_SYNC_OFFSET_SM_H_
 
+struct clock_master_sync_offset_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	int state;
+	int last_state;
+	ClockMasterSyncOffsetSM *thisSM;
+	int domainIndex;
+};
+
 typedef struct clock_master_sync_offset_data clock_master_sync_offset_data_t;
 
 void *clock_master_sync_offset_sm(clock_master_sync_offset_data_t *sm, uint64_t cts64);

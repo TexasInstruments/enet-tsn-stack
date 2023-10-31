@@ -50,6 +50,20 @@
 #ifndef PORT_STATE_SELECTION_SM_H_
 #define PORT_STATE_SELECTION_SM_H_
 
+struct port_state_selection_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal **ppgl;
+	BmcsPerTimeAwareSystemGlobal *bptasg;
+	BmcsPerPortGlobal **bppgl;
+	int state;
+	int last_state;
+	PortStateSelectionSM *thisSM;
+	int domainIndex;
+	int max_ports;
+	int64_t init_slave_ts;
+	bool deferred_gmsync;
+};
+
 typedef struct port_state_selection_data port_state_selection_data_t;
 
 void *port_state_selection_sm(port_state_selection_data_t *sm, uint64_t cts64);

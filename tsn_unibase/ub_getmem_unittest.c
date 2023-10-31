@@ -87,10 +87,12 @@ void test_ubgetmem1(void **state)
 	alloc_fill(dmem, FLAGNUM, FLAGSIZE);
 	assert_null(UB_SD_GETMEM(test1, FLAGSIZE)); // no more space
 	check_data(dmem, FLAGNUM, FLAGSIZE);
+	assert_int_equal(UB_SD_PRINT_USAGE(test1, UBL_NONE), 0);
 
 	for(i=0;i<FLAGNUM;i++){
 		UB_SD_RELMEM(test1, dmem[i]);
 	}
+	assert_int_equal(UB_SD_PRINT_USAGE(test1, UBL_NONE), FLAGNUM);
 	alloc_fill(dmem, FLAGNUM, FLAGSIZE);
 	check_data(dmem, FLAGNUM, FLAGSIZE);
 
@@ -100,11 +102,14 @@ void test_ubgetmem1(void **state)
 
 	alloc_fill(dmem, FLAGNUM/2, 2*FLAGSIZE);
 	assert_null(UB_SD_GETMEM(test1, 2*FLAGSIZE)); // no more space
+	assert_int_equal(UB_SD_PRINT_USAGE(test1, UBL_NONE), 0);
 
 	UB_SD_RELMEM(test1, dmem[0]);
 	UB_SD_RELMEM(test1, dmem[2]);
 	UB_SD_RELMEM(test1, dmem[3]);
+	assert_int_equal(UB_SD_PRINT_USAGE(test1, UBL_NONE), 6);
 	mem=UB_SD_REGETMEM(test1, dmem[4], 3*FLAGSIZE);
+	assert_int_equal(UB_SD_PRINT_USAGE(test1, UBL_NONE), 5);
 	assert_ptr_equal(mem, dmem[2]);
 	for(i=0;i<2*FLAGSIZE;i++){
 		// check dmem[4] moved to mem

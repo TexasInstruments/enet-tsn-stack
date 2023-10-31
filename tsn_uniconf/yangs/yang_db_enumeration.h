@@ -59,3 +59,4 @@
  *----------------------------------------------------------------------------*/
 uint32_t yang_enumeration_getval(char *enumeration_str, char *hints);
 char* yang_enumeration_getstr(uint32_t enumeration_val, char *hints);
+char* yang_enumeration_getns(uint32_t enumeration_val, char *hints);

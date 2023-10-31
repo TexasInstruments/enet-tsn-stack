@@ -50,6 +50,18 @@
 #ifndef MD_ANNOUNCE_RECEIVE_SM_H_
 #define MD_ANNOUNCE_RECEIVE_SM_H_
 
+struct md_announce_receive_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	MDAnnounceReceiveSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	PTPMsgAnnounce rcvdAnnounce;
+	int cmlds_mode;
+};
+
 typedef struct md_announce_receive_data md_announce_receive_data_t;
 
 void *md_announce_receive_sm(md_announce_receive_data_t *sm, uint64_t cts64);

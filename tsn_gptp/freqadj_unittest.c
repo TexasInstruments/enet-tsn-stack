@@ -48,9 +48,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 #include <stdio.h>
+#include <stdlib.h>
 #include <tsn_unibase/unibase_binding.h>
 #include <setjmp.h>
 #include <cmocka.h>
+#include "gptpman_private.h"
 #include "gptpclock.h"
 #include "gptpconf/gptpgcfg.h"
 #include <tsn_uniconf/ucman.h>
@@ -168,7 +170,7 @@ static int setup(void **state)
 	CB_SEM_INIT(ucmd.ucmanstart, 0, 0);
 	CB_THREAD_CREATE(&ucthreadt, NULL, uniconf_main, &ucmd);
 	CB_SEM_WAIT(ucmd.ucmanstart);
-	if(gptpgcfg_init(dbname, NULL, 0, true)) return -1;
+	if(gptpgcfg_init(dbname, NULL, 0, true, NULL)) return -1;
 
 	return 0;
 }
@@ -186,6 +188,7 @@ static int teardown(void **state)
 
 int main(int argc, char *argv[])
 {
+	if(getenv("SKIP_TIME_CRITICAL")){return 77;}
 	const struct CMUnitTest tests[] = {
 		cmocka_unit_test(test_adjustment),
 		cmocka_unit_test(test_multi),

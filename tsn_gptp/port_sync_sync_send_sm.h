@@ -50,6 +50,17 @@
 #ifndef PORT_SYNC_SYNC_SEND_SM_H_
 #define PORT_SYNC_SYNC_SEND_SM_H_
 
+struct port_sync_sync_send_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	PortSyncSyncSendSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	MDSyncSend mdSyncSend;
+};
+
 typedef struct port_sync_sync_send_data port_sync_sync_send_data_t;
 
 void *port_sync_sync_send_sm(port_sync_sync_send_data_t *sm, uint64_t cts64);

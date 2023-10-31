@@ -50,6 +50,17 @@
 #ifndef GM_STABLE_SM_H_
 #define GM_STABLE_SM_H_
 
+struct gm_stable_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	int state;
+	int last_state;
+	int domainIndex;
+	uint64_t gm_stable_time;
+	uint64_t gm_stable_timer_time;
+	ClockIdentity clockIdentity;
+	bool gm_change;
+};
+
 typedef struct gm_stable_data gm_stable_data_t;
 
 void *gm_stable_sm(gm_stable_data_t *sm, uint64_t cts64);

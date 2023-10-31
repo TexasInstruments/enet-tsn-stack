@@ -53,6 +53,7 @@
 #include "uc_private.h"
 #include "ucman.h"
 #include "yangs/yang_modules.h"
+#include "uniconfmon_thread.h"
 
 extern int yang_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
@@ -111,6 +112,9 @@ void *uniconf_main(void *ptr)
 	UB_TLOG(UBL_INFO, "%s:uniconf started\n", __func__);
 	if(uc_dbal_create(ucd.dbald, apsd, 4, &vtype, 1)){goto erexit;}
 	if(uc_dbal_create(ucd.dbald, uc_rap, 3, &uc_rv, 1)){goto erexit;}
+	if(ucmd->ucmon_thread_port && (UC_CALL_THREAD(ucmd->ucmode)!=0)){
+		if(uniconfmon_thread_start(ucmd->ucmon_thread_port)!=0){goto erexit;}
+	}
 	while(!*ucmd->stoprun){
 		/*
 		 * here each detect fuction has 50msec timeout, so the worst case response
@@ -142,6 +146,9 @@ void *uniconf_main(void *ptr)
 	}
 	ucmd->rval=0;
 erexit:
+	if(ucmd->ucmon_thread_port && uniconfmon_thread_running()){
+		(void)uniconfmon_thread_stop();
+	}
 	if(ucd.dbald!=NULL){uc_dbal_del(ucd.dbald, uc_rap, 3);}
 	UB_TLOG(UBL_INFO, "%s:closing\n", __func__);
 	*ucmd->stoprun=true;

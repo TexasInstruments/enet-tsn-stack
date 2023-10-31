@@ -77,6 +77,7 @@ int uc_notice_sig_open(bool thread, UC_NOTICE_SIG_T **sigp, int *master, const c
 void uc_notice_sig_close(bool thread, UC_NOTICE_SIG_T *sigp, bool master, const char *name);
 int uc_notice_sig_getvalue(bool thread, UC_NOTICE_SIG_T *sigp, int *sval);
 int uc_notice_sig_post(bool thread, UC_NOTICE_SIG_T *sigp);
+int uc_notice_sig_trywait(bool thread, UC_NOTICE_SIG_T *sigp);
 UC_NOTICE_SIG_T *uc_notice_sig_reallocate(bool thread, void *d, int n);
 // tout_ms>0:wait signal for the time, toug_ms<=0:wait until the signal
 // return 0:get the signal, 1:timed out, -1:error

@@ -101,6 +101,7 @@ extern "C" {
 
 #define ETH_P_8021Q		0x8100  /* 802.1Q VLAN Extended Header  */
 #define ETH_P_1588		0x88F7	/* IEEE 1588 Timesync */
+#define ETH_P_LLDP		0x88CC	/* 802.1AB LLDP */
 #define ETH_P_TSN		0x22F0	/* TSN (IEEE 1722) packet	*/
 #define ETH_P_NETLINK		0x22F1  /* A virtual prototol for netlink rawsockt on TI platforms */
 

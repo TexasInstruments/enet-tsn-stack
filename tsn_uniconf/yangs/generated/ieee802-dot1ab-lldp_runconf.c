@@ -73,60 +73,61 @@ const char *ieee802_dot1ab_lldp_enum_strings[]={
 	"reinit-delay", 		// 6(0x6)
 	"tx-credit-max", 		// 7(0x7)
 	"tx-fast-init", 		// 8(0x8)
-	"notification-interval", 		// 9(0x9)
-	"remote-statistics", 		// 10(0xa)
-	"last-change-time", 		// 11(0xb)
-	"remote-inserts", 		// 12(0xc)
-	"remote-deletes", 		// 13(0xd)
-	"remote-drops", 		// 14(0xe)
-	"remote-ageouts", 		// 15(0xf)
-	"local-system-data", 		// 16(0x10)
-	"chassis-id-subtype", 		// 17(0x11)
-	"chassis-id", 		// 18(0x12)
-	"system-name", 		// 19(0x13)
-	"system-description", 		// 20(0x14)
-	"system-capabilities-supported", 		// 21(0x15)
-	"system-capabilities-enabled", 		// 22(0x16)
-	"port", 		// 23(0x17)
-	"name", 		// 24(0x18)
-	"dest-mac-address", 		// 25(0x19)
-	"admin-status", 		// 26(0x1a)
-	"notification-enable", 		// 27(0x1b)
-	"tlvs-tx-enable", 		// 28(0x1c)
-	"management-address-tx-port", 		// 29(0x1d)
-	"address-subtype", 		// 30(0x1e)
-	"man-address", 		// 31(0x1f)
-	"tx-enable", 		// 32(0x20)
-	"addr-len", 		// 33(0x21)
-	"if-subtype", 		// 34(0x22)
-	"if-id", 		// 35(0x23)
-	"port-id-subtype", 		// 36(0x24)
-	"port-id", 		// 37(0x25)
-	"port-desc", 		// 38(0x26)
-	"tx-statistics", 		// 39(0x27)
-	"total-frames", 		// 40(0x28)
-	"total-length-errors", 		// 41(0x29)
-	"rx-statistics", 		// 42(0x2a)
-	"total-ageouts", 		// 43(0x2b)
-	"total-discarded-frames", 		// 44(0x2c)
-	"error-frames", 		// 45(0x2d)
-	"total-discarded-tlvs", 		// 46(0x2e)
-	"total-unrecognized-tlvs", 		// 47(0x2f)
-	"remote-systems-data", 		// 48(0x30)
-	"time-mark", 		// 49(0x31)
-	"remote-index", 		// 50(0x32)
-	"remote-too-many-neighbors", 		// 51(0x33)
-	"remote-changes", 		// 52(0x34)
-	"management-address", 		// 53(0x35)
-	"address", 		// 54(0x36)
-	"remote-unknown-tlv", 		// 55(0x37)
-	"tlv-type", 		// 56(0x38)
-	"tlv-info", 		// 57(0x39)
-	"remote-org-defined-info", 		// 58(0x3a)
-	"info-identifier", 		// 59(0x3b)
-	"info-subtype", 		// 60(0x3c)
-	"info-index", 		// 61(0x3d)
-	"remote-info", 		// 62(0x3e)
+	"remote-statistics", 		// 9(0x9)
+	"last-change-time", 		// 10(0xa)
+	"remote-inserts", 		// 11(0xb)
+	"remote-deletes", 		// 12(0xc)
+	"remote-drops", 		// 13(0xd)
+	"remote-ageouts", 		// 14(0xe)
+	"local-system-data", 		// 15(0xf)
+	"chassis-id-subtype", 		// 16(0x10)
+	"chassis-id", 		// 17(0x11)
+	"system-name", 		// 18(0x12)
+	"system-description", 		// 19(0x13)
+	"system-capabilities-supported", 		// 20(0x14)
+	"system-capabilities-enabled", 		// 21(0x15)
+	"port", 		// 22(0x16)
+	"name", 		// 23(0x17)
+	"dest-mac-address", 		// 24(0x18)
+	"admin-status", 		// 25(0x19)
+	"tlvs-tx-enable", 		// 26(0x1a)
+	"management-address-tx-port", 		// 27(0x1b)
+	"address-subtype", 		// 28(0x1c)
+	"man-address", 		// 29(0x1d)
+	"tx-enable", 		// 30(0x1e)
+	"addr-len", 		// 31(0x1f)
+	"if-subtype", 		// 32(0x20)
+	"if-id", 		// 33(0x21)
+	"port-id-subtype", 		// 34(0x22)
+	"port-id", 		// 35(0x23)
+	"port-desc", 		// 36(0x24)
+	"tx-statistics", 		// 37(0x25)
+	"total-frames", 		// 38(0x26)
+	"total-length-errors", 		// 39(0x27)
+	"rx-statistics", 		// 40(0x28)
+	"total-ageouts", 		// 41(0x29)
+	"total-discarded-frames", 		// 42(0x2a)
+	"error-frames", 		// 43(0x2b)
+	"total-discarded-tlvs", 		// 44(0x2c)
+	"total-unrecognized-tlvs", 		// 45(0x2d)
+	"remote-systems-data", 		// 46(0x2e)
+	"time-mark", 		// 47(0x2f)
+	"remote-index", 		// 48(0x30)
+	"remote-too-many-neighbors", 		// 49(0x31)
+	"remote-changes", 		// 50(0x32)
+	"management-address", 		// 51(0x33)
+	"address", 		// 52(0x34)
+	"remote-unknown-tlv", 		// 53(0x35)
+	"tlv-type", 		// 54(0x36)
+	"tlv-info", 		// 55(0x37)
+	"remote-org-defined-info", 		// 56(0x38)
+	"info-identifier", 		// 57(0x39)
+	"info-subtype", 		// 58(0x3a)
+	"info-index", 		// 59(0x3b)
+	"remote-info", 		// 60(0x3c)
+	// augmented by xl4lldp
+	"local-system-changed",		// 61(0x3d)
+	"local-port-changed",		// 62(0x3e)
 };
 
 uint8_t ieee802_dot1ab_lldp_get_enum(char *astr)
@@ -336,32 +337,8 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[3] = IEEE802_DOT1AB_LLDP_ADMIN_STATUS;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_NOTIFICATION_ENABLE;
-	vtype=YANG_VTYPE_BOOLEAN;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IEEE802_DOT1AB_LLDP_TLVS_TX_ENABLE;
 	vtype=YANG_VTYPE_BITS;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_REINIT_DELAY;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_TX_FAST_INIT;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = IEEE802_DOT1AB_LLDP_NOTIFICATION_INTERVAL;
-	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[3] = IEEE802_DOT1AB_LLDP_PORT_ID_SUBTYPE;
@@ -393,8 +370,11 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[2] = IEEE802_DOT1AB_LLDP_TX_FAST_INIT;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
-	aps[2] = IEEE802_DOT1AB_LLDP_NOTIFICATION_INTERVAL;
-	vtype=YANG_VTYPE_UINT32;
+	aps[2] = IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED;
+	vtype=YANG_VTYPE_BOOLEAN;
+	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
+	aps[2] = IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[1] = IEEE802_DOT1AB_LLDP_VALUEKEY;

@@ -75,20 +75,6 @@ typedef enum {
 	REACTION,
 }port_announce_transmit_state_t;
 
-struct port_announce_transmit_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	BmcsPerTimeAwareSystemGlobal *bptasg;
-	BmcsPerPortGlobal *bppg;
-	port_announce_transmit_state_t state;
-	port_announce_transmit_state_t last_state;
-	PortAnnounceTransmitSM *thisSM;
-	int domainIndex;
-	int portIndex;
-
-	PTPMsgAnnounce announceTx;
-};
-
 static void txAnnounce(port_announce_transmit_data_t *sm)
 {
 	int N=0;
@@ -138,7 +124,7 @@ static port_announce_transmit_state_t allstate_condition(port_announce_transmit_
 	if (sm->ptasg->BEGIN || !sm->ptasg->instanceEnable || !AS_CAPABLE){
 		return TRANSMIT_INIT;
 	}
-	return sm->state;
+	return (port_announce_transmit_state_t)sm->state;
 }
 
 static void *transmit_init_proc(port_announce_transmit_data_t *sm)
@@ -197,7 +183,7 @@ static port_announce_transmit_state_t idle_condition(port_announce_transmit_data
 	    (sm->bptasg->externalPortConfiguration == VALUE_DISABLED))){
 		return TRANSMIT_PERIODIC;
 	}
-	return sm->state;
+	return (port_announce_transmit_state_t)sm->state;
 }
 
 static void *transmit_announce_proc(port_announce_transmit_data_t *sm)

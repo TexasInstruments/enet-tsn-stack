@@ -55,7 +55,6 @@
 #include <kernel/dpl/ClockP.h>
 #include <kernel/dpl/TaskP.h>
 #include <kernel/dpl/SemaphoreP.h>
-#include <tsn_unibase/ub_getmem.h>
 #include "combase_private.h"
 #include "cb_thread.h"
 
@@ -76,7 +75,7 @@ struct cb_lld_task {
 
 #define CB_LLDSEM_MMEM cb_lldsem
 #ifndef CB_LLDSEM_INSTNUM
-#define CB_LLDSEM_INSTNUM 10
+#define CB_LLDSEM_INSTNUM 12
 #endif
 UB_SD_GETMEM_DEF(CB_LLDSEM_MMEM, (int)sizeof(cb_lld_sem_t),
 		 CB_LLDSEM_INSTNUM);
@@ -164,6 +163,13 @@ int cb_lld_sem_timedwait(CB_SEM_T *sem, struct timespec *abstime)
 {
 	uint32_t timeout_msec = abs_realtime_to_msec(abstime);
 	return lld_sem_trywait(*sem, timeout_msec);
+}
+
+int cb_lld_sem_getvalue(CB_SEM_T* sem, int* sval)
+{
+	cb_lld_sem_t *cbsem = *sem;
+	*sval = SemaphoreP_getCount(&cbsem->lldsem);
+	return 0; // OK
 }
 
 /* don't add log to this function since it can be called from an ISR */

@@ -234,7 +234,7 @@ static int setup(void **state)
 	CB_SEM_INIT(ucmd.ucmanstart, 0, 0);
 	CB_THREAD_CREATE(&ucthreadt, NULL, uniconf_main, &ucmd);
 	CB_SEM_WAIT(ucmd.ucmanstart);
-	if(gptpgcfg_init(dbname, NULL, 0, true)) return -1;
+	if(gptpgcfg_init(dbname, NULL, 0, true, NULL)) return -1;
 	gpnet=gptpnet_init(0, gptpnet_cb, NULL, netdevs, np, NULL);
 
 	return 0;

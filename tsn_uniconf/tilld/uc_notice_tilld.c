@@ -80,8 +80,8 @@ void uc_notice_sig_close(bool thread, UC_NOTICE_SIG_T *sigp,
 
 int uc_notice_sig_getvalue(bool thread, UC_NOTICE_SIG_T *sigp, int *sval)
 {
-	*sval=0;
-	return 0;
+	CB_SEM_T sem = (CB_SEM_T)sigp;
+	return CB_SEM_GETVALUE(&sem, sval);
 }
 
 int uc_notice_sig_post(bool thread, UC_NOTICE_SIG_T *sigp)
@@ -115,3 +115,8 @@ erexit:
 	return -1;
 }
 
+int uc_notice_sig_trywait(bool thread, UC_NOTICE_SIG_T *sigp)
+{
+	CB_SEM_T sem = (CB_SEM_T)sigp;
+	return CB_SEM_TRYWAIT(&sem);
+}

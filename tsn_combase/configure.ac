@@ -41,6 +41,11 @@ AC_CHECK_HEADERS([linux/ethtool.h],
 AC_CHECK_HEADERS([linux/netlink.h],
 	[AM_CONDITIONAL(LINUX_NETLINK,[true])])
 
+# Check if linux ethtool is available
+AC_CHECK_HEADERS([linux/ethtool_netlink.h],
+	[AM_CONDITIONAL(LINUX_ETHTOOL_NETLINK,[true])],
+	[AM_CONDITIONAL(LINUX_ETHTOOL_NETLINK,[false])])
+
 # Check for command line options
 # Check for command line options
 AC_ARG_ENABLE([unittest],

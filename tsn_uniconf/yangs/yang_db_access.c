@@ -219,6 +219,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_PORT_STATE:
 	{
 		char *endptr = NULL;
 		uint32_t data[1];
@@ -238,7 +239,12 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			UB_LOG(UBL_ERROR, "%s:no hints for value, return -1\n", __func__);
 			data[0]=(uint32_t)-1;
 		}
-		csize=4;
+		/* some enum base vtype is have different size */
+		if (YANG_VTYPE_PORT_STATE == vtype) {
+			csize=1;
+		} else {
+			csize=4;
+		}
 		ADJUST_ENDIAN(data, sizeof(long int)-csize, csize);
 		res=value_conv_destcopy(destd, data, size, csize);
 		break;
@@ -275,7 +281,6 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	case YANG_VTYPE_YANG_ZERO_BASED_COUNTER32:
 	case YANG_VTYPE_DOT1QTYPES_VLAN_INDEX_TYPE:
 	case YANG_VTYPE_DOT1QTYPES_MSTID_TYPE:
-	case YANG_VTYPE_PORT_STATE:
 	case YANG_VTYPE_YANG_TIMESTAMP:
 	{
 		unsigned long int data[1];
@@ -286,8 +291,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		   (vtype==(uint8_t)YANG_VTYPE_DOT1Q_TYPES_TRAFFIC_CLASS_TYPE) ||
 		   (vtype==(uint8_t)YANG_VTYPE_DOT1QTYPES_TRAFFIC_CLASS_TYPE) ||
 		   (vtype==(uint8_t)YANG_VTYPE_DOT1QTYPES_PRIORITY_TYPE) ||
-		   (vtype==(uint8_t)YANG_VTYPE_YANG_COUNTER8) ||
-		   (vtype==(uint8_t)YANG_VTYPE_PORT_STATE)){
+		   (vtype==(uint8_t)YANG_VTYPE_YANG_COUNTER8)){
 			csize=1;
 		}else if((vtype==(uint8_t)YANG_VTYPE_UINT16) ||
 			 (vtype==(uint8_t)YANG_VTYPE_HEXUINT16) ||
@@ -541,9 +545,19 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_MRP_PROTOCOL:
 	case YANG_VTYPE_ENUMERATION:
 	case YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM:
+	case YANG_VTYPE_IEEE_CHASSIS_ID_SUBTYPE_TYPE:
+	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
+	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_PORT_STATE:
 		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
 			char* rstr=yang_enumeration_getstr(*((uint32_t*)value), "datastore");
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		} else if (YANG_VTYPE_PORT_STATE == vtype) {
+			char* rstr=yang_enumeration_getstr(*((uint8_t*)value), "port-state");
 			if (NULL != rstr) {
 				memset(vstr, 0, sizeof(vstr));
 				(void)strcpy(vstr, rstr);
@@ -576,7 +590,6 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_YANG_GAUGE64:
 	case YANG_VTYPE_YANG_COUNTER64:
 	case YANG_VTYPE_DELAY_MECHANISM:
-	case YANG_VTYPE_PORT_STATE:
 	case YANG_VTYPE_YANG_TIMESTAMP:
 		if(vsize==1u){(void)sprintf(vstr, "%"PRIu8, *((uint8_t*)value));}
 		else if(vsize==2u){(void)sprintf(vstr, "%"PRIu16, *((uint16_t*)value));}
@@ -641,6 +654,59 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_EMPTY:
 	case YANG_VTYPE_BITS:
 	case YANG_VTYPE_ENUM_END:
+	default:
+		break;
+	}
+	return vstr;
+}
+
+char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, char *hints)
+{
+	static char vstr[64];
+	if(value==NULL){return NULL;}
+	vstr[0]=0;
+	switch(vtype){
+	case YANG_VTYPE_MRP_PROTOCOL:
+	case YANG_VTYPE_ENUMERATION:
+	case YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM:
+	case YANG_VTYPE_IEEE_CHASSIS_ID_SUBTYPE_TYPE:
+	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
+	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
+	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_PORT_STATE:
+		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
+			char* rstr=yang_enumeration_getns(*((uint32_t*)value), "datastore");
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		} else if (YANG_VTYPE_PORT_STATE == vtype) {
+			char* rstr=yang_enumeration_getns(*((uint8_t*)value), "datastore");
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		} else if (NULL != hints) {
+			char* rstr=yang_enumeration_getns(*((uint32_t*)value), hints);
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		} else {
+			UB_LOG(UBL_ERROR, "%s:cannot get enum ns without hints\n", __func__);
+		}
+		break;
+	case YANG_VTYPE_IDENTITYREF:
+		if(NULL != hints) {
+			char* rstr=yang_identityref_getns(*((uint32_t*)value), hints);
+			if (NULL != rstr) {
+				memset(vstr, 0, sizeof(vstr));
+				(void)strcpy(vstr, rstr);
+			}
+		} else {
+			UB_LOG(UBL_ERROR, "%s:cannot get identityref ns without hints\n", __func__);
+		}
+		break;
 	default:
 		break;
 	}
@@ -1272,7 +1338,9 @@ static int yang_db_put(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *
 			break;
 		}
 		if(!res){break;}
-		(void)uc_wait_release(dbald, 100);// 100msec should be enough
+		if(i==0){
+			(void)uc_wait_release(dbald, 100);// 100msec should be enough
+		}
 	}
 	if(res!=0){UB_LOG(UBL_ERROR, "%s:error to update the db\n", __func__);}
 	return res;

@@ -143,6 +143,8 @@ static void signal_handler(int sig)
 	stoprun=true;
 }
 
+#define XSTRINGFY(x) STRINGFY(x)
+#define STRINGFY(x) #x
 int main(int argc, char *argv[])
 {
 	int res=-1;
@@ -151,7 +153,7 @@ int main(int argc, char *argv[])
 	struct sigaction sigact;
 
 	if((argc==2) && (strcmp(argv[1],"--dbtype")==0)){
-		printf("%s\n", DBNAME);
+		printf("%s\n", XSTRINGFY(DBNAME));
 		return 0;
 	}
 	memset(&optd, 0, sizeof(optd));

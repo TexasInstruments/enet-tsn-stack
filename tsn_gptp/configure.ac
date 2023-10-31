@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tsn_gptp], [1.2.3], [shiro@excelfore.com])
+AC_INIT([xl4gptp], [1.2.3], [shiro@excelfore.com])
 AC_SUBST(PACKAGE_DESC,"Excelfore gptp daemon and libary")
 
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
@@ -48,6 +48,8 @@ AC_ARG_ENABLE([ti-dp83867a],
 	AS_HELP_STRING([--enable-ti-dp83867a],[enable TI DP83867A PHY PTP]))
 AC_ARG_ENABLE([staticmem],
 	AS_HELP_STRING([--enable-staticmem],[use static memory allocation]))
+AC_ARG_ENABLE([ti-designdoc],
+	AS_HELP_STRING([--enable-ti-designdoc],[enable TI design document build]))
 
 # Checks for libraries.
 PKG_CHECK_MODULES([x4unibase],[tsn_unibase],,
@@ -85,6 +87,7 @@ AM_CONDITIONAL(SJA1105_LINUX, [test "x$enable_sja1105_linux" = "xyes"])
 AM_CONDITIONAL(EKF_ARMADA, [test x"$enable_ekf_armada" = "xyes"])
 
 AM_CONDITIONAL(TI_DP83867A, [test x"$enable_ti_dp83867a" = "xyes"])
+AM_CONDITIONAL(TI_DESIGNDOC, [test x"$enable_ti_designdoc" = "xyes"])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_CHECK_HEADER_STDBOOL
@@ -102,6 +105,6 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_FILES([
 	Makefile
 	gptpconf/Makefile
-	tsn_gptp.pc])
+	xl4gptp.pc])
 
 AC_OUTPUT

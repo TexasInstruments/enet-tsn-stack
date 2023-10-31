@@ -50,6 +50,17 @@
 #ifndef PORT_SYNC_SYNC_RECEIVE_SM_H_
 #define PORT_SYNC_SYNC_RECEIVE_SM_H_
 
+struct port_sync_sync_receive_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	PortSyncSyncReceiveSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	PortSyncSync portSyncSync;
+};
+
 typedef struct port_sync_sync_receive_data port_sync_sync_receive_data_t;
 
 void *port_sync_sync_receive_sm(port_sync_sync_receive_data_t *sm, uint64_t cts64);

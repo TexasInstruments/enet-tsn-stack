@@ -52,7 +52,6 @@
 
 #define COMBASE_NO_INET
 #define COMBASE_NO_CRC
-#define COMBASE_NO_XTIMER
 #define COMBASE_NO_IPCSOCK
 #define UB_SD_STATIC
 #define UC_RUNCONF
@@ -63,5 +62,41 @@
 #define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
 #define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
 #define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+
+/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
+#define GPTP_MAX_PORTS 2
+#define GPTP_MAX_DOMAINS 2
+
+/* CB no shared mem size */
+#define CB_NOIPCSHMEM_DFSIZE 32
+
+/*LLDP Definition*/
+#define LLDP_CFG_PORT_INSTNUM 2
+
+// The information below apply  for max length of
+// - Local Chassis ID,
+// - Local Port ID,
+// - Local Port Description
+// - Local System name
+// - Local System Description
+#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+
+// The information below apply  for max length of remote info
+// - Chassis ID
+// - Port ID
+// - Port Description
+// - System name
+// - System Description
+#define LLDP_REMOTE_INFO_STRING_MAX_LEN 128
+
+// The information below apply  for max length of remote unknown TLV info
+// - Remote unknown TLV
+#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
+
+// The information below apply  for max length of Remote organization info
+// - Remote organization info TLV
+#define MAX_RM_ORG_INFO_LEN  64
+
+/* LLDP Definition End */
 
 #endif /* __TSN_TILLD_INCLUDE_H_ */

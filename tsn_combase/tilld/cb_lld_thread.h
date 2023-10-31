@@ -96,6 +96,7 @@ typedef struct cb_lld_task cb_lld_task_t;
 
 #define CB_SEM_T cb_lld_sem_t*
 #define CB_SEM_INIT cb_lld_sem_init
+#define CB_SEM_GETVALUE cb_lld_sem_getvalue
 #define CB_SEM_WAIT cb_lld_sem_wait
 #define CB_SEM_TRYWAIT cb_lld_sem_trywait
 #define CB_SEM_TIMEDWAIT cb_lld_sem_timedwait
@@ -160,6 +161,15 @@ int cb_lld_sem_timedwait(CB_SEM_T *sem, struct timespec *abstime);
 int cb_lld_sem_post(CB_SEM_T *sem);
 
 /**
+ * @brief return the count of a semaphore
+ *
+ * @param sem Pointer to the semaphore.
+ * @param sval return value of semaphore counter
+ * @return 0 on success, or -1 on error.
+ */
+int cb_lld_sem_getvalue(CB_SEM_T* sem, int* sval);
+
+/**
  * @brief Destroys a semaphore.
  *
  * @param sem Pointer to the semaphore.
@@ -200,6 +210,7 @@ int cb_lld_mutex_init(CB_THREAD_MUTEX_T *mutex, CB_THREAD_MUTEXATTR_T attr);
  */
 static inline int cb_lld_mutex_init_protect(void *mutex)
 {
+	if(((CB_THREAD_MUTEX_T *)mutex)->lldmutex) {return 0;}
 	return cb_lld_mutex_init((CB_THREAD_MUTEX_T *)mutex, NULL);
 }
 

@@ -93,7 +93,7 @@ static int add_timer_abstime(cb_xtimer_man_t *xtimer_man,
 #define CB_XTIMER_NMEM cb_xtimer_node
 #ifndef CB_XTIMER_TMNUM
 // how many timers are used in all instances as maximum
-#define CB_XTIMER_TMNUM 2
+#define CB_XTIMER_TMNUM 20
 #endif
 
 UB_SD_GETMEM_DEF(CB_XTIMER_MMEM, (int)sizeof(struct cb_xtimer_man),
@@ -112,7 +112,7 @@ int cb_xtimer_man_schedule(cb_xtimer_man_t *xtimer_man)
 
 	while(!ub_list_isempty(&xtimer_man->running_timers)){
 		tnode=ub_list_head(&xtimer_man->running_timers);
-		tdata=tnode->data;
+		tdata=(cb_xtimer_ndata_t *)tnode->data;
 		if(tdata->abstime_nsec > cts64){break;}
 		ub_list_unlink(&xtimer_man->running_timers, tnode);
 		ub_list_append(&expired_timers, tnode);
@@ -120,11 +120,11 @@ int cb_xtimer_man_schedule(cb_xtimer_man_t *xtimer_man)
 
 	while(!ub_list_isempty(&expired_timers)){
 		tnode=ub_list_head(&expired_timers);
-		tdata=tnode->data;
+		tdata=(cb_xtimer_ndata_t *)tnode->data;
 		ub_list_unlink(&expired_timers, tnode);
 		tdata->is_running = false;
 		if(tdata->expirecb!=NULL){
-			tdata->expirecb(tdata->xtimer, tdata->exparg);
+			tdata->expirecb((cb_xtimer_t *)tdata->xtimer, tdata->exparg);
 		}
 		if(tdata->is_periodic){
 			(void)add_timer_abstime(xtimer_man, tnode,
@@ -145,7 +145,7 @@ int cb_xtimer_man_nearest_timeout(cb_xtimer_man_t *xtimer_man)
 	if(!xtimer_man){return -1;}
 	tnode = ub_list_head(&xtimer_man->running_timers);
 	if(!tnode){return -2;}
-	tdata=tnode->data;
+	tdata=(cb_xtimer_ndata_t *)tnode->data;
 	if(tdata->abstime_nsec <= cts64){return 0;}
 	return (tdata->abstime_nsec - cts64)/(uint64_t)UB_USEC_NS;
 }
@@ -170,7 +170,7 @@ bool cb_xtimer_is_periodic(cb_xtimer_t *xtimer)
 
 cb_xtimer_man_t *cb_xtimer_man_create(void)
 {
-	cb_xtimer_man_t *xtimer_man = UB_SD_GETMEM(CB_XTIMER_MMEM, sizeof(*xtimer_man));
+	cb_xtimer_man_t *xtimer_man = (cb_xtimer_man_t *)UB_SD_GETMEM(CB_XTIMER_MMEM, sizeof(*xtimer_man));
 	if(!xtimer_man){return NULL;}
 	(void)memset(xtimer_man, 0, sizeof(*xtimer_man));
 	ub_list_init(&xtimer_man->running_timers);
@@ -185,7 +185,7 @@ void cb_xtimer_man_delete(cb_xtimer_man_t *xtimer_man)
 	if(!xtimer_man){return;}
 	while(!ub_list_isempty(&xtimer_man->running_timers)) {
 		tnode=ub_list_head(&xtimer_man->running_timers);
-		tdata=tnode->data;
+		tdata=(cb_xtimer_ndata_t *)tnode->data;
 		ub_list_unlink(&xtimer_man->running_timers, tnode);
 		tdata->is_running = false;
 		tdata->xtimer_man = NULL;
@@ -199,7 +199,7 @@ cb_xtimer_t *cb_xtimer_create(cb_xtimer_man_t *xtimer_man,
 	cb_xtimer_t *xtimer;
 
 	if(!xtimer_man){return NULL;}
-	xtimer = UB_SD_GETMEM(CB_XTIMER_NMEM, sizeof(*xtimer));
+	xtimer = (cb_xtimer_t *)UB_SD_GETMEM(CB_XTIMER_NMEM, sizeof(*xtimer));
 	if(!xtimer){return NULL;}
 	(void)memset(xtimer, 0, sizeof(*xtimer));
 	xtimer->timer_node.data=&xtimer->timer_ndata;
@@ -239,7 +239,7 @@ static int add_timer_abstime(cb_xtimer_man_t *xtimer_man,
 	cb_xtimer_ndata_t *tdata;
 	cb_xtimer_ndata_t *tdata_tmp;
 
-	tdata=tnode->data;
+	tdata=(cb_xtimer_ndata_t *)tnode->data;
 	if (tdata->is_running){return -2;}
 
 	tdata->is_running = true;
@@ -252,7 +252,7 @@ static int add_timer_abstime(cb_xtimer_man_t *xtimer_man,
 		ub_list_append(&xtimer_man->running_timers, tnode);
 		return 0;
 	}
-	tdata_tmp = tnode_tmp->data;
+	tdata_tmp = (cb_xtimer_ndata_t *)tnode_tmp->data;
 	if(tdata->abstime_nsec >= tdata_tmp->abstime_nsec){
 		ub_list_append(&xtimer_man->running_timers, tnode);
 		return 0;
@@ -260,7 +260,7 @@ static int add_timer_abstime(cb_xtimer_man_t *xtimer_man,
 
 	/* add in increasing order of abstime_nsec */
 	for(UB_LIST_FOREACH_ITER(&xtimer_man->running_timers, tnode_tmp)){
-		tdata_tmp = tnode_tmp->data;
+		tdata_tmp = (cb_xtimer_ndata_t *)tnode_tmp->data;
 		if(tdata->abstime_nsec <= tdata_tmp->abstime_nsec){
 			ub_list_insert_before(&xtimer_man->running_timers,
 					      tnode_tmp, tnode);

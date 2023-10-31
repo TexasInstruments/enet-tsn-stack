@@ -55,8 +55,13 @@
  * Type Definitions
  *----------------------------------------------------------------------------*/
 
+typedef struct yang_enumeration_map {
+    const char *nsprefix;
+    const char *str;
+} yang_enumeration_map_t;
+
 typedef struct yang_enumeration_str_map {
-    const char **strlist;
+    const yang_enumeration_map_t *enumtbl;
     const uint32_t strnum;
     const char *keyword;
 } yang_enumeration_str_map_t;
@@ -65,182 +70,194 @@ typedef struct yang_enumeration_str_map {
  * Global Variables
  *----------------------------------------------------------------------------*/
 
-const char* interfaces_oper_status[] = {
-    "",
-    "up",
-    "down",
-    "testing",
-    "unknown",
-    "dormant",
-    "not-present",
-    "lower-layer-down",
-    NULL
+const yang_enumeration_map_t interfaces_oper_status[] = {
+    { ""  , ""                 },
+    { "if", "up"               },
+    { "if", "down"             },
+    { "if", "testing"          },
+    { "if", "unknown"          },
+    { "if", "dormant"          },
+    { "if", "not-present"      },
+    { "if", "lower-layer-down" }
 };
-const uint32_t interfaces_oper_status_num = sizeof(interfaces_oper_status)/sizeof(char*);
+const uint32_t interfaces_oper_status_num =
+    sizeof(interfaces_oper_status)/sizeof(interfaces_oper_status[0]);
 
-const char* interfaces_duplex[] = {
-    "",
-    "full",
-    "half",
-    "unknown",
-    NULL
+const yang_enumeration_map_t interfaces_duplex[] = {
+    { ""     , ""        },
+    { "xl4if", "full"    },
+    { "xl4if", "half"    },
+    { "xl4if", "unknown" }
 };
-const uint32_t interfaces_duplex_num = sizeof(interfaces_duplex)/sizeof(char*);
+const uint32_t interfaces_duplex_num = sizeof(interfaces_duplex)/sizeof(interfaces_duplex[0]);
 
-const char* tsn_uni_talker_status[] = {
-    "none",
-    "ready",
-    "failed",
-    NULL
+const yang_enumeration_map_t port_state[] = {
+    { ""   , ""             },
+    { "ptp", "initializing" },
+    { "ptp", "faulty"       },
+    { "ptp", "disabled"     },
+    { "ptp", "listening"    },
+    { "ptp", "pre-master"   },
+    { "ptp", "master"       },
+    { "ptp", "passive"      },
+    { "ptp", "uncalibrated" },
+    { "ptp", "slave"        }
 };
-const uint32_t tsn_uni_talker_status_num = sizeof(tsn_uni_talker_status)/sizeof(char*);
+const uint32_t port_state_num = sizeof(port_state)/sizeof(port_state[0]);
 
-const char* tsn_uni_listener_status[] = {
-    "none",
-    "ready",
-    "partial-failed",
-    "failed",
-    NULL
+const yang_enumeration_map_t tsn_uni_talker_status[] = {
+    { "dot1q-tsn-types", "none"   },
+    { "dot1q-tsn-types", "ready"  },
+    { "dot1q-tsn-types", "failed" }
 };
-const uint32_t tsn_uni_listener_status_num = sizeof(tsn_uni_listener_status)/sizeof(char*);
+const uint32_t tsn_uni_talker_status_num =
+    sizeof(tsn_uni_talker_status)/sizeof(tsn_uni_talker_status[0]);
 
-const char* tsn_uni_stream_status[] = {
-    "planned",
-    "configured",
-    "modified",
-    NULL
+const yang_enumeration_map_t tsn_uni_listener_status[] = {
+    { "dot1q-tsn-types", "none"           },
+    { "dot1q-tsn-types", "ready"          },
+    { "dot1q-tsn-types", "partial-failed" },
+    { "dot1q-tsn-types", "failed"         }
 };
-const uint32_t tsn_uni_stream_status_num = sizeof(tsn_uni_stream_status)/sizeof(char*);
+const uint32_t tsn_uni_listener_status_num =
+    sizeof(tsn_uni_listener_status)/sizeof(tsn_uni_listener_status[0]);
 
-const char* ieee802dq_control_reg[] = {
-	"registered",
-	"not-registered",
-	NULL
+const yang_enumeration_map_t tsn_uni_stream_status[] = {
+    { "dot1q-tsn-config-uni", "planned"    },
+    { "dot1q-tsn-config-uni", "configured" },
+    { "dot1q-tsn-config-uni", "modified"   }
 };
-const uint32_t ieee802dq_control_reg_num = sizeof(ieee802dq_control_reg)/sizeof(char*);
+const uint32_t tsn_uni_stream_status_num =
+    sizeof(tsn_uni_stream_status)/sizeof(tsn_uni_stream_status[0]);
 
-const char* ieee802dq_entry_stadyn[] = {
-	"static",
-	"dynamic",
-	NULL
+const yang_enumeration_map_t ieee802dq_control_reg[] = {
+    { "dot1q-types", "registered"     },
+    { "dot1q-types", "not-registered" }
 };
-const uint32_t ieee802dq_entry_stadyn_num = sizeof(ieee802dq_entry_stadyn)/sizeof(char*);
+const uint32_t ieee802dq_control_reg_num =
+    sizeof(ieee802dq_control_reg)/sizeof(ieee802dq_control_reg[0]);
 
-const char* excelfore_mrp_protocol[] = {
-	"",
-	"mmrp",
-	"mvrp",
-	"msrp",
-	"dynamic",
-	NULL
+const yang_enumeration_map_t ieee802dq_entry_stadyn[] = {
+    { "dot1q", "static"  },
+    { "dot1q", "dynamic" }
 };
-const uint32_t excelfore_mrp_protocol_num = sizeof(excelfore_mrp_protocol)/sizeof(char*);
+const uint32_t ieee802dq_entry_stadyn_num =
+    sizeof(ieee802dq_entry_stadyn)/sizeof(ieee802dq_entry_stadyn[0]);
 
-const char *frame_preemption_status[] = {
-	"",
-	"express",
-	"preemptable",
-	NULL
+const yang_enumeration_map_t excelfore_mrp_protocol[] = {
+    { ""         , ""        },
+    { "xl4tsnrmt", "mmrp"    },
+    { "xl4tsnrmt", "mvrp"    },
+    { "xl4tsnrmt", "msrp"    },
+    { "xl4tsnrmt", "dynamic" }
 };
-const uint32_t frame_preemption_status_num = sizeof(frame_preemption_status)/sizeof(char*);
+const uint32_t excelfore_mrp_protocol_num =
+    sizeof(excelfore_mrp_protocol)/sizeof(excelfore_mrp_protocol[0]);
 
-const char *hold_request_status[]= {
-	"",
-	"hold", 	// hold=1
-	"release",	// release=2
-	NULL
+const yang_enumeration_map_t frame_preemption_status[] = {
+    { ""       , ""            },
+    { "preempt", "express"     },
+    { "preempt", "preemptable" }
 };
-const uint32_t hold_request_status_num = sizeof(hold_request_status)/sizeof(char*);
+const uint32_t frame_preemption_status_num =
+    sizeof(frame_preemption_status)/sizeof(frame_preemption_status[0]);
 
-const char* private_key_algorithm[] = {
-    "rsa",
-    "dsa",
-    "secp192r1",
-    "sect163k1",
-    "sect163r2",
-    "secp224r1",
-    "sect233k1",
-    "sect233r1",
-    "secp256r1",
-    "sect283k1",
-    "sect283r1",
-    "secp384r1",
-    "sect409k1",
-    "sect409r1",
-    "secp521r1",
-    "sect571k1",
-    "sect571r1",
-    NULL
+const yang_enumeration_map_t hold_request_status[]= {
+    { ""       , ""        },
+    { "preempt", "hold"    }, 	// hold=1
+    { "preempt", "release" }  	// release=2
 };
-const uint32_t private_key_algorithm_num = sizeof(private_key_algorithm)/sizeof(char*);
+const uint32_t hold_request_status_num =
+    sizeof(hold_request_status)/sizeof(hold_request_status[0]);
 
-const char* lldp_chassis_id_subtype[] = {
-    NULL,   // chassis-component start from 1
-    "chassis-component",
-    "interface-alias",
-    "port-component",
-    "mac-address",
-    "network-address",
-    "interface-name",
-    "local",
-    NULL
+const yang_enumeration_map_t private_key_algorithm[] = {
+    { "kc", "rsa"       },
+    { "kc", "dsa"       },
+    { "kc", "secp192r1" },
+    { "kc", "sect163k1" },
+    { "kc", "sect163r2" },
+    { "kc", "secp224r1" },
+    { "kc", "sect233k1" },
+    { "kc", "sect233r1" },
+    { "kc", "secp256r1" },
+    { "kc", "sect283k1" },
+    { "kc", "sect283r1" },
+    { "kc", "secp384r1" },
+    { "kc", "sect409k1" },
+    { "kc", "sect409r1" },
+    { "kc", "secp521r1" },
+    { "kc", "sect571k1" },
+    { "kc", "sect571r1" }
 };
-const uint32_t lldp_chassis_id_subtype_num = sizeof(lldp_chassis_id_subtype)/sizeof(char*);
+const uint32_t private_key_algorithm_num =
+    sizeof(private_key_algorithm)/sizeof(private_key_algorithm[0]);
 
-const char* lldp_port_id_subtype[] = {
-    NULL,   // interface-alias start from 1
-    "interface-alias",
-    "port-component",
-    "mac-address",
-    "network-address",
-    "interface-name",
-    "agent-circuit-id",
-    "local",
-    NULL
+const yang_enumeration_map_t lldp_chassis_id_subtype[] = {
+    { ""    , ""                  },   // chassis-component start from 1
+    { "ieee", "chassis-component" },
+    { "ieee", "interface-alias"   },
+    { "ieee", "port-component"    },
+    { "ieee", "mac-address"       },
+    { "ieee", "network-address"   },
+    { "ieee", "interface-name"    },
+    { "ieee", "local"             }
 };
-const uint32_t lldp_port_id_subtype_num = sizeof(lldp_port_id_subtype)/sizeof(char*);
+const uint32_t lldp_chassis_id_subtype_num =
+    sizeof(lldp_chassis_id_subtype)/sizeof(lldp_chassis_id_subtype[0]);
 
-const char* lldp_admin_status[] = {
-    NULL,
-    "tx-only",
-    "rx-only",
-    "tx-and-rx",
-    "disabled",
-    NULL
+const yang_enumeration_map_t lldp_port_id_subtype[] = {
+    { ""    , ""                 },   // interface-alias start from 1
+    { "ieee", "interface-alias"  },
+    { "ieee", "port-component"   },
+    { "ieee", "mac-address"      },
+    { "ieee", "network-address"  },
+    { "ieee", "interface-name"   },
+    { "ieee", "agent-circuit-id" },
+    { "ieee", "local"            }
 };
-const uint32_t lldp_admin_status_num = sizeof(lldp_admin_status)/sizeof(char*);
+const uint32_t lldp_port_id_subtype_num =
+    sizeof(lldp_port_id_subtype)/sizeof(lldp_port_id_subtype[0]);
 
-const char* lldp_man_addr_if_subtype[] = {
-    NULL,
-    "unknown",
-    "port-ref",
-    "system-port-number",
-    NULL
+const yang_enumeration_map_t lldp_admin_status[] = {
+    { ""    , ""          },
+    { "lldp", "tx-only"   },
+    { "lldp", "rx-only"   },
+    { "lldp", "tx-and-rx" },
+    { "lldp", "disabled"  }
 };
-const uint32_t lldp_man_addr_if_subtype_num = sizeof(lldp_man_addr_if_subtype)/sizeof(char*);
+const uint32_t lldp_admin_status_num =
+    sizeof(lldp_admin_status)/sizeof(lldp_admin_status[0]);
 
-const char* conformance_type[] = {
-    "implement",
-    "import",
-    NULL
+const yang_enumeration_map_t lldp_man_addr_if_subtype[] = {
+    { ""          , ""                   },
+    { "lldp-types", "unknown"            },
+    { "lldp-types", "port-ref"           },
+    { "lldp-types", "system-port-number" }
 };
-const uint32_t conformance_type_num = sizeof(conformance_type)/sizeof(char*);
+const uint32_t lldp_man_addr_if_subtype_num =
+    sizeof(lldp_man_addr_if_subtype)/sizeof(lldp_man_addr_if_subtype[0]);
 
-const char* netconf_datastore_type[] = {
-    "running",
-    "candidate",
-    "startup",
-    NULL
+const yang_enumeration_map_t conformance_type[] = {
+    { "yanglib", "implement" },
+    { "yanglib", "import"    }
 };
-const uint32_t netconf_datastore_type_num = sizeof(netconf_datastore_type)/sizeof(char*);
+const uint32_t conformance_type_num =
+    sizeof(conformance_type)/sizeof(conformance_type[0]);
 
-const char* gmstate[] = {
-    "unsync",
-    "unstable",
-    "stable",
-    NULL
+const yang_enumeration_map_t netconf_datastore_type[] = {
+    { "ncm", "running"   },
+    { "ncm", "candidate" },
+    { "ncm", "startup"   }
 };
-const uint32_t gmstate_num = sizeof(gmstate)/sizeof(char*);
+const uint32_t netconf_datastore_type_num =
+    sizeof(netconf_datastore_type)/sizeof(netconf_datastore_type[0]);
+
+const yang_enumeration_map_t gmstate[] = {
+    { "xl4gptp", "unsync"   },
+    { "xl4gptp", "unstable" },
+    { "xl4gptp", "stable"   }
+};
+const uint32_t gmstate_num = sizeof(gmstate)/sizeof(gmstate[0]);
 
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
@@ -248,6 +265,7 @@ const uint32_t gmstate_num = sizeof(gmstate)/sizeof(char*);
 const yang_enumeration_str_map_t yang_enumeration_str_map_list[] = {
     { interfaces_oper_status,   interfaces_oper_status_num,  "oper-status"        },
     { interfaces_duplex,        interfaces_duplex_num,       "duplex"             },
+    { port_state,               port_state_num,              "port-state"         },
     { tsn_uni_talker_status,    tsn_uni_talker_status_num,   "talker-status"      },
     { tsn_uni_listener_status,  tsn_uni_listener_status_num, "listener-status"    },
     { tsn_uni_stream_status,    tsn_uni_stream_status_num,   "stream-status"      },
@@ -277,7 +295,7 @@ static  int yang_enumeration_get_tblidx(char *hints)
     int ret=-1;
     int i;
     if (hints != NULL){
-        for(i=0; yang_enumeration_str_map_list[i].strlist != NULL; i++){
+        for(i=0; yang_enumeration_str_map_list[i].enumtbl != NULL; i++){
             if(strstr(hints, yang_enumeration_str_map_list[i].keyword) != NULL){
                 ret=i;
                 break;
@@ -296,12 +314,12 @@ uint32_t yang_enumeration_getval(char *enumeration_str, char *hints)
     int tblidx=yang_enumeration_get_tblidx(hints);
     if(tblidx < 0) {
         UB_LOG(UBL_ERROR, "%s:unknown enumeration hints=%s\n", __func__, hints);
-	return enumeration_val;
+        return enumeration_val;
     }
-    const char **strlist=yang_enumeration_str_map_list[tblidx].strlist;
+    const yang_enumeration_map_t *enumtbl=yang_enumeration_str_map_list[tblidx].enumtbl;
     uint32_t sidx;
     for (sidx=0; sidx < yang_enumeration_str_map_list[tblidx].strnum; sidx++) {
-        if (strcmp(enumeration_str, strlist[sidx])==0) {
+        if (strcmp(enumeration_str, enumtbl[sidx].str)==0) {
             enumeration_val=sidx;
             break;
         }
@@ -315,11 +333,27 @@ char* yang_enumeration_getstr(uint32_t enumeration_val, char *hints)
     int tblidx=yang_enumeration_get_tblidx(hints);
     if(tblidx < 0) {
         UB_LOG(UBL_ERROR, "%s:unknown enumeration hints=%s\n", __func__, hints);
-	return enumeration_str;
+        return enumeration_str;
     }
-    const char **strlist=yang_enumeration_str_map_list[tblidx].strlist;
+    const yang_enumeration_map_t *enumtbl=yang_enumeration_str_map_list[tblidx].enumtbl;
     if(enumeration_val < yang_enumeration_str_map_list[tblidx].strnum) {
-        enumeration_str=(char*)strlist[enumeration_val];
+        enumeration_str=(char*)enumtbl[enumeration_val].str;
     }
     return enumeration_str;
 }
+
+char* yang_enumeration_getns(uint32_t enumeration_val, char *hints)
+{
+    char* enumeration_nsprefix=NULL;
+    int tblidx=yang_enumeration_get_tblidx(hints);
+    if(tblidx < 0) {
+        UB_LOG(UBL_ERROR, "%s:unknown enumeration hints=%s\n", __func__, hints);
+        return enumeration_nsprefix;
+    }
+    const yang_enumeration_map_t *enumtbl=yang_enumeration_str_map_list[tblidx].enumtbl;
+    if(enumeration_val < yang_enumeration_str_map_list[tblidx].strnum) {
+        enumeration_nsprefix=(char*)enumtbl[enumeration_val].nsprefix;
+    }
+    return enumeration_nsprefix;
+}
+

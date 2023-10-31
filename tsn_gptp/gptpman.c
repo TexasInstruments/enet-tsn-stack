@@ -49,117 +49,16 @@
 */
 #include <tsn_unibase/unibase.h>
 #include <signal.h>
-#include "gptpnet.h"
-#include "gptpclock.h"
-#include "mdeth.h"
-#include "mind.h"
-#include "md_pdelay_req_sm.h"
-#include "md_pdelay_resp_sm.h"
-#include "md_sync_receive_sm.h"
-#include "md_sync_send_sm.h"
-#include "announce_interval_setting_sm.h"
-#include "port_sync_sync_receive_sm.h"
-#include "port_sync_sync_send_sm.h"
-#include "port_announce_receive_sm.h"
-#include "port_announce_information_sm.h"
-#include "port_announce_information_ext_sm.h"
-#include "port_state_selection_sm.h"
-#include "port_state_setting_ext_sm.h"
-#include "port_announce_transmit_sm.h"
-#include "site_sync_sync_sm.h"
-#include "clock_master_sync_send_sm.h"
-#include "clock_slave_sync_sm.h"
-#include "clock_master_sync_receive_sm.h"
-#include "clock_master_sync_offset_sm.h"
-#include "gptp_capable_transmit_sm.h"
-#include "gptp_capable_receive_sm.h"
-#include "sync_interval_setting_sm.h"
-#include "link_delay_interval_setting_sm.h"
-#include "one_step_tx_oper_setting_sm.h"
-#include "md_announce_send_sm.h"
-#include "md_announce_receive_sm.h"
-#include "md_signaling_send_sm.h"
-#include "md_signaling_receive_sm.h"
-#include "gm_stable_sm.h"
-#include "gptpman.h"
-#include "md_abnormal_hooks.h"
-#include "tsn_unibase/unibase_macros.h"
-#include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
-#include "gptpconf/gptpgcfg.h"
+#include "gptpman_private.h"
 #include "gptpcommon.h"
-#include "gptp_perfmon.h"
+#include "tsn_combase/combase_link.h"
 
 extern char *PTPMsgType_debug[16];
-extern char *gptpnet_event_debug[6];
+extern char *gptpnet_event_debug[8];
 
 #define DOMAIN_DATA_EXIST(di) (((di)>=0) && ((di)<gpmand->max_domains) && gpmand->tasds[di].tasglb)
 #define PORT_DATA_EXIST(di,pi) (DOMAIN_DATA_EXIST(di) && ((pi)>=0) && ((pi)<gpmand->max_ports) && \
 				gpmand->tasds[di].ptds[pi].ppglb)
-
-// per-port data
-typedef struct gptpsm_ptd{
-	PerPortGlobal *ppglb;
-	BmcsPerPortGlobal *bppglb;
-	MDEntityGlobal *mdeglb;
-	md_pdelay_req_data_t *mdpdreqd;
-	md_pdelay_resp_data_t *mdpdrespd;
-	md_sync_receive_data_t *mdsrecd;
-	md_sync_send_data_t *mdssendd;
-	announce_interval_setting_data_t *aisetd;
-	port_sync_sync_receive_data_t *pssrecd;
-	port_sync_sync_send_data_t *psssendd;
-	port_announce_receive_data_t *parecd;
-	port_announce_information_data_t *painfd;
-	port_announce_information_ext_data_t *paiextd;
-	port_announce_transmit_data_t *patransd;
-	port_state_setting_ext_data_t *pssextd;
-	bool cmldsLinkPortEnabled; // 11.2.16.1
-	gptp_capable_transmit_data_t *gctransd;
-	gptp_capable_receive_data_t *gcrecd;
-	sync_interval_setting_data_t *sisetd;
-	link_delay_interval_setting_data_t *ldisetd;
-	one_step_tx_oper_setting_data_t *ostxopd;
-	md_announce_send_data_t *mdansendd;
-	md_announce_receive_data_t *mdanrecd;
-	md_signaling_send_data_t *mdsigsendd;
-	md_signaling_receive_data_t *mdsigrecd;
-} gptpsm_ptd_t;
-
-// per-time-aware-system data
-typedef struct gptpsm_tasd{
-	gptpsm_ptd_t *ptds;
-	PerTimeAwareSystemGlobal *tasglb;
-	BmcsPerTimeAwareSystemGlobal *btasglb;
-	site_sync_sync_data_t *sssd;
-	clock_master_sync_send_data_t *cmssendd;
-	clock_slave_sync_data_t *cssd;
-	clock_master_sync_receive_data_t *cmsrecd;
-	clock_master_sync_offset_data_t *cmsoffsetd;
-	port_state_selection_data_t *pssd;
-	gm_stable_data_t *gmsd;
-	PerPortGlobal **ppglbl;
-	BmcsPerPortGlobal **bppglbl;
-} gptpsm_tasd_t;
-
-/*
-  tasds[0] (0 is always domainIndex=0)
-    ptds[0],ptds[1],...,ptds[max_ports]
-  tasds[1] (domainIndex is tasds[1].domainIndex)
-    ptds[0],ptds[1],...,ptds[max_ports]
-  tasds[2] (domainIndex is tasds[2].domainIndex)
-    ptds[0],ptds[1],...,ptds[max_ports]
-  ...
-  portIndex is enumerated, but domain number is not.
-*/
-
-// per-entire-system data
-struct gptpman_data {
-	gptpsm_tasd_t *tasds;
-	gptpnet_data_t *gpnetd;
-	int max_ports;
-	int max_domains;
-	uint8_t gptpInstanceIndex; // index number when multiple gptp2d runs, normally 0
-};
 
 UB_SD_GETMEM_DEF(SM_DATA_INST, SM_DATA_FSIZE, SM_DATA_FNUM);
 UB_SD_GETMEM_DEF(GPTP_SMALL_ALLOC, GPTP_SMALL_AFSIZE, GPTP_SMALL_AFNUM);
@@ -355,7 +254,7 @@ static int gptpnet_cb_devup(gptpman_data_t *gpmand, int portIndex,
 	int di;
 
 	switch(ed->duplex){
-	case 1: dup="full";
+	case CB_DUPLEX_FULL: dup="full";
 		if(ed->speed<100u){break;}
 		gpmand->tasds[0].ptds[portIndex].ppglb->forAllDomain->portOper=true;
 
@@ -366,7 +265,7 @@ static int gptpnet_cb_devup(gptpman_data_t *gpmand, int portIndex,
 		}
 
 		break;
-	case 2: dup="half"; break;
+	case CB_DUPLEX_HALF: dup="half"; break;
 	default: dup="unknown"; break;
 	}
 	UB_LOG(UBL_INFO, "index=%d speed=%d, duplex=%s, ptpdev=%s\n",
@@ -990,7 +889,7 @@ static int static_domains_init(gptpman_data_t *gpmand, uint8_t gptpInstanceIndex
 }
 
 int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
-		int max_ports, int max_domains, char *inittm, bool *stopgptp)
+		int max_ports, char *inittm, bool *stopgptp)
 {
 	int i;
 	gptpman_data_t *gpmand;
@@ -998,6 +897,7 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	char *masterptpdev=NULL;
 	void *value;
 	uint32_t vsize;
+	int max_domains;
 
 	if(max_ports==0) return -1;
 	gpmand=(gptpman_data_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(gptpman_data_t));
@@ -1008,16 +908,16 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	// provide seed to pseudo random generator rand()
 	srand(time(NULL));
 
-	if(!max_domains){
-		max_domains=gptpgcfg_get_intitem(
+	max_domains=gptpgcfg_get_intitem(
 		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_MAX_DOMAIN_NUMBER,
 		YDBI_CONFIG);
-	}
 	gpmand->max_domains=max_domains;
 	UB_LOG(UBL_INFO, "%s:max_domains=%d, max_ports=%d\n", __func__,
 	       gpmand->max_domains, max_ports);
 	// add one on max_ports for clockIndex=0
-	(void)gptpclock_init(gptpInstanceIndex, gpmand->max_domains, max_ports+1);
+	if(gptpclock_init(gptpInstanceIndex, gpmand->max_domains, max_ports+1)){
+		goto erexit;
+	}
 
 	/* a network device which has master ptpdev becomes the first device,
 	   so that clockIndex=1 is safe to use for thisClockIndex */
@@ -1067,6 +967,9 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 				XL4_EXTMOD_XL4GPTP_ACTIVATE_ABNORMAL_HOOKS,
 				YDBI_CONFIG)!=0){md_abnormal_init();}
 	GPTP_READY_NOTICE;
+	UB_SD_PRINT_USAGE(GPTP_MEDIUM_ALLOC, UBL_INFO);
+	UB_SD_PRINT_USAGE(GPTP_SMALL_ALLOC, UBL_INFO);
+	UB_SD_PRINT_USAGE(SM_DATA_INST, UBL_INFO);
 	(void)gptpnet_eventloop(gpmand->gpnetd, stopgptp);
 	(void)all_sm_close(gpmand);
 	md_abnormal_close();

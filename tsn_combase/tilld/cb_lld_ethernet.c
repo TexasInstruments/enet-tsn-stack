@@ -190,6 +190,7 @@ static int find_mac_addr_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bm
 	return res;
 }
 
+/* If can not find, will try to allocate a new mac */
 static int cb_alloc_mac_addr(const char *ifname,
 			     lld_socket_t *sock, ub_macaddr_t bmac)
 {
@@ -206,6 +207,7 @@ static int cb_alloc_mac_addr(const char *ifname,
 		UB_LOG(UBL_ERROR, "Failed to alloc MAC address! \n");
 	} else {
 		memcpy(bmac, sock->alloc_srcmac, ETH_ALEN);
+		UB_LOG(UBL_INFO,"%s: alloc mac: "UB_PRIhexB6"\n", ifname, UB_ARRAY_B6(bmac));
 		/* Update this macaddr to a global table to share mac address
 		   with other socket instance which is openned on the same port */
 		cb_update_mac_addr(sock, ifname, bmac);
@@ -315,8 +317,7 @@ int cb_set_promiscuous_mode(CB_SOCKET_T sfd, const char *dev, bool enable)
 
 int cb_get_mac_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bmac)
 {
-	int res = find_mac_addr_bydev(sfd, dev, bmac);
-	return (res == LLDENET_E_OK? 0: -1);
+	return cb_alloc_mac_addr(dev, sfd, bmac);
 }
 
 int cb_get_ip_bydev(CB_SOCKET_T sfd, const char *dev, CB_IN_ADDR_T *inp)
@@ -472,6 +473,8 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 		strncpy(s_ndevmap_table[i].netdev, ethdevs[i].netdev, IFNAMSIZ-1);
 		s_ndevmap_table[i].macport = ethdevs[i].macport;
 		memcpy(s_ndevmap_table[i].srcmac, ethdevs[i].srcmac, ETH_ALEN);
+		UB_LOG(UBL_INFO,"%s: has mac: "UB_PRIhexB6"\n",
+			   s_ndevmap_table[i].netdev, UB_ARRAY_B6(s_ndevmap_table[i].srcmac));
 		s_num_devs++;
 	}
 	if (s_num_devs == 0) {

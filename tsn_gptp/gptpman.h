@@ -47,6 +47,14 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+/**
+ * @addtogroup gptp 
+ * @{
+ * @file gptpman.h
+ * @brief File contains gptp manager related functions.
+ *
+ */
+
 #ifndef GPTPMAN_H_
 #define GPTPMAN_H_
 
@@ -62,8 +70,23 @@ extern Semaphore g_gptpd_ready_semaphore;
 
 typedef struct gptpman_data gptpman_data_t;
 
+/**
+ * @brief Starts gptp instance manager
+ * 
+ * @param gptpInstanceIndex Instance index/number of the gPTP to be started
+ * @param netdevs			String array of network devices to be used in this gPTP instance
+ * @param max_ports 		MAX number of ports to be used in this gPTP instance
+ * @param inittm 			Inital time to be used in this gPTP instance
+ * @param stopgptp			Pointer to a boolean variable to be used to stop gPTP
+ * @return int 				0 on success, -1 on failure
+ */
 int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
-		int max_ports, int max_domains, char *inittm, bool *stopgptp);
+		int max_ports, char *inittm, bool *stopgptp);
+
+/**
+ * @brief Stops gPTP instance manager
+ * 
+ */
 void gptpman_stop(void);
 
 #ifdef __cplusplus
@@ -71,3 +94,5 @@ void gptpman_stop(void);
 #endif
 
 #endif
+/** @}*/
+

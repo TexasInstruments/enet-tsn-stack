@@ -53,6 +53,35 @@
 #include "gptpconf/gptpgcfg.h"
 #include "gptpconf/xl4-extmod-xl4gptp.h"
 
+/*==============Static memory configuration==============*/
+/* The memory size increase when number of instances/ports/domains are increased.
+ * Since the memory for small and medium are hard to estimate exactly,
+ * an extra size option can be used in case of insufficent memory.
+ */
+#ifndef GPTP_MAX_INSTANCES
+#define GPTP_MAX_INSTANCES 1u
+#endif
+
+/* Max physical ports e.g. 2 ports: eth0 and eth1 */
+#ifndef GPTP_MAX_PORTS
+#define GPTP_MAX_PORTS 2
+#endif
+
+#ifndef GPTP_MAX_DOMAINS
+#define GPTP_MAX_DOMAINS 2
+#endif
+
+/* Allow to extend the small pool if any specific platform need more */
+#ifndef GPTP_SMALL_EXTRA_SIZE
+#define GPTP_SMALL_EXTRA_SIZE 0
+#endif //GPTP_SMALL_EXTRA_SIZE
+
+/* Allow to extend the medium pool if any specific platform need more */
+#ifndef GPTP_MEDIUM_EXTRA_SIZE
+#define GPTP_MEDIUM_EXTRA_SIZE 0
+#endif //GPTP_MEDIUM_EXTRA_SIZE
+/*==============End of static memory configuration==============*/
+
 void eui48to64(const uint8_t *eui48, uint8_t *eui64, const uint8_t *insert);
 
 #define LOG_TO_NSEC(x) (((x)>=0)?(uint64_t)UB_SEC_NS*(1u<<(uint8_t)(x)):(uint64_t)UB_SEC_NS/(1u<<(uint8_t)(-(x))))
@@ -64,41 +93,124 @@ void eui48to64(const uint8_t *eui48, uint8_t *eui64, const uint8_t *insert);
 
 #define SM_CLOSE(f,x) if((x)!=NULL){(f)(&(x));}
 
-#ifndef GPTP_MAX_INSTANCES
-#define GPTP_MAX_INSTANCES 1u
-#endif
+#define GPTP_ALIGN(x,n) ((((x)+n-1)/n)*n)
 
 #define SM_DATA_INST sm_data_INST
-#define SM_DATA_FSIZE (sizeof(void*)+12u)
-#ifndef SM_DATA_FNUM
-// there are 25 state machines and each uses 2 UD_SD_MALLOC, 3 state machines with 1 UD_SD_MALLOC
-// With SM_DATA_FSIZE above, 9 fragments each can work for a single domain and a single port.
-// Increasing ports/domain, 7 fragments each port, 12 fragments for domain/2ports
-// (25*2+3)*(9+7*[number of extra ports - 1]+12*[number of domains - 1])
-// The default is set here is for 2 ports and 2 domains
-#define SM_DATA_FNUM (GPTP_MAX_INSTANCES*(((25u*2u)+3u)*(9u+7u+12u)))
-#endif
+#define SM_DATA_FSIZE 8
+#define SM_DATA_ALIGN(x) GPTP_ALIGN((x),SM_DATA_FSIZE)
+
+/* -------For state machines size blocks---------- */
+/* In some cases, (GPTP_MAX_PORTS + 1) is used to account for the
+ * addition of virtual port 0 alongside the physical ports. */
+#define SM_DATA_TOTAL_SIZE \
+	(SM_DATA_ALIGN(sizeof(site_sync_sync_data_t))*GPTP_MAX_DOMAINS+	  \
+	SM_DATA_ALIGN(sizeof(SiteSyncSyncSM))*GPTP_MAX_DOMAINS+					\
+	SM_DATA_ALIGN(sizeof(clock_master_sync_send_data_t))*GPTP_MAX_DOMAINS+	\
+	SM_DATA_ALIGN(sizeof(ClockMasterSyncSendSM))*GPTP_MAX_DOMAINS+			\
+	SM_DATA_ALIGN(sizeof(clock_slave_sync_data_t))*GPTP_MAX_DOMAINS+			\
+	SM_DATA_ALIGN(sizeof(ClockSlaveSyncSM))*GPTP_MAX_DOMAINS+				\
+	SM_DATA_ALIGN(sizeof(clock_master_sync_receive_data_t))*GPTP_MAX_DOMAINS+	\
+	SM_DATA_ALIGN(sizeof(ClockMasterSyncReceiveSM))*GPTP_MAX_DOMAINS+			\
+	SM_DATA_ALIGN(sizeof(clock_master_sync_offset_data_t))*GPTP_MAX_DOMAINS+		\
+	SM_DATA_ALIGN(sizeof(ClockMasterSyncOffsetSM))*GPTP_MAX_DOMAINS+				\
+	SM_DATA_ALIGN(sizeof(md_pdelay_req_data_t))*(GPTP_MAX_PORTS+1)+	\
+	SM_DATA_ALIGN(sizeof(MDPdelayReqSM))*(GPTP_MAX_PORTS+1)+			\
+	SM_DATA_ALIGN(sizeof(md_pdelay_resp_data_t))*(GPTP_MAX_PORTS+1)+	\
+	SM_DATA_ALIGN(sizeof(MDPdelayRespSM))*(GPTP_MAX_PORTS+1)+			\
+	SM_DATA_ALIGN(sizeof(link_delay_interval_setting_data_t))*(GPTP_MAX_PORTS+1)+ \
+	SM_DATA_ALIGN(sizeof(LinkDelayIntervalSettingSM))*(GPTP_MAX_PORTS+1)+ \
+	SM_DATA_ALIGN(sizeof(port_announce_information_data_t))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(PortAnnounceInformationSM))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(port_announce_information_ext_data_t))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(PortAnnounceInformationExtSM))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(md_sync_receive_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(MDSyncReceiveSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(port_sync_sync_receive_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(PortSyncSyncReceiveSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(port_sync_sync_send_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(PortSyncSyncSendSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(md_sync_send_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(MDSyncSendSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(port_announce_receive_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(PortAnnounceReceiveSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(port_announce_transmit_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(PortAnnounceTransmitSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(gptp_capable_transmit_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(gPtpCapableTransmitSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(gptp_capable_receive_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(gPtpCapableReceiveSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(sync_interval_setting_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(SyncIntervalSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(announce_interval_setting_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(AnnounceIntervalSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(one_step_tx_oper_setting_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(OneStepTxOperSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(md_announce_send_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(MDAnnounceSendSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(md_announce_receive_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(MDAnnounceReceiveSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(port_state_setting_ext_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(PortStateSettingExtSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(port_state_selection_data_t))*GPTP_MAX_DOMAINS+				\
+	SM_DATA_ALIGN(sizeof(PortStateSelectionSM))*GPTP_MAX_DOMAINS+					\
+	SM_DATA_ALIGN(sizeof(md_signaling_send_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
+	SM_DATA_ALIGN(sizeof(md_signaling_receive_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(gm_stable_data_t))*GPTP_MAX_DOMAINS)
+
+#define SM_DATA_FNUM (GPTP_MAX_INSTANCES*(SM_DATA_TOTAL_SIZE/SM_DATA_FSIZE))
 UB_SD_GETMEM_DEF_EXTERN(SM_DATA_INST);
+/* -------End of state machines size blocks---------- */
 
+/* -------For small size blocks---------- */
 #define GPTP_SMALL_ALLOC gptp_small_alloc
-#define GPTP_SMALL_AFSIZE (sizeof(void*))
-#ifndef GPTP_SMALL_AFNUM
-// With GPTP_SMALL_AFAIZE above, 80 fragments can work for a single domain and a single port.
-// Increasing ports/domain, 12 fragments each port, 12 fragments for domain/2ports
-// The default is set here is for 2 ports and 2 domains
-#define GPTP_SMALL_AFNUM (GPTP_MAX_INSTANCES*(80u+12u+12u))
-#endif
-UB_SD_GETMEM_DEF_EXTERN(GPTP_SMALL_ALLOC);
+#define GPTP_SMALL_AFSIZE 4u
+#define GPTP_SMALL_ALIGN(x) GPTP_ALIGN((x),GPTP_SMALL_AFSIZE)
+#define GPTP_SMALL_TOTAL_SIZE \
+	(GPTP_SMALL_ALIGN(sizeof(PerPortGlobal*))*(GPTP_MAX_PORTS+1)+	\
+	 GPTP_SMALL_ALIGN(sizeof(BmcsPerPortGlobal*))*(GPTP_MAX_PORTS+1)+	\
+	 GPTP_SMALL_ALIGN(sizeof(UInteger224))*(GPTP_MAX_PORTS+1)+			\
+	 GPTP_SMALL_ALIGN(sizeof(PortStateSelectionSMforAllDomain))+		\
+	 GPTP_SMALL_ALIGN(sizeof(PortStateSettingExtSMforAllDomain))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	 GPTP_SMALL_ALIGN(sizeof(MDEntityGlobal))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	 GPTP_SMALL_ALIGN(128)+/* reserved for hard counted places */ \
+	 GPTP_SMALL_ALIGN(GPTP_SMALL_EXTRA_SIZE))
 
+#define GPTP_SMALL_AFNUM (GPTP_MAX_INSTANCES*(GPTP_SMALL_TOTAL_SIZE/GPTP_SMALL_AFSIZE))
+UB_SD_GETMEM_DEF_EXTERN(GPTP_SMALL_ALLOC);
+/* -------End of small size blocks---------- */
+
+/*-------- For medium size blocks ---------------*/
+/* In some cases, (GPTP_MAX_PORTS + 1) is used to account for the
+ * addition of virtual port 0 alongside the physical ports. */
 #define GPTP_MEDIUM_ALLOC gptp_medium_alloc
-#define GPTP_MEDIUM_AFSIZE 64u
-#ifndef GPTP_MEDIUM_AFNUM
-// With GPTP_MEDIUM_AFSIZE above, 135 fragments can work for a single domain and a single port.
-// Increasing ports/domain, 65 fragments each port, 125 fragment for domain/2ports
-// The default is set here is for 2 ports and 2 domains
-#define GPTP_MEDIUM_AFNUM (GPTP_MAX_INSTANCES*(135u+65u+125u))
-#endif
+#define GPTP_MEDIUM_AFSIZE 16u
+#define GPTP_MEDIUM_ALIGN(x) GPTP_ALIGN((x),GPTP_MEDIUM_AFSIZE)
+
+/* The gptpnet is a platform-dependent, it is hard to estimate an accurate number for each.
+ * The gptpclock structure will not be exported to the header, an rough number will be used.
+ * We will accept the rough estimation in these cases. */
+#define GPTP_MEDIUM_TOTAL_SIZE \
+	(GPTP_MEDIUM_ALIGN(sizeof(gptpman_data_t))+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(gptpsm_tasd_t)*GPTP_MAX_DOMAINS)/*intention*/+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(gptpsm_ptd_t)*(GPTP_MAX_PORTS+1))*GPTP_MAX_DOMAINS/*intention*/+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(PerTimeAwareSystemGlobal))*GPTP_MAX_DOMAINS+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(PerfMonClockDS))*GPTP_MAX_DOMAINS+		\
+	 GPTP_MEDIUM_ALIGN(sizeof(PerPortGlobal))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(PerfMonPortDS))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(BmcsPerTimeAwareSystemGlobal))*GPTP_MAX_DOMAINS+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(BmcsPerPortGlobal))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(MDEntityGlobalForAllDomain))*(GPTP_MAX_PORTS+1)+ \
+	 GPTP_MEDIUM_ALIGN(48)+ /*48: big rough of sizeof(gptpclock_data_t)*/	\
+	 GPTP_MEDIUM_ALIGN(56*GPTP_MAX_DOMAINS)+ /*56: big rough of sizeof(per_domain_data_t)*/ \
+	 GPTP_MEDIUM_ALIGN(10+(GPTP_MAX_PACKET_SIZE+sizeof(CB_ETHHDR_T))*GPTP_MAX_PORTS)+ /*big parts of netdevices */ \
+	 GPTP_MEDIUM_ALIGN(128)+ /* reserved for uncountable size in gptpnet */ \
+	 GPTP_MEDIUM_ALIGN(GPTP_MEDIUM_EXTRA_SIZE))
+
+#define GPTP_MEDIUM_AFNUM \
+	(GPTP_MAX_INSTANCES*(GPTP_MEDIUM_TOTAL_SIZE/GPTP_MEDIUM_AFSIZE))
+
 UB_SD_GETMEM_DEF_EXTERN(GPTP_MEDIUM_ALLOC);
+/*--------End of medium size blocks ---------------*/
 
 /* allocate typed in *sm, then allocate typesm in (*sm)->thisSM */
 #define INIT_SM_DATA(typed, typesm, sm)					\
@@ -115,7 +227,6 @@ UB_SD_GETMEM_DEF_EXTERN(GPTP_MEDIUM_ALLOC);
 		}							\
 	}								\
 }
-
 
 /* free the above allocations */
 #define CLOSE_SM_DATA(sm) \

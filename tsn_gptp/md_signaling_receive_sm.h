@@ -50,6 +50,19 @@
 #ifndef MD_SIGNALING_RECEIVE_SM_H_
 #define MD_SIGNALING_RECEIVE_SM_H_
 
+struct md_signaling_receive_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	int domainIndex;
+	int portIndex;
+	bool recv;
+	void *rcvd_rxmsg;
+	PTPMsgGPTPCapableTLV gctlm;
+	PTPMsgIntervalRequestTLV mrtlm;
+};
+
 typedef struct md_signaling_receive_data md_signaling_receive_data_t;
 
 void *md_signaling_receive_sm(md_signaling_receive_data_t *sm, uint64_t cts64);

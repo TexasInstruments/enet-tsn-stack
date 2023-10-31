@@ -93,7 +93,7 @@ int main(int argc, char* argv[])
 	}
 	if(!dbname){return -1;}
 	ubb_unibase_easyinit();
-	if(gptpgcfg_init(dbname, conf_files, 0, 0)){
+	if(gptpgcfg_init(dbname, conf_files, 0, 0, NULL)){
 		UB_LOG(UBL_ERROR, "gptpinst_copy:error in gptpgcfg_init\n");
 		return -1;
 	}

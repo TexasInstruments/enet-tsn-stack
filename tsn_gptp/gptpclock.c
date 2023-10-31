@@ -591,7 +591,10 @@ int gptpclock_init(uint8_t gptpInstanceIndex, int max_domains, int max_ports)
 	       __func__, max_domains, gcd->shmsize);
 	CB_THREAD_MUTEXATTR_INIT(&mattr);
 	CB_THREAD_MUTEXATTR_SETPSHARED(&mattr, CB_THREAD_PROCESS_SHARED);
-	CB_THREAD_MUTEX_INIT(&gcd->shm->head.mcmutex, &mattr);
+	if(CB_THREAD_MUTEX_INIT(&gcd->shm->head.mcmutex, &mattr)){
+		gptpclock_close(gptpInstanceIndex);
+		return -1;
+	}
 	return 0;
 }
 

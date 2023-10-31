@@ -66,25 +66,6 @@ typedef enum {
 	REACTION,
 }md_pdelay_resp_state_t;
 
-struct md_pdelay_resp_data{
-	gptpnet_data_t *gpnetd;
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	md_pdelay_resp_state_t state;
-	md_pdelay_resp_state_t last_state;
-	MDPdelayRespSM *thisSM;
-	int portIndex;
-	MDPTPMsgPdelayReq rcvdPdelayReq;
-	MDPTPMsgPdelayResp txPdelayResp;
-	MDPTPMsgPdelayRespFollowUp txPdelayRespFollowUp;
-	int64_t ts2;
-	int64_t ts3;
-	uint64_t txPdelayResp_time;
-	int cmlds_mode;
-	int last_seqid;
-	uint64_t mock_txts64;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
@@ -163,7 +144,7 @@ static md_pdelay_resp_state_t allstate_condition(md_pdelay_resp_data_t *sm)
 {
 	if(sm->ptasg->BEGIN || !sm->ppg->forAllDomain->portOper ||
 	   !sm->thisSM->portEnabled1){return NOT_ENABLED;}
-	return sm->state;
+	return (md_pdelay_resp_state_t)sm->state;
 }
 
 static void *not_enabled_proc(md_pdelay_resp_data_t *sm)

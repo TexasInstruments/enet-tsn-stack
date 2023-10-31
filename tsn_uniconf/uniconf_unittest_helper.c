@@ -68,7 +68,7 @@ int uniconf_unittest_setup(void **state)
 {
 	unibase_init_para_t init_para;
 	uniconf_uthp_data_t *utd=(uniconf_uthp_data_t *)*state;
-	const char *uniconf[]={"../tsn_uniconf/uniconf", NULL};
+	const char *uniconf[]={"../tsn_uniconf/uniconf", "./uniconf", NULL};
 	const char *runiconf;
 	ubb_default_initpara(&init_para);
 	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:66",

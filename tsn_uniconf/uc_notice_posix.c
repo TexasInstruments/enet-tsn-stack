@@ -157,3 +157,8 @@ UC_NOTICE_SIG_T *uc_notice_sig_reallocate(bool thread, void *d, int n)
 	if(ub_assert_fatal(d, __func__, "realloc")){return NULL;}
 	return d;
 }
+
+int uc_notice_sig_trywait(bool thread, UC_NOTICE_SIG_T *sigp)
+{
+	return CB_SEM_TRYWAIT((CB_SEM_T*)sigp);
+}

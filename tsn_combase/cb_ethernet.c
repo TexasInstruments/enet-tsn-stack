@@ -50,6 +50,7 @@
 #include <string.h>
 #include <errno.h>
 #include "combase_private.h"
+#include "combase_link.h"
 
 static int ovip_socket_open(CB_SOCKET_T *sfd, CB_SOCKADDR_IN_T *saddr,
 			    cb_rawsock_ovip_para_t *ovipp)
@@ -367,7 +368,7 @@ int cb_get_ethtool_info(CB_SOCKET_T cfd, const char *dev, uint32_t *speed, uint3
 	struct ethtool_cmd ecmd;
 
 	if(strstr(dev, CB_VIRTUAL_ETHDEV_PREFIX)==dev){
-		*duplex=1;
+		*duplex=CB_DUPLEX_FULL;
 		*speed=1000;
 		return 0;
 	}
@@ -382,13 +383,13 @@ int cb_get_ethtool_info(CB_SOCKET_T cfd, const char *dev, uint32_t *speed, uint3
 	}
 	switch(ecmd.duplex){
 	case DUPLEX_FULL:
-		*duplex=1;
+		*duplex=CB_DUPLEX_FULL;
 		break;
 	case DUPLEX_HALF:
-		*duplex=2;
+		*duplex=CB_DUPLEX_HALF;
 		break;
 	default: //duplex unknown
-		*duplex=0;
+		*duplex=CB_DUPLEX_UNKNOWN;
 		break;
 	}
 	return 0;

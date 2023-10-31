@@ -459,14 +459,16 @@ erexit:
 	return res;
 }
 
+#define XSTRINGFY(x) STRINGFY(x)
+#define STRINGFY(x) #x
 static void test_action_push(uint8_t runmode)
 {
 	int res;
 	uc_dbald *dbald;
 	uc_notice_data_t *ucntd;
 	if(!UC_CALL_THREAD(runmode) && \
-	   !strcmp(DBNAME, "SIMPLEDB")){
-		UB_LOG(UBL_INFO, "%s doesn't support multiple processes\n", DBNAME);
+	   !strcmp(XSTRINGFY(DBNAME), "SIMPLEDB")){
+		UB_LOG(UBL_INFO, "%s doesn't support multiple processes\n", XSTRINGFY(DBNAME));
 		return;
 	}
 	uniconf_remove_dbfile(TESTDBFILE);

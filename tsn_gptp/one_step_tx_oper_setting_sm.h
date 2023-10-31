@@ -50,6 +50,17 @@
 #ifndef ONE_STEP_TX_OPER_SETTING_SM_H_
 #define ONE_STEP_TX_OPER_SETTING_SM_H_
 
+struct one_step_tx_oper_setting_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	MDEntityGlobal *mdeg;
+	int state;
+	int last_state;
+	OneStepTxOperSettingSM *thisSM;
+	int domainIndex;
+	int portIndex;
+};
+
 typedef struct one_step_tx_oper_setting_data one_step_tx_oper_setting_data_t;
 
 void *one_step_tx_oper_setting_sm(one_step_tx_oper_setting_data_t *sm, uint64_t cts64);

@@ -52,141 +52,136 @@
 #include "yang_db_identiyref.h"
 
 /*-----------------------------------------------------------------------------
- * Type Definitions
- *----------------------------------------------------------------------------*/
-
-/* None */
-
-/*-----------------------------------------------------------------------------
- * Global Variables
+ * Identity Reference Tables
  *----------------------------------------------------------------------------*/
 
 const yang_identity_map_t network_protocol[] = {
-    { "udp-ipv4"  , 0x0001 }, /**< UDP on IPv4 */
-    { "udp-ipv6"  , 0x0002 }, /**< UDP on IPv6 */
-    { "ieee802-3" , 0x0003 }, /**< IEEE Std 802.3 (Ethernet). */
-    { "devicenet" , 0x0004 }, /**< DeviceNet */
-    { "controlnet", 0x0005 }, /**< ControlNet */
-    { "profinet"  , 0x0006 }, /**< PROFINET */
-    { "otn"       , 0x0007 }, /**< Optical Transport Network (OTN) */
-    { "unknown"   , 0xFFFE }  /**< Unknown */
+    { "ptp", "udp-ipv4"  , 0x0001 }, /**< UDP on IPv4 */
+    { "ptp", "udp-ipv6"  , 0x0002 }, /**< UDP on IPv6 */
+    { "ptp", "ieee802-3" , 0x0003 }, /**< IEEE Std 802.3 (Ethernet). */
+    { "ptp", "devicenet" , 0x0004 }, /**< DeviceNet */
+    { "ptp", "controlnet", 0x0005 }, /**< ControlNet */
+    { "ptp", "profinet"  , 0x0006 }, /**< PROFINET */
+    { "ptp", "otn"       , 0x0007 }, /**< Optical Transport Network (OTN) */
+    { "ptp", "unknown"   , 0xFFFE }  /**< Unknown */
 };
 const uint32_t network_protocol_num = sizeof(network_protocol)/sizeof(network_protocol[0]);
 
 const yang_identity_map_t clock_class[] = {
-    { "cc-primary-sync"                      , 6U   },
-    { "cc-primary-sync-lost"                 , 7U   },
-    { "cc-application-specific-sync"         , 13U  },
-    { "cc-application-specific-sync-lost"    , 14U  },
-    { "cc-primary-sync-alternative-a"        , 52U  },
-    { "cc-application-specific-alternative-a", 58U  },
-    { "cc-primary-sync-alternative-b"        , 187U },
-    { "cc-application-specific-alternative-b", 193U },
-    { "cc-default"                           , 248U },
-    { "cc-slave-only"                        , 255U }
+    { "ptp", "cc-primary-sync"                      , 6U   },
+    { "ptp", "cc-primary-sync-lost"                 , 7U   },
+    { "ptp", "cc-application-specific-sync"         , 13U  },
+    { "ptp", "cc-application-specific-sync-lost"    , 14U  },
+    { "ptp", "cc-primary-sync-alternative-a"        , 52U  },
+    { "ptp", "cc-application-specific-alternative-a", 58U  },
+    { "ptp", "cc-primary-sync-alternative-b"        , 187U },
+    { "ptp", "cc-application-specific-alternative-b", 193U },
+    { "ptp", "cc-default"                           , 248U },
+    { "ptp", "cc-slave-only"                        , 255U }
 };
 const uint32_t clock_class_num = sizeof(clock_class)/sizeof(clock_class[0]);
 
 const yang_identity_map_t clock_accuracy[] = {
-    { "ca-time-accurate-to-1000-fs", 0x17 },
-    { "ca-time-accurate-to-2500-fs", 0x18 },
-    { "ca-time-accurate-to-10-ps"  , 0x19 },
-    { "ca-time-accurate-to-25ps"   , 0x1A },
-    { "ca-time-accurate-to-100-ps" , 0x1B },
-    { "ca-time-accurate-to-250-ps" , 0x1C },
-    { "ca-time-accurate-to-1000-ps", 0x1D },
-    { "ca-time-accurate-to-2500-ps", 0x1E },
-    { "ca-time-accurate-to-10-ns"  , 0x1F },
-    { "ca-time-accurate-to-25-ns"  , 0x20 },
-    { "ca-time-accurate-to-100-ns" , 0x21 },
-    { "ca-time-accurate-to-250-ns" , 0x22 },
-    { "ca-time-accurate-to-1000-ns", 0x23 },
-    { "ca-time-accurate-to-2500-ns", 0x24 },
-    { "ca-time-accurate-to-10-us"  , 0x25 },
-    { "ca-time-accurate-to-25-us"  , 0x26 },
-    { "ca-time-accurate-to-100-us" , 0x27 },
-    { "ca-time-accurate-to-250-us" , 0x28 },
-    { "ca-time-accurate-to-1000-us", 0x29 },
-    { "ca-time-accurate-to-2500-us", 0x2A },
-    { "ca-time-accurate-to-10-ms"  , 0x2B },
-    { "ca-time-accurate-to-25-ms"  , 0x2C },
-    { "ca-time-accurate-to-100-ms" , 0x2D },
-    { "ca-time-accurate-to-250-ms" , 0x2E },
-    { "ca-time-accurate-to-1-s"    , 0x2F },
-    { "ca-time-accurate-to-10-s"   , 0x30 },
-    { "ca-time-accurate-to-gt-10-s", 0x31 }
+    { "ptp", "ca-time-accurate-to-1000-fs", 0x17 },
+    { "ptp", "ca-time-accurate-to-2500-fs", 0x18 },
+    { "ptp", "ca-time-accurate-to-10-ps"  , 0x19 },
+    { "ptp", "ca-time-accurate-to-25ps"   , 0x1A },
+    { "ptp", "ca-time-accurate-to-100-ps" , 0x1B },
+    { "ptp", "ca-time-accurate-to-250-ps" , 0x1C },
+    { "ptp", "ca-time-accurate-to-1000-ps", 0x1D },
+    { "ptp", "ca-time-accurate-to-2500-ps", 0x1E },
+    { "ptp", "ca-time-accurate-to-10-ns"  , 0x1F },
+    { "ptp", "ca-time-accurate-to-25-ns"  , 0x20 },
+    { "ptp", "ca-time-accurate-to-100-ns" , 0x21 },
+    { "ptp", "ca-time-accurate-to-250-ns" , 0x22 },
+    { "ptp", "ca-time-accurate-to-1000-ns", 0x23 },
+    { "ptp", "ca-time-accurate-to-2500-ns", 0x24 },
+    { "ptp", "ca-time-accurate-to-10-us"  , 0x25 },
+    { "ptp", "ca-time-accurate-to-25-us"  , 0x26 },
+    { "ptp", "ca-time-accurate-to-100-us" , 0x27 },
+    { "ptp", "ca-time-accurate-to-250-us" , 0x28 },
+    { "ptp", "ca-time-accurate-to-1000-us", 0x29 },
+    { "ptp", "ca-time-accurate-to-2500-us", 0x2A },
+    { "ptp", "ca-time-accurate-to-10-ms"  , 0x2B },
+    { "ptp", "ca-time-accurate-to-25-ms"  , 0x2C },
+    { "ptp", "ca-time-accurate-to-100-ms" , 0x2D },
+    { "ptp", "ca-time-accurate-to-250-ms" , 0x2E },
+    { "ptp", "ca-time-accurate-to-1-s"    , 0x2F },
+    { "ptp", "ca-time-accurate-to-10-s"   , 0x30 },
+    { "ptp", "ca-time-accurate-to-gt-10-s", 0x31 }
 };
 const uint32_t clock_accuracy_num = sizeof(clock_accuracy)/sizeof(clock_accuracy[0]);
 
 const yang_identity_map_t time_source[] = {
-    { "atomic-clock"       , 0x10 },
-    { "gnss"               , 0x20 },
-    { "terrestrial-radio"  , 0x30 },
-    { "serial-time-code"   , 0x39 },
-    { "ptp"                , 0x40 },
-    { "ntp"                , 0x50 },
-    { "hand-set"           , 0x60 },
-    { "other"              , 0x90 },
-    { "internal-oscillator", 0xA0 }
+    { "ptp", "atomic-clock"       , 0x10 },
+    { "ptp", "gnss"               , 0x20 },
+    { "ptp", "terrestrial-radio"  , 0x30 },
+    { "ptp", "serial-time-code"   , 0x39 },
+    { "ptp", "ptp"                , 0x40 },
+    { "ptp", "ntp"                , 0x50 },
+    { "ptp", "hand-set"           , 0x60 },
+    { "ptp", "other"              , 0x90 },
+    { "ptp", "internal-oscillator", 0xA0 }
 };
 const uint32_t time_source_num = sizeof(time_source)/sizeof(time_source[0]);
 
 const yang_identity_map_t gate_operation[] = {
-    { "set-gate-states"       , 0x0 },
-    { "set-and-hold-mac"      , 0x1 },
-    { "set-and-release-mac"   , 0x2 },
+    { "dot1q-types", "set-gate-states"       , 0x0 },
+    { "dot1q-types", "set-and-hold-mac"      , 0x1 },
+    { "dot1q-types", "set-and-release-mac"   , 0x2 }
 };
 const uint32_t gate_operation_num = sizeof(gate_operation)/sizeof(gate_operation[0]);
 
 const yang_identity_map_t map_type[] = {
-    { "specified"       , 0x01 },
-    { "san-rfc822-name" , 0x02 },
-    { "san-dns-name"    , 0x03 },
-    { "san-ip-address"  , 0x04 },
-    { "san-any"         , 0x05 },
-    { "common-name"     , 0x06 }
+    { "x509c2n", "specified"       , 0x01 },
+    { "x509c2n", "san-rfc822-name" , 0x02 },
+    { "x509c2n", "san-dns-name"    , 0x03 },
+    { "x509c2n", "san-ip-address"  , 0x04 },
+    { "x509c2n", "san-any"         , 0x05 },
+    { "x509c2n", "common-name"     , 0x06 }
 };
 const uint32_t map_type_num = sizeof(map_type)/sizeof(map_type[0]);
 
 const yang_identity_map_t addr_family_map[] = {
-    { "ipv4"       , 1 },
-    { "ipv6"       , 2 },
-    { "nsap"       , 3 }
+    { "rt", "ipv4"       , 1 },
+    { "rt", "ipv6"       , 2 },
+    { "rt", "nsap"       , 3 }
 };
 const uint32_t addr_family_map_num = sizeof(addr_family_map)/sizeof(addr_family_map[0]);
 
 const yang_identity_map_t datastore[] = {
-    { "running"         , 0x0 },
-    { "candidate"       , 0x1 },
-    { "startup"         , 0x2 },
-    { "conventional"    , 0x3 },
-    { "intended"        , 0x4 },
-    { "dynamic"         , 0x5 },
-    { "operational"     , 0x6 }
+    { "ds", "running"         , 0x0 },
+    { "ds", "candidate"       , 0x1 },
+    { "ds", "startup"         , 0x2 },
+    { "ds", "conventional"    , 0x3 },
+    { "ds", "intended"        , 0x4 },
+    { "ds", "dynamic"         , 0x5 },
+    { "ds", "operational"     , 0x6 }
 };
 const uint32_t datastore_num = sizeof(datastore)/sizeof(datastore[0]);
 
 const yang_identity_map_t schema_format[] = {
-    { "xsd"     , 0x0 },
-    { "yang"    , 0x1 },
-    { "yin"     , 0x2 },
-    { "rng"     , 0x3 },
-    { "rnc"     , 0x4 }
+    { "ncm", "xsd"     , 0x0 },
+    { "ncm", "yang"    , 0x1 },
+    { "ncm", "yin"     , 0x2 },
+    { "ncm", "rng"     , 0x3 },
+    { "ncm", "rnc"     , 0x4 }
 };
 const uint32_t schema_format_num = sizeof(schema_format)/sizeof(schema_format[0]);
 
 const yang_identity_map_t transport[] = {
-    { "netconf-ssh"             , 0x0 },
-    { "netconf-soap-over-beep"  , 0x1 },
-    { "netconf-soap-over-https" , 0x2 },
-    { "netconf-beep"            , 0x3 },
-    { "netconf-tls"             , 0x4 }
+    { "ncm", "netconf-ssh"             , 0x0 },
+    { "ncm", "netconf-soap-over-beep"  , 0x1 },
+    { "ncm", "netconf-soap-over-https" , 0x2 },
+    { "ncm", "netconf-beep"            , 0x3 },
+    { "ncm", "netconf-tls"             , 0x4 }
 };
 const uint32_t transport_num = sizeof(transport)/sizeof(transport[0]);
 
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
  *----------------------------------------------------------------------------*/
+
 const yang_identityref_t yang_identityref_list[] = {
     { network_protocol, network_protocol_num, "network-protocol" },
     { clock_class,      clock_class_num,      "clock-class"      },
@@ -204,6 +199,7 @@ const yang_identityref_t yang_identityref_list[] = {
 /*-----------------------------------------------------------------------------
  * Static APIs
  *----------------------------------------------------------------------------*/
+
 static  int yang_identityref_get_tblidx(char *hints)
 {
     int ret=-1;
@@ -260,3 +256,23 @@ char* yang_identityref_getstr(uint32_t identity_val, char *hints)
     }
     return identity_str;
 }
+
+char* yang_identityref_getns(uint32_t identity_val, char *hints)
+{
+    char* identity_nsprefix=NULL;
+    int tblidx=yang_identityref_get_tblidx(hints);
+    if(tblidx < 0) {
+        UB_LOG(UBL_ERROR, "%s:unknown identityref hints='%s'\n", __func__, hints);
+        return identity_nsprefix;
+    }
+    const yang_identity_map_t *reftbl = yang_identityref_list[tblidx].reftbl;
+    uint32_t i;
+    for (i = 0; i < yang_identityref_list[tblidx].refnum; i++) {
+        if (reftbl[i].value==identity_val) {
+            identity_nsprefix=(char*)reftbl[i].nsprefix;
+            break;
+        }
+    }
+    return identity_nsprefix;
+}
+

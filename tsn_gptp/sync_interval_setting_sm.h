@@ -50,6 +50,16 @@
 #ifndef SYNC_INTERVAL_SETTING_SM_H_
 #define SYNC_INTERVAL_SETTING_SM_H_
 
+struct sync_interval_setting_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	SyncIntervalSettingSM *thisSM;
+	int domainIndex;
+	int portIndex;
+};
+
 typedef struct sync_interval_setting_data sync_interval_setting_data_t;
 
 void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64);

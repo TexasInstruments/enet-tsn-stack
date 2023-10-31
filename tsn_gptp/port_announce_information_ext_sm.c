@@ -71,18 +71,6 @@ typedef enum {
 	REACTION,
 }port_announce_information_ext_state_t;
 
-struct port_announce_information_ext_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	BmcsPerTimeAwareSystemGlobal *bptasg;
-	BmcsPerPortGlobal *bppg;
-	port_announce_information_ext_state_t state;
-	port_announce_information_ext_state_t last_state;
-	PortAnnounceInformationExtSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
-
 static void* rcvdInfoExt(port_announce_information_ext_data_t *sm)
 {
 	uint16_t N;
@@ -146,7 +134,7 @@ static port_announce_information_ext_state_t allstate_condition(port_announce_in
 	    (sm->bptasg->externalPortConfiguration == VALUE_ENABLED)){
 		return INITIALIZE;
 	}
-	return sm->state;
+	return (port_announce_information_ext_state_t)sm->state;
 }
 
 static void *initialize_proc(port_announce_information_ext_data_t *sm)

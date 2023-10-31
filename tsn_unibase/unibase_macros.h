@@ -49,7 +49,7 @@
 */
 /**
  * @ingroup TSN_UNIBASE_MODULE
- * @defgroup unibase_macros utility macros
+ * @defgroup unibase_macros Utility Macros
  * @{
  * @file unibase_macros.h
  * @brief Utility macros for convenience
@@ -61,7 +61,7 @@
 #include <stdio.h>
 
 /************************************************************
- * utility macros
+ * Utility Macros
  ************************************************************/
 #define UB_SEC_NS 1000000000LL //!< one second in unit of nano second
 #define UB_MSEC_NS 1000000 //!< one mili second in unit of nano second
@@ -202,22 +202,22 @@
 	{return ntohl((htonl(x) ^ ((m) << (s))));}
 
 /** @brief convert 'struct timespec' vaule to nanosecond integer */
-#define UB_TS2NSEC(ts) (((ts).tv_sec*1000000000)+(ts).tv_nsec)
+#define UB_TS2NSEC(ts) (((int64_t)(ts).tv_sec*1000000000)+(ts).tv_nsec)
 
 /** @brief convert 'struct timespec' vaule to microsecond integer */
-#define UB_TS2USEC(ts) (((ts).tv_sec*1000000)+(ts).tv_nsec/UB_USEC_NS)
+#define UB_TS2USEC(ts) (((int64_t)(ts).tv_sec*1000000)+(ts).tv_nsec/UB_USEC_NS)
 
 /** @brief convert 'struct timespec' vaule to milisecond integer */
-#define UB_TS2MSEC(ts) (((ts).tv_sec*UB_SEC_MS)+(ts).tv_nsec/UB_MSEC_NS)
+#define UB_TS2MSEC(ts) (((int64_t)(ts).tv_sec*UB_SEC_MS)+(ts).tv_nsec/UB_MSEC_NS)
 
 /** @brief convert 'struct timeval' vaule to nanosecond integer */
-#define UB_TV2NSEC(tv) (((tv).tv_sec*1000000000)+(tv).tv_usec*UB_USEC_NS)
+#define UB_TV2NSEC(tv) (((int64_t)(tv).tv_sec*1000000000)+(int64_t)(tv).tv_usec*UB_USEC_NS)
 
 /** @brief convert 'struct timeval' vaule to nanosecond integer */
-#define UB_TV2USEC(tv) (((tv).tv_sec*1000000)+(tv).tv_usec)
+#define UB_TV2USEC(tv) (((int64_t)(tv).tv_sec*1000000)+(tv).tv_usec)
 
 /** @brief convert 'struct timeval' vaule to milisecond integer */
-#define UB_TV2MSEC(tv) (((tv).tv_sec*UB_SEC_MS)+(tv).tv_usec/UB_MSEC_US)
+#define UB_TV2MSEC(tv) (((int64_t)(tv).tv_sec*UB_SEC_MS)+(tv).tv_usec/UB_MSEC_US)
 
 /** @brief convert nanosec value to 'struct timespec' vaule */
 #define UB_NSEC2TS(ns, ts) {(ts).tv_sec=(ns)/1000000000;(ts).tv_nsec=(ns)%1000000000;}

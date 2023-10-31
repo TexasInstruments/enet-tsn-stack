@@ -82,7 +82,7 @@ void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
 		      int fragnum, uint16_t fragsize);
 
 void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
-		       int fragnum, uint16_t fragsize, const char *mname, bool nolock)
+		      int fragnum, uint16_t fragsize, const char *mname, bool nolock)
 {
 	int i;
 	int pi=-1;
@@ -178,7 +178,8 @@ erexit:
 	return np;
 }
 
-void ub_static_relmem(void *p, void *mem, uint16_t *busysizes, int fragnum, uint16_t fragsize)
+void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
+			int fragnum, uint16_t fragsize)
 {
 	int dp;
 	int cpi;
@@ -196,4 +197,30 @@ void ub_static_relmem(void *p, void *mem, uint16_t *busysizes, int fragnum, uint
 	}
 	busysizes[cpi]=0u;
 	return;
+}
+
+int ub_static_print_usage(uint16_t* busysizes, int fragnum,
+		uint16_t fragsize, const char *mname, bool nolock, ub_dbgmsg_level_t level)
+{
+	int i;
+	int fragused=0;
+
+	if(!nolock){
+		if(ubcd.cbset.mutex_lock && ubcd.ub_sd_mutex){
+			ubcd.cbset.mutex_lock(ubcd.ub_sd_mutex);
+		}
+	}
+	for(i=0;i<fragnum;i++){
+		if(busysizes[i]!=0u){fragused+=busysizes[i];}
+	}
+	if(!nolock){
+		if(ubcd.cbset.mutex_unlock && ubcd.ub_sd_mutex){
+			ubcd.cbset.mutex_unlock(ubcd.ub_sd_mutex);
+		}
+	}
+	if(ub_clog_on(UB_LOGCAT, level)){
+		UB_LOG(UBL_INFO, "%s: fragsize=%d fragused/fragnum=%d/%d (%d%%)\n",
+			   mname, (int)fragsize, fragused, fragnum, (fragused*100)/fragnum);
+	}
+	return (fragnum-fragused);
 }

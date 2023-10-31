@@ -416,11 +416,7 @@ static bool IsMacAddrSet(uint8_t *mac)
 int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
 				  uint32_t vlanId, uint32_t ethType)
 {
-	Enet_IoctlPrms prms;
-	CpswAle_SetPolicerEntryOutArgs setPolicerEntryOutArgs;
-	CpswAle_SetPolicerEntryInArgs setPolicerEntryInArgs;
 	LLDEnetRxDma_t *hLLDRxDma;
-	int32_t status;
 
 	if ((hLLDEnet == NULL) || (dstMacAddr == NULL)) {
 		return LLDENET_E_PARAM;
@@ -455,32 +451,43 @@ int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
 		}
 	}
 
-	memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
-	if (IsMacAddrSet(dstMacAddr) == true) {
-		setPolicerEntryInArgs.policerMatch.policerMatchEnMask =
-			CPSW_ALE_POLICER_MATCH_MACDST;
-		setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.portNum = 0U;
-		setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = vlanId;
-		memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
-			&dstMacAddr[0U], ENET_MAC_ADDR_LEN);
-	}
+	/* For the Sitara AM273x SoC, setting dmaRxShared to true is required.
+	 * Policers/classifiers aren't effective on this SoC, and configuring them could
+	 * lead to a shortage when enabling multiple TSN modules as it supports only 4.*/
+	if (hLLDRxDma->dmaRxShared == false) {
+		Enet_IoctlPrms prms;
+		CpswAle_SetPolicerEntryOutArgs setPolicerEntryOutArgs;
+		CpswAle_SetPolicerEntryInArgs setPolicerEntryInArgs;
+		int32_t status;
 
-	/* Set policer params for ARP EtherType matching */
-	if (ethType > 0) {
-		setPolicerEntryInArgs.policerMatch.policerMatchEnMask |=
-			CPSW_ALE_POLICER_MATCH_ETHERTYPE;
-		setPolicerEntryInArgs.policerMatch.etherType = ethType;
-	}
-	setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
-	setPolicerEntryInArgs.threadIdEn = true;
-	setPolicerEntryInArgs.threadId = hLLDRxDma->rxFlowIdx;
+		memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
+		if (IsMacAddrSet(dstMacAddr) == true) {
+			status = EnetAppUtils_addHostPortMcastMembership(
+				hLLDEnet->hEnet, dstMacAddr);
+			if (status != ENET_SOK) {
+				UB_LOG(UBL_ERROR,"addHostPortMcastMembership failed %d\n", status);
+				return LLDENET_E_FAILURE;
+			}
+		}
 
-	ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerEntryInArgs, &setPolicerEntryOutArgs);
-	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
-			CPSW_ALE_IOCTL_SET_POLICER, &prms, status);
-	if (status != ENET_SOK) {
-		UB_LOG(UBL_ERROR,"Enet_ioctl failed %d\n", status);
-		return LLDENET_E_IOCTL;
+		/* Set policer params for EtherType matching */
+		if (ethType > 0) {
+			setPolicerEntryInArgs.policerMatch.policerMatchEnMask |=
+				CPSW_ALE_POLICER_MATCH_ETHERTYPE;
+			setPolicerEntryInArgs.policerMatch.etherType = ethType;
+		}
+		setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
+		setPolicerEntryInArgs.threadIdEn = true;
+		setPolicerEntryInArgs.threadId = hLLDRxDma->rxFlowIdx;
+
+		ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerEntryInArgs,
+				&setPolicerEntryOutArgs);
+		ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
+				CPSW_ALE_IOCTL_SET_POLICER, &prms, status);
+		if (status != ENET_SOK) {
+			UB_LOG(UBL_ERROR,"Enet_ioctl failed %d\n", status);
+			return LLDENET_E_IOCTL;
+		}
 	}
 
 	return LLDENET_E_OK;
@@ -815,6 +822,9 @@ static int LLDEnetRecvSubRx(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 	LLDEnetSubRx_t *subRx = &hLLDEnet->hLLDRxDma->subRxTable[hLLDEnet->subRxIndex];
 	LLDEnetPktBuf_t pktBuf;
 
+	if (BufRingIsEmpty(&subRx->bufRing)) {
+		return LLDENET_E_NOAVAIL;
+	}
 	pktBuf.buf = frame->buf;
 	pktBuf.size = frame->size;
 	if (!BufRingPop(&subRx->bufRing, &pktBuf)) {
