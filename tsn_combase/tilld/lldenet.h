@@ -269,6 +269,23 @@ int LLDEnetSetTxNotifyCb(LLDEnet_t *hLLDEnet, void (*txNotifyCb)(void *arg), voi
  */
 int LLDEnetSetRxNotifyCb(LLDEnet_t *hLLDEnet, void (*rxNotifyCb)(void *arg), void *arg);
 
+/**
+ * @brief Close the DMA channels during reset recovery.
+ *
+ * During reset recovery of CPSW, the DMA channels needs to be closed before resetring the CPSW.
+ * This function will not get called in normal flow.
+ *
+ */
+void LLDEnetDmaClose(void);
+
+/**
+ * @brief Open the DMA channels during reset recovery.
+ *
+ * During reset recovery of CPSW, the DMA channels needs to be opened back after resetring the CPSW.
+ * This function will not get called in normal flow.
+ *
+ */
+void LLDEnetDmaOpen(void);
 #endif //LLDENET_H_
 
 /** @}*/

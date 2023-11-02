@@ -86,6 +86,9 @@ struct LLDEnet {
 	Enet_Type enetType;
 };
 
+/* context save and restore related params */
+LLDEnetDma_t *ghLLDma;
+
 static void DmaBufQInit(EnetDma_PktQ *q, void *user, int nPkts, uint32_t pktSize)
 {
 	int i;
@@ -264,6 +267,22 @@ static int FilterVlanDestMac(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr, uint32_t 
 	return 0;
 }
 
+void LLDEnetDmaClose(void)
+{
+    DmaClose(ghLLDma);
+}
+
+void LLDEnetDmaOpen(void)
+{
+	LLDEnet_t *hLLDEnet = ghLLDma->hLLDEnet;
+    uint8_t dstMacAddr[6U] = {0x01, 0x80, 0xC2, 0x00, 0x00, 0x0E};
+
+    DmaOpen(ghLLDma);
+
+    FilterVlanDestMac(hLLDEnet, dstMacAddr, 0);
+}
+
+
 static bool IsMacAddrSet(uint8_t *mac)
 {
 	return ((mac[0]|mac[1]|mac[2]|mac[3]|mac[4]|mac[5]) != 0);
@@ -407,6 +426,11 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 	hLLDEnet->dma.txCbArg = cfg->txCbArg;
 	hLLDEnet->dma.rxCbArg = cfg->rxCbArg;
 
+	/* Save the dma handle for reset recovery.
+	* ToDo: This ideally should not be saved, but currently gptpman_stop() 
+	* implementation is not complete, this change will be removed once that is fixed. */
+	ghLLDma = &hLLDEnet->dma;
+	
 	DmaOpen(&hLLDEnet->dma);
 	if (IsMacAddrSet(cfg->dstMacAddr)) {
 		res = FilterVlanDestMac(hLLDEnet, cfg->dstMacAddr, cfg->vlanId);
