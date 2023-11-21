@@ -63,6 +63,8 @@
  */
 typedef struct LLDEnet LLDEnet_t;
 
+#define MAX_NUM_RX_DMA_CH_PER_INSTANCE 2
+
 /**
  * @brief Configuration structure for LLDEnet.
  */
@@ -114,7 +116,7 @@ typedef struct {
 	 * Number of buffers allocated for receive packets
 	 * Set to 0 to use the default value assigned by the implementation.
 	 */
-	uint32_t nRxPkts;
+	uint32_t nRxPkts[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	/**
 	 * Transmit and receive maximum packet size.
 	 * Set to 0 to use the default value assigned by the implementation.
@@ -129,7 +131,7 @@ typedef struct {
 	 * DMA receive channel ID.
 	 * Set to -1 for dynamic allocation, only supported by Jacinto.
 	 */
-	int dmaRxChId;
+	int dmaRxChId[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	/**
 	 * true: won't use DMA RX; false: will use DMA RX
 	 * This is used when there is no interest in receiving data.
@@ -155,6 +157,14 @@ typedef struct {
 	 * Currently TX DMA channel share is not supported.
 	 */
 	bool dmaRxOwner;
+	/**
+     * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
+     */
+    uint32_t numRxChannels;
+    /**
+     * true: if receive packet timestamp is present in the DmaPktInfo.
+     */
+    bool isRxTsInPkt;
 } LLDEnetCfg_t;
 
 /**
@@ -339,6 +349,14 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *arg);
  * @return LLDENET_E_OK: on success, an error code otherwise.
  */
 int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm);
+
+/**
+ * @brief Checks the receive packet timestamping mode.
+ *
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @return true if isRxTsInPkt is true for the LLDEnet handle.
+ */
+bool LLDEnetIsRxTsInPkt(LLDEnet_t *hLLDEnet);
 #endif //LLDENET_H_
 
 /** @}*/

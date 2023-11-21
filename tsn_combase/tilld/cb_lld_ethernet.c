@@ -94,58 +94,69 @@ static void bufsize_to_num_pkts(uint32_t bufsize, uint32_t *npkts)
 }
 
 static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
-				cb_socket_lldcfg_update_t *update_cfg)
+                cb_socket_lldcfg_update_t *update_cfg)
 {
-	if (s_socket_lldcfg_update_cb == NULL) {
-		return 0;
-	}
-	update_cfg->dev = llrawp->dev;
-	update_cfg->proto = llrawp->proto;
-	update_cfg->vlanid = llrawp->vlanid;
-	update_cfg->dmaTxChId = -1;
-	update_cfg->dmaRxChId = -1;
-	update_cfg->unusedDmaRx = -1;
-	update_cfg->unusedDmaTx = -1;
-	update_cfg->dmaRxShared = -1;
-	update_cfg->dmaRxOwner = -1;
-	if (s_socket_lldcfg_update_cb(update_cfg) < 0) {
-		UB_LOG(UBL_ERROR,"%s:update lldcfg failed\n", __func__);
-		return -1;
-	}
-	if (update_cfg->nTxPkts > 0) {
-		ecfg->nTxPkts = update_cfg->nTxPkts;
-	}
-	if (update_cfg->nRxPkts > 0) {
-		ecfg->nRxPkts = update_cfg->nRxPkts;
-	}
-	if (update_cfg->pktSize > 0) {
-		ecfg->pktSize = update_cfg->pktSize;
-	}
-	if (update_cfg->dmaTxChId >= 0) {
-		ecfg->dmaTxChId = update_cfg->dmaTxChId;
-	}
-	if (update_cfg->dmaRxChId >= 0) {
-		ecfg->dmaRxChId = update_cfg->dmaRxChId;
-	}
-	if (llrawp->proto == ETH_P_NETLINK) {
-		ecfg->unusedDmaRx = true; /* always not use DMA */
-		ecfg->unusedDmaTx = true; /* always not use DMA */
-	} else {
-		if (update_cfg->unusedDmaRx >= 0) {
-			ecfg->unusedDmaRx = (update_cfg->unusedDmaRx > 0) ? true : false;
-		}
-		if (update_cfg->unusedDmaTx >= 0) {
-			ecfg->unusedDmaTx = (update_cfg->unusedDmaTx > 0) ? true : false;
-		}
-		if (update_cfg->dmaRxShared >= 0) {
-			ecfg->dmaRxShared = (update_cfg->dmaRxShared > 0) ? true : false;
-		}
-		if (update_cfg->dmaRxOwner >= 0) {
-			ecfg->dmaRxOwner = (update_cfg->dmaRxOwner > 0) ? true : false;
-		}
-	}
+    if (s_socket_lldcfg_update_cb == NULL) {
+        return 0;
+    }
+    update_cfg->dev = llrawp->dev;
+    update_cfg->proto = llrawp->proto;
+    update_cfg->vlanid = llrawp->vlanid;
+    update_cfg->dmaTxChId = -1;
+    for (uint32_t i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE; i++)
+    {
+        update_cfg->dmaRxChId[i] = -1;
+    }
+    update_cfg->unusedDmaRx = -1;
+    update_cfg->unusedDmaTx = -1;
+    update_cfg->dmaRxShared = -1;
+    update_cfg->dmaRxOwner = -1;
+    update_cfg->numRxChannels = 0;
+    if (s_socket_lldcfg_update_cb(update_cfg) < 0) {
+        UB_LOG(UBL_ERROR,"%s:update lldcfg failed\n", __func__);
+        return -1;
+    }
+    ecfg->isRxTsInPkt = update_cfg->isRxTsInPkt;
+    if (update_cfg->nTxPkts > 0) {
+        ecfg->nTxPkts = update_cfg->nTxPkts;
+    }
+    for (uint32_t i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE; i++)
+    {
+        if (update_cfg->nRxPkts[i] > 0) {
+            ecfg->nRxPkts[i] = update_cfg->nRxPkts[i];
+        }
+        if (update_cfg->dmaRxChId[i] >= 0) {
+            ecfg->dmaRxChId[i] = update_cfg->dmaRxChId[i];
+        }
+    }
+     if (update_cfg->pktSize > 0) {
+            ecfg->pktSize = update_cfg->pktSize;
+        }
+    if (update_cfg->dmaTxChId >= 0) {
+        ecfg->dmaTxChId = update_cfg->dmaTxChId;
+    }
+    if (update_cfg->numRxChannels >= 0) {
+        ecfg->numRxChannels = update_cfg->numRxChannels;
+    }
+    if (llrawp->proto == ETH_P_NETLINK) {
+        ecfg->unusedDmaRx = true; /* always not use DMA */
+        ecfg->unusedDmaTx = true; /* always not use DMA */
+    } else {
+        if (update_cfg->unusedDmaRx >= 0) {
+            ecfg->unusedDmaRx = (update_cfg->unusedDmaRx > 0) ? true : false;
+        }
+        if (update_cfg->unusedDmaTx >= 0) {
+            ecfg->unusedDmaTx = (update_cfg->unusedDmaTx > 0) ? true : false;
+        }
+        if (update_cfg->dmaRxShared >= 0) {
+            ecfg->dmaRxShared = (update_cfg->dmaRxShared > 0) ? true : false;
+        }
+        if (update_cfg->dmaRxOwner >= 0) {
+            ecfg->dmaRxOwner = (update_cfg->dmaRxOwner > 0) ? true : false;
+        }
+    }
 
-	return 0;
+    return 0;
 }
 
 static void cb_update_mac_addr(CB_SOCKET_T sfd,
@@ -245,16 +256,14 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 
 	LLDEnetCfgInit(&ecfg);
 	cb_lld_get_type_instance(&ecfg.enetType, &ecfg.instId);
-	bufsize_to_num_pkts(llrawp->sndbuf, &ecfg.nTxPkts);
-	bufsize_to_num_pkts(llrawp->rcvbuf, &ecfg.nRxPkts);
 	ecfg.ethType = llrawp->proto;
 	ecfg.vlanId = llrawp->vlanid;
 	if (update_enet_cfg(llrawp, &ecfg, &update_cfg) < 0) {
 		goto error;
 	}
-	UB_LOG(UBL_INFO,"%s:dmaTxChId=%d dmaRxChId=%d nTxPkts=%u nRxPkts=%u pktSize=%u\n",
-		   __func__, ecfg.dmaTxChId, ecfg.dmaRxChId,
-		   ecfg.nTxPkts, ecfg.nRxPkts, ecfg.pktSize);
+	UB_LOG(UBL_INFO,"%s:dmaTxChId=%d numRxChannels=%d dmaRxChId=%d nTxPkts=%u nRxPkts=%u pktSize=%u\n",
+	           __func__, ecfg.dmaTxChId, ecfg.numRxChannels, ecfg.dmaRxChId[0],
+	           ecfg.nTxPkts, ecfg.nRxPkts[0], ecfg.pktSize);
 
 	sock->lldenet = LLDEnetOpen(&ecfg);
 	if (sock->lldenet == NULL) {
@@ -648,4 +657,10 @@ int cb_socket_set_lldcfg_update_cb(cb_socket_lldcfg_update_cb_t lldcfg_update_cb
 	}
 	s_socket_lldcfg_update_cb = lldcfg_update_cb;
 	return 0;
+}
+
+bool cb_lld_is_rxts_inbuff(CB_SOCKET_T sfd)
+{
+    return LLDEnetIsRxTsInPkt(sfd->lldenet);
+
 }

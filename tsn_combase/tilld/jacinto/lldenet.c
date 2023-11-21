@@ -669,3 +669,8 @@ int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void
 {
 	return LLDENET_E_UNSUPPORT;
 }
+
+bool LLDEnetIsRxTsInPkt(LLDEnet_t *hLLDEnet)
+{
+    return false;
+}

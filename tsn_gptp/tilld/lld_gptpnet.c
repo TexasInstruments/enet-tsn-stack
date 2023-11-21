@@ -77,7 +77,8 @@ typedef struct {
 
 typedef struct {
 	CB_ETHHDR_T ehd;
-	uint8_t pdata[GPTP_MAX_PACKET_SIZE];
+	/* Might need to store the 64 bit rx timestamp at the end of the pkt */
+	uint8_t pdata[GPTP_MAX_PACKET_SIZE + 8U];
 } __attribute__((packed)) ptpkt_t;
 
 typedef struct netdevice {
@@ -101,6 +102,7 @@ struct gptpnet_data {
 	ptpkt_t rxbuf;
 	CB_SOCKET_T lldsock;
 	uint8_t gptpInstanceIndex;
+	bool is_rxts_inbuff;
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -167,6 +169,7 @@ static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet,
 		if(cb_rawsock_open(&llrawp, &gpnet->lldsock, NULL, NULL, srcmac) < 0) {
 			return -1;
 		}
+		gpnet->is_rxts_inbuff = cb_lld_is_rxts_inbuff(gpnet->lldsock);
 		cb_lld_set_txnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 		cb_lld_set_rxnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 
@@ -442,13 +445,22 @@ static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf, int size, int ma
 	edtrecv.msgtype = PTP_HEAD_MSGTYPE(buf+ETH_HLEN);
 	seqid = PTP_HEAD_SEQID(buf+ETH_HLEN);
 	if (edtrecv.msgtype < 8) {
-		res = LLDTSyncGetRxTime(gpnet->lldtsync, macport, edtrecv.msgtype,
-								seqid, edtrecv.domain, (uint64_t *)&edtrecv.ts64);
-		if (res != LLDENET_E_OK) {
-			UB_LOG(UBL_ERROR,"%s:macport=%d, no RxTs msgtype=%s\n",
-				   __func__, macport, PTPMsgType_debug[edtrecv.msgtype]);
-			return -1;
-		}
+        if(gpnet->is_rxts_inbuff)
+        {
+            /* If rxts is present in pkt,
+             * 8 bytes after the pkt are the timestamp */
+            memcpy(&edtrecv.ts64, &(buf[size]), 8U);
+        }
+        else
+        {
+            res = LLDTSyncGetRxTime(gpnet->lldtsync, macport, edtrecv.msgtype,
+                                    seqid, edtrecv.domain, (uint64_t *)&edtrecv.ts64);
+            if (res != LLDENET_E_OK) {
+                UB_LOG(UBL_ERROR,"%s:macport=%d, no RxTs msgtype=%s\n",
+                       __func__, macport, PTPMsgType_debug[edtrecv.msgtype]);
+                return -1;
+            }
+        }
 	}
 	ndev_index = macport_to_ndev_index(gpnet, macport);
 	if (ndev_index < 0) {

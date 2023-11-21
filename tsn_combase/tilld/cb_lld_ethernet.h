@@ -207,7 +207,7 @@ typedef struct {
 	 * Number of buffers allocated for receive packets
      * Positive value will be updated to LLDEnetCfg_t.
      */
-	uint32_t nRxPkts;
+	uint32_t nRxPkts[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	/**
 	 * Transmit and receive maximum packet size.
      * Positive value will be updated to LLDEnetCfg_t.
@@ -222,7 +222,7 @@ typedef struct {
 	 * DMA receive channel ID.
 	 * 0 or positive value will be updated to LLDEnetCfg_t
 	 */
-	int dmaRxChId;
+	int dmaRxChId[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	/**
 	 * >0: won't use DMA RX; 0: will use DMA RX
 	 * 0 or positive value will be updated to LLDEnetCfg_t
@@ -255,6 +255,14 @@ typedef struct {
 	 * Default RX data callback arg
 	 */
 	void *rxDefaultCbArg;
+    /**
+     * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
+     */
+    uint32_t numRxChannels;
+    /**
+     * true: if receive packet timestamp is present in the DmaPktInfo.
+     */
+    bool isRxTsInPkt;
 } cb_socket_lldcfg_update_t;
 
 /**
@@ -393,6 +401,13 @@ int cb_lld_get_link_state(CB_SOCKET_T cfd, const char *dev, uint32_t *linkstate)
  * @return 0 on success, -1 on error
  */
 int cb_lld_get_link_info(CB_SOCKET_T cfd, const char *dev, uint32_t *speed, uint32_t *duplex);
+
+/**
+ * @brief Checks the receive packet timestamping mode.
+ * @param sfd socket fd
+ * @return true if receive time stamp is present in the packet buffer.
+ */
+bool cb_lld_is_rxts_inbuff(CB_SOCKET_T sfd);
 
 #ifdef __cplusplus
 }
