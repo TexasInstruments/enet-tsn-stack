@@ -106,7 +106,7 @@ static void monitor_agedout_neigbor(hw_interface* hw_if)
 			remote_systems_data_t* r = (remote_systems_data_t*)tmp_node;
 			if (r->rx_ttl < now_in_milisec)
 			{
-				LLDP_LOG(UBL_INFO, "Aged out for %s key (%d,%u) due to (%u < %u). rxttl(%u)\n", r->port_desc, r->remote_index, r->time_mark, r->rx_ttl, now_in_milisec, r->original_rxttl);
+				UB_LOG(UBL_INFO, "Aged out for %s key (%d,%u) due to (%u < %u). rxttl(%u)\n", r->port_desc, r->remote_index, r->time_mark, r->rx_ttl, now_in_milisec, r->original_rxttl);
 				found_aged_out = true;
 				r->need_deleted = true;
 				break;
@@ -124,13 +124,13 @@ static void monitor_agedout_neigbor(hw_interface* hw_if)
 
 static void timer_expired_cb(cb_xtimer_t *which_timer, void* arg)
 {
-	// LLDP_LOG(UBL_INFO, "%s: %p expired\n", __func__, which_timer);
+	// UB_LOG(UBL_INFO, "%s: %p expired\n", __func__, which_timer);
 	hw_interface* hw_if = (hw_interface*)arg;
 	if (hw_if)
 	{
 		if (which_timer == hw_if->txtimer)
 		{
-			LLDP_LOG(UBL_DEBUG, "%s: %s txtimer expired\n", __func__, hw_if->cfg_port->name);
+			UB_LOG(UBL_DEBUG, "%s: %s txtimer expired\n", __func__, hw_if->cfg_port->name);
 			if (hw_if->curr_txtimer_state == TX_TIMER_IDLE)
 			{
 				PUSH_TXTIMER_EVENT(TXTIMER_TX_EXPIRED, hw_if);
@@ -138,17 +138,17 @@ static void timer_expired_cb(cb_xtimer_t *which_timer, void* arg)
 		}
 		else if (which_timer == hw_if->txtick_timer)
 		{
-			// LLDP_LOG(UBL_INFO, "%s: %s txtick_timer expired\n", __func__, hw_if->cfg_port->name);
+			// UB_LOG(UBL_INFO, "%s: %s txtick_timer expired\n", __func__, hw_if->cfg_port->name);
 			PUSH_TXTIMER_EVENT(TXTIMER_TXTICK_EXPIRED, hw_if);
 		}
 		else if (which_timer == hw_if->tx_shutdown_while_timer)
 		{
-			LLDP_LOG(UBL_INFO, "%s: %s shutdown while timer expired\n", __func__, hw_if->cfg_port->name);
+			UB_LOG(UBL_INFO, "%s: %s shutdown while timer expired\n", __func__, hw_if->cfg_port->name);
 			PUSH_TX_EVENT(TX_SHUTDOWN_WHILE_EXPIRED, hw_if);
 			
 			if (hw_if->cfg_port->admin_status == tx_and_rx || hw_if->cfg_port->admin_status == tx_only)
 			{
-				LLDP_LOG(UBL_INFO, "%s: %s TX is enabled before shutdown while expired. Need to start again now\n", __func__, hw_if->cfg_port->name);
+				UB_LOG(UBL_INFO, "%s: %s TX is enabled before shutdown while expired. Need to start again now\n", __func__, hw_if->cfg_port->name);
 				PUSH_TX_EVENT(TX_ENABLED, hw_if);
 				PUSH_TXTIMER_EVENT(TXTIMER_TX_ENABLE, hw_if);
 			}
@@ -161,7 +161,7 @@ static void timer_expired_cb(cb_xtimer_t *which_timer, void* arg)
 #endif
 		else if (which_timer == hw_if->too_many_neighbors_timer)
 		{
-			LLDP_LOG(UBL_WARN, "%s: %s tooManyNeighbors expired\n", __func__, hw_if->cfg_port->name);
+			UB_LOG(UBL_WARN, "%s: %s tooManyNeighbors expired\n", __func__, hw_if->cfg_port->name);
 			hw_if->agent_info.tooManyNeighbors = false;
 		}
 	}
@@ -169,8 +169,6 @@ static void timer_expired_cb(cb_xtimer_t *which_timer, void* arg)
 
 static void init_default_hw_interface(hw_interface* hw_if)
 {
-	hw_if->lldpsock.mtu = 0;
-	hw_if->lldpsock.recv_len = MAX_LLDP_SIZE;
 	// Default state machines state
 	hw_if->curr_rx_state = LLDP_WAIT_PORT_OPERATIONAL;
 	hw_if->curr_tx_state = TX_LLDP_INITIALIZE;
@@ -192,7 +190,7 @@ static void init_default_hw_interface(hw_interface* hw_if)
 	hw_if->agent_info.txNow = false;
 	hw_if->agent_info.txFast = 0;
 	hw_if->agent_info.newNeighbor = false;
-	hw_if->agent_info.txCredit = hw_if->yang_lldp_cfg->tx_credit_max;
+	hw_if->agent_info.txCredit = hw_if->cfg_port->tx_credit_max;
 }
 
 #ifndef USE_AGEDOUT_MONITOR
@@ -213,12 +211,12 @@ int lldp_start_tx_ttr_timer(hw_interface* interface)
 	int ret = cb_xtimer_start(interface->txtimer, interface->agent_info.txTTR * 1000000);
 	if (ret != 0)
 	{
-		LLDP_LOG(UBL_ERROR, "%s: Cannot start txttrtimer timer %s ret %d\n",__func__, interface->if_name, ret);
+		UB_LOG(UBL_ERROR, "%s: Cannot start txttrtimer timer %s ret %d\n",__func__, interface->if_name, ret);
 	}
 	else
 	{
-		LLDP_LOG(UBL_DEBUG, "%s:%s: txttrtimer %d s\n",__func__, interface->if_name, interface->agent_info.txTTR);
-		LLDP_LOG(UBL_INFO, "%s: Next TX cycle %d s\n", interface->if_name, interface->agent_info.txTTR);
+		UB_LOG(UBL_DEBUG, "%s:%s: txttrtimer %d s\n",__func__, interface->if_name, interface->agent_info.txTTR);
+		UB_LOG(UBL_INFO, "%s: Next TX cycle %d s\n", interface->if_name, interface->agent_info.txTTR);
 	}
 
 	return ret;
@@ -251,11 +249,11 @@ int lldp_start_txticktimer(hw_interface* hw_if)
 	ret = cb_xtimer_start(hw_if->txtick_timer, 1 * 1000000); // 1 tick is 1s
 	if (ret != 0)
 	{
-		LLDP_LOG(UBL_ERROR, "%s: Cannot start txtick timer %s ret %d\n",__func__, hw_if->if_name, ret);
+		UB_LOG(UBL_ERROR, "%s: Cannot start txtick timer %s ret %d\n",__func__, hw_if->if_name, ret);
 	}
 	else
 	{
-		LLDP_LOG(UBL_INFO, "%s:%s: started txtick timer\n",__func__, hw_if->if_name);
+		UB_LOG(UBL_INFO, "%s:%s: started txtick timer\n",__func__, hw_if->if_name);
 	}
 
 	return ret;
@@ -272,11 +270,11 @@ int lldp_start_shutdown_while_timer(hw_interface* hw_if)
 	ret = cb_xtimer_start(hw_if->tx_shutdown_while_timer, hw_if->yang_lldp_cfg->reinit_delay * 1000000); // default: 2s
 	if (ret != 0)
 	{
-		LLDP_LOG(UBL_ERROR, "%s: Cannot start shutdown while timer %s ret %d\n",__func__, hw_if->if_name, ret);
+		UB_LOG(UBL_ERROR, "%s: Cannot start shutdown while timer %s ret %d\n",__func__, hw_if->if_name, ret);
 	}
 	else
 	{
-		LLDP_LOG(UBL_INFO, "%s:%s: started shutdown while timer\n",__func__, hw_if->if_name);
+		UB_LOG(UBL_INFO, "%s:%s: started shutdown while timer\n",__func__, hw_if->if_name);
 	}
 	return ret;
 }
@@ -289,11 +287,11 @@ int lldp_start_too_many_neighbors_timer(hw_interface* interface, int rxTTL)
 		ret = cb_xtimer_start(interface->too_many_neighbors_timer, rxTTL * 1000000); // if 1st time: use rxTTL
 		if (ret != 0)
 		{
-			LLDP_LOG(UBL_ERROR, "%s: Cannot start shutdown while timer %s ret %d\n",__func__, interface->if_name, ret);
+			UB_LOG(UBL_ERROR, "%s: Cannot start shutdown while timer %s ret %d\n",__func__, interface->if_name, ret);
 		}
 		else
 		{
-			LLDP_LOG(UBL_INFO, "%s:%s: started shutdown while timer\n",__func__, interface->if_name);
+			UB_LOG(UBL_INFO, "%s:%s: started shutdown while timer\n",__func__, interface->if_name);
 		}
 	}
 	else
@@ -306,11 +304,11 @@ int lldp_start_too_many_neighbors_timer(hw_interface* interface, int rxTTL)
 		ret = cb_xtimer_start(interface->too_many_neighbors_timer, new_timer_duration * 1000000);
 		if (ret != 0)
 		{
-			LLDP_LOG(UBL_ERROR, "%s: Cannot start shutdown while timer %s ret %d\n",__func__, interface->if_name, ret);
+			UB_LOG(UBL_ERROR, "%s: Cannot start shutdown while timer %s ret %d\n",__func__, interface->if_name, ret);
 		}
 		else
 		{
-			LLDP_LOG(UBL_INFO, "%s:%s: started shutdown while timer\n",__func__, interface->if_name);
+			UB_LOG(UBL_INFO, "%s:%s: started shutdown while timer\n",__func__, interface->if_name);
 		}
 	}
 
@@ -335,7 +333,7 @@ int lldp_stop_rx_agedout_mon_timer(hw_interface* interface)
 
 static void on_link_state_up(hw_interface* interface)
 {
-	LLDP_LOG(UBL_INFO, "%s:%s\n", __func__, interface->cfg_port->name);
+	UB_LOG(UBL_INFO, "%s:%s\n", __func__, interface->cfg_port->name);
 	PUSH_RX_EVENT(PORT_ENABLE, interface);
 
 	admin_status_t admin_status = interface->cfg_port->admin_status;
@@ -356,13 +354,13 @@ static void on_link_state_up(hw_interface* interface)
 	}
 	else // disabled
 	{
-		LLDP_LOG(UBL_INFO, "%s: txrx disabled for %s %d\n", __func__, interface->cfg_port->name, admin_status);
+		UB_LOG(UBL_INFO, "%s: txrx disabled for %s %d\n", __func__, interface->cfg_port->name, admin_status);
 	}
 }
 
 static void on_link_state_down(hw_interface* interface)
 {
-	LLDP_LOG(UBL_INFO, "%s:%s\n", __func__, interface->cfg_port->name);
+	UB_LOG(UBL_INFO, "%s:%s\n", __func__, interface->cfg_port->name);
 	PUSH_RX_EVENT(RX_PORT_DISABLE, interface);
 	PUSH_TX_EVENT(TX_PORT_DISABLE, interface);
 	PUSH_TXTIMER_EVENT(TXTIMER_PORT_DISABLE, interface);
@@ -377,7 +375,7 @@ static void poll_link_state(hw_interface_list* hw_if_list)
 		uint8_t link_state = ietf_get_oper_status(interface->if_name);
 		if (link_state != interface->actual_link_state)
 		{
-			LLDP_LOG(UBL_INFO, "%s:%s Detected Link State changed from %d -> %d\n",__func__, interface->if_name, interface->actual_link_state, link_state);
+			UB_LOG(UBL_INFO, "%s:%s Detected Link State changed from %d -> %d\n",__func__, interface->if_name, interface->actual_link_state, link_state);
 			if (interface->actual_link_state != 1 && link_state == 1)
 			{
 				// recorrect Port ID in case of Port ID subtype is MAC
@@ -407,7 +405,7 @@ int lldpd_start_process(hw_interface_list* hw_if_list, uint8_t* terminate)
 		int remain_tout = cb_xtimer_man_schedule(txtimer_man);
 		if (remain_tout == -1)
 		{
-			LLDP_LOG(UBL_ERROR, "%s: cb_xtimer_man_schedule ERROR\n",__func__);
+			UB_LOG(UBL_ERROR, "%s: cb_xtimer_man_schedule ERROR\n",__func__);
 			break;
 		}
 		else if (remain_tout == -2) // No running timer
@@ -423,13 +421,13 @@ int lldpd_start_process(hw_interface_list* hw_if_list, uint8_t* terminate)
 
 		if (res == -1)
 		{
-			LLDP_LOG(UBL_ERROR, "%s: Receive packet error\n",__func__);
+			UB_LOG(UBL_ERROR, "%s: Receive packet error\n",__func__);
 			break;
 		}
 	}
 
 	// Once complete, we need to send shutdown
-	LLDP_LOG(UBL_INFO, "%s Got terminate signal. Broadcast shutdown to all interfaces \n", __func__);
+	UB_LOG(UBL_INFO, "%s Got terminate signal. Broadcast shutdown to all interfaces \n", __func__);
 	for(UB_LIST_FOREACH_ITER(hw_if_list, tmp_node))
 	{
 		hw_interface *interface = (hw_interface *)tmp_node;
@@ -444,7 +442,7 @@ void init_timer_manager()
 {
 	txtimer_man = cb_xtimer_man_create();
 	if (txtimer_man == NULL)
-		LLDP_LOG(UBL_ERROR, "%s: Failure\n", __func__);
+		UB_LOG(UBL_ERROR, "%s: Failure\n", __func__);
 
 	db_mon_timer = cb_xtimer_create (txtimer_man, db_mon_timer_expired_cb, NULL); // global timer, no need any arg
 	cb_xtimer_set_periodic(db_mon_timer);
@@ -470,8 +468,8 @@ void init_local_interfaces(hw_interface_list* hw_if_list, yang_lldp_t* yang_lldp
 			hw_if->yang_lldp_cfg = yang_lldp_cfg;
 			init_default_hw_interface(hw_if);
 
-			hw_if->agent_info.txFast = yang_lldp_cfg->message_fast_tx ;
-			hw_if->agent_info.txCredit = yang_lldp_cfg->tx_credit_max;
+			hw_if->agent_info.txFast = port->message_fast_tx ;
+			hw_if->agent_info.txCredit = port->tx_credit_max;
 
 			#ifdef USE_AGEDOUT_MONITOR
 			lldp_start_rx_agedout_mon_timer(hw_if); // The rx aged out mon can also run on WAIT FOR FUNCTIONNAL state
@@ -481,27 +479,19 @@ void init_local_interfaces(hw_interface_list* hw_if_list, yang_lldp_t* yang_lldp
 		}
 		else
 		{
-			LLDP_LOG(UBL_INFO, "%s invalid port name %s \n", __func__, port->name);
+			UB_LOG(UBL_INFO, "%s invalid port name %s \n", __func__, port->name);
 		}
 	}
 }
 
 int init_raw_sock(hw_interface_list* hw_if_list)
 {
-	int ret=-1;
+	int ret=0;
 	struct ub_list_node *tmp_node;
 	for(UB_LIST_FOREACH_ITER(hw_if_list, tmp_node))
 	{
 		hw_interface *interface = (hw_interface *)tmp_node;
-		ret = lldp_raw_socket_open(interface);
-		if (ret == 0)
-		{
-			LLDP_LOG(UBL_INFO, "Open raw socket OK %s\n", interface->if_name);
-		}
-		else
-		{
-			LLDP_LOG(UBL_INFO, "Open raw socket NG %s\n", interface->if_name);
-		}
+		assign_raw_socket_to_port(interface);
 	}
 	return ret;
 }
@@ -548,7 +538,7 @@ void on_local_changed_on_port(const char* if_name, ub_macaddr_t dest_mac)
 
 		if (strcmp(if_name, hw_if->cfg_port->name) == 0 && memcmp(dest_mac, hw_if->cfg_port->dest_mac_address, 6) == 0)
 		{
-			LLDP_LOG(UBL_INFO,"%s:[%s]\n", __func__, hw_if->if_name);
+			UB_LOG(UBL_INFO,"%s:[%s-]"UB_PRIhexB6"\n", __func__, hw_if->if_name, UB_ARRAY_B6(dest_mac));
 			PUSH_TXTIMER_EVENT(TXTIMER_LOCAL_CHANGED, hw_if);
 		}
 	}
@@ -574,10 +564,10 @@ void on_new_neighbor(hw_interface_list* hw_if_list, char* if_name)
 	for(UB_LIST_FOREACH_ITER(hw_if_list, tmp_node))
 	{
 		hw_interface *hw_if = (hw_interface *)tmp_node;
-		LLDP_LOG(UBL_WARN,"%s: compare [%s] -[%s]\n", __func__, if_name, hw_if->if_name);
+		UB_LOG(UBL_WARN,"%s: compare [%s] -[%s]\n", __func__, if_name, hw_if->if_name);
 		if (strcmp(hw_if->if_name, if_name) == 0)
 		{
-			LLDP_LOG(UBL_WARN,"%s: found %s \n", __func__, if_name);
+			UB_LOG(UBL_WARN,"%s: found %s \n", __func__, if_name);
 			
 			PUSH_TXTIMER_EVENT(TXTIMER_NEW_NEIGHBOR, hw_if);
 
@@ -587,7 +577,7 @@ void on_new_neighbor(hw_interface_list* hw_if_list, char* if_name)
 	}
 
 	if (!is_found)
-		LLDP_LOG(UBL_WARN,"%s: Not found [%s] in config\n", __func__, if_name);
+		UB_LOG(UBL_WARN,"%s: Not found [%s] in config\n", __func__, if_name);
 }
 
 void on_port_adminstatus_changed(const char* if_name, ub_macaddr_t dest_mac, admin_status_t admin_status)
@@ -601,7 +591,7 @@ void on_port_adminstatus_changed(const char* if_name, ub_macaddr_t dest_mac, adm
 		{
 			if (admin_status != hw_if->cfg_port->admin_status)
 			{
-				LLDP_LOG(UBL_WARN,"%s: Port %s admin status changed from %d -> %d \n", __func__, if_name, hw_if->cfg_port->admin_status, admin_status);
+				UB_LOG(UBL_WARN,"%s: Port %s admin status changed from %d -> %d \n", __func__, if_name, hw_if->cfg_port->admin_status, admin_status);
 				switch (admin_status)
 				{
 					case tx_only:
@@ -614,7 +604,7 @@ void on_port_adminstatus_changed(const char* if_name, ub_macaddr_t dest_mac, adm
 							}
 							else
 							{
-								LLDP_LOG(UBL_WARN,"%s: shutdown is in progress\n", __func__);
+								UB_LOG(UBL_WARN,"%s: shutdown is in progress\n", __func__);
 							}
 						}
 						if (hw_if->cfg_port->admin_status == rx_only || hw_if->cfg_port->admin_status == tx_and_rx)
@@ -656,7 +646,7 @@ void on_port_adminstatus_changed(const char* if_name, ub_macaddr_t dest_mac, adm
 							}
 							else
 							{
-								LLDP_LOG(UBL_WARN,"%s: shutdown is in progress\n", __func__);
+								UB_LOG(UBL_WARN,"%s: shutdown is in progress\n", __func__);
 							}
 						}
 						

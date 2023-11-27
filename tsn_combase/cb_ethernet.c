@@ -218,7 +218,7 @@ int cb_set_promiscuous_mode(CB_SOCKET_T sfd, const char *dev, bool enable)
 static int ifrqd_ioctr(CB_SOCKET_T sfd, const char *dev, CB_IFREQ_T *ifrqd, uint32_t iocreq)
 {
 	int fd=sfd;
-	if (fd==-1){
+	if (fd==CB_SOCKET_INVALID_VALUE){
 		/* open a udp socket to get it */
 		fd = CB_SOCKET(AF_INET,SOCK_DGRAM,0);
 		if (!CB_SOCKET_VALID(fd)){

@@ -104,7 +104,7 @@ typedef struct _hw_interface
 	char if_name[CB_MAX_NETDEVNAME];         //!< Interface name eth0,enpxs0,.... if_name is copied from yang-lldp
 	uint8_t actual_link_state;               //!< 1: up 2: down
 
-	lldp_socket_t lldpsock;					 //!< Corresponding raw socket
+	lldp_socket_t* lldpsock;					 //!< Corresponding raw socket
 
 	// State machine processing
 	RXState curr_rx_state;                  //!< Current state of RX state machine

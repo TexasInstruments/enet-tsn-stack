@@ -58,7 +58,6 @@
 #define XL4LLDP_LLDP_ULTIL_H_
 #include <tsn_unibase/unibase.h>
 #include <tsn_uniconf/yangs/ieee802-dot1ab-lldp_access.h>
-#include <stdarg.h>
 
 #define UB_LOGTSTYPE UB_CLOCK_REALTIME
 
@@ -118,6 +117,4 @@ void split_str_into_arr(char* buf, char* delim, char** out, int expected_no);
 /// @param smac 
 /// @param delim 
 char *lldp_bmac2smac(ub_macaddr_t bmac, char *smac, const char delim);
-
-void LLDP_LOG(ub_dbgmsg_level_t level, const char* fmt, ...);
 #endif

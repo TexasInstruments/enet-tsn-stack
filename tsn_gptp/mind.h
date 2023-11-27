@@ -207,7 +207,7 @@ typedef struct PortPerfMonSignalingDataRecord {
 // As per the standard each Data Record should have their own index and PMTime,
 // for simplicity, we operate on per port where each per port data record shares
 // the same index and same PMTime.
-// Moreover, gptp2 keeps the current data record only (index=0). Historical data
+// Moreover, tsn_gptp keeps the current data record only (index=0). Historical data
 // are not kept in application, they should be stored in database (e.g. uniconf)
 // instead.
 typedef struct PerfMonPortDS {

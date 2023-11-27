@@ -151,7 +151,7 @@ struct gptpman_data {
 	gptpnet_data_t *gpnetd;
 	int max_ports;
 	int max_domains;
-	uint8_t gptpInstanceIndex; // index number when multiple gptp2d runs, normally 0
+	uint8_t gptpInstanceIndex; // index number when multiple tsn_gptpd runs, normally 0
 };
 
 #endif

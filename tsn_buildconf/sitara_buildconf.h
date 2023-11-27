@@ -56,6 +56,8 @@
 #define UB_SD_STATIC
 #define UC_RUNCONF
 #define UB_ESARRAY_DFNUM 256
+#define CB_NOIPCSHMEM_DFSIZE 32
+#define CB_LLDSEM_INSTNUM 15
 #define DISABLE_FAT_FS
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
 #define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
@@ -63,15 +65,24 @@
 #define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
 #define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
 
+/* Disable the DEBUG and DEBUGV log level at the compilation time */
+#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+
+/* Interval timeout in nanoseconds used to generate timers in GPTP. Supported
+ * values are 125, 62.5, 31.25, 15.625 and 7.8125 milliseconds. */
+//#define GPTPNET_INTERVAL_TIMEOUT_NSEC 15625000u
+
 /* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
 #define GPTP_MAX_PORTS 2
-#define GPTP_MAX_DOMAINS 2
-
-/* CB no shared mem size */
-#define CB_NOIPCSHMEM_DFSIZE 32
+#define GPTP_MAX_DOMAINS 1
+#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
 
 /*LLDP Definition*/
-#define LLDP_CFG_PORT_INSTNUM 2
+// Each port can have 3 LLDP agents
+// Nearest bridge agent. Dest MAC 0x0180-C200-000E
+// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000
+// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
+#define LLDP_CFG_PORT_INSTNUM (2 * 3)
 
 // The information below apply  for max length of
 // - Local Chassis ID,

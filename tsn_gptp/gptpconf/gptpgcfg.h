@@ -160,7 +160,7 @@ int gptpgcfg_set_item(uint8_t gptpInstanceIndex, uint8_t confitem,
 		      bool status, void *value, uint32_t vsize);
 
 /**
- * @brief wait until gptp2d sets port0 PORT_STATE
+ * @brief wait until tsn_gptpd sets port0 PORT_STATE
  * @param ydbia Yang db item access pointer
  * @param gptpInstance Index of the gptp instance to be configured
  * @param tout_ms Time to wait in ms

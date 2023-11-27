@@ -131,16 +131,12 @@ static void *send_sync_indication_proc(clock_master_sync_send_data_t *sm, uint64
 {
 	UB_LOG(UBL_DEBUGV, "clock_master_sync_send:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	SYNC_SEND_TIME.nsec = cts64 + sm->ptasg->clockMasterSyncInterval.nsec;
-	// align time in 25msec
-	SYNC_SEND_TIME.nsec = ((SYNC_SEND_TIME.nsec + 12500000u)/25000000u)*25000000u;
 	return setPSSyncCMSS(sm);
 }
 
 static clock_master_sync_send_state_t send_sync_indication_condition(
 	clock_master_sync_send_data_t *sm, uint64_t cts64)
 {
-	// align time in 25msec
-	cts64 = ((cts64 + 12500000)/25000000)*25000000;
 	if(cts64 >= SYNC_SEND_TIME.nsec){
 		sm->last_state = REACTION;
 	}

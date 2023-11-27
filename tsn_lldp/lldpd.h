@@ -53,7 +53,8 @@
 #ifndef XL4LLDP_H_
 #define XL4LLDP_H_
 #include <stdint.h>
-
+#include <tsn_unibase/unibase.h>
+#include <tsn_combase/cb_ethernet.h>
 /// @brief The function should be called init, to indicate which uniconf-access mode we should use
 /// @param mode 
 void lldpd_uniconf_access_mode(uint8_t mode);
@@ -61,8 +62,10 @@ void lldpd_uniconf_access_mode(uint8_t mode);
 /// @brief Init LLDPD with db file and VLAN
 /// @param lldp_db_name DB file
 /// @param vlanid VLAN ID (Not used yet)
+/// @param netdevs List of network interface name tilld0, tilld1, enp2s0, ..
+/// @param ndev_size Size of netdevs list
 /// @return status
-int lldpd_init(const char* lldp_db_name, int* vlanid);
+int lldpd_init(const char* lldp_db_name, int* vlanid, netdevname_t *netdevs, int ndev_size);
 
 /// @brief Start LLDPD
 /// @param terminated 

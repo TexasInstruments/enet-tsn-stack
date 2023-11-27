@@ -78,8 +78,6 @@ typedef enum {
 
 static bool isPdelayIntervalTimerExpired(md_pdelay_req_data_t *sm, uint64_t cts64)
 {
-	// align time in 25msec
-	cts64 = ((cts64 + 12500000)/25000000)*25000000;
 	return ((cts64 - sm->thisSM->pdelayIntervalTimer.nsec) >=
 			sm->mdeg->forAllDomain->pdelayReqInterval.nsec);
 }
@@ -370,8 +368,7 @@ static int send_pdelay_req_proc(md_pdelay_req_data_t *sm, uint64_t cts64)
 		sm->mock_txts64=gptpclock_getts64(GPTPINSTNUM, sm->ptasg->thisClockIndex,0);
 	}
 	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayReqTx);
-	// align time in 25msec
-	sm->thisSM->pdelayIntervalTimer.nsec = ((cts64 + 12500000)/25000000)*25000000;;
+	sm->thisSM->pdelayIntervalTimer.nsec = cts64;
 	return 0;
 }
 

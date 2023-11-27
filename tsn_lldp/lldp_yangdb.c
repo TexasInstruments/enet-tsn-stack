@@ -183,9 +183,8 @@ static void update_rs_data_2nd_level(lldp_port_t* port, remote_systems_data_t* n
 static void delete_rs_data_1st_level(lldp_port_t* port, remote_systems_data_t* existed_rs_data, ieee802_dot1ab_lldp_enum_t k);
 static void delete_rs_data_2nd_level(lldp_port_t* port, remote_systems_data_t* existed_rs_data, ieee802_dot1ab_lldp_enum_t k1, ieee802_dot1ab_lldp_enum_t k2);
 static void update_port_statistic(lldp_port_t* port, uint8_t tx_or_rx_key, ieee802_dot1ab_lldp_enum_t k);
-static void on_port_db_change(monitor_item_t* found_updated_item);
-static void on_local_system_change(monitor_item_t* found_updated_item);
-static lldp_port_t* find_port_by_name(yang_lldp_t* lldp, const char * if_name);
+static void on_port_db_change();
+static void on_local_system_change();
 
 static int deregister_notice(uc_dbald *dbald, uc_notice_data_t *ucntd);
 static void clear_cb(struct ub_list_node *node, void *arg);
@@ -228,166 +227,196 @@ static void update_port_mgmt_addr_tx(lldp_port_t* existed_port, lldp_port_t* upd
 
 /// @brief Handle port DB change
 /// @param found_updated_item 
-static void on_port_db_change(monitor_item_t* found_updated_item)
+static void on_port_db_change()
 {
-	void* value = NULL;
-	bool status = (found_updated_item->keys[0] == IEEE802_DOT1AB_LLDP_RO) ? YDBI_STATUS : YDBI_CONFIG;
-	int vsize=YDBI_GET_ITEM(abk1vk0,
-							value,
-							found_updated_item->keys[2],
-							status);
-	ydbi_get_item_release(ydbi_access_handle(), YDBI_REL_LOCK);
+	yang_lldp_t tmp_lldp_cfg;
+	memset(&tmp_lldp_cfg, 0, sizeof(yang_lldp_t));
+	ub_list_init(&tmp_lldp_cfg.ports);
 
-	if (vsize > 0 && value != NULL)
+	int ret = ydbi_load_lldp_db(ydbi_access_handle(), &tmp_lldp_cfg);
+	if (ret == 0)
 	{
-		yang_lldp_t tmp_lldp_cfg;
-		memset(&tmp_lldp_cfg, 0, sizeof(yang_lldp_t));
-		ub_list_init(&tmp_lldp_cfg.ports);
-
-		int ret = ydbi_load_lldp_db(ydbi_access_handle(), &tmp_lldp_cfg);
-		if (ret == 0)
+		struct ub_list_node* tmp_node;
+		for(UB_LIST_FOREACH_ITER(&tmp_lldp_cfg.ports, tmp_node))
 		{
-			lldp_port_t* existed_port = find_port_by_name(g_yang_lldp, (char*) value);
-			if (existed_port)
+			lldp_port_t* updated_port = (lldp_port_t*)tmp_node;
+
+			// Compare each pair of updated port and existed one
+			lldp_port_t* existed_port = get_existed_port(g_yang_lldp, updated_port->name, updated_port->dest_mac_address);
+			if (existed_port == NULL)
 			{
-				LLDP_LOG(UBL_INFO, "%s: Got update on port (%s) \n", __func__, (char*) value);
-				lldp_port_t* updated_port = find_port_by_name(&tmp_lldp_cfg, (char*) value);
-				if (updated_port)
-				{
-					// Consider admin-status changed
-					if (updated_port->admin_status != existed_port->admin_status)
-					{
-						LLDP_LOG(UBL_INFO, "%s:%s Detect admin status changed %d->%d\n", __func__,  (char*) value , existed_port->admin_status, updated_port->admin_status);
-						on_port_adminstatus_changed(updated_port->name, updated_port->dest_mac_address, updated_port->admin_status);
-					}
-					else
-					{
-						LLDP_LOG(UBL_INFO, "%s:%s scanned tlvs_tx_enable: %x -> %x\n", __func__, updated_port->name,  existed_port->tlvs_tx_enable, updated_port->tlvs_tx_enable);
-						existed_port->tlvs_tx_enable = updated_port->tlvs_tx_enable;
-
-						LLDP_LOG(UBL_INFO, "%s:%s scanned port_desc: %s -> %s\n", __func__, updated_port->name,  existed_port->port_desc, updated_port->port_desc);
-						memset(existed_port->port_desc, 0, sizeof(existed_port->port_desc));
-						memcpy(existed_port->port_desc, updated_port->port_desc, strlen(updated_port->port_desc));
-
-						LLDP_LOG(UBL_INFO, "%s:%s scanned port_id_subtype: %d -> %d\n", __func__, updated_port->name,  existed_port->port_id_subtype, updated_port->port_id_subtype);
-						existed_port->port_id_subtype = updated_port->port_id_subtype;
-
-						LLDP_LOG(UBL_INFO, "%s:%s scanned port_id: %s -> %s\n", __func__, updated_port->name,  existed_port->port_id, updated_port->port_id);
-						memset(existed_port->port_id, 0, sizeof(existed_port->port_id));
-						memcpy(existed_port->port_id, updated_port->port_id, strlen((char*)updated_port->port_id));
-
-						update_port_mgmt_addr_tx(existed_port, updated_port);
-
-						// Set again value to no-update for next db changed
-						char* no_notice = "no-update";
-						YDBI_SET_ITEM(abk1vk0, (void*)no_notice, strlen(no_notice) + 1, IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED, status, YDBI_NO_NOTICE);
-
-						on_local_changed_on_port(existed_port->name, existed_port->dest_mac_address);
-					}
-				}
-				else
-				{
-					LLDP_LOG(UBL_ERROR, "%s: Cannot find updated port (%s) \n", __func__, (char*) value);
-				}
+				UB_LOG(UBL_WARN, "%s %s[%x-%x-%x-%x-%x-%x] Not existed in current DB\n", __func__,  (char*) updated_port->name,
+						updated_port->dest_mac_address[0], updated_port->dest_mac_address[1], updated_port->dest_mac_address[2], 
+						updated_port->dest_mac_address[3], updated_port->dest_mac_address[4], updated_port->dest_mac_address[5]);
+				break;	
 			}
 			else
 			{
-				LLDP_LOG(UBL_INFO, "%s: Cannot find exist port (%s) \n", __func__, (char*) value);
-				// TODO: Consider new port? Add new?
-			}
+				// Consider admin-status changed
+				if (updated_port->admin_status != existed_port->admin_status)
+				{
+					UB_LOG(UBL_INFO, "%s:%s Detect admin status changed %d->%d\n", __func__,  existed_port->name , existed_port->admin_status, updated_port->admin_status);
+					on_port_adminstatus_changed(updated_port->name, updated_port->dest_mac_address, updated_port->admin_status);
+				}
+				else
+				{
+					UB_LOG(UBL_INFO, "%s:%s scanned tlvs_tx_enable: %x -> %x\n", __func__, updated_port->name,  existed_port->tlvs_tx_enable, updated_port->tlvs_tx_enable);
+					existed_port->tlvs_tx_enable = updated_port->tlvs_tx_enable;
 
-			cleanup_cfg(&tmp_lldp_cfg);
+					UB_LOG(UBL_INFO, "%s:%s scanned port_desc: %s -> %s\n", __func__, updated_port->name,  existed_port->port_desc, updated_port->port_desc);
+					memset(existed_port->port_desc, 0, sizeof(existed_port->port_desc));
+					memcpy(existed_port->port_desc, updated_port->port_desc, strlen(updated_port->port_desc));
+
+					UB_LOG(UBL_INFO, "%s:%s scanned port_id_subtype: %d -> %d\n", __func__, updated_port->name,  existed_port->port_id_subtype, updated_port->port_id_subtype);
+					existed_port->port_id_subtype = updated_port->port_id_subtype;
+
+					UB_LOG(UBL_INFO, "%s:%s scanned port_id: %s -> %s\n", __func__, updated_port->name,  existed_port->port_id, updated_port->port_id);
+					memset(existed_port->port_id, 0, sizeof(existed_port->port_id));
+					memcpy(existed_port->port_id, updated_port->port_id, strlen((char*)updated_port->port_id));
+
+					UB_LOG(UBL_INFO, "%s:%s scanned message_fast_tx: %d -> %d\n", __func__, updated_port->name, existed_port->message_fast_tx, updated_port->message_fast_tx);
+					existed_port->message_fast_tx = updated_port->message_fast_tx;
+
+					UB_LOG(UBL_INFO, "%s:%s scanned message_tx_hold_multiplier: %d -> %d\n", __func__, updated_port->name,  existed_port->message_tx_hold_multiplier, updated_port->message_tx_hold_multiplier);
+					existed_port->message_tx_hold_multiplier = updated_port->message_tx_hold_multiplier;
+
+					UB_LOG(UBL_INFO, "%s:%s scanned message_tx_interval: %d -> %d\n", __func__, updated_port->name,  existed_port->message_tx_interval, updated_port->message_tx_interval);
+					existed_port->message_tx_interval = updated_port->message_tx_interval;
+
+					UB_LOG(UBL_INFO, "%s:%s scanned reinit_delay: %d -> %d\n", __func__, updated_port->name,  existed_port->reinit_delay, updated_port->reinit_delay);
+					existed_port->reinit_delay = updated_port->reinit_delay;
+
+					UB_LOG(UBL_INFO, "%s:%s scanned tx_credit_max: %d -> %d\n", __func__, updated_port->name,  existed_port->tx_credit_max, updated_port->tx_credit_max);
+					existed_port->tx_credit_max = updated_port->tx_credit_max;
+
+					UB_LOG(UBL_INFO, "%s:%s scanned tx_fast_init: %d -> %d\n", __func__, updated_port->name,  existed_port->tx_fast_init, updated_port->tx_fast_init);
+					existed_port->tx_fast_init = updated_port->tx_fast_init;
+
+					update_port_mgmt_addr_tx(existed_port, updated_port);
+
+					on_local_changed_on_port(existed_port->name, existed_port->dest_mac_address);
+				}
+			}
 		}
-		else
+
+		cleanup_cfg(&tmp_lldp_cfg);
+	}
+	else
+	{
+		UB_LOG(UBL_ERROR, "%s:Cannot load db\n", __func__);
+	}
+}
+
+static void chk_if_change_then_apply_all_ports(uint8_t k, uint32_t curr_val, uint32_t new_val)
+{
+	if (curr_val != new_val)
+	{
+		struct ub_list_node* tmp_node;
+		for(UB_LIST_FOREACH_ITER(&g_yang_lldp->ports, tmp_node))
 		{
-			LLDP_LOG(UBL_ERROR, "%s:Cannot load db\n", __func__);
+			lldp_port_t* port = (lldp_port_t*)tmp_node;
+			switch(k)
+			{
+				case IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX:
+					port->message_fast_tx = new_val;
+					break;
+				case IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER:
+					port->message_tx_hold_multiplier = new_val;
+					break;
+				case IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL:
+					port->message_tx_interval = new_val;
+					break;
+				case IEEE802_DOT1AB_LLDP_REINIT_DELAY:
+					port->reinit_delay = new_val;
+					break;
+				case IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX:
+					port->tx_credit_max = new_val;
+					break;
+				case IEEE802_DOT1AB_LLDP_TX_FAST_INIT:
+					port->tx_fast_init = new_val;
+					break;
+				default:
+					// not support
+					break;
+			}
 		}
 	}
 }
 
 /// @brief Handle local system changed
 /// @param found_updated_item 
-static void on_local_system_change(monitor_item_t* found_updated_item)
+static void on_local_system_change()
 {
-	void* value = NULL;
-	bool status = (found_updated_item->keys[0] == IEEE802_DOT1AB_LLDP_RO) ? YDBI_STATUS : YDBI_CONFIG;
-	int vsize=YDBI_GET_ITEM(abk1vk0,
-							value,
-							found_updated_item->keys[2],
-							status);
-	ydbi_get_item_release(ydbi_access_handle(), YDBI_REL_LOCK);
-
-	if (vsize > 0 && *((bool*)value) == true)
+	yang_lldp_t tmp_lldp_cfg;
+	memset(&tmp_lldp_cfg, 0, sizeof(yang_lldp_t));
+	ub_list_init(&tmp_lldp_cfg.ports);
+	int ret = ydbi_load_lldp_db(ydbi_access_handle(), &tmp_lldp_cfg);
+	if (ret == 0)
 	{
-		yang_lldp_t tmp_lldp_cfg;
-		memset(&tmp_lldp_cfg, 0, sizeof(yang_lldp_t));
-		ub_list_init(&tmp_lldp_cfg.ports);
-		int ret = ydbi_load_lldp_db(ydbi_access_handle(), &tmp_lldp_cfg);
-		if (ret == 0)
-		{
-			LLDP_LOG(UBL_INFO, "%s: scanned local_system_data: %s -> %s\n", __func__,  g_yang_lldp->local_system_data.system_name, tmp_lldp_cfg.local_system_data.system_name);
-			memset(g_yang_lldp->local_system_data.system_name, 0, sizeof(g_yang_lldp->local_system_data.system_name));
-			memcpy(g_yang_lldp->local_system_data.system_name, tmp_lldp_cfg.local_system_data.system_name, strlen(tmp_lldp_cfg.local_system_data.system_name));
-			
-			LLDP_LOG(UBL_INFO, "%s: scanned chassis_id_subtype: %d -> %d\n", __func__,  g_yang_lldp->local_system_data.chassis_id_subtype, tmp_lldp_cfg.local_system_data.chassis_id_subtype);
-			g_yang_lldp->local_system_data.chassis_id_subtype = tmp_lldp_cfg.local_system_data.chassis_id_subtype;
+		UB_LOG(UBL_INFO, "%s: scanned local_system_data: %s -> %s\n", __func__,  g_yang_lldp->local_system_data.system_name, tmp_lldp_cfg.local_system_data.system_name);
+		memset(g_yang_lldp->local_system_data.system_name, 0, sizeof(g_yang_lldp->local_system_data.system_name));
+		memcpy(g_yang_lldp->local_system_data.system_name, tmp_lldp_cfg.local_system_data.system_name, strlen(tmp_lldp_cfg.local_system_data.system_name));
+		
+		UB_LOG(UBL_INFO, "%s: scanned chassis_id_subtype: %d -> %d\n", __func__,  g_yang_lldp->local_system_data.chassis_id_subtype, tmp_lldp_cfg.local_system_data.chassis_id_subtype);
+		g_yang_lldp->local_system_data.chassis_id_subtype = tmp_lldp_cfg.local_system_data.chassis_id_subtype;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned chassis_id: %s -> %s\n", __func__, g_yang_lldp->local_system_data.chassis_id, tmp_lldp_cfg.local_system_data.chassis_id);
-			memset(g_yang_lldp->local_system_data.chassis_id, 0, sizeof(g_yang_lldp->local_system_data.chassis_id));
-			memcpy(g_yang_lldp->local_system_data.chassis_id, tmp_lldp_cfg.local_system_data.chassis_id, sizeof(tmp_lldp_cfg.local_system_data.chassis_id));
-			
-			LLDP_LOG(UBL_INFO, "%s: scanned system_description: %s -> %s\n", __func__,  g_yang_lldp->local_system_data.system_description, tmp_lldp_cfg.local_system_data.system_description);
-			memset(g_yang_lldp->local_system_data.system_description, 0, sizeof(g_yang_lldp->local_system_data.system_description));
-			memcpy(g_yang_lldp->local_system_data.system_description, tmp_lldp_cfg.local_system_data.system_description, sizeof(tmp_lldp_cfg.local_system_data.system_description));
-			
-			LLDP_LOG(UBL_INFO, "%s: scanned system_capabilities_enabled: %x -> %x\n", __func__,  g_yang_lldp->local_system_data.system_capabilities_enabled, tmp_lldp_cfg.local_system_data.system_capabilities_enabled);
-			g_yang_lldp->local_system_data.system_capabilities_enabled = tmp_lldp_cfg.local_system_data.system_capabilities_enabled;
+		UB_LOG(UBL_INFO, "%s: scanned chassis_id: %s -> %s\n", __func__, g_yang_lldp->local_system_data.chassis_id, tmp_lldp_cfg.local_system_data.chassis_id);
+		memset(g_yang_lldp->local_system_data.chassis_id, 0, sizeof(g_yang_lldp->local_system_data.chassis_id));
+		memcpy(g_yang_lldp->local_system_data.chassis_id, tmp_lldp_cfg.local_system_data.chassis_id, sizeof(tmp_lldp_cfg.local_system_data.chassis_id));
+		
+		UB_LOG(UBL_INFO, "%s: scanned system_description: %s -> %s\n", __func__,  g_yang_lldp->local_system_data.system_description, tmp_lldp_cfg.local_system_data.system_description);
+		memset(g_yang_lldp->local_system_data.system_description, 0, sizeof(g_yang_lldp->local_system_data.system_description));
+		memcpy(g_yang_lldp->local_system_data.system_description, tmp_lldp_cfg.local_system_data.system_description, sizeof(tmp_lldp_cfg.local_system_data.system_description));
+		
+		UB_LOG(UBL_INFO, "%s: scanned system_capabilities_enabled: %x -> %x\n", __func__,  g_yang_lldp->local_system_data.system_capabilities_enabled, tmp_lldp_cfg.local_system_data.system_capabilities_enabled);
+		g_yang_lldp->local_system_data.system_capabilities_enabled = tmp_lldp_cfg.local_system_data.system_capabilities_enabled;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned system_capabilities_supported: %x -> %x\n", __func__,  g_yang_lldp->local_system_data.system_capabilities_supported, tmp_lldp_cfg.local_system_data.system_capabilities_supported);
-			g_yang_lldp->local_system_data.system_capabilities_supported = tmp_lldp_cfg.local_system_data.system_capabilities_supported;
+		UB_LOG(UBL_INFO, "%s: scanned system_capabilities_supported: %x -> %x\n", __func__,  g_yang_lldp->local_system_data.system_capabilities_supported, tmp_lldp_cfg.local_system_data.system_capabilities_supported);
+		g_yang_lldp->local_system_data.system_capabilities_supported = tmp_lldp_cfg.local_system_data.system_capabilities_supported;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned message_fast_tx: %d -> %d\n", __func__,  g_yang_lldp->message_fast_tx, tmp_lldp_cfg.message_fast_tx);
-			g_yang_lldp->message_fast_tx = tmp_lldp_cfg.message_fast_tx;
+		UB_LOG(UBL_INFO, "%s: scanned message_fast_tx: %d -> %d\n", __func__,  g_yang_lldp->message_fast_tx, tmp_lldp_cfg.message_fast_tx);
+		chk_if_change_then_apply_all_ports(IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX,  g_yang_lldp->message_fast_tx, tmp_lldp_cfg.message_fast_tx);
+		g_yang_lldp->message_fast_tx = tmp_lldp_cfg.message_fast_tx;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned message_tx_hold_multiplier: %d -> %d\n", __func__,  g_yang_lldp->message_tx_hold_multiplier, tmp_lldp_cfg.message_tx_hold_multiplier);
-			g_yang_lldp->message_tx_hold_multiplier = tmp_lldp_cfg.message_tx_hold_multiplier;
+		UB_LOG(UBL_INFO, "%s: scanned message_tx_hold_multiplier: %d -> %d\n", __func__,  g_yang_lldp->message_tx_hold_multiplier, tmp_lldp_cfg.message_tx_hold_multiplier);
+		chk_if_change_then_apply_all_ports(IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER,  g_yang_lldp->message_tx_hold_multiplier, tmp_lldp_cfg.message_tx_hold_multiplier);
+		g_yang_lldp->message_tx_hold_multiplier = tmp_lldp_cfg.message_tx_hold_multiplier;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned message_tx_interval: %d -> %d\n", __func__,  g_yang_lldp->message_tx_interval, tmp_lldp_cfg.message_tx_interval);
-			g_yang_lldp->message_tx_interval = tmp_lldp_cfg.message_tx_interval;
+		UB_LOG(UBL_INFO, "%s: scanned message_tx_interval: %d -> %d\n", __func__,  g_yang_lldp->message_tx_interval, tmp_lldp_cfg.message_tx_interval);
+		chk_if_change_then_apply_all_ports(IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL,  g_yang_lldp->message_tx_interval, tmp_lldp_cfg.message_tx_interval);
+		g_yang_lldp->message_tx_interval = tmp_lldp_cfg.message_tx_interval;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned reinit_delay: %d -> %d\n", __func__,  g_yang_lldp->reinit_delay, tmp_lldp_cfg.reinit_delay);
-			g_yang_lldp->reinit_delay = tmp_lldp_cfg.reinit_delay;
+		UB_LOG(UBL_INFO, "%s: scanned reinit_delay: %d -> %d\n", __func__,  g_yang_lldp->reinit_delay, tmp_lldp_cfg.reinit_delay);
+		chk_if_change_then_apply_all_ports(IEEE802_DOT1AB_LLDP_REINIT_DELAY,  g_yang_lldp->reinit_delay, tmp_lldp_cfg.reinit_delay);
+		g_yang_lldp->reinit_delay = tmp_lldp_cfg.reinit_delay;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned tx_credit_max: %d -> %d\n", __func__,  g_yang_lldp->tx_credit_max, tmp_lldp_cfg.tx_credit_max);
-			g_yang_lldp->tx_credit_max = tmp_lldp_cfg.tx_credit_max;
+		UB_LOG(UBL_INFO, "%s: scanned tx_credit_max: %d -> %d\n", __func__,  g_yang_lldp->tx_credit_max, tmp_lldp_cfg.tx_credit_max);
+		chk_if_change_then_apply_all_ports(IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX,  g_yang_lldp->tx_credit_max, tmp_lldp_cfg.tx_credit_max);
+		g_yang_lldp->tx_credit_max = tmp_lldp_cfg.tx_credit_max;
 
-			LLDP_LOG(UBL_INFO, "%s: scanned tx_fast_init: %d -> %d\n", __func__,  g_yang_lldp->tx_fast_init, tmp_lldp_cfg.tx_fast_init);
-			g_yang_lldp->tx_fast_init = tmp_lldp_cfg.tx_fast_init;
+		UB_LOG(UBL_INFO, "%s: scanned tx_fast_init: %d -> %d\n", __func__,  g_yang_lldp->tx_fast_init, tmp_lldp_cfg.tx_fast_init);
+		chk_if_change_then_apply_all_ports(IEEE802_DOT1AB_LLDP_TX_FAST_INIT,  g_yang_lldp->tx_fast_init, tmp_lldp_cfg.tx_fast_init);
+		g_yang_lldp->tx_fast_init = tmp_lldp_cfg.tx_fast_init;
 
-			// Set again value to false for next db changed
-			bool no_notice = false;
-			YDBI_SET_ITEM(abk1vk0, (void*)&no_notice, sizeof(bool), IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED, status, YDBI_NO_NOTICE);
+		broadcast_local_system_changed();
 
-			broadcast_local_system_changed();
-
-			cleanup_cfg(&tmp_lldp_cfg);
-		}
-		else
-		{
-			LLDP_LOG(UBL_ERROR, "%s:Cannot load db\n", __func__);
-		}
+		cleanup_cfg(&tmp_lldp_cfg);
+	}
+	else
+	{
+		UB_LOG(UBL_ERROR, "%s:Cannot load db\n", __func__);
 	}
 }
 
-static void on_db_changed(monitor_item_t* found_updated_item)
+static void on_db_changed(int mon_index)
 {
-	switch(found_updated_item->keys[2])
+	switch(mon_index)
 	{
-		case IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED:
-			on_local_system_change(found_updated_item);
+		case 0:
+			on_local_system_change();
 			break;
-		case IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED:
-			on_port_db_change(found_updated_item);
+		case 1:
+			on_port_db_change();
 			break;
 		default:
 			break;
@@ -403,7 +432,8 @@ void monitor_db_change()
 	uint32_t ksize;
 
 	monitor_item_t* found_updated_item = NULL;
-	for(int i=0; i<2; i++)
+	int i;
+	for(i=0; i<2; i++)
 	{
 		monitor_item_t* m = (monitor_item_t*)&db_mon_item[i];
 		if (m != NULL)
@@ -418,51 +448,177 @@ void monitor_db_change()
 
 	if(found_updated_item == NULL) {return; /*no notice. Do nthing*/}
 	// received a notice
-	LLDP_LOG(UBL_INFO, "%s:a notice from %s\n", __func__, ieee802_dot1ab_lldp_get_string(found_updated_item->keys[2]));
+	if (i==0) {UB_LOG(UBL_INFO, "%s:a notice from local system\n", __func__);}
+	else {UB_LOG(UBL_INFO, "%s:a notice from local port\n", __func__);}
 
 	// get a key of signaled data
 	res=uc_nc_get_notice_act(ydbi_access_handle()->ucntd, ydbi_access_handle()->dbald, found_updated_item->semname, key, &ksize);
 	if(res){
-		LLDP_LOG(UBL_ERROR, "%s:get a signal, but no data in uc_nc_get_notice_act, "
+		UB_LOG(UBL_ERROR, "%s:get a signal, but no data in uc_nc_get_notice_act, "
 			"res=%d\n", __func__, res);
 		return;
 	}
 
-	on_db_changed(found_updated_item);
+	on_db_changed(i);
+}
+
+static void init_local_system_notice(uc_dbald *dbald, uc_notice_data_t *ucntd, yang_db_runtime_dataq_t *ydrd, yang_lldp_t* yang_lldp)
+{
+	int i=0;
+	monitor_item_t* local_system_mon_item = &db_mon_item[0];
+	local_system_mon_item->nsem = NULL;	
+	sprintf(local_system_mon_item->semname, "tmp-utlldp_monsem%16lx", (unsigned long)ub_rt_gettime64());
+
+	// If we got notice in these field. All of relate port will be applied the same value.
+	uint8_t local_mon_key[] =
+	{
+		IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX,
+		IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER,
+		IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL,
+		IEEE802_DOT1AB_LLDP_REINIT_DELAY,
+		IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX,
+		IEEE802_DOT1AB_LLDP_TX_FAST_INIT,
+	};
+
+	for (i=0; i<sizeof(local_mon_key); i++)
+	{
+		local_system_mon_item->kvs[0] = (char*)local_system_mon_item->semname;
+		local_system_mon_item->kss[0] = strlen(local_system_mon_item->semname)+1;
+		local_system_mon_item->kvs[1] = NULL;
+		local_system_mon_item->keys[0] = IEEE802_DOT1AB_LLDP_RW;
+		local_system_mon_item->keys[1] = IEEE802_DOT1AB_LLDP_LLDP;
+		local_system_mon_item->keys[2] = local_mon_key[i];
+		local_system_mon_item->keys[3] = 255;
+
+		if (local_system_mon_item->nsem == NULL)
+		{
+			if(uc_nc_notice_register(ucntd, 
+								dbald, 
+								local_system_mon_item->keys, 
+								local_system_mon_item->kvs, 
+								local_system_mon_item->kss,
+								UC_NOTICE_DBVAL_ADD, 
+								&local_system_mon_item->nsem))
+			{
+				UB_LOG(UBL_ERROR, "%s: Register notice for LOCAL_SYSTEM_CHANGED failed \n", __func__);
+				return;
+			}
+		}
+		else
+		{
+			// After having the nsem, we just need to input current sem-name
+			if(uc_nc_notice_register(ucntd, 
+								dbald, 
+								local_system_mon_item->keys, 
+								local_system_mon_item->kvs, 
+								local_system_mon_item->kss,
+								UC_NOTICE_DBVAL_ADD, 
+								NULL))
+			{
+			UB_LOG(UBL_ERROR, "%s: Register notice for LOCAL_SYSTEM_CHANGED failed \n", __func__);
+				return;
+			}
+		}
+	}
+}
+
+static void init_per_port_notice(uc_dbald *dbald, uc_notice_data_t *ucntd, yang_db_runtime_dataq_t *ydrd, yang_lldp_t* yang_lldp, lldp_port_t* port)
+{
+	int i=0;
+	monitor_item_t* local_port_mon_item = &db_mon_item[1];
+
+	uint8_t lldp_port_mon_item[] =
+	{
+		IEEE802_DOT1AB_LLDP_ADMIN_STATUS,
+		IEEE802_DOT1AB_LLDP_TLVS_TX_ENABLE,
+		IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX,
+		IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER,
+		IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL,
+		IEEE802_DOT1AB_LLDP_REINIT_DELAY,
+		IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX,
+		IEEE802_DOT1AB_LLDP_TX_FAST_INIT,
+	};
+
+	// default vals
+	local_port_mon_item->keys[0] = IEEE802_DOT1AB_LLDP_RW;
+	local_port_mon_item->keys[1] = IEEE802_DOT1AB_LLDP_LLDP;
+	local_port_mon_item->keys[2] = IEEE802_DOT1AB_LLDP_PORT;
+
+	// key 0, 1 must be port name/mac addr
+	local_port_mon_item->kvs[0] = port->name;
+	local_port_mon_item->kss[0] = strlen(port->name)+1;
+
+	local_port_mon_item->kvs[1] = &port->dest_mac_address[0];
+	local_port_mon_item->kss[1] = 6;
+
+	for (i=0; i<sizeof(lldp_port_mon_item); i++)
+	{
+		local_port_mon_item->keys[3] = lldp_port_mon_item[i];
+		local_port_mon_item->keys[4] = 255;
+
+		local_port_mon_item->kvs[2] = (char*)local_port_mon_item->semname;
+		local_port_mon_item->kss[2] = strlen(local_port_mon_item->semname)+1;
+		local_port_mon_item->kvs[3] = NULL;
+
+		if (local_port_mon_item->nsem == NULL)
+		{
+			if(uc_nc_notice_register(ucntd, dbald, local_port_mon_item->keys, local_port_mon_item->kvs, local_port_mon_item->kss, UC_NOTICE_DBVAL_ADD, &local_port_mon_item->nsem))
+			{
+				UB_LOG(UBL_ERROR, "%s: Register notice for LOCAL_SYSTEM_CHANGED failed \n", __func__);
+				return;
+			}
+		}
+		else
+		{
+			// After having the nsem, we just need to input current sem-name
+			if(uc_nc_notice_register(ucntd, dbald, local_port_mon_item->keys, local_port_mon_item->kvs, local_port_mon_item->kss, UC_NOTICE_DBVAL_ADD, NULL))
+			{
+				UB_LOG(UBL_ERROR, "%s: Register notice for local port change failed \n", __func__);
+				return;
+			}
+		}
+	}
+
+	struct ub_list_node* tmp_node;
+	for(UB_LIST_FOREACH_ITER(&port->management_address_tx_port, tmp_node))
+	{
+		management_address_tx_port_t* mgmt_addr_tx = (management_address_tx_port_t*)tmp_node;
+		local_port_mon_item->keys[3] = IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS_TX_PORT;
+		local_port_mon_item->keys[4] = IEEE802_DOT1AB_LLDP_TX_ENABLE;
+		local_port_mon_item->keys[5] = 255;
+
+		// key 1, 2 must be mgmt subtype/addr
+		local_port_mon_item->kvs[2] = &mgmt_addr_tx->address_subtype;
+		local_port_mon_item->kss[2] = sizeof(mgmt_addr_tx->address_subtype);
+
+		local_port_mon_item->kvs[3] = &mgmt_addr_tx->man_address;
+		local_port_mon_item->kss[3] = strlen((char*)mgmt_addr_tx->man_address)+1;
+
+		local_port_mon_item->kvs[4] = (char*)local_port_mon_item->semname;
+		local_port_mon_item->kss[4] = strlen((char*)local_port_mon_item->semname)+1;
+		local_port_mon_item->kvs[5] = NULL;
+
+		if(uc_nc_notice_register(ucntd, dbald, local_port_mon_item->keys, local_port_mon_item->kvs, local_port_mon_item->kss, UC_NOTICE_DBVAL_ADD, NULL))
+		{
+			UB_LOG(UBL_ERROR, "%s: Register notice for IEEE802_DOT1AB_LLDP_TX_ENABLE failed \n", __func__);
+			return;
+		}
+	}
 }
 
 static void init_notice(uc_dbald *dbald, uc_notice_data_t *ucntd, yang_db_runtime_dataq_t *ydrd, yang_lldp_t* yang_lldp)
 {
-	uint8_t mon_keys[2] = {IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED, IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED};
+	struct ub_list_node* tmp_node;
 
-	for (int i=0; i<2; i++)
+	init_local_system_notice(dbald, ucntd, ydrd, yang_lldp);
+
+	db_mon_item[1].nsem = NULL;
+	sprintf(db_mon_item[1].semname, "tmp-utlldp_monsem%16lx", (unsigned long)ub_rt_gettime64());
+	for(UB_LIST_FOREACH_ITER(&yang_lldp->ports, tmp_node))
 	{
-		sprintf(db_mon_item[i].semname, "tmp-utlldp_monsem%16lx", (unsigned long)ub_rt_gettime64());
-		db_mon_item[i].nsem = NULL;	
-		db_mon_item[i].kvs[0] = (char*)db_mon_item[i].semname;
-		db_mon_item[i].kss[0] = strlen(db_mon_item[i].semname)+1;
-		db_mon_item[i].kvs[1] = NULL;
-		db_mon_item[i].keys[0] = IEEE802_DOT1AB_LLDP_RW;
-		db_mon_item[i].keys[1] = IEEE802_DOT1AB_LLDP_LLDP;
-		db_mon_item[i].keys[2] = mon_keys[i];
-		db_mon_item[i].keys[3] = 255;
-
-		if(uc_nc_notice_register(ucntd, 
-							dbald, 
-							db_mon_item[i].keys, 
-							db_mon_item[i].kvs, 
-							db_mon_item[i].kss,
-							UC_NOTICE_DBVAL_ADD, 
-							&db_mon_item[i].nsem))
-		{
-			LLDP_LOG(UBL_ERROR, "%s: Register notice for LOCAL_SYSTEM_CHANGED failed \n", __func__);
-			return;
-		}
+		lldp_port_t* port = (lldp_port_t*)tmp_node;
+		init_per_port_notice(dbald, ucntd, ydrd, yang_lldp, port);
 	}
-
-	LLDP_LOG(UBL_INFO, "%s: per_system_changed_mon.semnames: %s\n", __func__, db_mon_item[0].semname);
-	LLDP_LOG(UBL_INFO, "%s: per_port_changed_mon.semnames: %s\n", __func__, db_mon_item[1].semname);
-
 }
 
 static int deregister_notice(uc_dbald *dbald, uc_notice_data_t *ucntd)
@@ -516,7 +672,7 @@ int ietf_get_actual_hw_port_info(lldp_port_t* port)
 			lldp_bmac2smac(bmac, smac, '-');
 
 			memcpy(port->port_id, smac, strlen(smac));
-			LLDP_LOG(UBL_INFO, "%s:%s MAC: %s\n", __func__, port->name, smac);
+			UB_LOG(UBL_INFO, "%s:%s MAC: %s\n", __func__, port->name, smac);
 		}
 
 		memcpy(port->src_mac_address, rval, sizeof(port->src_mac_address));
@@ -524,7 +680,7 @@ int ietf_get_actual_hw_port_info(lldp_port_t* port)
 	}
 	else
 	{
-		LLDP_LOG(UBL_ERROR, "%s:%s Cannot Get MAC Address \n", __func__, port->name);
+		UB_LOG(UBL_ERROR, "%s:%s Cannot Get MAC Address \n", __func__, port->name);
 	}
 
 
@@ -552,7 +708,7 @@ int initialize_cfg(const char* dbfile, yang_lldp_t* yang_lldp, bool notice)
 		ret = ydbi_load_lldp_db(ydbi_access_handle(), yang_lldp);
 		if (ret == 0)
 		{
-			LLDP_LOG(UBL_INFO, "%s: loaded yang db\n", __func__);
+			UB_LOG(UBL_INFO, "%s: loaded yang db\n", __func__);
 			g_yang_lldp = yang_lldp;
 		}
 
@@ -564,7 +720,7 @@ int initialize_cfg(const char* dbfile, yang_lldp_t* yang_lldp, bool notice)
 	}
 	else
 	{
-		LLDP_LOG(UBL_ERROR, "%s: uniconf[%s] not ready yet\n", __func__, dbfile);
+		UB_LOG(UBL_ERROR, "%s: uniconf[%s] not ready yet\n", __func__, dbfile);
 	}
 
 	return ret;
@@ -572,14 +728,14 @@ int initialize_cfg(const char* dbfile, yang_lldp_t* yang_lldp, bool notice)
 
 void deinit_db()
 {
-	LLDP_LOG(UBL_INFO, "%s:\n", __func__);
+	UB_LOG(UBL_INFO, "%s:\n", __func__);
 	yang_db_item_access_t *ydbia = ydbi_access_handle();
 	deregister_notice(ydbia->dbald, ydbia->ucntd);
 	uc_notice_close(ydbia->ucntd, g_uniconf_access_mode);
 	xl4_data_close(ydbia->xdd);
 	uc_dbal_close(ydbia->dbald, g_uniconf_access_mode);
 
-	LLDP_LOG(UBL_INFO, "%s: done\n", __func__);
+	UB_LOG(UBL_INFO, "%s: done\n", __func__);
 }
 
 static void clear_cb(struct ub_list_node *node, void *arg)
@@ -591,23 +747,23 @@ static void clear_cb(struct ub_list_node *node, void *arg)
 	switch(clear_cmd)
 	{
 		case CLEAR_CMD_MGMT_ADDR_TX:
-			LLDP_LOG(UBL_DEBUG, "%s: clear mgmt addr tx port items\n", __func__);
+			UB_LOG(UBL_DEBUG, "%s: clear mgmt addr tx port items\n", __func__);
 			deinit_mgmt_tx_port((management_address_tx_port_t*)node);
 			break;
 		case CLEAR_CMD_MGMT_ADDR:
-			LLDP_LOG(UBL_DEBUG, "%s: clear mgmt addr items\n", __func__);
+			UB_LOG(UBL_DEBUG, "%s: clear mgmt addr items\n", __func__);
 			deinit_mgmt_addr((management_address_t*)node);
 			break;
 		case CLEAR_CMD_RMT_UNKNOWN_TLV:
-			LLDP_LOG(UBL_DEBUG, "%s: clear remote_unknown_tlv_t items\n", __func__);
+			UB_LOG(UBL_DEBUG, "%s: clear remote_unknown_tlv_t items\n", __func__);
 			deinit_rm_unknown_tlv((remote_unknown_tlv_t*)node);
 			break;
 		case CLEAR_CMD_RMT_ORG_TLV:
-			LLDP_LOG(UBL_DEBUG, "%s: clear remote_org_defined_info_t items\n", __func__);
+			UB_LOG(UBL_DEBUG, "%s: clear remote_org_defined_info_t items\n", __func__);
 			deinit_rm_org_def((remote_org_defined_info_t*)node);
 			break;
 		case CLEAR_CMD_PORT:
-			LLDP_LOG(UBL_DEBUG, "%s: clear lldp_port_t items\n", __func__);
+			UB_LOG(UBL_DEBUG, "%s: clear lldp_port_t items\n", __func__);
 			deinit_cfg_port((lldp_port_t*)node);
 			break;
 		default:
@@ -673,7 +829,7 @@ static void update_rs_data_1st_level(lldp_port_t* port, remote_systems_data_t* n
 		[3] = {(void*)&new_rs_data->remote_index, 4},
 	};
 
-	// LLDP_LOG(UBL_DEBUG, "%s: %s \n", __func__, port->name);
+	// UB_LOG(UBL_DEBUG, "%s: %s \n", __func__, port->name);
 	// ub_hexdump(true, true, port->dest_mac_address, 6, 0);
 
 	void* new_val = NULL;
@@ -730,7 +886,7 @@ static void update_rs_data_1st_level(lldp_port_t* port, remote_systems_data_t* n
 			break;
 	}
 
-	// LLDP_LOG(UBL_DEBUG, "%s:%s updating k %s\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(k));
+	// UB_LOG(UBL_DEBUG, "%s:%s updating k %s\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(k));
 
 	if (new_val != NULL && data_size > 0)
 	{
@@ -814,7 +970,7 @@ static void update_rs_data_2nd_level(lldp_port_t* port, remote_systems_data_t* n
 	void* new_val = NULL;
 	size_t data_size = 0;
 
-	// LLDP_LOG(UBL_DEBUG, "%s:%s updating k1 %s k2 %s\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(k1), ieee802_dot1ab_lldp_get_string(k2));
+	// UB_LOG(UBL_DEBUG, "%s:%s updating k1 %s k2 %s\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(k1), ieee802_dot1ab_lldp_get_string(k2));
 
 	switch(k1)
 	{
@@ -929,7 +1085,7 @@ static int write_remote_system_data_to_db(lldp_port_t* port, remote_systems_data
 	// organization id
 	update_rs_data_2nd_level(port, new_rs_data, IEEE802_DOT1AB_LLDP_REMOTE_ORG_DEFINED_INFO, IEEE802_DOT1AB_LLDP_REMOTE_INFO);
 
-	// LLDP_LOG(UBL_DEBUG, "%s:%s k(%u, %d)\n", __func__, port->name, new_rs_data->time_mark, new_rs_data->remote_index);
+	// UB_LOG(UBL_DEBUG, "%s:%s k(%u, %d)\n", __func__, port->name, new_rs_data->time_mark, new_rs_data->remote_index);
 
 	return 0;
 }
@@ -939,7 +1095,6 @@ static int write_remote_system_data_to_db(lldp_port_t* port, remote_systems_data
 /// @param in 
 remote_systems_data_t *create_new_remote_system_data(lldp_port_t* port, remote_systems_data_t* in)
 {
-	uint64_t t1 = get_current_time_in_usec();
 	uint32_t rs_index = ub_list_count(&port->remote_systems_data); /// Index will base on count. Start from 0
 	timeticks creation_time = get_current_time_in_milisec();
 
@@ -1008,12 +1163,11 @@ remote_systems_data_t *create_new_remote_system_data(lldp_port_t* port, remote_s
 	}
 
 	ub_list_append(&port->remote_systems_data, (struct ub_list_node*)remote_system_data);
-	// LLDP_LOG(UBL_DEBUG, "%s:%s k(%u, %d) rs counter %d\n", __func__, port->name, remote_system_data->time_mark, remote_system_data->remote_index, ub_list_count(&port->remote_systems_data));
+	// UB_LOG(UBL_DEBUG, "%s:%s k(%u, %d) rs counter %d\n", __func__, port->name, remote_system_data->time_mark, remote_system_data->remote_index, ub_list_count(&port->remote_systems_data));
 	
 	write_remote_system_data_to_db(port, remote_system_data);
 	
-	uint64_t t2 = get_current_time_in_usec();
-	UB_TLOG(UBL_DEBUG, "%s:%s created k(%u, %d) tooks %d ns\n", __func__, port->name, remote_system_data->time_mark, remote_system_data->remote_index, (uint32_t)(t2 - t1));
+	UB_TLOG(UBL_DEBUG, "%s:%s created k(%u, %d) \n", __func__, port->name, remote_system_data->time_mark, remote_system_data->remote_index);
 
 	return remote_system_data;
 }
@@ -1036,7 +1190,7 @@ static void update_port_statistic(lldp_port_t* port, uint8_t tx_or_rx_key, ieee8
 		[1] = {port->dest_mac_address, 6}
 	};
 
-	// LLDP_LOG(UBL_DEBUG, "%s: %s \n", __func__, port->name);
+	// UB_LOG(UBL_DEBUG, "%s: %s \n", __func__, port->name);
 	// ub_hexdump(true, true, port->dest_mac_address, 6, 0);
 
 	void* new_val = NULL;
@@ -1084,7 +1238,7 @@ static void update_port_statistic(lldp_port_t* port, uint8_t tx_or_rx_key, ieee8
 			break;
 	}
 
-	// LLDP_LOG(UBL_DEBUG, "%s:%s updating k %s/%s to %d\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(tx_or_rx_key), ieee802_dot1ab_lldp_get_string(k), *((int*)new_val));
+	// UB_LOG(UBL_DEBUG, "%s:%s updating k %s/%s to %d\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(tx_or_rx_key), ieee802_dot1ab_lldp_get_string(k), *((int*)new_val));
 
 	if (new_val != NULL && data_size > 0)
 	{
@@ -1129,7 +1283,7 @@ void increase_rx_total_frame(lldp_port_t* port)
 {
 	port->rx_statistic.total_frames++;
 	update_port_statistic(port, IEEE802_DOT1AB_LLDP_RX_STATISTICS, IEEE802_DOT1AB_LLDP_TOTAL_FRAMES);
-	// LLDP_LOG(UBL_DEBUG, "%s:%s rx %d\n",__func__, port->name, port->rx_statistic.total_frames);
+	// UB_LOG(UBL_DEBUG, "%s:%s rx %d\n",__func__, port->name, port->rx_statistic.total_frames);
 }
 void increase_rx_total_discarded_tlvs(lldp_port_t* port)
 {
@@ -1184,7 +1338,7 @@ static void update_remote_statistic(yang_lldp_t* lldpcfg, ieee802_dot1ab_lldp_en
 			break;
 	}
 
-	// LLDP_LOG(UBL_DEBUG, "%s: updating k %s\n", __func__, ieee802_dot1ab_lldp_get_string(k));
+	// UB_LOG(UBL_DEBUG, "%s: updating k %s\n", __func__, ieee802_dot1ab_lldp_get_string(k));
 
 	if (new_val != NULL && data_size > 0)
 	{
@@ -1247,7 +1401,7 @@ static void delete_rs_data_1st_level(lldp_port_t* port, remote_systems_data_t* e
 		[3] = {(void*)&existed_rs_data->remote_index, 4},
 	};
 
-	// LLDP_LOG(UBL_DEBUG, "%s:%s deleting k %s\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(k));
+	// UB_LOG(UBL_DEBUG, "%s:%s deleting k %s\n", __func__, port->name, ieee802_dot1ab_lldp_get_string(k));
 	YDBI_DEL_ITEM(abknvkn, 
 				kn_if_id, 
 				sizeof(kn_if_id) / sizeof(uint8_t), 
@@ -1284,7 +1438,7 @@ static void delete_rs_data_2nd_level(lldp_port_t* port, remote_systems_data_t* e
 		[6] = {NULL, 0},
 	};
 
-	// LLDP_LOG(UBL_DEBUG, "%s:deleting port(%s) rs(%u, %d) k1 %s k2 %s\n", __func__, port->name, existed_rs_data->time_mark, existed_rs_data->remote_index, ieee802_dot1ab_lldp_get_string(k1), ieee802_dot1ab_lldp_get_string(k2));
+	// UB_LOG(UBL_DEBUG, "%s:deleting port(%s) rs(%u, %d) k1 %s k2 %s\n", __func__, port->name, existed_rs_data->time_mark, existed_rs_data->remote_index, ieee802_dot1ab_lldp_get_string(k1), ieee802_dot1ab_lldp_get_string(k2));
 
 	switch(k1)
 	{
@@ -1362,7 +1516,6 @@ static void delete_rs_data_2nd_level(lldp_port_t* port, remote_systems_data_t* e
 /// @param rs_data_tobe_deleted to-be-deleted item
 void delete_remote_system_data(lldp_port_t* port, remote_systems_data_t* rs_data_tobe_deleted)
 {
-	uint64_t t1 = get_current_time_in_usec();
 	// 1st level
 	delete_rs_data_1st_level(port, rs_data_tobe_deleted, IEEE802_DOT1AB_LLDP_REMOTE_TOO_MANY_NEIGHBORS);
 	delete_rs_data_1st_level(port, rs_data_tobe_deleted, IEEE802_DOT1AB_LLDP_REMOTE_CHANGES);
@@ -1395,8 +1548,7 @@ void delete_remote_system_data(lldp_port_t* port, remote_systems_data_t* rs_data
 		delete_rs_data_2nd_level(port, rs_data_tobe_deleted, IEEE802_DOT1AB_LLDP_REMOTE_ORG_DEFINED_INFO, IEEE802_DOT1AB_LLDP_REMOTE_INFO);
 	}
 
-	uint64_t t2 = get_current_time_in_usec();
-	UB_TLOG(UBL_DEBUG, "%s:%s Delete %s k(%u, %d) tooks %d ns\n", __func__, port->name, rs_data_tobe_deleted->port_desc, rs_data_tobe_deleted->remote_index, rs_data_tobe_deleted->time_mark, (uint32_t)(t2 - t1));
+	UB_TLOG(UBL_DEBUG, "%s:%s Deleted %s k(%u, %d)\n", __func__, port->name, rs_data_tobe_deleted->port_desc, rs_data_tobe_deleted->remote_index, rs_data_tobe_deleted->time_mark);
 }
 
 static bool is_same_chassis(remote_systems_data_t* cmp1, remote_systems_data_t* cmp2)
@@ -1414,25 +1566,25 @@ static bool is_same_chassis(remote_systems_data_t* cmp1, remote_systems_data_t* 
 			case C_LOCAL:               // local is an alpha-numeric string and is locally assigned
 			case C_NETWORK_ADDRESS:     // networkAddress is an octet string
 				ret = (strcmp((char*)cmp1->chassis_id, (char*)cmp2->chassis_id) == 0);
-				// LLDP_LOG(UBL_DEBUG, "%s %d: ret %d\n", __func__, cmp1->chassis_id_subtype, ret);
+				// UB_LOG(UBL_DEBUG, "%s %d: ret %d\n", __func__, cmp1->chassis_id_subtype, ret);
 				// ub_hexdump(true, true, cmp1->chassis_id, strlen(cmp1->chassis_id), 0);
 				// ub_hexdump(true, true, cmp2->chassis_id, strlen(cmp2->chassis_id), 0);
 				break;
 			case C_MAC_ADDRESS: // MAC: 6 bytes
 				ret = (memcmp(cmp1->chassis_id, cmp2->chassis_id, 6) == 0);
-				// LLDP_LOG(UBL_DEBUG, "%s C_MAC_ADDRESS: ret %d\n", __func__, ret);
+				// UB_LOG(UBL_DEBUG, "%s C_MAC_ADDRESS: ret %d\n", __func__, ret);
 				// ub_hexdump(true, true, cmp1->chassis_id, 6, 0);
 				// ub_hexdump(true, true, cmp2->chassis_id, 6, 0);
 				break;
 			default:
-				LLDP_LOG(UBL_DEBUG, "%s Got reserved type %d-%d\n", __func__, cmp1->chassis_id_subtype, cmp2->chassis_id_subtype);
+				UB_LOG(UBL_DEBUG, "%s Got reserved type %d-%d\n", __func__, cmp1->chassis_id_subtype, cmp2->chassis_id_subtype);
 				ret = true; // okay if same subtype but got reserved => ret = true always
 				break;
 		}
 	}
 	else
 	{
-		LLDP_LOG(UBL_INFO, "%s diff chassis id subtype %d - %d\n", __func__, cmp1->chassis_id_subtype, cmp2->chassis_id_subtype);
+		UB_LOG(UBL_INFO, "%s diff chassis id subtype %d - %d\n", __func__, cmp1->chassis_id_subtype, cmp2->chassis_id_subtype);
 	}
 
 	return ret;
@@ -1452,18 +1604,18 @@ static bool is_same_port(remote_systems_data_t* cmp1, remote_systems_data_t* cmp
 			case P_LOCAL:               // local is an alpha-numeric string and is locally assigned
 			case P_NETWORK_ADDRESS:     // networkAddress is an octet string
 				ret = (strcmp((char*)cmp1->port_id, (char*)cmp2->port_id) == 0);
-				// LLDP_LOG(UBL_DEBUG, "%s %d: ret %d\n", __func__, cmp1->port_id_subtype, ret);
+				// UB_LOG(UBL_DEBUG, "%s %d: ret %d\n", __func__, cmp1->port_id_subtype, ret);
 				// ub_hexdump(true, true, cmp1->port_id, strlen(cmp1->port_id), 0);
 				// ub_hexdump(true, true, cmp2->port_id, strlen(cmp2->port_id), 0);
 				break;
 			case P_MAC_ADDRESS: // MAC: 6 bytes
 				ret = (memcmp(cmp1->port_id, cmp2->port_id, 6) == 0);
-				// LLDP_LOG(UBL_DEBUG, "%s P_MAC_ADDRESS: ret %d\n", __func__, ret);
+				// UB_LOG(UBL_DEBUG, "%s P_MAC_ADDRESS: ret %d\n", __func__, ret);
 				// ub_hexdump(true, true, cmp1->port_id, 6, 0);
 				// ub_hexdump(true, true, cmp2->port_id, 6, 0);
 				break;
 			default:
-				LLDP_LOG(UBL_DEBUG, "%s Got reserved type %d-%d\n", __func__, cmp1->port_id_subtype, cmp2->port_id_subtype);
+				UB_LOG(UBL_DEBUG, "%s Got reserved type %d-%d\n", __func__, cmp1->port_id_subtype, cmp2->port_id_subtype);
 				ret = true; // okay if same subtype but got reserved => ret = true always
 				break;
 		}
@@ -1485,11 +1637,11 @@ remote_systems_data_t* find_existed_neighbor(lldp_port_t* port, remote_systems_d
 		if (is_same_chassis(in, remote_system_data) &&  
 			is_same_port(in, remote_system_data) )
 			{
-				// LLDP_LOG(UBL_DEBUG, "%s: found existed neighbor\n", __func__);
+				// UB_LOG(UBL_DEBUG, "%s: found existed neighbor\n", __func__);
 				return remote_system_data;
 			}
 	}
-	// LLDP_LOG(UBL_DEBUG, "%s: not found existed neighbor\n", __func__);
+	// UB_LOG(UBL_DEBUG, "%s: not found existed neighbor\n", __func__);
 	return NULL;
 }
 
@@ -1499,7 +1651,7 @@ static void dump_mgmt_addr_list(char* tag, management_address_list_t* mgmt_addr)
 	for(UB_LIST_FOREACH_ITER(mgmt_addr, tmp_compare_node))
 	{
 		management_address_t* compare_mgmt_addr = (management_address_t*)tmp_compare_node;
-		LLDP_LOG(UBL_INFO, "%s: address_subtype %d - if_id %d if_subtype %d \t", tag, compare_mgmt_addr->address_subtype, compare_mgmt_addr->if_id, compare_mgmt_addr->if_subtype);
+		UB_LOG(UBL_INFO, "%s: address_subtype %d - if_id %d if_subtype %d \t", tag, compare_mgmt_addr->address_subtype, compare_mgmt_addr->if_id, compare_mgmt_addr->if_subtype);
 		ub_hexdump(true, true, compare_mgmt_addr->address, sizeof(compare_mgmt_addr->address), 0);
 	}
 }
@@ -1534,7 +1686,7 @@ static bool is_same_mgmt_addr_list(management_address_list_t* mgmt_addr1, manage
 
 			if (!is_found_mgmt_addr)
 			{
-				LLDP_LOG(UBL_INFO, "%s: mgmt addr is not same\n", __func__);
+				UB_LOG(UBL_INFO, "%s: mgmt addr is not same\n", __func__);
 				dump_mgmt_addr_list("mgmt_addr1: ", mgmt_addr1);
 				dump_mgmt_addr_list("mgmt_addr2: ", mgmt_addr2);
 				ret = false;
@@ -1560,50 +1712,49 @@ bool is_remote_system_data_change(remote_systems_data_t* in, remote_systems_data
 
 	if (strcmp(in->port_desc, existed->port_desc) != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Detected port desc changed \n", __func__);
+		UB_LOG(UBL_INFO, "%s: Detected port desc changed \n", __func__);
 		ret = true;
 	}
 
 	if (!ret && strcmp(in->system_name, existed->system_name) != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Detected system name changed \n", __func__);
+		UB_LOG(UBL_INFO, "%s: Detected system name changed \n", __func__);
 		ret = true;
 	}
 
 	if (!ret && strcmp(in->system_description, existed->system_description) != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Detected system description changed \n", __func__);
+		UB_LOG(UBL_INFO, "%s: Detected system description changed \n", __func__);
 		ret = true;
 	}
 
 	if (!ret && in->system_capabilities_enabled != existed->system_capabilities_enabled)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Detected system_capabilities_enabled changed\n", __func__);
+		UB_LOG(UBL_INFO, "%s: Detected system_capabilities_enabled changed\n", __func__);
 		ret = true;
 	}
 
 	if (!ret && in->system_capabilities_supported != existed->system_capabilities_supported)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Detected system_capabilities_supported changed\n", __func__);
+		UB_LOG(UBL_INFO, "%s: Detected system_capabilities_supported changed\n", __func__);
 		ret = true;
 	}
 
 	if (!is_same_mgmt_addr_list(&in->management_address, &existed->management_address))
 	{
-		LLDP_LOG(UBL_INFO, "%s: Detected management_address changed \n", __func__);
+		UB_LOG(UBL_INFO, "%s: Detected management_address changed \n", __func__);
 		ret = true;
 	}
 
-	LLDP_LOG(UBL_DEBUG, "%s: %d\n", __func__, ret);
+	UB_LOG(UBL_DEBUG, "%s: %d\n", __func__, ret);
 	return ret;
 }
 
 void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, remote_systems_data_t* existed)
 {
-	uint64_t t1 = get_current_time_in_usec();
 	if (strcmp(in->port_desc, existed->port_desc) != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: changed port_desc [%s-> %s]\n", __func__, (char*)existed->port_desc, (char*)in->port_desc);
+		UB_LOG(UBL_INFO, "%s: changed port_desc [%s-> %s]\n", __func__, (char*)existed->port_desc, (char*)in->port_desc);
 		memset(existed->port_desc, 0, sizeof(existed->port_desc));
 		memcpy(existed->port_desc, in->port_desc, strlen(in->port_desc));
 		update_rs_data_1st_level(port, existed, IEEE802_DOT1AB_LLDP_PORT_DESC);
@@ -1611,7 +1762,7 @@ void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, rem
 
 	if (strcmp(in->system_name, existed->system_name) != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: changed system_name [%s -> %s]\n", __func__, (char*)existed->system_name, (char*)in->system_name);
+		UB_LOG(UBL_INFO, "%s: changed system_name [%s -> %s]\n", __func__, (char*)existed->system_name, (char*)in->system_name);
 		memset(existed->system_name, 0, sizeof(existed->system_name));
 		memcpy(existed->system_name, in->system_name, strlen(in->system_name));
 		update_rs_data_1st_level(port, existed, IEEE802_DOT1AB_LLDP_SYSTEM_NAME);
@@ -1619,7 +1770,7 @@ void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, rem
 
 	if (strcmp(in->system_description, existed->system_description) != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: changed system_description [%s %s]\n", __func__, (char*)existed->system_description, (char*)in->system_description);
+		UB_LOG(UBL_INFO, "%s: changed system_description [%s %s]\n", __func__, (char*)existed->system_description, (char*)in->system_description);
 		memset(existed->system_description, 0, sizeof(existed->system_description));
 		memcpy(existed->system_description, in->system_description, strlen(in->system_description));
 		update_rs_data_1st_level(port, existed, IEEE802_DOT1AB_LLDP_SYSTEM_DESCRIPTION);
@@ -1627,14 +1778,14 @@ void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, rem
 
 	if (in->system_capabilities_enabled != existed->system_capabilities_enabled)
 	{
-		LLDP_LOG(UBL_INFO, "%s: changed system_capabilities_enabled [%x -> %x]\n", __func__, existed->system_capabilities_enabled, in->system_capabilities_enabled);
+		UB_LOG(UBL_INFO, "%s: changed system_capabilities_enabled [%x -> %x]\n", __func__, existed->system_capabilities_enabled, in->system_capabilities_enabled);
 		existed->system_capabilities_enabled = in->system_capabilities_enabled;
 		update_rs_data_1st_level(port, existed, IEEE802_DOT1AB_LLDP_SYSTEM_CAPABILITIES_ENABLED);
 	}
 
 	if (in->system_capabilities_supported != existed->system_capabilities_supported)
 	{
-		LLDP_LOG(UBL_INFO, "%s: changed system_capabilities_supported [%x -> %x]\n", __func__, existed->system_capabilities_supported, in->system_capabilities_supported);
+		UB_LOG(UBL_INFO, "%s: changed system_capabilities_supported [%x -> %x]\n", __func__, existed->system_capabilities_supported, in->system_capabilities_supported);
 		existed->system_capabilities_supported = in->system_capabilities_supported;
 		update_rs_data_1st_level(port, existed, IEEE802_DOT1AB_LLDP_SYSTEM_CAPABILITIES_SUPPORTED);
 	}
@@ -1643,7 +1794,7 @@ void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, rem
 	if (!is_same_mgmt_addr_list(&in->management_address, &existed->management_address))
 	{
 		
-		LLDP_LOG(UBL_DEBUG, "%s: management_address diff. delete old mgmt list -> create new \n", __func__);
+		UB_LOG(UBL_DEBUG, "%s: management_address diff. delete old mgmt list -> create new \n", __func__);
 		delete_rs_data_2nd_level(port, existed, IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS, IEEE802_DOT1AB_LLDP_IF_SUBTYPE);
 		delete_rs_data_2nd_level(port, existed, IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS, IEEE802_DOT1AB_LLDP_IF_ID);
 		uint8_t cmd = CLEAR_CMD_MGMT_ADDR;
@@ -1664,7 +1815,7 @@ void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, rem
 				copied_mgmt_addr->if_id = mgmt_addr->if_id;
 				copied_mgmt_addr->if_subtype = mgmt_addr->if_subtype;
 
-				LLDP_LOG(UBL_INFO, "%s:%s added new management_address %s \n", __func__, port->name, mgmt_addr->address);
+				UB_LOG(UBL_INFO, "%s:%s added new management_address %s \n", __func__, port->name, mgmt_addr->address);
 				ub_list_append(&existed->management_address, (struct ub_list_node*)copied_mgmt_addr);
 			}
 
@@ -1674,11 +1825,11 @@ void update_remote_system_data(lldp_port_t* port, remote_systems_data_t* in, rem
 		}
 		else
 		{
-			LLDP_LOG(UBL_INFO, "%s: Received LLDPDU doesnt have Management Addr TLVs \n", __func__);
+			UB_LOG(UBL_INFO, "%s: Received LLDPDU doesnt have Management Addr TLVs \n", __func__);
 		}
 	}
-	uint64_t t2 = get_current_time_in_usec();
-	UB_TLOG(UBL_DEBUG, "%s:%s Update %s k(%u, %d) tooks %d ns\n", __func__, port->name, existed->port_desc, existed->remote_index, existed->time_mark, (uint32_t)(t2 - t1));
+	
+	UB_TLOG(UBL_DEBUG, "%s:%s Update %s k(%u, %d) \n", __func__, port->name, existed->port_desc, existed->remote_index, existed->time_mark);
 }
 
 static bool is_manangement_addr_tx_port_existed(lldp_port_t* port, address_subtype_t subtype, char* man_address)
@@ -1914,46 +2065,30 @@ static lldp_port_t* get_existed_port(yang_lldp_t* lldp, const char * if_name, ui
 	return p;
 }
 
-static lldp_port_t* find_port_by_name(yang_lldp_t* lldp, const char * if_name)
-{
-	lldp_port_t* p = NULL;
-	struct ub_list_node *tmp_node;
-	for(UB_LIST_FOREACH_ITER(&lldp->ports, tmp_node))
-	{
-		p = (lldp_port_t*)tmp_node;
-		if ( (strcmp(if_name, p->name)  == 0) )
-		{
-			break;
-		}
-	}
-
-	return p;
-}
-
 static void fill_remote_statistic_info(uint8_t k3, lldp_cfg_param_t* prm, yang_lldp_t* lldp)
 {
-	// LLDP_LOG(UBL_DEBUG, "%s: %s\n", __func__, ieee802_dot1ab_lldp_get_string(k3));
+	// UB_LOG(UBL_DEBUG, "%s: %s\n", __func__, ieee802_dot1ab_lldp_get_string(k3));
 	switch(k3)
 	{
 		case IEEE802_DOT1AB_LLDP_LAST_CHANGE_TIME:
 			lldp->remote_statistic.last_change_time = *((uint32_t*)prm->value);
-			// LLDP_LOG(UBL_DEBUG, "%s: last_change_time %u\n", __func__, lldp->remote_statistic.last_change_time);
+			// UB_LOG(UBL_DEBUG, "%s: last_change_time %u\n", __func__, lldp->remote_statistic.last_change_time);
 			break;
 		case IEEE802_DOT1AB_LLDP_REMOTE_INSERTS:
 			lldp->remote_statistic.remote_inserts = *((uint32_t*)prm->value);
-			// LLDP_LOG(UBL_DEBUG, "%s: remote_inserts %u\n", __func__, lldp->remote_statistic.remote_inserts);
+			// UB_LOG(UBL_DEBUG, "%s: remote_inserts %u\n", __func__, lldp->remote_statistic.remote_inserts);
 			break;
 		case IEEE802_DOT1AB_LLDP_REMOTE_DELETES:
 			lldp->remote_statistic.remote_deletes= *((uint32_t*)prm->value);
-			// LLDP_LOG(UBL_DEBUG, "%s: remote_deletes %u\n", __func__, lldp->remote_statistic.remote_deletes);
+			// UB_LOG(UBL_DEBUG, "%s: remote_deletes %u\n", __func__, lldp->remote_statistic.remote_deletes);
 			break;
 		case IEEE802_DOT1AB_LLDP_REMOTE_DROPS:
 			lldp->remote_statistic.remote_drops = *((uint32_t*)prm->value);
-			// LLDP_LOG(UBL_DEBUG, "%s: remote_drops %u\n", __func__, lldp->remote_statistic.remote_drops);
+			// UB_LOG(UBL_DEBUG, "%s: remote_drops %u\n", __func__, lldp->remote_statistic.remote_drops);
 			break;
 		case IEEE802_DOT1AB_LLDP_REMOTE_AGEOUTS:
 			lldp->remote_statistic.remote_ageouts = *((uint32_t*)prm->value);
-			// LLDP_LOG(UBL_DEBUG, "%s: remote_ageouts %u\n", __func__, lldp->remote_statistic.remote_ageouts);
+			// UB_LOG(UBL_DEBUG, "%s: remote_ageouts %u\n", __func__, lldp->remote_statistic.remote_ageouts);
 			break;
 	}
 }
@@ -1964,7 +2099,7 @@ static void fill_local_system_data(uint8_t k3, lldp_cfg_param_t* prm, yang_lldp_
 	{
 		case IEEE802_DOT1AB_LLDP_CHASSIS_ID:
 			memcpy(lldp->local_system_data.chassis_id, (char*)prm->value, prm->vsize);
-			// LLDP_LOG(UBL_INFO, "%s: chassis id %s \n", __func__, lldp->local_system_data.chassis_id);
+			// UB_LOG(UBL_INFO, "%s: chassis id %s \n", __func__, lldp->local_system_data.chassis_id);
 			break;
 		case IEEE802_DOT1AB_LLDP_CHASSIS_ID_SUBTYPE:
 			lldp->local_system_data.chassis_id_subtype = *((chassis_id_type_t*)prm->value);
@@ -1989,7 +2124,7 @@ static void fill_management_info(uint8_t* k, address_subtype_t addr_subtype, cha
 	management_address_tx_port_t* man_addr_tx_port = NULL;
 	if (!is_manangement_addr_tx_port_existed(port, addr_subtype, man_addr))
 	{
-		// LLDP_LOG(UBL_DEBUG, "%s addr not existed. Added new man addr tx port \n", man_addr);
+		// UB_LOG(UBL_DEBUG, "%s addr not existed. Added new man addr tx port \n", man_addr);
 		man_addr_tx_port  = init_mgmt_tx_port();
 		memset(man_addr_tx_port, 0, sizeof(management_address_tx_port_t));
 		memcpy(man_addr_tx_port->man_address, man_addr, strlen(man_addr));
@@ -2025,7 +2160,7 @@ static void fill_manament_addr(uint8_t* k, address_subtype_t addr_subtype, char*
 	management_address_t* mgr_addr = NULL;
 	if (!is_manangement_addr_existed(rs_data, addr_subtype, addr))
 	{
-		// LLDP_LOG(UBL_DEBUG, "%d addr subtype not existed. Added new man addr \n", addr_subtype);
+		// UB_LOG(UBL_DEBUG, "%d addr subtype not existed. Added new man addr \n", addr_subtype);
 		mgr_addr = init_mgmt_addr();
 		memset(mgr_addr, 0, sizeof(management_address_t));
 		mgr_addr->address_subtype = addr_subtype;
@@ -2039,7 +2174,7 @@ static void fill_manament_addr(uint8_t* k, address_subtype_t addr_subtype, char*
 	}
 	else
 	{
-		// LLDP_LOG(UBL_DEBUG, "man addr %d existed\n", addr_subtype);
+		// UB_LOG(UBL_DEBUG, "man addr %d existed\n", addr_subtype);
 		mgr_addr = get_existed_manament_addr(rs_data, addr_subtype, addr);
 	}
 
@@ -2059,7 +2194,7 @@ static void fill_remote_unknown_tlv(uint8_t* k, uint32_t tlv_type, lldp_cfg_para
 	remote_unknown_tlv_t* remote_unknow_tlv = NULL;
 	if (!is_remote_unknown_tlv_existed(rs_data, tlv_type))
 	{
-		// LLDP_LOG(UBL_INFO, "%d addr subtype not existed. Added new tlv \n", tlv_type);
+		// UB_LOG(UBL_INFO, "%d addr subtype not existed. Added new tlv \n", tlv_type);
 		remote_unknow_tlv = init_rm_unknown_tlv();
 		memset(remote_unknow_tlv, 0, sizeof(remote_unknown_tlv_t));
 		remote_unknow_tlv->tlv_type = tlv_type;
@@ -2067,7 +2202,7 @@ static void fill_remote_unknown_tlv(uint8_t* k, uint32_t tlv_type, lldp_cfg_para
 	}
 	else
 	{
-		// LLDP_LOG(UBL_INFO, "tlv %d existed\n", tlv_type);
+		// UB_LOG(UBL_INFO, "tlv %d existed\n", tlv_type);
 		remote_unknow_tlv = get_existed_remote_unknown_tlv(rs_data, tlv_type);
 	}
 
@@ -2084,7 +2219,7 @@ static void fill_remote_org_info(uint8_t* k, uint32_t info_id, uint32_t info_sub
 	remote_org_defined_info_t* remote_org_info = NULL;
 	if (!is_remote_org_defined_existed(rs_data, info_id, info_subtype, info_index))
 	{
-		// LLDP_LOG(UBL_DEBUG, "%d - %d org info not existed. Added new  \n", info_id, info_index);
+		// UB_LOG(UBL_DEBUG, "%d - %d org info not existed. Added new  \n", info_id, info_index);
 		remote_org_info = init_rm_org_def();
 		memset(remote_org_info, 0, sizeof(remote_org_defined_info_t));
 		remote_org_info->info_identifier = info_id;
@@ -2095,17 +2230,17 @@ static void fill_remote_org_info(uint8_t* k, uint32_t info_id, uint32_t info_sub
 	}
 	else
 	{
-		// LLDP_LOG(UBL_DEBUG, "%d - %d org info existed  \n", info_id, info_index);
+		// UB_LOG(UBL_DEBUG, "%d - %d org info existed  \n", info_id, info_index);
 		remote_org_info = get_existed_remote_org(rs_data, info_id, info_subtype, info_index);
 	}
 
 	switch(k[5])
 	{
 	case IEEE802_DOT1AB_LLDP_REMOTE_INFO:
-		// LLDP_LOG(UBL_INFO, "copy oui info [%d] \n",  prm->vsize);
+		// UB_LOG(UBL_INFO, "copy oui info [%d] \n",  prm->vsize);
 		// ub_hexdump(true, true,  (uint8_t*)prm->value, prm->vsize, 0);
 		memcpy(remote_org_info->remote_info, (uint8_t*)prm->value, prm->vsize);
-		// LLDP_LOG(UBL_INFO, "copy oui info [%d] done\n",  prm->vsize);
+		// UB_LOG(UBL_INFO, "copy oui info [%d] done\n",  prm->vsize);
 		break;
 	}
 
@@ -2117,7 +2252,7 @@ static void fill_remote_system_data(uint8_t* k, timeticks time_mark, uint32_t re
 	
 	if ( !is_remote_system_data_existed(port, time_mark, remote_index) )
 	{
-		// LLDP_LOG(UBL_DEBUG, "%d rs data not existed. Add new \n", remote_index);
+		// UB_LOG(UBL_DEBUG, "%d rs data not existed. Add new \n", remote_index);
 		remote_system_data = init_rm_system_data();
 		memset(remote_system_data, 0, sizeof(remote_systems_data_t));
 		remote_system_data->remote_index = remote_index;
@@ -2134,7 +2269,7 @@ static void fill_remote_system_data(uint8_t* k, timeticks time_mark, uint32_t re
 		remote_system_data = get_existed_remote_system_data(port, time_mark, remote_index);
 	}
 	
-	// LLDP_LOG(UBL_DEBUG, "%s filling key %s \n", __func__, ieee802_dot1ab_lldp_get_string(k[4]));
+	// UB_LOG(UBL_DEBUG, "%s filling key %s \n", __func__, ieee802_dot1ab_lldp_get_string(k[4]));
 	switch (k[4])
 	{
 	case IEEE802_DOT1AB_LLDP_REMOTE_TOO_MANY_NEIGHBORS:
@@ -2209,7 +2344,7 @@ static void fill_port_info(uint8_t* k, char* if_name, uint8_t* mac, lldp_cfg_par
 	lldp_port_t* port;
 	if (!is_port_existed(lldp, if_name, mac))
 	{
-		// LLDP_LOG(UBL_DEBUG, "%s not existed. Added new lldp port \n", if_name);
+		// UB_LOG(UBL_DEBUG, "%s not existed. Added new lldp port \n", if_name);
 		port = init_cfg_port();
 		memset(port, 0, sizeof(lldp_port_t));
 		ub_list_init(&port->remote_systems_data);
@@ -2236,7 +2371,6 @@ static void fill_port_info(uint8_t* k, char* if_name, uint8_t* mac, lldp_cfg_par
 		case IEEE802_DOT1AB_LLDP_TLVS_TX_ENABLE:
 			port->tlvs_tx_enable = *((uint8_t*)prm->value);
 			break;
-#if 0
 		case IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX:
 			port->message_fast_tx = *((uint32_t*)prm->value);
 			break;
@@ -2255,15 +2389,11 @@ static void fill_port_info(uint8_t* k, char* if_name, uint8_t* mac, lldp_cfg_par
 		case IEEE802_DOT1AB_LLDP_TX_FAST_INIT:
 			port->tx_fast_init = *((uint32_t*)prm->value);
 			break;
-		case IEEE802_DOT1AB_LLDP_NOTIFICATION_INTERVAL:
-			port->notification_interval = *((uint32_t*)prm->value);
-			break;
-#endif
 		case IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS_TX_PORT:
 			{
 				char* man_addr = (char*)prm->kvs[3];
 				address_subtype_t addr_subtype = *((address_subtype_t*) prm->kvs[2]);
-				// LLDP_LOG(UBL_INFO, "%s: IP [%s] subtype: %d\n",port->name, man_addr, addr_subtype);
+				// UB_LOG(UBL_INFO, "%s: IP [%s] subtype: %d\n",port->name, man_addr, addr_subtype);
 				fill_management_info(k, addr_subtype, man_addr, prm, port);
 			}
 			break;
@@ -2328,7 +2458,7 @@ static void fill_lldp_config_info(void *key, yang_lldp_t* lldp, lldp_cfg_param_t
 		if( ( ((uint8_t*)key)[0] == IEEE802_DOT1AB_LLDP_RW || ((uint8_t*)key)[0] == IEEE802_DOT1AB_LLDP_RO)  
 			&& ((uint8_t*)key)[1] == IEEE802_DOT1AB_LLDP_LLDP )
 		{
-			// LLDP_LOG(UBL_INFO, "%s: RW key[0] %d\n", __func__, ((uint8_t*)key)[0]);
+			// UB_LOG(UBL_INFO, "%s: RW key[0] %d\n", __func__, ((uint8_t*)key)[0]);
 			switch (((uint8_t*)key)[2])
 			{
 				case IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX:
@@ -2371,8 +2501,8 @@ static void fill_lldp_config_info(void *key, yang_lldp_t* lldp, lldp_cfg_param_t
 					}
 					else
 					{
-						LLDP_LOG(UBL_INFO, "%s Invalid entry due to MAC invalid \n", if_name);
-						LLDP_LOG(UBL_INFO, "%s %s/%s/%s/%s \n", if_name, ieee802_dot1ab_lldp_get_string(((uint8_t*)key)[3]),
+						UB_LOG(UBL_INFO, "%s Invalid entry due to MAC invalid \n", if_name);
+						UB_LOG(UBL_INFO, "%s %s/%s/%s/%s \n", if_name, ieee802_dot1ab_lldp_get_string(((uint8_t*)key)[3]),
 						 ieee802_dot1ab_lldp_get_string(((uint8_t*)key)[4]),
 						 ieee802_dot1ab_lldp_get_string(((uint8_t*)key)[5]),
 						 ieee802_dot1ab_lldp_get_string(((uint8_t*)key)[6]));
@@ -2406,7 +2536,7 @@ static void load_specific_module(yang_db_item_access_t *ydbia, yang_lldp_t* lldp
 		if(uc_get_key_in_range(ydbia->dbald, range, &key, &ksize, UC_DBAL_NOMOVE)){
 			break;
 		}
-		// LLDP_LOG(UBL_INFO, "%s ksize %d \n", (char*)key, ksize);
+		// UB_LOG(UBL_INFO, "%s ksize %d \n", (char*)key, ksize);
 		if(uc_get_value_in_range(ydbia->dbald, range, &prm.value, &prm.vsize, UC_DBAL_FORWARD)){
 			break;
 		}
@@ -2423,6 +2553,20 @@ static void load_specific_module(yang_db_item_access_t *ydbia, yang_lldp_t* lldp
 	}
 }
 
+static void refill_port_interval_info(yang_lldp_t* lldp)
+{
+	struct ub_list_node* tmp_node;
+	for(UB_LIST_FOREACH_ITER(&lldp->ports, tmp_node))
+	{
+		lldp_port_t* port = (lldp_port_t*) tmp_node;
+		port->message_tx_interval = (port->message_tx_interval == 0) ? lldp->message_tx_interval : port->message_tx_interval;
+		port->message_fast_tx = (port->message_fast_tx == 0) ? lldp->message_fast_tx : port->message_fast_tx;
+		port->message_tx_hold_multiplier = (port->message_tx_hold_multiplier == 0) ? lldp->message_tx_hold_multiplier : port->message_tx_hold_multiplier;
+		port->reinit_delay = (port->reinit_delay == 0) ? lldp->reinit_delay : port->reinit_delay;
+		port->tx_credit_max = (port->tx_credit_max == 0) ? lldp->tx_credit_max : port->tx_credit_max;
+		port->tx_fast_init = (port->tx_fast_init == 0) ? lldp->tx_fast_init : port->tx_fast_init;
+	}
+}
 int ydbi_load_lldp_db(yang_db_item_access_t *ydbia, yang_lldp_t* lldp)
 {
 	uc_range *range=NULL;
@@ -2446,6 +2590,8 @@ int ydbi_load_lldp_db(yang_db_item_access_t *ydbia, yang_lldp_t* lldp)
 	uc_dbal_releasedb(ydbia->dbald);
 	// Done
 
+	// Fill port->interval info by global info if it's not existed
+	refill_port_interval_info(lldp);
 	return ret;
 }
 

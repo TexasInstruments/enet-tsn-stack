@@ -70,7 +70,7 @@ void eui48to64(const uint8_t *eui48, uint8_t *eui64, const uint8_t *insert)
 void print_priority_vector(ub_dbgmsg_level_t level, const char *identifier,
 			   UInteger224 *priorityVector)
 {
-	UB_LOG(level, "%s:%s P1=%d CC=%d CA=%d LV=%d P2=%d CI=%02X%02X%02X%02X%02X%02X%02X%02X"
+	UB_VLOG(level, "%s:%s P1=%d CC=%d CA=%d LV=%d P2=%d CI=%02X%02X%02X%02X%02X%02X%02X%02X"
 	       " SR=%d SI=%02X%02X%02X%02X%02X%02X%02X%02X\n",
                __func__, identifier,
                priorityVector->rootSystemIdentity.priority1,

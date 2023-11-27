@@ -440,7 +440,9 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		if(ehints!=NULL){hints=ehints;}// ethints supercedes hints
 		if(NULL != hints) {
 			data[0]=yang_identityref_getval(vstr, hints);
-		}else if(!strncmp(vstr, "cc-", 3)) {
+		}
+		if(data[0]!=INVALID_IDENTIY_VALUE){goto idrefgotv;}
+		if(!strncmp(vstr, "cc-", 3)) {
 			data[0]=yang_identityref_getval(vstr, "clock-class");
 		}else if(!strncmp(vstr, "ca-", 3)) {
 			data[0]=yang_identityref_getval(vstr, "clock-accuracy");
@@ -452,23 +454,26 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			int tblidx;
 			for(tblidx = 0; yang_identityref_list[tblidx].reftbl != NULL; tblidx++) {
 				/* skip identities that have pattern already checked above */
-				if ((strcmp(yang_identityref_list[tblidx].keyword, "clock-class")==0) ||
-				    (strcmp(yang_identityref_list[tblidx].keyword, "clock-accuracy")==0)) {
+				if ((strcmp(yang_identityref_list[tblidx].keyword,
+					    "clock-class")==0) ||
+				    (strcmp(yang_identityref_list[tblidx].keyword,
+					    "clock-accuracy")==0)) {
 					continue;
 				}
-				data[0]=yang_identityref_getval(vstr,
-				            (char*)yang_identityref_list[tblidx].keyword);
+				data[0]=yang_identityref_getval(
+					vstr, (char*)yang_identityref_list[tblidx].keyword);
 				if (INVALID_IDENTIY_VALUE != data[0]){break;}
 			}
 		}
 		if (INVALID_IDENTIY_VALUE == data[0]) {
 			UB_LOG(UBL_ERROR, "%s:unknown identityref vstr='%s'\n", __func__, vstr);
 			res=-1;
-		}else{
-			csize=4;
-			ADJUST_ENDIAN(data, sizeof(long int)-csize, csize);
-			res=value_conv_destcopy(destd, data, size, csize);
+			break;
 		}
+	idrefgotv:
+		csize=4;
+		ADJUST_ENDIAN(data, sizeof(long int)-csize, csize);
+		res=value_conv_destcopy(destd, data, size, csize);
 		break;
 	}
 	case YANG_VTYPE_LLDP_TYPES_SYSTEM_CAPABILITIES_MAP:
@@ -845,6 +850,29 @@ bool yang_isstring_vtype(uint8_t vtype)
 	return isstring;
 }
 
+bool yang_isenum_vtype(uint8_t vtype)
+{
+	bool isenum=false;
+	switch(vtype){
+	case YANG_VTYPE_MRP_PROTOCOL:
+	case YANG_VTYPE_ENUMERATION:
+	case YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM:
+	case YANG_VTYPE_IEEE_CHASSIS_ID_SUBTYPE_TYPE:
+	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
+	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
+	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_PORT_STATE:
+		isenum=true;
+		break;
+	case YANG_VTYPE_IDENTITYREF:
+		isenum=true;
+		break;
+	default:
+		break;
+	}
+	return isenum;
+}
+
 uint32_t yang_db_create_key(uint8_t *pap, uint8_t *ap, kvs_t *kvs, uint8_t *kss, void *key)
 {
 	int i, apc, papc=0, kpc=0;
@@ -992,7 +1020,7 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 			     "/%d", ap[i]);
 		if(res<2){break;}
 	}
-	UB_LOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
+	UB_VLOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 	if(!kpc){return;}
 	(void)strcpy(astr, "keys - ");
 	sp=strlen(astr);
@@ -1009,7 +1037,7 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 			}
 		}
 	}
-	UB_LOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
+	UB_VLOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 }
 
 void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
@@ -1028,9 +1056,9 @@ void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 		astr[sp+(i*3)+2]=' ';
 	}
 	if(i==vsize){
-		UB_LOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
+		UB_VLOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 	}else{
-		UB_LOG((ub_dbgmsg_level_t)llevel, "%s...\n", astr);
+		UB_VLOG((ub_dbgmsg_level_t)llevel, "%s...\n", astr);
 	}
 }
 
@@ -1522,7 +1550,7 @@ int ydbi_get_foot(yang_db_item_access_t *ydbia, const char *fname,
 		*rval=ydbia->dbpara.value;
 		res=ydbia->dbpara.vsize;
 	}else{
-		UB_LOG(emlevel, "%s:no data\n", fname);
+		UB_VLOG(emlevel, "%s:no data\n", fname);
 		yang_db_keydump_log(UBL_DEBUG, ydbia->dbpara.aps,
 				    ydbia->dbpara.kvs, ydbia->dbpara.kss);
 		ydbia->dbpara.atype=YANG_DB_ACTION_NONE;
@@ -1552,7 +1580,7 @@ int ydbi_set_foot(yang_db_item_access_t *ydbia, const char *fname,
 	int res;
 	res=yang_db_action(ydbia->dbald, NULL, &ydbia->dbpara);
 	if(res!=0){
-		UB_LOG(emlevel, "%s:can't updte\n", fname);
+		UB_VLOG(emlevel, "%s:can't updte\n", fname);
 		ydbia->dbpara.atype=YANG_DB_ACTION_NONE;
 	}else if(ydbia->ucntd!=NULL){
 		if(notice==YDBI_PUSH_NOTICE){
@@ -1569,7 +1597,7 @@ int ydbi_set_foot(yang_db_item_access_t *ydbia, const char *fname,
 			res=0;
 		}
 		if(res<0){
-			UB_LOG(emlevel, "%s:failed in uc_nc_askaction_push\n", fname);
+			UB_VLOG(emlevel, "%s:failed in uc_nc_askaction_push\n", fname);
 		}
 	}
 	(void)CB_THREAD_MUTEX_UNLOCK(ydbia->mutex);

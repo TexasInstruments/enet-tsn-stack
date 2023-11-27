@@ -124,3 +124,15 @@ void split_str_into_arr(char* buf, char* delim, char** out, int expected_no)
         p = strtok (NULL, delim);
 	}
 }
+
+char *lldp_bmac2smac(ub_macaddr_t bmac, char *smac, const char delim)
+{
+	int i;
+	for(i=0;i<5;i++){
+		ub_byte2hexstr(bmac[i], &smac[i*3]);
+		smac[(i*3)+2]=delim;
+	}
+	ub_byte2hexstr(bmac[5], &smac[5*3]);
+	smac[17]=0;
+	return smac;
+}

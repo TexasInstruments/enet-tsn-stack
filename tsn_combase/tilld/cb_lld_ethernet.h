@@ -79,20 +79,28 @@ extern "C" {
 #define ntohl __ntohl
 #endif
 
+#ifndef ECONNREFUSED
+/* Use to fix the compiling error, no real usage */
+#define ECONNREFUSED 100
+#endif
 #define MAX_NUMBER_ENET_DEVS LLDENET_MAX_PORTS
 
 #define CB_SOCKET_VALID(x) ((x)!=NULL)
 #define CB_SOCKET_INVALID_VALUE NULL
 #define CB_SOCKET_T lld_socket_t*
 #define CB_ETHHDR_T struct ethhdr
-#define CB_SOCKADDR_LL_T lld_sockaddr_t
+#define CB_SOCKADDR_LL_T struct sockaddr
 #define CB_SOCK_SENDTO cb_lld_sendto
+#define CB_SOCK_CLOSE cb_rawsock_close
+#define CB_OPEN open
+#define CB_CLOSE close
+#define CB_WRITE write
 
 /* does not support */
 #define CB_IN_ADDR_T void*
 
 #ifndef IFNAMSIZ
-#define IFNAMSIZ        16
+#define IFNAMSIZ		16
 #endif
 
 #define ETH_ALEN		6		/* Octets in one ethernet addr	 */
@@ -116,12 +124,12 @@ extern "C" {
  */
 struct ethhdr {
 	/**
-     * Destination Ethernet address.
-     */
+	 * Destination Ethernet address.
+	 */
 	uint8_t h_dest[ETH_ALEN];
 	/**
-     * Source Ethernet address.
-     */
+	 * Source Ethernet address.
+	 */
 	uint8_t h_source[ETH_ALEN];
 	/**
 	 * Ethernet type in the ethernet frame
@@ -132,29 +140,21 @@ struct ethhdr {
 /**
  * @brief Structure representing the lld_sockaddr instance.
  */
-typedef struct {
+struct sockaddr {
 	/**
-     * Source MAC address of the socket.
-     */
+	 * Source MAC address of the socket.
+	 */
 	unsigned char sll_addr[6];
 	/**
-     * MAC port number.
-     */
+	 * MAC port number.
+	 */
 	int macport;
 	/**
-     * Traffic class ID. Valid values start from 0.
+	 * Traffic class ID. Valid values start from 0.
 	 * Set to -1 to use the default assigned by the implementation.
-     */
+	 */
 	int tcid;
-} lld_sockaddr_t;
-
-//-------------------------------------------------------------------------------
-//FIXME: Add this to make gptp ipc compile okay. We will remove IPC in the future
-struct sockaddr {
 };
-typedef int(* cb_ipcsocket_server_rdcb)(void *cbdata, uint8_t *rdata,
-					int size, struct sockaddr *addr);
-//-------------------------------------------------------------------------------
 
 /**
  * @brief Structure representing the lld_socket instance.
@@ -166,16 +166,16 @@ typedef struct lld_socket lld_socket_t;
  */
 typedef struct {
 	/**
-     * Network device name.
-     */
+	 * Network device name.
+	 */
 	char *netdev;
 	/**
-     * MAC port number.
-     */
+	 * MAC port number.
+	 */
 	uint8_t macport;
 	/**
-     * Source MAC address.
-     */
+	 * Source MAC address.
+	 */
 	uint8_t srcmac[ETH_ALEN];
 } lld_ethdev_t;
 
@@ -185,32 +185,32 @@ typedef struct {
 typedef struct {
 	/* below are keys to match the expected socket */
 	/**
-     * Device name to match the expected socket.
-     */
+	 * Device name to match the expected socket.
+	 */
 	const char *dev;
 	/**
-     * Protocol or ethernet type in the ethernet frame header
+	 * Protocol or ethernet type in the ethernet frame header
 	 * to match the expected socket.
-     */
+	 */
 	uint16_t proto;
 	/**
-     * VLAN ID to match the expected socket.
-     */
+	 * VLAN ID to match the expected socket.
+	 */
 	uint16_t vlanid;
 	/* below are params can be updated to LLDEnetCfg_t */
 	/**
 	 * Number of buffers allocated for transmit packets
-     * Positive value will be updated to LLDEnetCfg_t.
-     */
+	 * Positive value will be updated to LLDEnetCfg_t.
+	 */
 	uint32_t nTxPkts;
 	/**
 	 * Number of buffers allocated for receive packets
-     * Positive value will be updated to LLDEnetCfg_t.
-     */
+	 * Positive value will be updated to LLDEnetCfg_t.
+	 */
 	uint32_t nRxPkts[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	/**
 	 * Transmit and receive maximum packet size.
-     * Positive value will be updated to LLDEnetCfg_t.
+	 * Positive value will be updated to LLDEnetCfg_t.
 	 */
 	uint32_t pktSize;
 	/**
@@ -255,14 +255,10 @@ typedef struct {
 	 * Default RX data callback arg
 	 */
 	void *rxDefaultCbArg;
-    /**
-     * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
-     */
-    uint32_t numRxChannels;
-    /**
-     * true: if receive packet timestamp is present in the DmaPktInfo.
-     */
-    bool isRxTsInPkt;
+	/**
+	 * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
+	 */
+	uint32_t numRxChannels;
 } cb_socket_lldcfg_update_t;
 
 /**
@@ -321,7 +317,7 @@ int cb_lld_netdev_to_macport(const char *netdev);
  * @return 0: OK, <0: error, detailed error will be printed out.
  */
 int cb_lld_sendto(CB_SOCKET_T sfd, void *sdata, int psize, int flags,
-				  CB_SOCKADDR_LL_T *addr, int addrsize);
+				 const CB_SOCKADDR_LL_T *addr, int addrsize);
 
 /**
  * @brief Receive a RX ethernet L2 packet.
@@ -383,9 +379,9 @@ int cb_lld_get_netdevs(char* netdevs[], int *len);
 
 /**
  * @brief get link state from device name like 'eth0'
- * @param cfd    a socket handle coressponding to the ethernet
- *               device name specified via the  second argument `dev`
- * @param dev    ethernet device name like 'eth0'
+ * @param cfd	a socket handle coressponding to the ethernet
+ *			   device name specified via the  second argument `dev`
+ * @param dev	ethernet device name like 'eth0'
  * @param linkstate a pointer for storing link state value (0:down, 1:up)
  * @return 0 on success, -1 on error
  */
@@ -393,8 +389,8 @@ int cb_lld_get_link_state(CB_SOCKET_T cfd, const char *dev, uint32_t *linkstate)
 
 /**
  * @brief get link info(speed and duplex) from device name like 'eth0'
- * @param cfd    a socket handle coressponding to the ethernet
- *               device name specified via the  second argument `dev`
+ * @param cfd	a socket handle coressponding to the ethernet
+ *			   device name specified via the  second argument `dev`
  * @param dev	ethenert device name like 'eth0'
  * @param speed  a pointer for storing speed value (0:unknow, 10:10Mbps, 100:100Mbps, 1000:1Gbps)
  * @param duplex a pointer for storing duplex value (0:unknow, 1:Full, 2:Half)

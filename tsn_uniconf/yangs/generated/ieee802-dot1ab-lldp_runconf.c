@@ -125,9 +125,6 @@ const char *ieee802_dot1ab_lldp_enum_strings[]={
 	"info-subtype", 		// 58(0x3a)
 	"info-index", 		// 59(0x3b)
 	"remote-info", 		// 60(0x3c)
-	// augmented by xl4lldp
-	"local-system-changed",		// 61(0x3d)
-	"local-port-changed",		// 62(0x3e)
 };
 
 uint8_t ieee802_dot1ab_lldp_get_enum(char *astr)
@@ -340,6 +337,24 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[3] = IEEE802_DOT1AB_LLDP_TLVS_TX_ENABLE;
 	vtype=YANG_VTYPE_BITS;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = IEEE802_DOT1AB_LLDP_REINIT_DELAY;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = IEEE802_DOT1AB_LLDP_TX_FAST_INIT;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[3] = IEEE802_DOT1AB_LLDP_PORT_ID_SUBTYPE;
 	vtype=YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE;
@@ -369,12 +384,6 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
 	aps[2] = IEEE802_DOT1AB_LLDP_TX_FAST_INIT;
 	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
-	aps[2] = IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED;
-	vtype=YANG_VTYPE_BOOLEAN;
-	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
-	aps[2] = IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED;
-	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[1] = IEEE802_DOT1AB_LLDP_VALUEKEY;

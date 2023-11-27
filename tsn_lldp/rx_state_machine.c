@@ -153,14 +153,14 @@ static void rxttl_timer_expired_cb(cb_xtimer_t *which_timer, void* arg)
 		if (timerArg->rs_data->rx_ttl > 0)
 		{
 			// rx_ttl is used for normal rsdata.
-			// LLDP_LOG(UBL_INFO, "%s:%s - neighbor %s rx_ttl %d -> %d ",__func__, timerArg->parent_interface->if_name, timerArg->rs_data->port_desc, timerArg->rs_data->rx_ttl, timerArg->rs_data->rx_ttl-1);
+			// UB_LOG(UBL_INFO, "%s:%s - neighbor %s rx_ttl %d -> %d ",__func__, timerArg->parent_interface->if_name, timerArg->rs_data->port_desc, timerArg->rs_data->rx_ttl, timerArg->rs_data->rx_ttl-1);
 			// ub_hexdump(true, true, (unsigned char*)&timerArg->rs_data->chassis_id[0], 6, 0);
 			timerArg->rs_data->rx_ttl--;
 		}
 		
 		if (timerArg->rs_data->rx_ttl == 0)
 		{
-			LLDP_LOG(UBL_INFO, "%s:%s RXTTL Expired\n",__func__, timerArg->parent_interface->if_name);
+			UB_LOG(UBL_INFO, "%s:%s RXTTL Expired\n",__func__, timerArg->parent_interface->if_name);
 			cb_xtimer_stop(which_timer); // Need to stop because rs_data will be deleted
 			cb_xtimer_delete(which_timer);
 
@@ -177,11 +177,11 @@ static void start_rxtick_tmer(hw_interface* interface, remote_systems_data_t* rs
 	int ret = cb_xtimer_start(rs_data->rxtick_timer, 1 * 1000000); // 1 tick is 1s
 	if (ret != 0)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Cannot start txtick timer %s ret %d\n",__func__, interface->if_name, ret);
+		UB_LOG(UBL_INFO, "%s: Cannot start txtick timer %s ret %d\n",__func__, interface->if_name, ret);
 	}
 	else
 	{
-		LLDP_LOG(UBL_INFO, "%s:%s: started txtick timer\n",__func__, interface->if_name);
+		UB_LOG(UBL_INFO, "%s:%s: started txtick timer\n",__func__, interface->if_name);
 	}
 }
 #endif
@@ -193,13 +193,13 @@ static void rxInitializeLLDP(hw_interface* interface)
 
 static void rxsm_on_bad_frame(struct _hw_interface* interface, RXState pre_state)
 {
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 	increase_rx_error_frame(interface->cfg_port);
 	increase_rx_total_discarded_frame(interface->cfg_port);
 	update_remote_stat_last_changed_time(interface->yang_lldp_cfg);
 	increase_remote_stat_rm_drops(interface->yang_lldp_cfg);
 	interface->agent_info.badFrame = true;
-	LLDP_LOG(UBL_DEBUG, "%s %s RX Error [%d]\n", __func__, interface->if_name, interface->cfg_port->rx_statistic.error_frames);
+	UB_LOG(UBL_DEBUG, "%s %s RX Error [%d]\n", __func__, interface->if_name, interface->cfg_port->rx_statistic.error_frames);
 }
 
 static void init_potential_remote_data()
@@ -222,10 +222,10 @@ static void cleanup_potential_rs_data()
 static int rx_process_frame(hw_interface* interface)
 {
 	int ret = -1;
-	if (interface->lldpsock.recv_len > 0)
+	if (interface->lldpsock->recv_len > 0)
 	{
 		int read_idx = 0;
-		uint8_t* buf_ptr = &interface->lldpsock.recv_buf[0];
+		uint8_t* buf_ptr = &interface->lldpsock->recv_buf[0];
 		ub_macaddr_t dst_mac = {0, 0, 0, 0, 0, 0};
 		get_dest_mac_addr((const char*)buf_ptr, &read_idx, dst_mac);
 		ub_macaddr_t src_mac = {0, 0, 0, 0, 0, 0};
@@ -237,7 +237,7 @@ static int rx_process_frame(hw_interface* interface)
 		if (protocol == LLDP_PROTO)
 		{
 			init_potential_remote_data();
-			LLDP_RX_TYPE ret = collect_tlv_info(&buf_ptr[read_idx], interface->lldpsock.recv_len - read_idx, &potential_remote_data, &potential_remote_data.rx_ttl);
+			LLDP_RX_TYPE ret = collect_tlv_info(&buf_ptr[read_idx], interface->lldpsock->recv_len - read_idx, &potential_remote_data, &potential_remote_data.rx_ttl);
 			switch(ret)
 			{
 				case RX_INVALID:
@@ -257,8 +257,8 @@ static int rx_process_frame(hw_interface* interface)
 			}
 
 			// Reset this for next receive. The recv buffer is reflected to potential_remote_data
-			interface->lldpsock.recv_len = 0;
-			memset(interface->lldpsock.recv_buf, 0, sizeof(interface->lldpsock.recv_buf));
+			interface->lldpsock->recv_len = 0;
+			memset(interface->lldpsock->recv_buf, 0, sizeof(interface->lldpsock->recv_buf));
 		}
 	}
 
@@ -269,7 +269,7 @@ static void something_change_remote(struct _hw_interface* interface)
 {
 	// TODO: mibUpdateObjects logic should be moved from rx_process_frame into this function.
 	// Actually we should do nothing with somethingChangedRemote since yangdb uniconf can take that role to inform another yang's client
-	LLDP_LOG(UBL_DEBUG, "%s: %s \n", __func__, interface->if_name);
+	UB_LOG(UBL_DEBUG, "%s: %s \n", __func__, interface->if_name);
 }
 
 static void dump_rs_data(remote_systems_data_t* rs_data)
@@ -277,7 +277,7 @@ static void dump_rs_data(remote_systems_data_t* rs_data)
 	switch(rs_data->chassis_id_subtype)
 	{
 		case C_MAC_ADDRESS:
-			LLDP_LOG(UBL_INFO, "chassis id: %02x-%02x-%02x-%02x-%02x-%02x \n", 
+			UB_LOG(UBL_INFO, "chassis id: %02x-%02x-%02x-%02x-%02x-%02x \n", 
 			                   rs_data->chassis_id[0],
 							   rs_data->chassis_id[1],
 							   rs_data->chassis_id[2],
@@ -286,14 +286,14 @@ static void dump_rs_data(remote_systems_data_t* rs_data)
 							   rs_data->chassis_id[5]);
 			break;
 		default:
-			LLDP_LOG(UBL_INFO, "chassis id: %s \n", rs_data->chassis_id);
+			UB_LOG(UBL_INFO, "chassis id: %s \n", rs_data->chassis_id);
 			break;
 	}
 
 	switch(rs_data->port_id_subtype)
 	{
 		case P_MAC_ADDRESS:
-			LLDP_LOG(UBL_INFO, "port id:    %02x-%02x-%02x-%02x-%02x-%02x \n", 
+			UB_LOG(UBL_INFO, "port id:    %02x-%02x-%02x-%02x-%02x-%02x \n", 
 			                   rs_data->port_id[0],
 			                   rs_data->port_id[1],
 							   rs_data->port_id[2],
@@ -302,39 +302,39 @@ static void dump_rs_data(remote_systems_data_t* rs_data)
 							   rs_data->port_id[5]);
 			break;
 		default:
-			LLDP_LOG(UBL_INFO, "port id:    %s \n", rs_data->port_id);
+			UB_LOG(UBL_INFO, "port id:    %s \n", rs_data->port_id);
 			break;
 	}
 }
 
 static void rxsm_on_port_enable(hw_interface* interface, RXState pre_state)
 {
-	LLDP_LOG(UBL_INFO, "%s %s\n", __func__, interface->if_name);
+	UB_LOG(UBL_INFO, "%s %s\n", __func__, interface->if_name);
 	rxInitializeLLDP(interface);
 	interface->agent_info.rxFrame = false;
 }
 
 static void rxsm_on_port_disable(hw_interface* interface, RXState pre_state)
 {
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 }
 
 static void rxsm_on_admin_status_rx_enable(hw_interface* interface, RXState pre_state)
 {
-	LLDP_LOG(UBL_DEBUG, "%s %s\n", __func__, interface->if_name);
+	UB_LOG(UBL_DEBUG, "%s %s\n", __func__, interface->if_name);
 	interface->agent_info.badFrame = false;
 	interface->agent_info.rxInfoAge = false;
 
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 }
 
 static void rxsm_on_admin_status_rx_disable(hw_interface* interface, RXState pre_state)
 {
-	LLDP_LOG(UBL_INFO, "%s %s\n", __func__, interface->if_name);
+	UB_LOG(UBL_INFO, "%s %s\n", __func__, interface->if_name);
 	rxInitializeLLDP(interface);
 	interface->agent_info.rxFrame = false;
 	
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 }
 
 static void rxsm_on_receive_data(hw_interface* interface, RXState pre_state)
@@ -343,7 +343,7 @@ static void rxsm_on_receive_data(hw_interface* interface, RXState pre_state)
 	{
 		interface->agent_info.rxFrame = false;
 	}
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 	increase_rx_total_frame(interface->cfg_port);
 	rx_process_frame(interface);
 }
@@ -359,7 +359,7 @@ static void rxsm_on_receive_normal(struct _hw_interface* interface, RXState pre_
 		{
 			// Create new remote system data + write it to DB
 			remote_systems_data_t* rs_data = create_new_remote_system_data(interface->cfg_port, &potential_remote_data);
-			LLDP_LOG(UBL_INFO, "%s: Got new neighbor [TTL=%d]:\n", interface->if_name, potential_remote_data.original_rxttl);
+			UB_LOG(UBL_INFO, "%s: Got new neighbor [TTL=%d]:\n", interface->if_name, potential_remote_data.original_rxttl);
 			dump_rs_data(rs_data);
 
 #ifdef USE_AGEDOUT_MONITOR
@@ -410,7 +410,7 @@ static void rxsm_on_receive_normal(struct _hw_interface* interface, RXState pre_
 		else
 		{
 			// Reflect the change to DB
-			LLDP_LOG(UBL_INFO, "%s: Got updated for neighbor [TTL=%d]:\n", interface->if_name, potential_remote_data.original_rxttl);
+			UB_LOG(UBL_INFO, "%s: Got updated for neighbor [TTL=%d]:\n", interface->if_name, potential_remote_data.original_rxttl);
 			dump_rs_data(existed_neighbor);
 			update_remote_system_data(interface->cfg_port, &potential_remote_data, existed_neighbor);
 			PUSH_RX_EVENT(RX_SOMETHING_CHANGED, interface);
@@ -420,14 +420,14 @@ static void rxsm_on_receive_normal(struct _hw_interface* interface, RXState pre_
 
 static void rxsm_on_receive_shutdown(hw_interface* interface, RXState pre_state)
 {
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 	remote_systems_data_t* existed_neighbor = find_existed_neighbor(interface->cfg_port, &potential_remote_data);
 	if (existed_neighbor)
 	{
 		// ub_hexdump(true, true, &existed_neighbor->chassis_id[0], 16, 0);
 		// ub_hexdump(true, true, &existed_neighbor->port_id[0], 16, 0);
 
-		LLDP_LOG(UBL_INFO, "%s: Process shutdown for existed neighbor:\n", interface->if_name);
+		UB_LOG(UBL_INFO, "%s: Process shutdown for existed neighbor:\n", interface->if_name);
 		dump_rs_data(existed_neighbor);
 
 		// Delete from DB
@@ -448,7 +448,7 @@ static void rxsm_on_receive_shutdown(hw_interface* interface, RXState pre_state)
 	}
 	else
 	{
-		LLDP_LOG(UBL_WARN, "%s %s Recv LLDPDU SHUTDOWN even Neighbor not existed in DB??? Do nothing\n", __func__, interface->if_name);
+		UB_LOG(UBL_WARN, "%s %s Recv LLDPDU SHUTDOWN even Neighbor not existed in DB??? Do nothing\n", __func__, interface->if_name);
 		ub_hexdump(true, true, &existed_neighbor->chassis_id[0], 16, 0);
 		ub_hexdump(true, true, &existed_neighbor->port_id[0], 16, 0);
 		PUSH_RX_EVENT(RX_NOTHING_CHANGED, interface);
@@ -463,10 +463,10 @@ static void rxsm_on_something_changed_remote(hw_interface* interface, RXState pr
 {
 	something_change_remote(interface);
 
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 	if (interface->agent_info.newNeighbor)
 	{
-		LLDP_LOG(UBL_INFO, "%s: Triggering FAST TX\n", interface->if_name);
+		UB_LOG(UBL_INFO, "%s: Triggering FAST TX\n", interface->if_name);
 		PUSH_TXTIMER_EVENT(TXTIMER_NEW_NEIGHBOR, interface);
 		update_remote_stat_last_changed_time(interface->yang_lldp_cfg);
 		increase_remote_stat_rm_inserts(interface->yang_lldp_cfg);
@@ -479,7 +479,7 @@ static void rxsm_on_finish_one_rx_cycle(hw_interface* interface, RXState pre_sta
 	// Reset buffer for next recv
 	cleanup_potential_rs_data();
 
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 }
 
 static void rxsm_on_delete_rx_info_age(hw_interface* interface, RXState pre_state)
@@ -492,7 +492,7 @@ static void rxsm_on_delete_rx_info_age(hw_interface* interface, RXState pre_stat
 		if (r->need_deleted == true)
 		{
 			// delete info in db
-			LLDP_LOG(UBL_INFO, "%s %s deleting remote %s \n", __func__, interface->if_name, r->port_desc);
+			UB_LOG(UBL_INFO, "%s %s deleting remote %s \n", __func__, interface->if_name, r->port_desc);
 			delete_remote_system_data(interface->cfg_port, r);
 
 			update_remote_stat_last_changed_time(interface->yang_lldp_cfg);
@@ -508,18 +508,18 @@ static void rxsm_on_delete_rx_info_age(hw_interface* interface, RXState pre_stat
 
 	if (found_aged_out && tmp_node != NULL)
 	{
-		LLDP_LOG(UBL_DEBUG, "%s %s Now delete item \n", __func__, interface->if_name);
+		UB_LOG(UBL_DEBUG, "%s %s Now delete item \n", __func__, interface->if_name);
 
 		// remove data in cfg port
 		ub_list_unlink(&interface->cfg_port->remote_systems_data, tmp_node);
-		LLDP_LOG(UBL_DEBUG, "%s %s unlink done. Try release db \n", __func__, interface->if_name);
+		UB_LOG(UBL_DEBUG, "%s %s unlink done. Try release db \n", __func__, interface->if_name);
 		cleanup_remote_system_data((remote_systems_data_t*) tmp_node);
 		deinit_rm_system_data((remote_systems_data_t*) tmp_node);
-		LLDP_LOG(UBL_DEBUG, "%s %s Release db done \n", __func__, interface->if_name);
+		UB_LOG(UBL_DEBUG, "%s %s Release db done \n", __func__, interface->if_name);
 	}
 
 
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 	PUSH_RX_EVENT(RX_UCT, interface);
 }
 
@@ -533,7 +533,7 @@ void interface_rx_sm_process(RXEvent ev, hw_interface* interface)
 			{
 				interface->curr_rx_state = rx_state_machine[i].rxNextState;
 				rx_state_machine[i].pfStateMachineEvnentHandler(interface, rx_state_machine[i].rxState);
-				// LLDP_LOG(UBL_INFO, "[%s][%s] State changed %s -> %s(%s)\n",interface->if_name, __func__, get_state_name(rx_state_machine[i].rxState), get_state_name(interface->curr_rx_state), get_state_name(ret));
+				// UB_LOG(UBL_INFO, "[%s][%s] State changed %s -> %s(%s)\n",interface->if_name, __func__, get_state_name(rx_state_machine[i].rxState), get_state_name(interface->curr_rx_state), get_state_name(ret));
 			}
 		}
 	}

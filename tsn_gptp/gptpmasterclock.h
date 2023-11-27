@@ -59,7 +59,7 @@
 #define GPTPMASTERCLOCK_H_
 
 /**
- * @brief initialize to get gptp clock from gptp2 daemon.
+ * @brief initialize to get gptp clock from tsn_gptp daemon.
  * if previously initialized, it will simply return 0.
  * @param shmem_name	shared memory node name. set NULL to use the default
  * @return -1 on error, 0 on Successful initialization.

@@ -83,17 +83,13 @@ const ub_macaddr_t mcast_neareast_customer_bridge	= {0x01, 0x80, 0xC2, 0x00, 0x0
 
 CB_SOCKET_T lldpsock = NULL;	// One sock per whole App (using one DMA)
 ub_macaddr_t srcmac;
+int lldp_raw_sock_number = 0;
+lldp_socket_t lldp_rawsocks[LLDP_CFG_PORT_INSTNUM];
 
 static void cb_lld_rx_notify_cb(void* arg);
+static int raw_sock_open(char* ndev, int rawsock_index);
 
 static CB_SEM_T rx_available_signal;
-
-void init_socket_utils(void)
-{
-	if (CB_SEM_INIT(&rx_available_signal, 0, 0) < 0) {
-		LLDP_LOG(UBL_ERROR,"%s:to init SEM rx_available_signal\n", __func__);
-	}
-}
 
 int lldp_raw_socket_open(hw_interface* interface)
 {
@@ -107,7 +103,7 @@ int lldp_raw_socket_open(hw_interface* interface)
 	rawsock_param.rw_type = CB_RAWSOCK_RDWR;
 	rawsock_param.sock_mode = CB_SOCK_MODE_NORMAL;
 
-	LLDP_LOG(UBL_INFO, "%s [%s] \n", __func__, rawsock_param.dev);
+	UB_LOG(UBL_INFO, "%s [%s] \n", __func__, rawsock_param.dev);
 
 	// Init only one time, the fd will corresponding to MAC Port
 	if (lldpsock == NULL)
@@ -118,52 +114,74 @@ int lldp_raw_socket_open(hw_interface* interface)
 			ret = cb_lld_set_rxnotify_cb(lldpsock, cb_lld_rx_notify_cb, NULL);
 			if (ret < 0)
 			{
-				LLDP_LOG(UBL_INFO, "%s:%s: Can't register rxnotify cb %s\n", __func__, interface->if_name,  strerror(errno));
+				UB_LOG(UBL_INFO, "%s:%s: Can't register rxnotify cb %s\n", __func__, interface->if_name,  strerror(errno));
 			}
-			LLDP_LOG(UBL_INFO, "%s:%s: Registered CB ret %d\n", __func__, interface->if_name,  ret);
-
-#if 0
-			if (ret == 0) // 0 mean add
-			{
-				ret = cb_reg_multicast_address(lldpsock, interface->if_name, mcast_neareast_bridge, 0);
-				LLDP_LOG(UBL_INFO, "Added mcast_neareast_bridge address %s \n",interface->if_name);
-			}
-
-			if (ret == 0) // 0 mean add
-			{
-				ret = cb_reg_multicast_address(lldpsock, interface->if_name, mcast_neareast_nontpmr_bridge, 0);
-				LLDP_LOG(UBL_INFO, "Added mcast_neareast_nontpmr_bridge address %s \n",interface->if_name);
-			}
-			
-			if (ret == 0)
-			{
-				ret = cb_reg_multicast_address(lldpsock, interface->if_name, mcast_neareast_customer_bridge, 0);
-				LLDP_LOG(UBL_INFO, "Added mcast_neareast_customer_bridge address %s \n",interface->if_name);
-			}
-
-			if (ret == 0)
-			{
-				LLDP_LOG(UBL_INFO, "%s:%s: Register multicast_address %d\n", __func__, interface->if_name,  ret);
-			} 
-			else
-			{
-				LLDP_LOG(UBL_INFO, "%s:%s: Cannot register mcast %s\n", __func__, interface->if_name,  strerror(errno));
-			}
-#endif
+			UB_LOG(UBL_INFO, "%s:%s: Registered CB ret %d\n", __func__, interface->if_name,  ret);
 		}
 		else
 		{
-			LLDP_LOG(UBL_INFO, "%s:%s: Open raw socket NG %s\n", __func__, interface->if_name,  strerror(errno));
+				UB_LOG(UBL_INFO, "Added mcast_neareast_bridge address %s \n",interface->if_name);
 		}
 	}
 
 	if (ret == 0)
 	{
-		memcpy(interface->lldpsock.bmac, srcmac, sizeof(srcmac));
-		interface->lldpsock.fd = cb_lld_netdev_to_macport(interface->if_name);
-		interface->lldpsock.addr.tcid = 0;
-		interface->lldpsock.addr.macport = interface->lldpsock.fd;
-		LLDP_LOG(UBL_INFO, "%s:%s : Open raw socket OK fd %d\n", __func__, interface->if_name, interface->lldpsock.fd);
+		memcpy(interface->lldpsock->bmac, srcmac, sizeof(srcmac));
+		interface->lldpsock->fd = cb_lld_netdev_to_macport(interface->if_name);
+		interface->lldpsock->addr.tcid = 0;
+		interface->lldpsock->addr.macport = interface->lldpsock->fd;
+				UB_LOG(UBL_INFO, "Added mcast_neareast_nontpmr_bridge address %s \n",interface->if_name);
+	}
+
+	return ret;
+}
+
+static int raw_sock_open(char* ndev, int rawsock_index)
+{
+	int ret = 0;
+	cb_rawsock_paras_t rawsock_param;
+	memset(&rawsock_param, 0, sizeof(rawsock_param));
+	rawsock_param.dev = ndev;
+	rawsock_param.proto = LLDP_PROTO;
+	rawsock_param.vlan_proto = 0;
+	rawsock_param.priority = 0;
+	rawsock_param.rw_type = CB_RAWSOCK_RDWR;
+	rawsock_param.sock_mode = CB_SOCK_MODE_NORMAL;
+
+	UB_LOG(UBL_INFO, "%s [%s] \n", __func__, rawsock_param.dev);
+
+	// Init only one time, the fd will corresponding to MAC Port
+	if (lldpsock == NULL)
+	{
+		ret = cb_rawsock_open(&rawsock_param, &lldpsock, NULL, NULL, srcmac);
+		if (ret == 0)
+		{
+			ret = cb_lld_set_rxnotify_cb(lldpsock, cb_lld_rx_notify_cb, NULL);
+			if (ret < 0)
+			{
+				UB_LOG(UBL_INFO, "%s:%s: Cannot RX Callback %s\n", __func__, ndev,  strerror(errno));
+			}
+			else
+			{
+				UB_LOG(UBL_INFO, "%s:%s: Registered CB ret %d\n", __func__, ndev,  ret);
+			}
+		}
+		else
+		{
+			UB_LOG(UBL_INFO, "%s:%s: Open raw socket NG %s\n", __func__, ndev,  strerror(errno));
+		}
+	}
+
+	if (ret == 0)
+	{
+		memset(lldp_rawsocks[rawsock_index].name, 0, sizeof(lldp_rawsocks[rawsock_index].name));
+		memcpy(lldp_rawsocks[rawsock_index].name, ndev, strlen(ndev));
+
+		memcpy(lldp_rawsocks[rawsock_index].bmac, srcmac, sizeof(srcmac));
+		lldp_rawsocks[rawsock_index].fd = cb_lld_netdev_to_macport(ndev);
+		lldp_rawsocks[rawsock_index].addr.tcid = 0;
+		lldp_rawsocks[rawsock_index].addr.macport = lldp_rawsocks[rawsock_index].fd;
+		UB_LOG(UBL_INFO, "%s:%s : Open raw socket OK fd %d\n", __func__, ndev, lldp_rawsocks[rawsock_index].fd);
 	}
 
 	return ret;
@@ -190,33 +208,35 @@ int lldp_send_packet(hw_interface* interface, uint8_t* buf, size_t len, uint16_t
 							&eframe, 
 							packet_size, 
 							0,
-							&interface->lldpsock.addr,
-							sizeof(interface->lldpsock.addr));
+							&interface->lldpsock->addr,
+							sizeof(interface->lldpsock->addr));
 
 		if (ret == -1)
 		{
-			LLDP_LOG(UBL_ERROR,"%s:%s %s\n", interface->if_name, __func__, strerror(errno));
+			UB_LOG(UBL_ERROR,"%s:%s %s\n", interface->if_name, __func__, strerror(errno));
 		}
 		else
 		{
-			LLDP_LOG(UBL_DEBUG,"%s:%s %d bytes has been sent.\n", interface->if_name, __func__, ret);
+			UB_LOG(UBL_DEBUG,"%s:%s %d bytes has been sent.\n", interface->if_name, __func__, ret);
 		}
 	}
 	else
 	{
-		LLDP_LOG(UBL_ERROR, "%s:%s Packet size to big %d\n", __func__, interface->if_name,  (int)packet_size);
+		UB_LOG(UBL_ERROR, "%s:%s Packet size to big %d\n", __func__, interface->if_name,  (int)packet_size);
 	}
 	return ret;
 }
 
-hw_interface *find_receiving_port(hw_interface_list* hw_if_list, int rx_mac_port)
+hw_interface *find_receiving_port(hw_interface_list* hw_if_list, int rx_mac_port, ub_macaddr_t dst_mac)
 {
 	struct ub_list_node* tmp_node;
 	for(UB_LIST_FOREACH_ITER(hw_if_list, tmp_node))
 	{
 		hw_interface *interface = (hw_interface *) tmp_node;
-		if (interface->lldpsock.fd == rx_mac_port)
+		if (interface->lldpsock->fd == rx_mac_port && memcmp(interface->cfg_port->dest_mac_address, dst_mac, 6) == 0)
+		{
 			return interface;
+		}
 	}
 
 	return NULL;
@@ -243,16 +263,21 @@ int try_recv_packet(hw_interface_list* hw_if_list, int timeout_usec)
 										buf, 
 										MAX_LLDP_SIZE, 
 										&macport);
+
 			if(recv_len > 0 && recv_len != 0xFFFF)
 			{
-				hw_interface *interface = find_receiving_port(hw_if_list, macport);
+				int read_idx = 0;
+				ub_macaddr_t dst_mac = {0, 0, 0, 0, 0, 0};
+				get_dest_mac_addr((const char*)buf, &read_idx, dst_mac);
+
+				hw_interface *interface = find_receiving_port(hw_if_list, macport, dst_mac);
 				if (interface && (interface->cfg_port->admin_status == rx_only || interface->cfg_port->admin_status == tx_and_rx) )
 				{
-					LLDP_LOG(UBL_DEBUG, "%s Received %d bytes from %s:macport %d \n", __func__, interface->lldpsock.recv_len, interface->if_name, macport);
+					UB_LOG(UBL_DEBUG, "%s Received %d bytes from %s:macport %d \n", __func__, interface->lldpsock->recv_len, interface->if_name, macport);
 					if ( interface->agent_info.rxInfoAge == false)
 					{
-						interface->lldpsock.recv_len = recv_len;
-						memcpy(interface->lldpsock.recv_buf, buf, recv_len);
+						interface->lldpsock->recv_len = recv_len;
+						memcpy(interface->lldpsock->recv_buf, buf, recv_len);
 						interface->agent_info.rxFrame = true;
 						PUSH_RX_EVENT(FRAME_RECEIVED, interface);
 					}
@@ -295,7 +320,53 @@ static void cb_lld_rx_notify_cb(void* arg)
 /// @return 
 int lldp_raw_socket_close(hw_interface* interface)
 {
-	return 0; // cb_rawsock_close(interface->lldpsock.fd);
+	return 0; // cb_rawsock_close(interface->lldpsock->fd);
+}
+
+int init_socket_utils(netdevname_t *netdevs, int ndev_size)
+{
+	int i=0;
+	if (CB_SEM_INIT(&rx_available_signal, 0, 0) < 0) {
+		UB_LOG(UBL_ERROR,"%s:to init SEM rx_available_signal\n", __func__);
+	}
+
+	lldp_raw_sock_number = (ndev_size > LLDP_CFG_PORT_INSTNUM) ? LLDP_CFG_PORT_INSTNUM : ndev_size;
+	UB_LOG(UBL_INFO, "%s:lldp_raw_sock_number %d  ndev_size %d\n", __func__, lldp_raw_sock_number, ndev_size);
+
+	for (i=0; i<lldp_raw_sock_number; i++)
+	{
+		UB_LOG(UBL_INFO, "%s:Openning %s \n", __func__, netdevs[i]);
+		if (raw_sock_open(netdevs[i], i) != 0)
+		{
+			UB_LOG(UBL_ERROR, "%s:%s Cannot open raw socket \n", __func__, netdevs[i]);
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+/// @brief Since one port can have multiple cfg port, so each hw_interface just keep the reference to opened socket fd.
+void assign_raw_socket_to_port(struct _hw_interface* interface)
+{
+	int i=0;
+	
+	for (i=0; i<lldp_raw_sock_number; i++)
+	{
+		if (strcmp(interface->cfg_port->name, lldp_rawsocks[i].name) == 0)
+		{
+			interface->lldpsock = &lldp_rawsocks[i];
+			char dst_mac[17] = {0};
+			lldp_bmac2smac(interface->cfg_port->dest_mac_address, dst_mac, '-');
+			UB_LOG(UBL_INFO, "%s:%s assigned to fd %d\n", interface->cfg_port->name, dst_mac, lldp_rawsocks[i].fd);
+			break;
+		}
+	}
+
+	if (i == lldp_raw_sock_number)
+	{
+		UB_LOG(UBL_WARN, "%s: No such port[%s]\n", __func__, interface->cfg_port->name);
+	}
 }
 
 void deinit_socket_utils(void)

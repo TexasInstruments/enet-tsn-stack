@@ -53,11 +53,13 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include <getopt.h>
+#include "getopt.h"
 #include <tsn_combase/cb_thread.h>
+#include <tsn_combase/cb_ethernet.h>
 #include <tsn_unibase/unibase.h>
 #include <tsn_unibase/unibase_binding.h>
 #include "lldpd.h"
+#include "lldp_cfg.h"
 
 // Global variables
 char* lldp_db_name = "cfg/lldp_db";
@@ -140,14 +142,18 @@ int main(int argc, char *argv[])
 	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:66,ucclt:66,lldp:46", "UBL_LLDP");
 	unibase_init(&init_para);
 
+	netdevname_t ndevs[8];
+
 	UB_TLOG(UBL_INFO, "UBL_LLDP Starting...\n");
 	if (set_options(argc, argv) == 0)
 	{
 		lldpd_uniconf_access_mode(0); // Posix: Process Mode
 
-		if (lldpd_init(lldp_db_name, &vlanid) == 0)
+		int ndev_no = cb_get_all_netdevs(8, ndevs);
+
+		if (lldpd_init(lldp_db_name, &vlanid, ndevs, ndev_no) == 0)
 		{
-			UB_TLOG(UBL_INFO, "lldp initialized\n");
+			UB_TLOG(UBL_INFO, "lldp initialized. ndev_no %d\n", ndev_no);
 			lldpd_run(&terminated); // Blocking task
 
 			lldpd_deinit();

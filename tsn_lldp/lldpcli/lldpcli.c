@@ -62,7 +62,7 @@
 #include "../lldp_yangdb.h"
 #include "../lldp_utils.h"
 #include <signal.h>
-#include <getopt.h>
+#include "getopt.h"
 
 bool terminated = false;
 char* lldp_db_name = "cfg/lldp_db";
@@ -113,6 +113,7 @@ typedef struct lldpcli_cmd
 	bool configure_tx_fast_init;
 
 	bool is_configure_port;
+	bool is_configure_dest_mac;
 	// port
 	bool configure_admin_status;
 	bool configure_tlvs_tx_enable;
@@ -308,14 +309,14 @@ void show_neighbors(char* interface_name)
 	}
 }
 
-static lldp_port_t* find_port_by_name(char* name)
+static lldp_port_t* find_port_by_name(char* name, ub_macaddr_t dest_mac)
 {
 	struct ub_list_node *tmp_port_node;
 	for(UB_LIST_FOREACH_ITER(&yang_lldp_cfg.ports, tmp_port_node))
 	{
 		lldp_port_t* port = (lldp_port_t*)tmp_port_node;
 
-		if (strcmp(port->name, changed_port_info.name) == 0)
+		if (strcmp(port->name, changed_port_info.name) == 0 && memcmp(port->dest_mac_address, dest_mac, 6) == 0)
 		{
 			UB_LOG(UBL_INFO, "Found port to be update %s:\n", port->name);
 			return port;
@@ -393,11 +394,9 @@ static void update_port_1st_level(uint8_t k)
 					input_cmd.status,
 					new_val,
 					data_size,
-					YDBI_NO_NOTICE);
+					YDBI_PUSH_NOTICE);
 		UB_LOG(UBL_INFO, "%s Updating %s done Ret %d\n", __func__, ieee802_dot1ab_lldp_get_string(k), ret);
 	}
-
-	YDBI_SET_ITEM(abk1vk0, changed_port_info.name, strlen(changed_port_info.name) + 1, IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED, YDBI_CONFIG, YDBI_PUSH_NOTICE);
 }
 
 static void update_port_mgmt_addr(uint8_t k)
@@ -450,7 +449,7 @@ static void update_port_mgmt_addr(uint8_t k)
 					input_cmd.status,
 					new_val,
 					data_size,
-					YDBI_NO_NOTICE);
+					YDBI_PUSH_NOTICE);
 		UB_LOG(UBL_INFO, "%s Updating %s done. Ret %d\n", __func__, ieee802_dot1ab_lldp_get_string(k), ret);
 
 		void* value;
@@ -466,9 +465,6 @@ static void update_port_mgmt_addr(uint8_t k)
 			UB_LOG(UBL_INFO, "%s Get back %s: %d\n", __func__, ieee802_dot1ab_lldp_get_string(k), *((bool*)value));
 		}
 	}
-
-	YDBI_SET_ITEM(abk1vk0, changed_port_info.name, strlen(changed_port_info.name) + 1, IEEE802_DOT1AB_LLDP_LOCAL_PORT_CHANGED, YDBI_CONFIG, YDBI_PUSH_NOTICE);
-
 }
 
 static void check_for_port_id_changed(lldp_port_t* found_port)
@@ -487,7 +483,7 @@ static void check_for_port_id_changed(lldp_port_t* found_port)
 
 static void check_and_update_port()
 {
-	lldp_port_t* found_port = find_port_by_name(changed_port_info.name);
+	lldp_port_t* found_port = find_port_by_name(changed_port_info.name, changed_port_info.dest_mac_address);
 
 	if (found_port != NULL)
 	{
@@ -610,13 +606,9 @@ static void update_global_config(uint8_t k)
 					input_cmd.status, // YDBI_CONFIG: false
 					new_val,
 					data_size,
-					YDBI_NO_NOTICE);
+					YDBI_PUSH_NOTICE);
 		UB_LOG(UBL_INFO, "%s Updating %s done %d \n", __func__, ieee802_dot1ab_lldp_get_string(k), ret);
 	}
-
-	// Set again value to false for next db changed
-	bool notice = true;
-	YDBI_SET_ITEM(abk1vk0, (void*)&notice, sizeof(bool), IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED, YDBI_CONFIG, YDBI_PUSH_NOTICE);
 }
 
 static void update_local_system_data(uint8_t k)
@@ -668,13 +660,9 @@ static void update_local_system_data(uint8_t k)
 					input_cmd.status, //YDBI_STATUS,
 					new_val,
 					data_size,
-					YDBI_NO_NOTICE);
+					YDBI_PUSH_NOTICE);
 		UB_LOG(UBL_INFO, "%s Updating %s done %d \n", __func__, ieee802_dot1ab_lldp_get_string(k), ret);
 	}
-
-	// Set again value to false for next db changed
-	bool notice = true;
-	YDBI_SET_ITEM(abk1vk0, (void*)&notice, sizeof(bool), IEEE802_DOT1AB_LLDP_LOCAL_SYSTEM_CHANGED, YDBI_CONFIG, YDBI_PUSH_NOTICE);
 }
 
 static void check_and_update_local_system_data()
@@ -785,6 +773,7 @@ static int print_usage(char *pname)
 	// Per port configure
 	UB_CONSOLE_PRINT("Per Port Configuration:\n");
 	UB_CONSOLE_PRINT("-n|--configure-port: 'port-name' Set this flag to enable port change\n");
+	UB_CONSOLE_PRINT("-D|--configure-dest-mac: 'dest-mac' together with port-name as pair of keys \n");
 	UB_CONSOLE_PRINT("-k|--configure-admin-status: status. Need to have --configure-port 'name' to enable the change\n");
 	UB_CONSOLE_PRINT("-b|--configure-tlvs-tx-enable: value. Need to have --configure-port 'name' to enable the change\n");
 	UB_CONSOLE_PRINT("-t|--configure-port-id-subtype: subtype-id. Need to have --configure-port 'name' to enable the change\n");
@@ -829,6 +818,7 @@ static int set_options(int argc, char *argv[])
 		// Configure per-port variables
 		// Notes: message-fast-tx,.., tx-fast-init per port are not used. Instead, global variables will be used.
 		{"configure-port", required_argument, 0, 'n'}, // require interface name: eth0, enp2s0,..
+		{"configure-dest-mac", required_argument, 0, 'D'}, // dest mac XX-XX-XX-XX-XX-XX
 		{"configure-admin-status", required_argument, 0, 'k'},
 		{"configure-tlvs-tx-enable", required_argument, 0, 'b'},
 		{"configure-port-id-subtype", required_argument, 0, 't'},
@@ -843,7 +833,7 @@ static int set_options(int argc, char *argv[])
 		{0, 0, 0, 0}
 	};
 
-	while((oc=getopt_long(argc, argv, "hla:b:c:d:e:f:g:i:j:k:n:m:o:p:q:r:s:t:u:v:x:y:z:w:P:", long_options, NULL))!=-1){
+	while((oc=getopt_long(argc, argv, "hla:b:c:d:e:f:g:i:j:k:n:m:o:p:q:r:s:t:u:v:x:y:z:w:P:D:", long_options, NULL))!=-1){
 		switch(oc){
 		case 'a':
 			// show_neighbors(optarg);
@@ -904,6 +894,16 @@ static int set_options(int argc, char *argv[])
 			UB_LOG(UBL_INFO, "configure port %s \n", optarg);
 			input_cmd.is_configure_port = true;
 			memcpy(changed_port_info.name, optarg, strlen(optarg));
+			break;
+		case 'D':
+			{
+				ub_macaddr_t dmac = {0,0,0,0,0,0};
+				// From amendment spec: MAC Addr pattern "[0-9a-fA-F]{2}(-[0-9a-fA-F]{2}){5}";
+				ub_hexstr2barray((const char*)optarg, dmac, '-', 6);
+				input_cmd.is_configure_dest_mac = true;
+				memcpy(changed_port_info.dest_mac_address, dmac, 6);
+				UB_LOG(UBL_INFO, "configure dest mac %s \n", optarg);
+			}
 			break;
 		case 'k':
 			UB_LOG(UBL_INFO, "admin status %d \n", (admin_status_t) strtol(optarg, NULL, 0));
@@ -1073,13 +1073,13 @@ int main(int argc, char *argv[])
 		init_default_cfg();
 		initialize_cfg(lldp_db_name, &yang_lldp_cfg, false);
 
-		if (input_cmd.is_configure_local_system == true)
+		if (input_cmd.is_configure_local_system == true && input_cmd.is_configure_port == false && input_cmd.is_configure_dest_mac == false)
 		{
 			UB_LOG(UBL_INFO, "Got update local system data\n");
 			check_and_update_local_system_data();
 		}
 
-		if (input_cmd.is_configure_port == true)
+		if (input_cmd.is_configure_port == true && input_cmd.is_configure_dest_mac == true)
 		{
 			UB_LOG(UBL_INFO, "Got update port data\n");
 			check_and_update_port();

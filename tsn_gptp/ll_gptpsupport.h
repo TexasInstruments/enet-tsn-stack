@@ -82,7 +82,7 @@ int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset);
 	(strstr((name), CB_VIRTUAL_PTPDEV_PREFIX)==(name))
 
 /*----------------------------------------------------------*/
-/* These macros are used by application that use libgptp2 */
+/* These macros are used by application that use libtsn_gptp */
 
 static inline int _zero_return(void){return 0;}
 
@@ -103,7 +103,7 @@ static inline int _zero_return(void){return 0;}
 /*----------------------------------------------------------*/
 
 /*----------------------------------------------------------*/
-/* These macros are used by gptp2d */
+/* These macros are used by tsn_gptpd */
 uint64_t gptp_vclock_gettime(PTPFD_TYPE ptpfd);
 int gptp_vclock_settime(PTPFD_TYPE ptpfd, uint64_t ts64);
 int gptp_vclock_setoffset(PTPFD_TYPE ptpfd, int64_t offset64);
@@ -139,14 +139,14 @@ int gptp_vclock_setoffset(PTPFD_TYPE ptpfd, int64_t offset64);
 #else //!PTP_VIRTUAL_CLOCK_SUPPORT
 
 /*----------------------------------------------------------*/
-/* These macros are used by application that use libgptp2 */
+/* These macros are used by application that use libtsn_gptp */
 #define PTPDEV_CLOCK_OPEN(name, perm) ptpdev_clock_open(name,perm)
 #define PTPDEV_CLOCK_CLOSE(fd) ptpdev_clock_close(fd)
 #define PTPDEV_CLOCK_GETTIME(fd,ts64) ptpdev_clock_gettime(fd, (int64_t *)&(ts64))
 /*----------------------------------------------------------*/
 
 /*----------------------------------------------------------*/
-/* These macros are used by gptp2d */
+/* These macros are used by tsn_gptpd */
 #define GPTP_CLOCK_GETTIME(fd,ts64) ptpdev_clock_gettime(fd, (int64_t *)&(ts64))
 #define GPTP_CLOCK_SETTIME(fd,ts64) ptpdev_clock_settime(fd, (int64_t *)&(ts64))
 #define GPTP_CLOCK_SETOFFSET(fd,offset64) ptpdev_clock_setoffset(fd, offset64)

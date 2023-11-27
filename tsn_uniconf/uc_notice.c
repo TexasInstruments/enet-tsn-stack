@@ -331,6 +331,11 @@ static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *se
 	}
 	UB_LOG(UBL_DEBUG, "%s:semname=\"%s\", refcount=%d %s\n",
 	       __func__, semname, refcounter, msg);
+
+#if !UB_LOG_IS_COMPILED(UBL_DEBUG)
+	(void)msg;
+	(void)refcounter;
+#endif
 	return res;
 }
 
@@ -536,6 +541,12 @@ erexit:
 
 }
 
+int uc_notice_start_events_thread(uc_notice_data_t *ucntd, uc_hwald *hwald)
+{
+	if(hwald==NULL){return 0;}
+	return uc_hwal_catch_events_thread(hwald, (CB_SEM_T *)ucntd->getnotice_sem);
+}
+
 void uc_notice_close(uc_notice_data_t *ucntd, uint8_t callmode)
 {
 	int i, en=0;
@@ -614,6 +625,10 @@ int uc_nu_proc_asked_actions(uc_notice_data_t *ucntd,
 	uc_dbal_releasedb(dbald);
 	res=uc_notice_sig_check(ucntd->fromthread, ucntd->getnotice_sem, tout_ms, __func__);
 	if(res==0){
+		if(hwald){
+			res=uc_hwal_detect_notice(hwald, ucntd);
+			if(res<=0){return res;}
+		}
 		// ntmutex is locked inside respond_getnotice
 		UB_TLOG(UBL_DEBUG, "%s:got a signal\n", __func__);
 		res=respond_getnotice(ucntd, dbald, hwald);

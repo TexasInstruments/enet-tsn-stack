@@ -56,7 +56,7 @@
 #include "gptpnet.h"
 #include "mdeth.h"
 #include "gptpman.h"
-#include <getopt.h>
+#include "getopt.h"
 #include "gptpcommon.h"
 #include "gptpconf/gptpgcfg.h"
 #include "gptpconf/xl4-extmod-xl4gptp.h"
@@ -224,7 +224,7 @@ int GPTP2D_MAIN(int argc, char *argv[])
 	bool stopuniconf=false;
 
 	ubb_default_initpara(&init_para);
-	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46,gptp:46",
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:46,gptp:56",
 						   "UBL_GPTP");
 	unibase_init(&init_para);
 	ubb_memory_out_init(NULL, 0);// start with zero, so that the memory is not allocated
@@ -261,17 +261,17 @@ int GPTP2D_MAIN(int argc, char *argv[])
 		gpoptd.conf_files=NULL;
 	}
 	if(res){
-		UB_LOG(UBL_ERROR, "gptp2d: error in gptpgcfg_init\n");
+		UB_LOG(UBL_ERROR, "tsn_gptpd: error in gptpgcfg_init\n");
 		return -1;
 	}
 	res=gptpgcfg_get_intitem(gpoptd.instnum, XL4_EXTMOD_XL4GPTP_DEBUGLOG_MEMORY_SIZE,
 				 YDBI_CONFIG);
 	if(res<0){
-		UB_LOG(UBL_WARN, "gptp2d:No DEBUGLOG_MEMORY_SIZE, use 0\n");
+		UB_LOG(UBL_WARN, "tsn_gptpd:No DEBUGLOG_MEMORY_SIZE, use 0\n");
 	}else{
 		ubb_memory_out_init(NULL, res * 1024);
 	}
-	UB_LOG(UBL_INFO, "gptp2d: gptp2-"TSNPKGVERSION"\n");
+	UB_LOG(UBL_INFO, "tsn_gptpd: tsn_gptp-"TSNPKGVERSION"\n");
 	res=get_netdevices(&gpdpd, &gpoptd);
 	if(res!=0){
 		UB_LOG(UBL_ERROR, "no network device\n");
@@ -280,7 +280,7 @@ int GPTP2D_MAIN(int argc, char *argv[])
 
 	gptpman_run(gpoptd.instnum, gpdpd.netdevs, gpoptd.netdnum,
 		    gpoptd.inittm, &stopgptp);
-	UB_TLOG(UBL_INFO,"gptp2d going to close\n");
+	UB_TLOG(UBL_INFO,"tsn_gptpd going to close\n");
 	res=0;
 erexit:
 	if(gpdpd.netdevs){release_netdevices(&gpdpd, &gpoptd);}
@@ -295,7 +295,7 @@ erexit:
 	gptpgcfg_get_item_release(gpoptd.instnum);
 	gptpgcfg_close(gpoptd.instnum);
 	if(fname && ubb_memory_file_out(fname)){
-		UB_LOG(UBL_ERROR, "gptp2d:can't write the memory log into a file\n");
+		UB_LOG(UBL_ERROR, "tsn_gptpd:can't write the memory log into a file\n");
 	}
 	if(fname){UB_SD_RELMEM(GPTP_SMALL_ALLOC, fname);}
 	if(gpoptd.ucthread){

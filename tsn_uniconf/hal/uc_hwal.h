@@ -56,6 +56,7 @@
  */
 #include <inttypes.h>
 #include <stdbool.h>
+#include <tsn_combase/cb_thread.h>
 #include "../uc_dbal.h"
 
 typedef struct uc_hwald uc_hwald;
@@ -89,11 +90,17 @@ int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss);
 int uc_hwal_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 		    void *value, uint32_t vsize);
 
+
+/*
+ * srat a thread to catch events
+ */
+int uc_hwal_catch_events_thread(uc_hwald *hwald, CB_SEM_T *sigp);
+
 /*
  * this function wait HW events(network events) for tout_ms time.
  * Detecting the updated status, update the DB.
  * and call 'uc_nu_putnotice_push' to notice the update to uc_client side.
  */
-int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd, int tout_ms);
+int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd);
 
 #endif

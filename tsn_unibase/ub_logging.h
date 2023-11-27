@@ -81,17 +81,16 @@
  * - UBL_DEBUG to print FATAL to DEBUG message on console
  * - UBL_DEBUGV to print FATAL to DEBUGV message on console
  */
-typedef enum {
-	UBL_NONE=0,
-	UBL_FATAL=1,
-	UBL_ERROR=2,
-	UBL_WARN=3,
-	UBL_INFO=4,
-	UBL_INFOV=5,
-	UBL_DEBUG=6,
-	UBL_DEBUGV=7,
-}ub_dbgmsg_level_t;
+typedef int ub_dbgmsg_level_t;
 
+#define	UBL_NONE   0
+#define	UBL_FATAL  1
+#define	UBL_ERROR  2
+#define	UBL_WARN   3
+#define	UBL_INFO   4
+#define	UBL_INFOV  5
+#define	UBL_DEBUG  6
+#define	UBL_DEBUGV 7
 
 #ifndef MAX_LOGMSG_CATEGORIES
 /** @brief maximum number of categories */
@@ -108,6 +107,78 @@ typedef enum {
  * 	UB_CLOCK_DEFAULT means no-timestamp
  */
 #define UBL_TS_BIT_FIELDS 3 // bit0 and bit1
+
+#ifndef UB_LOG_COMPILE_LEVEL
+#define UB_LOG_COMPILE_LEVEL UBL_DEBUGV
+#endif
+
+#define UB_LOG_IS_COMPILED(level) (UB_LOG_COMPILE_LEVEL >= level)
+
+#define UB_LOG_HELPER(level, tstype, ...)			\
+	{								\
+		char coutstr[UB_CHARS_IN_LINE];				\
+		(void)snprintf(coutstr, UB_CHARS_IN_LINE, __VA_ARGS__);	\
+		(void)ub_log_print(UB_LOGCAT, tstype, level, coutstr);	\
+	}
+
+#if UB_LOG_IS_COMPILED(UBL_DEBUGV)
+#define UB_LOG_UBL_DEBUGV(...) UB_LOG_HELPER(UBL_DEBUGV, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_DEBUGV(...) UB_LOG_HELPER(UBL_DEBUGV, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_DEBUGV(...)
+#define UB_TLOG_UBL_DEBUGV(...)
+#endif
+
+#if UB_LOG_IS_COMPILED(UBL_DEBUG)
+#define UB_LOG_UBL_DEBUG(...) UB_LOG_HELPER(UBL_DEBUG, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_DEBUG(...) UB_LOG_HELPER(UBL_DEBUG, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_DEBUG(...)
+#define UB_TLOG_UBL_DEBUG(...)
+#endif
+
+#if UB_LOG_IS_COMPILED(UBL_INFOV)
+#define UB_LOG_UBL_INFOV(...) UB_LOG_HELPER(UBL_INFOV, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_INFOV(...) UB_LOG_HELPER(UBL_INFOV, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_INFOV(...)
+#define UB_TLOG_UBL_INFOV(...)
+#endif
+
+#if UB_LOG_IS_COMPILED(UBL_INFO)
+#define UB_LOG_UBL_INFO(...) UB_LOG_HELPER(UBL_INFO, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_INFO(...) UB_LOG_HELPER(UBL_INFO, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_INFO(...)
+#define UB_TLOG_UBL_INFO(...)
+#endif
+
+#if UB_LOG_IS_COMPILED(UBL_WARN)
+#define UB_LOG_UBL_WARN(...) UB_LOG_HELPER(UBL_WARN, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_WARN(...) UB_LOG_HELPER(UBL_WARN, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_WARN(...)
+#define UB_TLOG_UBL_WARN(...)
+#endif
+
+#if UB_LOG_IS_COMPILED(UBL_ERROR)
+#define UB_LOG_UBL_ERROR(...) UB_LOG_HELPER(UBL_ERROR, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_ERROR(...) UB_LOG_HELPER(UBL_ERROR, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_ERROR(...)
+#define UB_TLOG_UBL_ERROR(...)
+#endif
+
+#if UB_LOG_IS_COMPILED(UBL_FATAL)
+#define UB_LOG_UBL_FATAL(...) UB_LOG_HELPER(UBL_FATAL, 0, __VA_ARGS__)
+#define UB_TLOG_UBL_FATAL(...) UB_LOG_HELPER(UBL_FATAL, UB_LOGTSTYPE, __VA_ARGS__)
+#else
+#define UB_LOG_UBL_FATAL(...)
+#define UB_TLOG_UBL_FATAL(...)
+#endif
+
+#define UB_LOG_UBL_NONE(...)
+#define UB_TLOG_UBL_NONE(...)
 
 /**
  * @brief override valuse 'x' to the value of the environment variable 'y'

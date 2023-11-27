@@ -63,6 +63,7 @@ struct _hw_interface;
 /// @brief Wrapper Socket structure uses for both TI_LLD and Posix
 typedef struct lldp_socket
 {
+	char name[CB_MAX_NETDEVNAME];         //!< Interface name eth0,enpxs0,.... if_name is copied from yang-lldp
 	int fd;                                  //!< For posix, is CB_SOCKET_T, but for TILLD, is MAC Port
 	CB_SOCKADDR_LL_T addr;                   //!< Local socket address
 	ub_macaddr_t bmac;                       //!< Local MAC address
@@ -99,9 +100,12 @@ int lldp_send_packet(struct _hw_interface* interface, uint8_t* buf, size_t len, 
 
 /// @brief Init static variable inside socket_util (currently specific for TILLD)
 /// @param  
-void init_socket_utils(void);
+int init_socket_utils(netdevname_t *netdevs, int ndev_size);
 
 /// @brief DeInit static variable inside socket_util (currently specific for TILLD)
 /// @param  
 void deinit_socket_utils(void);
+
+/// @brief Since one port can have multiple cfg port, so each hw_interface just keep the reference to opened socket fd.
+void assign_raw_socket_to_port(struct _hw_interface* interface);
 #endif

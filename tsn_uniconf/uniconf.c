@@ -49,7 +49,7 @@
 */
 #include <signal.h>
 #include <sys/stat.h>
-#include <getopt.h>
+#include "getopt.h"
 #include <string.h>
 #include <tsn_unibase/unibase.h>
 #include <tsn_unibase/unibase_binding.h>

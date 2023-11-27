@@ -540,6 +540,7 @@ static int gptpnet_cb(void *cb_data, int portIndex, gptpnet_event_t event,
 
 	UB_TLOG(UBL_DEBUGV, "%s:index=%d event=%s\n",
 		__func__, portIndex, gptpnet_event_debug[event]);
+	cts64 = GPTP_ALIGN_TIME(cts64);
 	switch(event){
 	case GPTPNET_EVENT_NONE:
 		break;
@@ -970,6 +971,8 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	UB_SD_PRINT_USAGE(GPTP_MEDIUM_ALLOC, UBL_INFO);
 	UB_SD_PRINT_USAGE(GPTP_SMALL_ALLOC, UBL_INFO);
 	UB_SD_PRINT_USAGE(SM_DATA_INST, UBL_INFO);
+	UB_LOG(UBL_INFO, "%s:GPTPNET_INTERVAL_TIMEOUT_NSEC=%d\n",
+		   __func__,(int)GPTPNET_INTERVAL_TIMEOUT_NSEC);
 	(void)gptpnet_eventloop(gpmand->gpnetd, stopgptp);
 	(void)all_sm_close(gpmand);
 	md_abnormal_close();

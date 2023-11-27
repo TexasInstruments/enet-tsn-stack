@@ -71,6 +71,7 @@ struct cb_lld_task {
 	void *(*func)(void*);
 	void *arg;
 	bool exit;
+	uint8_t *stack_alloc;
 };
 
 #define CB_LLDSEM_MMEM cb_lldsem
@@ -86,6 +87,16 @@ UB_SD_GETMEM_DEF(CB_LLDSEM_MMEM, (int)sizeof(cb_lld_sem_t),
 #endif
 UB_SD_GETMEM_DEF(CB_LLDTASK_MMEM, (int)sizeof(cb_lld_task_t),
 		 CB_LLDTASK_INSTNUM);
+
+#define CB_LLDTASK_STACK_MMEM cb_lldtask_stack
+#ifndef CB_LLDTASK_STACK_INSTNUM
+#define CB_LLDTASK_STACK_INSTNUM 1
+#endif
+#ifndef CB_LLDTASK_STACK_SIZE
+#define CB_LLDTASK_STACK_SIZE (16*1024)
+#endif
+UB_SD_GETMEM_DEF(CB_LLDTASK_STACK_MMEM, CB_LLDTASK_STACK_SIZE,
+		CB_LLDTASK_STACK_INSTNUM)
 
 int cb_lld_sem_init(CB_SEM_T *sem, int pshared, unsigned int value)
 {
@@ -248,28 +259,6 @@ int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime)
 	return lld_mutex_trylock(mutex, timeout_msec);
 }
 
-// WARNING! The following function will be called inside the API
-// `ub_protected_func` which shares the same global mutex named `gmutex`
-// with log module in the unibase library. Thus, calling any unibase
-// log macro (ie. UB_LOG) inside this function will cause a DEADLOCK.
-int cb_lld_global_mutex_init(void *arg)
-{
-	CB_THREAD_MUTEX_T *cbmutex = (CB_THREAD_MUTEX_T*)arg;
-	if (cbmutex->lldmutex != NULL) {
-		// Mutex has been initialized.
-		return 0;
-	}
-	memset(cbmutex, 0, sizeof(cb_lld_mutex_t));
-	if(SemaphoreP_constructMutex(&cbmutex->mobj) != SystemP_SUCCESS) {
-		goto error;
-	}
-	cbmutex->lldmutex = &cbmutex->mobj;
-	return 0;
-error:
-	cb_lld_mutex_destroy(cbmutex);
-	return -1;
-}
-
 static void task_fxn(void* a0)
 {
 	cb_lld_task_t *cbtask = (cb_lld_task_t*)a0;
@@ -280,6 +269,9 @@ static void task_fxn(void* a0)
 static int cb_lld_task_destroy(cb_lld_task_t *cbtask)
 {
 	TaskP_destruct(&cbtask->lldtask);
+	if (cbtask->stack_alloc != NULL) {
+		UB_SD_RELMEM(CB_LLDTASK_STACK_MMEM, cbtask->stack_alloc);
+	}
 	UB_SD_RELMEM(CB_LLDTASK_MMEM, cbtask);
 	return 0;
 }
@@ -296,19 +288,31 @@ int cb_lld_task_create(CB_THREAD_T *th, void *vattr, void *(*func)(void*), void 
 		UB_LOG(UBL_ERROR,"%s:failed to get mem!\n", __func__);
 		return -1;
 	}
+	memset(cbtask, 0, sizeof(cb_lld_task_t));
 
 	TaskP_Params_init(&param);
 	if (attr != NULL) {
 		param.name = attr->name;
-		if (attr->stack_size > 0) {
-			param.stackSize = attr->stack_size;
-		}
 		if (attr->pri > 0) {
 			param.priority = attr->pri;
+		}
+		if (attr->stack_size > 0) {
+			param.stackSize = attr->stack_size;
 		}
 		if (attr->stack_addr != NULL) {
 			param.stack = (uint8_t*)attr->stack_addr;
 		}
+	}
+	if (param.stack == NULL) {
+		cbtask->stack_alloc = (uint8_t*)
+			UB_SD_GETMEM(CB_LLDTASK_STACK_MMEM, CB_LLDTASK_STACK_SIZE);
+		if (cbtask->stack_alloc == NULL) {
+			UB_LOG(UBL_ERROR,"%s:failed to get stack mem!\n", __func__);
+			goto error;
+		}
+		param.stack = cbtask->stack_alloc;
+		param.stackSize = CB_LLDTASK_STACK_SIZE;
+		UB_LOG(UBL_INFO,"%s:alloc stack size=%d\n", __func__, param.stackSize);
 	}
 	cbtask->func = func;
 	param.taskMain = &task_fxn;

@@ -55,8 +55,10 @@
 #include "combase_private.h"
 
 extern int32_t EnetApp_setTimeStampComplete(Enet_Handle hEnet, uint32_t coreId);
-extern int32_t EnetApp_enablePortTsEvent(Enet_Handle hEnet, uint32_t coreId, uint32_t macPort[], uint32_t numPorts);
-extern int32_t EnetApp_getRxTimeStamp(Enet_Handle hEnet, uint32_t coreId, EnetTimeSync_GetEthTimestampInArgs* inArgs, uint64_t *ts);
+extern int32_t EnetApp_enablePortTsEvent(Enet_Handle hEnet, uint32_t coreId,
+				uint32_t macPort[], uint32_t numPorts);
+extern int32_t EnetApp_getRxTimeStamp(Enet_Handle hEnet, uint32_t coreId,
+				EnetTimeSync_GetEthTimestampInArgs* inArgs, uint64_t *ts);
 
 struct LLDTSync {
 	Enet_Type enetType;
@@ -116,32 +118,31 @@ void LLDTSyncClose(LLDTSync_t *hTSync)
 }
 
 int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
-                      uint16_t seqId, uint8_t domain, uint64_t *ts)
+					  uint16_t seqId, uint8_t domain, uint64_t *ts)
 {
-    int32_t status = ENET_SOK;
-    EnetTimeSync_GetEthTimestampInArgs inArgs;
+	int32_t status = ENET_SOK;
+	EnetTimeSync_GetEthTimestampInArgs inArgs;
 
-    if ((hTSync == NULL) || (ts == NULL)) {
-        return LLDENET_E_PARAM;
-    }
-    /* For ENET-ICSSG the dmaPktInfo has the time stamp, this API is not valid */
-    if(Enet_isCpswFamily(hTSync->enetType) == false)
-    {
-        return LLDENET_E_UNSUPPORT;
-    }
-    memset(&inArgs, 0, sizeof(inArgs));
-    inArgs.msgType = (EnetTimeSync_MsgType)msgType;
-    inArgs.seqId   = seqId;
-    inArgs.portNum = rxPort;
-    inArgs.domain  = domain;
+	if ((hTSync == NULL) || (ts == NULL)) {
+		return LLDENET_E_PARAM;
+	}
+	/* For ENET-ICSSG the dmaPktInfo has the time stamp, this API is not valid */
+	if (Enet_isCpswFamily(hTSync->enetType) == false) {
+		return LLDENET_E_UNSUPPORT;
+	}
+	memset(&inArgs, 0, sizeof(inArgs));
+	inArgs.msgType = (EnetTimeSync_MsgType)msgType;
+	inArgs.seqId   = seqId;
+	inArgs.portNum = rxPort;
+	inArgs.domain  = domain;
 
-    status = EnetApp_getRxTimeStamp(hTSync->hEnet, hTSync->coreId, &inArgs, ts);
-    if (status != ENET_SOK) {
-        UB_LOG(UBL_ERROR,"Enet_ioctl GET_ETH_RX_TIMESTAMP failed %d\n", status);
-        return LLDENET_E_IOCTL;
-    }
+	status = EnetApp_getRxTimeStamp(hTSync->hEnet, hTSync->coreId, &inArgs, ts);
+	if (status != ENET_SOK) {
+		UB_LOG(UBL_ERROR,"Enet_ioctl GET_ETH_RX_TIMESTAMP failed %d\n", status);
+		return LLDENET_E_IOCTL;
+	}
 
-    return LLDENET_E_OK;
+	return LLDENET_E_OK;
 }
 
 int LLDTSyncGetTxTime(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
@@ -196,30 +197,29 @@ int LLDTSyncAdjFreq(LLDTSync_t *hTSync, int ppb)
 
 int LLDTSyncSetTime(LLDTSync_t *hTSync, uint64_t ts)
 {
-    int32_t status = ENET_SOK;
-    EnetTimeSync_setTimestamp timestamp;
-    Enet_IoctlPrms prms;
+	int32_t status = ENET_SOK;
+	EnetTimeSync_setTimestamp timestamp;
+	Enet_IoctlPrms prms;
 
-    if (hTSync == NULL) {
-        return LLDENET_E_PARAM;
-    }
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
 
-    memset((void *)(&timestamp), 0, sizeof(timestamp));
-    timestamp.tsLoadVal = ts;
-    timestamp.clkMode = 0U;
-    timestamp.clkSign = 0U;
-    ENET_IOCTL_SET_IN_ARGS(&prms, &timestamp);
-    ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
-               ENET_TIMESYNC_IOCTL_SET_TIMESTAMP, &prms, status);
-    if (status != ENET_SOK) {
-        UB_LOG(UBL_ERROR,"Enet_ioctl SET_TIMESTAMP failed %d\n", status);
-        return LLDENET_E_IOCTL;
-    }
-    if(Enet_isIcssFamily(hTSync->enetType))
-    {
-        EnetApp_setTimeStampComplete(hTSync->hEnet, hTSync->coreId);
-    }
-    return LLDENET_E_OK;
+	memset((void *)(&timestamp), 0, sizeof(timestamp));
+	timestamp.tsLoadVal = ts;
+	timestamp.clkMode = 0U;
+	timestamp.clkSign = 0U;
+	ENET_IOCTL_SET_IN_ARGS(&prms, &timestamp);
+	ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
+			   ENET_TIMESYNC_IOCTL_SET_TIMESTAMP, &prms, status);
+	if (status != ENET_SOK) {
+		UB_LOG(UBL_ERROR,"Enet_ioctl SET_TIMESTAMP failed %d\n", status);
+		return LLDENET_E_IOCTL;
+	}
+	if(Enet_isIcssFamily(hTSync->enetType)) {
+		EnetApp_setTimeStampComplete(hTSync->hEnet, hTSync->coreId);
+	}
+	return LLDENET_E_OK;
 }
 
 int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
@@ -244,21 +244,20 @@ int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
 
 int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPorts)
 {
-    uint32_t maxMacPorts = 0U;
+	uint32_t maxMacPorts = 0U;
 
-    if ((hTSync == NULL) || (ports == NULL) || (numPorts == 0)) {
-        return LLDENET_E_PARAM;
-    }
+	if ((hTSync == NULL) || (ports == NULL) || (numPorts == 0)) {
+		return LLDENET_E_PARAM;
+	}
 
-    /* No MacPort TS Enable ioctl for ICSSG peripheral */
-    if (Enet_isCpswFamily(hTSync->enetType))
-    {
-        maxMacPorts = Enet_getMacPortMax(hTSync->enetType, hTSync->instId);
-        if (numPorts > maxMacPorts) {
-            numPorts = maxMacPorts;
-        }
-        EnetApp_enablePortTsEvent(hTSync->hEnet, hTSync->coreId, ports, numPorts);
-    }
+	/* No MacPort TS Enable ioctl for ICSSG peripheral */
+	if (Enet_isCpswFamily(hTSync->enetType)) {
+		maxMacPorts = Enet_getMacPortMax(hTSync->enetType, hTSync->instId);
+		if (numPorts > maxMacPorts) {
+			numPorts = maxMacPorts;
+		}
+		EnetApp_enablePortTsEvent(hTSync->hEnet, hTSync->coreId, ports, numPorts);
+	}
 
-    return LLDENET_E_OK;
+	return LLDENET_E_OK;
 }

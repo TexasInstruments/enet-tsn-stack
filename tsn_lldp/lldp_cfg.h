@@ -72,14 +72,14 @@
 
 #if 0
 #if DEBUG_ENABLE == 1
-#define LLDP_LOG(level, ...)						\
+#define UB_LOG(level, ...)						\
 	{								\
 		char coutstr[UB_CHARS_IN_LINE];				\
 		(void)snprintf(coutstr, UB_CHARS_IN_LINE, __VA_ARGS__);	\
 		(void)ub_log_print(UB_LOGCAT, 0, level, coutstr);	\
 	}
 #else
-#define LLDP_LOG(level, ...) { do{}while(0); }
+#define UB_LOG(level, ...) { do{}while(0); }
 #endif
 #endif
 // The rx-state machine target is to create one rx-ttl timer per neighbor (dynamic), however, due to limitation on memory register on TILLD.
@@ -314,15 +314,14 @@ typedef struct
 	admin_status_t admin_status;
 	bool notification_enable;
 	uint8_t tlvs_tx_enable; //!< mask with tlvs_tx_enable_bits_t
-#if 0
+
 	uint32_t message_fast_tx;
 	uint32_t message_tx_hold_multiplier;
 	uint32_t message_tx_interval;
 	uint32_t reinit_delay;
 	uint32_t tx_credit_max;
 	uint32_t tx_fast_init;
-	uint32_t notification_interval;
-#endif
+
 	// management_address_tx_port_t management_address_tx_port[MAX_PORT_MANAGEMENT_ADDRESS];
 	management_address_tx_port_list_t management_address_tx_port;
 	port_id_type_t port_id_subtype;
@@ -356,7 +355,7 @@ typedef struct
 /////////// Static Memory Definition
 #define LLDP_CFG_PORT_INSTMEM lldp_cfg_port_inst
 #ifndef LLDP_CFG_PORT_INSTNUM
-#define LLDP_CFG_PORT_INSTNUM 4
+#define LLDP_CFG_PORT_INSTNUM 8
 #endif
 UB_SD_GETMEM_DEF_EXTERN(LLDP_CFG_PORT_INSTMEM);
 

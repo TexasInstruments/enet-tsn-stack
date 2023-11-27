@@ -164,8 +164,6 @@ static void *idle_proc(port_announce_transmit_data_t *sm, uint64_t cts64)
 		__func__, sm->domainIndex, sm->portIndex);
 	/* announceSendTime = currentTime + interval2 */
 	sm->thisSM->announceSendTime.nsec = cts64 + sm->thisSM->interval2.nsec;
-	// align announce time to 25ms
-	sm->thisSM->announceSendTime.nsec = (sm->thisSM->announceSendTime.nsec/25000000u)*25000000u;
 	return NULL;
 }
 

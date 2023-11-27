@@ -294,14 +294,14 @@ static int setup_env4(void **state)
 #define UB_LOGCAT 2
 static void test_ub_log2(int llevel, int pnum)
 {
-	UB_LOG(llevel, "%d\n", pnum);
+	UB_VLOG(llevel, "%d\n", pnum);
 }
 
 #undef UB_LOGCAT
 #define UB_LOGCAT 3
 static void test_ub_log3(int llevel, int pnum)
 {
-	UB_LOG(llevel, "%d\n", pnum);
+	UB_VLOG(llevel, "%d\n", pnum);
 }
 
 static void test_ub_log_env_cat(void **state)

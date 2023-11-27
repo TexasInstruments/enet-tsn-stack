@@ -53,6 +53,24 @@
 #include "gptpconf/gptpgcfg.h"
 #include "gptpconf/xl4-extmod-xl4gptp.h"
 
+/* Minimal message interval gptp can generate */
+#define GPTPNET_INTERVAL_GRANULARITY_NSEC 7812500u //Should not be changed
+
+#ifndef GPTPNET_INTERVAL_TIMEOUT_NSEC
+#define GPTPNET_INTERVAL_TIMEOUT_NSEC 125000000u
+#endif //GPTPNET_INTERVAL_TIMEOUT_NSEC
+
+#if (GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC) && \
+	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*2u) && \
+	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*4u) && \
+	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*8u) && \
+	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*16u)
+#error "Unsupported this GPTPNET_INTERVAL_TIMEOUT_NSEC"
+#endif
+
+#define ALIGN_TIME(x, a) ((((x)+((a)/2))/(a))*(a))
+#define GPTP_ALIGN_TIME(x) ALIGN_TIME(x, GPTPNET_INTERVAL_GRANULARITY_NSEC)
+
 /*==============Static memory configuration==============*/
 /* The memory size increase when number of instances/ports/domains are increased.
  * Since the memory for small and medium are hard to estimate exactly,
@@ -166,8 +184,8 @@ UB_SD_GETMEM_DEF_EXTERN(SM_DATA_INST);
 #define GPTP_SMALL_AFSIZE 4u
 #define GPTP_SMALL_ALIGN(x) GPTP_ALIGN((x),GPTP_SMALL_AFSIZE)
 #define GPTP_SMALL_TOTAL_SIZE \
-	(GPTP_SMALL_ALIGN(sizeof(PerPortGlobal*))*(GPTP_MAX_PORTS+1)+	\
-	 GPTP_SMALL_ALIGN(sizeof(BmcsPerPortGlobal*))*(GPTP_MAX_PORTS+1)+	\
+	(GPTP_SMALL_ALIGN(sizeof(PerPortGlobal*)*(GPTP_MAX_PORTS+1))*GPTP_MAX_DOMAINS+ \
+	 GPTP_SMALL_ALIGN(sizeof(BmcsPerPortGlobal*)*(GPTP_MAX_PORTS+1))*GPTP_MAX_DOMAINS+ \
 	 GPTP_SMALL_ALIGN(sizeof(UInteger224))*(GPTP_MAX_PORTS+1)+			\
 	 GPTP_SMALL_ALIGN(sizeof(PortStateSelectionSMforAllDomain))+		\
 	 GPTP_SMALL_ALIGN(sizeof(PortStateSettingExtSMforAllDomain))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
@@ -196,13 +214,14 @@ UB_SD_GETMEM_DEF_EXTERN(GPTP_SMALL_ALLOC);
 	 GPTP_MEDIUM_ALIGN(sizeof(PerTimeAwareSystemGlobal))*GPTP_MAX_DOMAINS+ \
 	 GPTP_MEDIUM_ALIGN(sizeof(PerfMonClockDS))*GPTP_MAX_DOMAINS+		\
 	 GPTP_MEDIUM_ALIGN(sizeof(PerPortGlobal))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
+	 GPTP_MEDIUM_ALIGN(sizeof(PerPortGlobalForAllDomain))*(GPTP_MAX_PORTS+1)+ \
 	 GPTP_MEDIUM_ALIGN(sizeof(PerfMonPortDS))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
 	 GPTP_MEDIUM_ALIGN(sizeof(BmcsPerTimeAwareSystemGlobal))*GPTP_MAX_DOMAINS+ \
 	 GPTP_MEDIUM_ALIGN(sizeof(BmcsPerPortGlobal))*((GPTP_MAX_PORTS+1)*GPTP_MAX_DOMAINS)+ \
 	 GPTP_MEDIUM_ALIGN(sizeof(MDEntityGlobalForAllDomain))*(GPTP_MAX_PORTS+1)+ \
 	 GPTP_MEDIUM_ALIGN(48)+ /*48: big rough of sizeof(gptpclock_data_t)*/	\
 	 GPTP_MEDIUM_ALIGN(56*GPTP_MAX_DOMAINS)+ /*56: big rough of sizeof(per_domain_data_t)*/ \
-	 GPTP_MEDIUM_ALIGN(10+(GPTP_MAX_PACKET_SIZE+sizeof(CB_ETHHDR_T))*GPTP_MAX_PORTS)+ /*big parts of netdevices */ \
+	 GPTP_MEDIUM_ALIGN((10+sizeof(event_data_netlink_t)+GPTP_MAX_PACKET_SIZE+sizeof(CB_ETHHDR_T))*GPTP_MAX_PORTS)+ /*big parts of netdevices */ \
 	 GPTP_MEDIUM_ALIGN(128)+ /* reserved for uncountable size in gptpnet */ \
 	 GPTP_MEDIUM_ALIGN(GPTP_MEDIUM_EXTRA_SIZE))
 

@@ -455,8 +455,15 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 	uint32_t vsize;
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE,onhw,
 				      NULL,NULL,NULL,NULL,NULL,0};
+	char *btkey;
 
 	UB_LOG(UBL_DEBUGV, "%s:kstr=%s, vstr=%s\n", __func__, kstr, vstr);
+	btkey=strrchr(kstr, '/');
+	if(btkey!=NULL){
+		btkey=&btkey[1];
+	}else{
+		btkey=kstr;
+	}
 	res=proc_get_keys(ydrd, kstr);
 	ydrd->changtoRO=false;
 	if(res<0){return -1;}
@@ -476,7 +483,7 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 	res=0;
 	if(dbpara.atype!=YANG_DB_ACTION_DELETE){
 		vsize=0;
-		res=yang_value_conv(vtype, vstr, &dbpara.value, &vsize, NULL);
+		res=yang_value_conv(vtype, vstr, &dbpara.value, &vsize, btkey);
 		if(res<0){
 			UB_LOG(UBL_ERROR, "%s:invalid value:%s\n", __func__, vstr);
 			ydrd->api--;
@@ -759,7 +766,7 @@ static int remove_bslash(char *line)
 }
 
 // read line by line, connect lines if the line end is '\'
-#define LINE_BUF_SIZE 256
+#define LINE_BUF_SIZE 512
 int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname,
 			     uc_notice_data_t *ucntd)
 {
@@ -1147,6 +1154,11 @@ int yang_db_runtime_proc_nodestring(yang_db_runtime_dataq_t *ydrd, bool reset,
 	if(proc_set_onenode(ydrd, kstr, true)==0){
 		ydrd->aps[ydrd->api]=255;
 		kn=yang_db_runtime_getvknum(ydrd->dbald, ydrd->aps);
+		if(kn<=0){
+			ydrd->aps[0]^=0x80;
+			kn=yang_db_runtime_getvknum(ydrd->dbald, ydrd->aps);
+			ydrd->aps[0]^=0x80;
+		}
 		UB_LOG(UBL_DEBUG, "%s:kstr=%s, ydrd->api=%d, set a node, needed num of vkey=%d\n",
 		       __func__, kstr, ydrd->api, kn);
 		return kn;

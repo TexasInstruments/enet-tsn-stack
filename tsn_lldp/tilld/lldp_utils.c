@@ -478,15 +478,3 @@ char *lldp_bmac2smac(ub_macaddr_t bmac, char *smac, const char delim)
 	smac[17]=0;
 	return smac;
 }
-
-void LLDP_LOG(ub_dbgmsg_level_t level, const char* fmt, ...)
-{
-  char coutstr[UB_CHARS_IN_LINE];
-
-  va_list carg;
-  va_start(carg, fmt);
-  (void)vsnprintf(coutstr, UB_CHARS_IN_LINE, fmt, carg);
-  va_end(carg);
-
-  (void)ub_log_print(UB_LOGCAT, 0, level, coutstr);
-}

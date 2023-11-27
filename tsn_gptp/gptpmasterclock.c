@@ -98,7 +98,7 @@ static int gptpmasterclock_health_check(int domainIndex)
 {
 	if(GMCD_INIT_CHECK!=0){return -1;}
 	if(!gmcd.shm->head.max_domains){
-		UB_LOG(UBL_ERROR, "%s:gptp2d might be closed, re-initialize now\n",__func__);
+		UB_LOG(UBL_ERROR, "%s:tsn_gptpd might be closed, re-initialize now\n",__func__);
 		(void)gptpmasterclock_close();
 		if(gptpmasterclock_init(gmcd.shmem_name)!=0){return -1;}
 	}
@@ -134,7 +134,7 @@ int gptpmasterclock_init(const char *shmem_name)
 	GPTPMCLCK_PLATFORM_INIT;
 
 	gmcd.ref_counter++;
-	UB_LOG(UBL_INFO, "%s: gptp2-"TSNPKGVERSION", ref_counter=%d\n",
+	UB_LOG(UBL_INFO, "%s: tsn_gptp-"TSNPKGVERSION", ref_counter=%d\n",
 	       __func__, gmcd.ref_counter);
 	if(gmcd.max_domains!=0){
 		UB_LOG(UBL_DEBUG, "%s: already initialized\n", __func__);

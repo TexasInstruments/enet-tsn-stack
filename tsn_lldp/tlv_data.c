@@ -176,19 +176,19 @@ static bool is_tx_enabled_for_tlv(lldp_port_t* cfg_port, LLDP_TLV tlv)
 	{
 		case PORT_DESCRIPTION:              // bit port-desc position 0;
 			enabled = 0x01 & tlvs_tx_enable;
-			LLDP_LOG(UBL_DEBUG, "%s: PORT_DESCRIPTION[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
+			UB_LOG(UBL_DEBUG, "%s: PORT_DESCRIPTION[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
 			break;
 		case SYSTEM_NAME:
 			enabled = 0x01 & (tlvs_tx_enable >> 1); // bit sys-name position 1;
-			LLDP_LOG(UBL_DEBUG, "%s: SYSTEM_NAME[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
+			UB_LOG(UBL_DEBUG, "%s: SYSTEM_NAME[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
 			break;
 		case SYSTEM_DESCRIPTION:  // bit sys-desc position 2;
 			enabled = 0x01 & (tlvs_tx_enable >> 2); // bit sys-name position 1;
-			LLDP_LOG(UBL_DEBUG, "%s: SYSTEM_DESCRIPTION[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
+			UB_LOG(UBL_DEBUG, "%s: SYSTEM_DESCRIPTION[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
 			break;
 		case SYSTEM_CAPABILITIES: // bit sys-cap position 3;
 			enabled = 0x01 & (tlvs_tx_enable >> 3);
-			LLDP_LOG(UBL_DEBUG, "%s: SYSTEM_CAPABILITIES[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
+			UB_LOG(UBL_DEBUG, "%s: SYSTEM_CAPABILITIES[%s]\n", __func__, (enabled==1)?"enabled":"disabled");
 			break;
 		default:
 			// No need to check others
@@ -216,13 +216,13 @@ static void fill_local_mgmt_addr_info(uint8_t* send_buf, int* set_idx, managemen
 		case ipv4:
 		mgmt_addr_str_len = 1/*size of mgmt address subtype is 1*/+ IPV4_SIZE/*size of ipv4*/;
 		ipv4_str_to_hex((const char*)mgmt_addr_tx_info->man_address, ipv4_hex);
-		LLDP_LOG(UBL_DEBUG, "%s:%s \n", __func__, mgmt_addr_tx_info->man_address);
+		UB_LOG(UBL_DEBUG, "%s:%s \n", __func__, mgmt_addr_tx_info->man_address);
 		// ub_hexdump(true, true, ipv4_hex, 4, 0);
 		break;
 		case ipv6:
 		mgmt_addr_str_len = 1/*size of mgmt address subtype is 1*/+ IPV6_SIZE/*size of ipv6*/;
 		ipv6_str_to_hex((const char*)mgmt_addr_tx_info->man_address, ipv6_hex);
-		LLDP_LOG(UBL_DEBUG, "%s:%s \n", __func__, mgmt_addr_tx_info->man_address);
+		UB_LOG(UBL_DEBUG, "%s:%s \n", __func__, mgmt_addr_tx_info->man_address);
 		// ub_hexdump(true, true, ipv6_hex, 16, 0);
 		break;
 		case nsap:
@@ -303,7 +303,7 @@ static void fill_other_info(yang_lldp_t* lldp_cfg, lldp_port_t* cfg_port, LLDP_T
 						if (management_addr_tx_port->tx_enable)
 						{
 							fill_local_mgmt_addr_info(send_buf, set_idx, management_addr_tx_port);
-							LLDP_LOG(UBL_DEBUG, "%s: fill mgmt addr :%s\n", __func__, management_addr_tx_port->man_address);
+							UB_LOG(UBL_DEBUG, "%s: fill mgmt addr :%s\n", __func__, management_addr_tx_port->man_address);
 						}
 					}
 				}
@@ -363,7 +363,7 @@ static int fill_mandatory_info(yang_lldp_t* lldp_cfg, lldp_port_t* cfg_port, uin
 	fill_port_id_by_type(cfg_port, &send_buf[set_idx]); set_idx+=portid_info_len - PORT_ID_SUBTYPE_SZ;
 
 	// time to live: Shutdown frame: ttl = 0
-	uint16_t tx_ttl = (is_shutdown) ? 0 : UB_MIN(lldp_cfg->message_tx_interval * lldp_cfg->message_tx_hold_multiplier + 1, 65535);
+	uint16_t tx_ttl = (is_shutdown) ? 0 : UB_MIN(cfg_port->message_tx_interval * cfg_port->message_tx_hold_multiplier + 1, 65535);
 	uint16_t ttl_info = gen_tlv_header_info(TIME_TO_LIVE, TLV_TTL_LENTH);
 
 	memcpy(&send_buf[set_idx], (uint8_t*)&ttl_info, sizeof(ttl_info)); set_idx +=sizeof(ttl_info);
@@ -391,7 +391,7 @@ int lldpdu_builder(yang_lldp_t* lldp_cfg, uint8_t* send_buf, lldp_port_t* cfg_po
 	uint16_t end_of_tlv = END_OF_TLV;
 	memcpy(&send_buf[set_idx], (uint8_t*)&end_of_tlv, sizeof(end_of_tlv)); set_idx +=sizeof(end_of_tlv);
 	
-	LLDP_LOG(UBL_DEBUG, "%s:%s done tlv len %d \n",  __func__, cfg_port->name, set_idx);
+	UB_LOG(UBL_DEBUG, "%s:%s done tlv len %d \n",  __func__, cfg_port->name, set_idx);
 	return set_idx;
 };
 
@@ -405,7 +405,7 @@ int tlv_shutdown_builder(yang_lldp_t* lldp_cfg, uint8_t* send_buf, lldp_port_t* 
 	uint16_t end_of_tlv = END_OF_TLV;
 	memcpy(&send_buf[set_idx], (uint8_t*)&end_of_tlv, sizeof(end_of_tlv)); set_idx +=sizeof(end_of_tlv);
 	
-	LLDP_LOG(UBL_DEBUG, "%s:%s done tlv len %d \n",  __func__, cfg_port->name, set_idx);
+	UB_LOG(UBL_DEBUG, "%s:%s done tlv len %d \n",  __func__, cfg_port->name, set_idx);
 	return set_idx;
 };
 
@@ -442,17 +442,17 @@ int get_chassis_info(uint8_t* buf, remote_systems_data_t* neighbor_info, int* re
 			*read_index += chassis_len;
 
 			ret = (int)chassis_len;
-			LLDP_LOG(UBL_DEBUG, "%s: %d[%d]\n", __func__, chassis_len, neighbor_info->chassis_id_subtype);
+			UB_LOG(UBL_DEBUG, "%s: %d[%d]\n", __func__, chassis_len, neighbor_info->chassis_id_subtype);
 			// ub_hexdump(true, true, neighbor_info->chassis_id, chassis_len - 1, 0);
 		}
 		else
 		{
-			LLDP_LOG(UBL_ERROR, "Invalid chassis id len %d\n", chassis_len);
+			UB_LOG(UBL_ERROR, "Invalid chassis id len %d\n", chassis_len);
 		}
 	}
 	else
 	{
-		LLDP_LOG(UBL_ERROR, "First tlv must be chassis id, but got %d\n", chassis_id_type);
+		UB_LOG(UBL_ERROR, "First tlv must be chassis id, but got %d\n", chassis_id_type);
 	}
 
 	return ret;
@@ -476,17 +476,17 @@ int get_port_info(uint8_t* buf, remote_systems_data_t* neighbor_info, int* read_
 			*read_index += port_id_len;
 
 			ret = (int)port_id_len;
-			LLDP_LOG(UBL_DEBUG, "%s: %d[%d]\n", __func__, port_id_len, neighbor_info->port_id_subtype);
+			UB_LOG(UBL_DEBUG, "%s: %d[%d]\n", __func__, port_id_len, neighbor_info->port_id_subtype);
 			// ub_hexdump(true, true, neighbor_info->port_id, port_id_len - 1, 0);
 		}
 		else
 		{
-			LLDP_LOG(UBL_ERROR, "Invalid port id len %d\n", port_id_len);
+			UB_LOG(UBL_ERROR, "Invalid port id len %d\n", port_id_len);
 		}
 	}
 	else
 	{
-		LLDP_LOG(UBL_ERROR, "Second tlv must be chassis id, but got %d\n", port_id_type);
+		UB_LOG(UBL_ERROR, "Second tlv must be chassis id, but got %d\n", port_id_type);
 	}
 
 	return ret;
@@ -514,12 +514,12 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 					read_done = true;
 					if (tlv_length > 0) 
 					{
-						LLDP_LOG(UBL_ERROR, "Malformed. END_OF_TLV length > 0 (%d)\n", tlv_length);
+						UB_LOG(UBL_ERROR, "Malformed. END_OF_TLV length > 0 (%d)\n", tlv_length);
 						ret = RX_INVALID;
 					}
 					else
 					{
-						LLDP_LOG(UBL_DEBUG, "end of tlv\n");
+						UB_LOG(UBL_DEBUG, "end of tlv\n");
 					}
 					break;
 				case CHASSIS_ID:
@@ -527,22 +527,22 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 				case TIME_TO_LIVE:
 					read_done = true;
 					ret = RX_INVALID;
-					LLDP_LOG(UBL_INFO, "Malformed. Dupplicate tlv field %d\n", tlv_type);
+					UB_LOG(UBL_INFO, "Malformed. Dupplicate tlv field %d\n", tlv_type);
 					break;
 				case PORT_DESCRIPTION:
 					memset(neighbor_info->port_desc, 0, sizeof(neighbor_info->port_desc));
 					memcpy(neighbor_info->port_desc, &buf[read_index+2], tlv_length);
-					LLDP_LOG(UBL_DEBUG, "%s: Port desc[%s]\n", __func__, neighbor_info->port_desc);
+					UB_LOG(UBL_DEBUG, "%s: Port desc[%s]\n", __func__, neighbor_info->port_desc);
 					break;
 				case SYSTEM_NAME:
 					memset(neighbor_info->system_name, 0, sizeof(neighbor_info->system_name));
 					memcpy(neighbor_info->system_name, &buf[read_index+2], tlv_length);
-					LLDP_LOG(UBL_DEBUG, "%s: system name[%s]\n", __func__, neighbor_info->system_name);
+					UB_LOG(UBL_DEBUG, "%s: system name[%s]\n", __func__, neighbor_info->system_name);
 					break;
 				case SYSTEM_DESCRIPTION:
 					memset(neighbor_info->system_description, 0, sizeof(neighbor_info->system_description));
 					memcpy(neighbor_info->system_description, &buf[read_index+2], tlv_length);
-					LLDP_LOG(UBL_DEBUG, "%s: system desc[%s]\n", __func__, neighbor_info->system_description);
+					UB_LOG(UBL_DEBUG, "%s: system desc[%s]\n", __func__, neighbor_info->system_description);
 					break;
 				case SYSTEM_CAPABILITIES: // Length must be 4
 					if (tlv_length == 4)
@@ -555,11 +555,11 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 						enabled_caps |= (((uint16_t)buf[read_index+5]) & 0x00FF);
 						neighbor_info->system_capabilities_enabled = enabled_caps;
 
-						LLDP_LOG(UBL_DEBUG, "%s: system_caps [%04x] enabled [%04x]\n", __func__, system_caps, enabled_caps);
+						UB_LOG(UBL_DEBUG, "%s: system_caps [%04x] enabled [%04x]\n", __func__, system_caps, enabled_caps);
 					}
 					else
 					{
-						LLDP_LOG(UBL_WARN, "Invalid system caps length\n");
+						UB_LOG(UBL_WARN, "Invalid system caps length\n");
 						read_done = true;
 						ret = RX_INVALID;
 					}
@@ -584,7 +584,7 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 					memcpy(mgmt_addr->address, management_addr, management_address_len - 1);
 					ub_list_append(&neighbor_info->management_address, (struct ub_list_node*)mgmt_addr);
 					
-					LLDP_LOG(UBL_DEBUG, "%s: management_address [subtype: %d] addr-len[%d] if [subtype: %d id: %d]\n", 
+					UB_LOG(UBL_DEBUG, "%s: management_address [subtype: %d] addr-len[%d] if [subtype: %d id: %d]\n", 
 										__func__, 
 										mgmt_addr->address_subtype, 
 										management_address_len,
@@ -604,15 +604,15 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 					rm_org->info_identifier = byteswap24(oui);
 					rm_org->info_subtype = buf[read_index+5];
 					memcpy(rm_org->remote_info, &buf[read_index+6], tlv_length - 3  - 1);
-					// LLDP_LOG(UBL_DEBUG, "%s: Original OUI ID (%x %x %x) Subtype %d \n", __func__, buf[read_index+2], buf[read_index+3], buf[read_index+4], rm_org->info_subtype);
-					// LLDP_LOG(UBL_DEBUG, "%s: Converted OUI ID %d(%x) -> %d (%x) Subtype %d \n", __func__, oui, oui, rm_org->info_identifier, rm_org->info_identifier, rm_org->info_subtype);
+					// UB_LOG(UBL_DEBUG, "%s: Original OUI ID (%x %x %x) Subtype %d \n", __func__, buf[read_index+2], buf[read_index+3], buf[read_index+4], rm_org->info_subtype);
+					// UB_LOG(UBL_DEBUG, "%s: Converted OUI ID %d(%x) -> %d (%x) Subtype %d \n", __func__, oui, oui, rm_org->info_identifier, rm_org->info_identifier, rm_org->info_subtype);
 					// ub_hexdump(true, true,  &buf[read_index+6], tlv_length - 3  - 1, 0);
 					ub_list_append(&neighbor_info->remote_org_defined_info,  (struct ub_list_node*)rm_org);
 				}
 				break;
 				default:
 				{
-					LLDP_LOG(UBL_WARN, "%s: Got unknown TLV type %d \n", __func__, tlv_type);
+					UB_LOG(UBL_WARN, "%s: Got unknown TLV type %d \n", __func__, tlv_type);
 					// ub_hexdump(true, true,  &buf[read_index+2], tlv_length, 0);
 					remote_unknown_tlv_t* unknown_tlv = init_rm_unknown_tlv();
 					memset(unknown_tlv, 0, sizeof(remote_unknown_tlv_t));
@@ -630,7 +630,7 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 		}
 		else
 		{
-			LLDP_LOG(UBL_ERROR, "Invalid tlv_length len %d - remain len %d\n", tlv_length, len - read_index - 1);
+			UB_LOG(UBL_ERROR, "Invalid tlv_length len %d - remain len %d\n", tlv_length, len - read_index - 1);
 			read_done = true;
 			ret = RX_INVALID;
 		}
@@ -656,12 +656,12 @@ LLDP_RX_TYPE collect_ttl_info(uint8_t* buf, int* read_idx, timeticks *rx_ttl)
 
 		if (ttl == 0)
 		{
-			LLDP_LOG(UBL_INFO, "%s: Recv SHUTDOWN LLDPDU TTL=[%d]\n", __func__, ttl);
+			UB_LOG(UBL_INFO, "%s: Recv SHUTDOWN LLDPDU TTL=[%d]\n", __func__, ttl);
 			rx_type = RX_SHUTDOWN;
 		}
 		else
 		{
-			// LLDP_LOG(UBL_DEBUG, "%s: Recv NORMAL LLDPDU TTL=[%d]\n", __func__, ttl);
+			// UB_LOG(UBL_DEBUG, "%s: Recv NORMAL LLDPDU TTL=[%d]\n", __func__, ttl);
 			rx_type = RX_NORMAL;
 		}
 
@@ -669,7 +669,7 @@ LLDP_RX_TYPE collect_ttl_info(uint8_t* buf, int* read_idx, timeticks *rx_ttl)
 	}
 	else
 	{
-		LLDP_LOG(UBL_ERROR, "Invalid ttl len %d\n", ttl_length);
+		UB_LOG(UBL_ERROR, "Invalid ttl len %d\n", ttl_length);
 	}
 
 	return rx_type;
@@ -708,19 +708,19 @@ LLDP_RX_TYPE collect_tlv_info(uint8_t* buf, int len, remote_systems_data_t* neig
 					}
 					else if (rx_type == RX_SHUTDOWN)
 					{
-						// LLDP_LOG(UBL_DEBUG, "%s Receive shutdown remote\n", __func__);
+						// UB_LOG(UBL_DEBUG, "%s Receive shutdown remote\n", __func__);
 						// ub_hexdump(true, true, neighbor_info->chassis_id, 16, 0);
 						// ub_hexdump(true, true, neighbor_info->port_id, 16, 0);
 					}
 					break;
 				default:
-					LLDP_LOG(UBL_ERROR, "invalid 3rd TLV type %d \n", tlv_type);
+					UB_LOG(UBL_ERROR, "invalid 3rd TLV type %d \n", tlv_type);
 					rx_type = RX_INVALID;
 				break;
 			}
 		}
 	}
 	
-	// LLDP_LOG(UBL_DEBUG, "%s: ret %d \n", __func__, ret);
+	// UB_LOG(UBL_DEBUG, "%s: ret %d \n", __func__, ret);
 	return rx_type;
 }

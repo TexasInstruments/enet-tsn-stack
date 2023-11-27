@@ -502,6 +502,9 @@ uc_range *uc_get_range(uc_dbald *dbald, void *key1, uint32_t ksize1,
 	memcpy(kdata, krange->mkv2.mv_data, krange->mkv2.mv_size);
 	krange->mkv2.mv_data=kdata;
 	res=0;
+#if !UB_LOG_IS_COMPILED(UBL_DEBUG)
+	(void)emes;
+#endif
 erexit:
 	CB_THREAD_MUTEX_UNLOCK(&lmubd->putlock);
 	if(res){

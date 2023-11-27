@@ -70,11 +70,13 @@ struct combase_link_data {
 UB_SD_GETMEM_DEF(CBL_DATA_INSTMEM, (int)sizeof(struct combase_link_data),
 		 CBL_DATA_INSTNUM);
 
-combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg)
+combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg,
+				       combase_link_extfd_t *extfdp)
 {
 	int i;
 	combase_link_data_t *cbld;
 	ub_macaddr_t srcmac;
+	(void)extfdp;
 
 	cbld = (combase_link_data_t*)UB_SD_GETMEM(CBL_DATA_INSTMEM,
 						  sizeof(struct combase_link_data));
@@ -215,4 +217,38 @@ int cbl_preempt_setup(combase_link_data_t *cbld, cbl_preempt_params_t *cpemp,
 	int res = LLDEnetIETSetConfig(cbld->sock->lldenet, mac_port, cpemp, nevent);
 	nevent->eventflags = (res == LLDENET_E_OK)? CBL_EVENT_PREEMPT_STATUS: 0;
 	return (res == LLDENET_E_OK? 1: -1);
+}
+
+static int check_linkstate_change(combase_link_data_t *cbld)
+{
+	int i;
+	uint32_t link_state = 0;
+
+	for (i = 0; i < cbld->numof_netdevs; i++) {
+		if (cb_lld_get_link_state(cbld->sock, cbld->netdevs[i], &link_state)) {
+			return -1;
+		}
+		if (cbld->netdev_opersts[i] != link_state){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void *cbl_query_thread(void *ptr)
+{
+	cbl_query_thread_data_t *cqtd=(cbl_query_thread_data_t *)ptr;
+	combase_link_data_t *cbld=(combase_link_data_t *)cqtd->cbld;
+	int res;
+	if(!cbld){return NULL;}
+	cqtd->running=true;
+	while(cqtd->running){
+		CB_USLEEP(100000); /* 100msec polling should be okay */
+		res=check_linkstate_change(cbld);
+		if(res<=0){continue;}
+		if(cqtd->sigp!=NULL){
+			CB_SEM_POST(cqtd->sigp);
+		}
+	}
+	return NULL;
 }

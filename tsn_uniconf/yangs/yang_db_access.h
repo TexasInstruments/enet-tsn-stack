@@ -394,6 +394,13 @@ int yang_sizeof_vtype(uint8_t vtype);
 bool yang_isstring_vtype(uint8_t vtype);
 
 /**
+ * @brief check if vtype is an enum or identitref base data type
+ * @param	vtype: yang vtype (yang_vtype_enum_t) that you want to check.
+ * @note	return true if vtype is an enum base data type, else false
+ */
+bool yang_isenum_vtype(uint8_t vtype);
+
+/**
  * @brief Action(YANG_DB_ACTION_*) set in dbpara->atype
  * @param dbald	DB access pointer
  * @param hwald	HW access pointer, can be NULL not to access HW

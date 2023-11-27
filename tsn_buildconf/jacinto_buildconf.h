@@ -65,6 +65,8 @@
 #define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
 #define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
 
+#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+
 #define CB_XTIMER_TMNUM 30
 
 /* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
@@ -72,7 +74,11 @@
 #define GPTP_MAX_DOMAINS 2
 
 /*LLDP Definition*/
-#define LLDP_CFG_PORT_INSTNUM 4
+// Each port can have 3 LLDP agents     
+// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
+// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
+// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
+#define LLDP_CFG_PORT_INSTNUM (4 * 3)
 
 // The information below apply  for max length of 
 // - Local Chassis ID, 

@@ -91,6 +91,11 @@ int uc_notice_sig_check(bool thread, UC_NOTICE_SIG_T *sigp, int tout_ms, const c
 uc_notice_data_t *uc_notice_init(uint8_t callmode, const char *dbname);
 
 /**
+ * @brief start network HW events monitoring thread
+ */
+int uc_notice_start_events_thread(uc_notice_data_t *ucntd, uc_hwald *hwald);
+
+/**
  * @brief close 'uc_notice'
  * @param callmode
  */

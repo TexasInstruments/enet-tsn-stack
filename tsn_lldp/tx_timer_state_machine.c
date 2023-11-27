@@ -121,22 +121,22 @@ txTimerStateMachine tx_timer_state_machine[] =
 
 static void processTxSignal(struct _hw_interface* interface)
 {
-	LLDP_LOG(UBL_DEBUG, "[%s][%s] trigger signal tx\n", __func__, interface->if_name);
+	UB_LOG(UBL_DEBUG, "[%s][%s] trigger signal tx\n", __func__, interface->if_name);
 	interface->agent_info.txNow = true;
 	if (interface->agent_info.txFast > 0)
-		interface->agent_info.txTTR = interface->yang_lldp_cfg->message_fast_tx;
+		interface->agent_info.txTTR = interface->cfg_port->message_fast_tx;
 	else
-		interface->agent_info.txTTR = interface->yang_lldp_cfg->message_tx_interval;
+		interface->agent_info.txTTR = interface->cfg_port->message_tx_interval;
 
 	// txnow -> send msg
 	if (interface->agent_info.txNow && interface->agent_info.txCredit > 0)
 	{
-		LLDP_LOG(UBL_DEBUG, "[%s] triggerred signal tx with txCredit %d\n", __func__, interface->agent_info.txCredit);
+		UB_LOG(UBL_DEBUG, "[%s] triggerred signal tx with txCredit %d\n", __func__, interface->agent_info.txCredit);
 		PUSH_TX_EVENT(TX_NOW, interface);
 	}
 	else
 	{
-		LLDP_LOG(UBL_WARN, "[%s] Cannot process tx txCredit %d\n", __func__, interface->agent_info.txCredit);
+		UB_LOG(UBL_WARN, "[%s] Cannot process tx txCredit %d\n", __func__, interface->agent_info.txCredit);
 	}
 
 	// restart txtimer (msg interval or txFast)
@@ -145,9 +145,9 @@ static void processTxSignal(struct _hw_interface* interface)
 
 static void txtimer_on_port_tx_enable(struct _hw_interface* interface, TXTimerState pre_state)
 {
-	LLDP_LOG(UBL_INFO, "[%s] Starting TX Timer and TxTick Timer\n", __func__);
+	UB_LOG(UBL_INFO, "[%s] Starting TX Timer and TxTick Timer\n", __func__);
 	lldp_start_txticktimer(interface);
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 	interface->agent_info.txTTR = 1;
 	if (interface->agent_info.txTTR == 0)
 	{
@@ -168,66 +168,66 @@ static void txtimer_on_port_tx_disable(struct _hw_interface* interface, TXTimerS
 	interface->agent_info.txTTR = 0;
 	interface->agent_info.txFast = 0;
 	interface->agent_info.newNeighbor = false;
-	interface->agent_info.txCredit = interface->yang_lldp_cfg->tx_credit_max;
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+	interface->agent_info.txCredit = interface->cfg_port->tx_credit_max;
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 }
 
 static void txtimer_on_timer_expired(struct _hw_interface* interface, TXTimerState pre_state)
 {
-	LLDP_LOG(UBL_DEBUG, "[%s] dec(txFast) %d -> %d\n", __func__, interface->agent_info.txFast, interface->agent_info.txFast -1);
+	UB_LOG(UBL_DEBUG, "[%s] dec(txFast) %d -> %d\n", __func__, interface->agent_info.txFast, interface->agent_info.txFast -1);
 	if (interface->agent_info.txFast > 0) interface->agent_info.txFast--;
 
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 	PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 }
 
 static void txtimer_on_new_neighbor(struct _hw_interface* interface, TXTimerState pre_state)
 {
-	LLDP_LOG(UBL_DEBUG, "[%s][%s] \n", interface->if_name, __func__);
+	UB_LOG(UBL_DEBUG, "[%s][%s] \n", interface->if_name, __func__);
 	interface->agent_info.newNeighbor = false;
 	if (interface->agent_info.txFast == 0)
-		interface->agent_info.txFast = interface->yang_lldp_cfg->tx_fast_init;
+		interface->agent_info.txFast = interface->cfg_port->tx_fast_init;
 
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 	PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 }
 
 static void txtimer_on_txtick(struct _hw_interface* interface, TXTimerState pre_state)
 {
 	interface->agent_info.txTick = false;
-	if (interface->agent_info.txCredit < interface->yang_lldp_cfg->tx_credit_max)
+	if (interface->agent_info.txCredit < interface->cfg_port->tx_credit_max)
 	{
 		interface->agent_info.txCredit++; // txAddCredit
 	}
 	else
 	{
-		interface->agent_info.txCredit=interface->yang_lldp_cfg->tx_credit_max;
+		interface->agent_info.txCredit=interface->cfg_port->tx_credit_max;
 	}
 	PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->TX_TICK->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->TX_TICK->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 }
 
 static void txtimer_on_local_changed(struct _hw_interface* interface, TXTimerState pre_state)
 {
 	processTxSignal(interface);
 
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 	PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 }
 
 static void txtimer_tx_uct(struct _hw_interface* interface, TXTimerState pre_state)
 {
 	if (TX_TICK != pre_state) // Print too much
-		LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
+		UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_txtimer_state));
 	switch(pre_state)
 	{
 		case SIGNAL_TX: 
-			LLDP_LOG(UBL_DEBUG, "[%s][%s] one TX interval finished\n", interface->if_name, __func__);
+			UB_LOG(UBL_DEBUG, "[%s][%s] one TX interval finished\n", interface->if_name, __func__);
 			PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 			break;
 		case TX_TIMER_EXPIRES:
-			LLDP_LOG(UBL_DEBUG, "[%s][%s] Fast start -> expired\n", interface->if_name, __func__);
+			UB_LOG(UBL_DEBUG, "[%s][%s] Fast start -> expired\n", interface->if_name, __func__);
 			processTxSignal(interface);
 			PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 			break;
@@ -238,14 +238,14 @@ static void txtimer_tx_uct(struct _hw_interface* interface, TXTimerState pre_sta
 			PUSH_TXTIMER_EVENT(TXTIMER_TX_UCT, interface);
 			break;
 		default:
-			LLDP_LOG(UBL_INFO, "[%s] unhandled state(%s)\n", __func__, get_state_name(interface->curr_txtimer_state));
+			UB_LOG(UBL_INFO, "[%s] unhandled state(%s)\n", __func__, get_state_name(interface->curr_txtimer_state));
 			break;
 	}
 }
 
 void interface_tx_timer_sm_process(TXTimerEvent ev, struct _hw_interface* interface)
 {
-	LLDP_LOG(UBL_DEBUG, "[%s][%s] Incoming event %s with current state %s\n",interface->if_name, __func__, get_ev_name(ev), get_state_name(interface->curr_txtimer_state));
+	UB_LOG(UBL_DEBUG, "[%s][%s] Incoming event %s with current state %s\n",interface->if_name, __func__, get_ev_name(ev), get_state_name(interface->curr_txtimer_state));
 
 	if ( (interface->curr_txtimer_state < TXTIMER_LAST_STATE) && (ev < TXTIMER_LAST_EVENT) )
 	{

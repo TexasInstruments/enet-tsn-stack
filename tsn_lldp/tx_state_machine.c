@@ -104,20 +104,20 @@ txStateMachine tx_state_machine[] =
 
 static void txInitializeLLDP(struct _hw_interface* interface)
 {
-	txTTL = MIN(interface->yang_lldp_cfg->message_tx_interval * interface->yang_lldp_cfg->message_tx_hold_multiplier + 1, 65535);
-	LLDP_LOG(UBL_INFO, "%s\n", __func__);
-	LLDP_LOG(UBL_INFO, "reinitDelay: %d\n", interface->yang_lldp_cfg->reinit_delay);
-	LLDP_LOG(UBL_INFO, "msgTxHold: %d\n", interface->yang_lldp_cfg->message_tx_hold_multiplier);
-	LLDP_LOG(UBL_INFO, "msgTxInterval: %d\n", interface->yang_lldp_cfg->message_tx_interval);
-	LLDP_LOG(UBL_INFO, "msgFastTx: %d\n", interface->yang_lldp_cfg->message_fast_tx);
-	LLDP_LOG(UBL_INFO, "ttl: %d\n", txTTL);
+	txTTL = MIN(interface->cfg_port->message_tx_interval * interface->cfg_port->message_tx_hold_multiplier + 1, 65535);
+	UB_LOG(UBL_INFO, "%s:%s\n", __func__, interface->cfg_port->name);
+	UB_LOG(UBL_INFO, "reinitDelay: %d\n", interface->cfg_port->reinit_delay);
+	UB_LOG(UBL_INFO, "msgTxHold: %d\n", interface->cfg_port->message_tx_hold_multiplier);
+	UB_LOG(UBL_INFO, "msgTxInterval: %d\n", interface->cfg_port->message_tx_interval);
+	UB_LOG(UBL_INFO, "msgFastTx: %d\n", interface->cfg_port->message_fast_tx);
+	UB_LOG(UBL_INFO, "ttl: %d\n", txTTL);
 	interface->agent_info.txShutdownWhile = 0;
 }
 
 static int mibConstrInfoLLDPDU(struct _hw_interface* interface)
 {
 	int len = lldpdu_builder(interface->yang_lldp_cfg, pdata, interface->cfg_port);
-	LLDP_LOG(UBL_DEBUG, "%s - tlvlen %d\n", __func__, len);
+	UB_LOG(UBL_DEBUG, "%s - tlvlen %d\n", __func__, len);
 	// ub_hexdump(true, true, pdata, len, 0);
 
 	return len;
@@ -126,7 +126,7 @@ static int mibConstrInfoLLDPDU(struct _hw_interface* interface)
 static int mibConstrShutdownLLDPDU(struct _hw_interface* interface)
 {
 	int len = tlv_shutdown_builder(interface->yang_lldp_cfg, pdata, interface->cfg_port);
-	LLDP_LOG(UBL_DEBUG, "%s - tlvlen %d\n", __func__, len);
+	UB_LOG(UBL_DEBUG, "%s - tlvlen %d\n", __func__, len);
 	// ub_hexdump(true, true, pdata, len, 0);
 
 	return len;
@@ -144,36 +144,36 @@ static void txFrame(struct _hw_interface* interface, uint8_t* buf, int len)
 	{
 		increase_tx_frame(interface->cfg_port);
 	}
-	LLDP_LOG(UBL_DEBUG, "[%s] %s ret %d\n", __func__, interface->if_name, ret);
+	UB_LOG(UBL_DEBUG, "[%s] %s ret %d\n", __func__, interface->if_name, ret);
 }
 
 /*Below functions will be used to handle TX statemachine */
 static void on_port_disable(struct _hw_interface* interface, TXState pre_state)
 {
 	interface->agent_info.txShutdownWhile = 0;
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
 }
 
 static void on_port_tx_enable(struct _hw_interface* interface, TXState pre_state)
 {
 	txInitializeLLDP(interface);
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
 }
 static void on_port_tx_disable(struct _hw_interface* interface, TXState pre_state)
 {
 	int tlv_len = mibConstrShutdownLLDPDU(interface);
 	txFrame(interface, pdata, tlv_len);
-	interface->agent_info.txShutdownWhile = interface->yang_lldp_cfg->reinit_delay; // if txShutdownWhile > 0, mean shutdown is in progress
+	interface->agent_info.txShutdownWhile = interface->cfg_port->reinit_delay; // if txShutdownWhile > 0, mean shutdown is in progress
 	
 	lldp_start_shutdown_while_timer(interface);
 
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
 }
 
 static void on_tx_shutdown_while_expired(struct _hw_interface* interface, TXState pre_state)
 {
 	interface->agent_info.txShutdownWhile = 0;
-	LLDP_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
 }
 
 static void on_tx_now(struct _hw_interface* interface, TXState pre_state)
@@ -183,20 +183,20 @@ static void on_tx_now(struct _hw_interface* interface, TXState pre_state)
 	interface->agent_info.txCredit--;
 	interface->agent_info.txNow = false;
 	
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
-	LLDP_LOG(UBL_INFO, "%s: TX %d bytes\n", interface->if_name, tlv_len);
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
+	UB_LOG(UBL_INFO, "%s: TX %d bytes\n", interface->if_name, tlv_len);
 	// ub_hexdump(true, true, pdata, tlv_len, 0);
 	PUSH_TX_EVENT(TX_UCT, interface);
 }
 
 static void on_finish_tx_cycle(struct _hw_interface* interface, TXState pre_state)
 {
-	LLDP_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
+	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_tx_state));
 }
 
 void interface_tx_sm_process(TXEvent ev, struct _hw_interface* interface)
 {
-	LLDP_LOG(UBL_DEBUG, "[%s][%s]\n", interface->if_name, __func__);
+	UB_LOG(UBL_DEBUG, "[%s][%s]\n", interface->if_name, __func__);
 	if ( (interface->curr_tx_state < TX_LAST_STATE) && (ev < TX_LAST_EVENT) )
 	{
 		for (int i=0; i<sizeof(tx_state_machine) / sizeof(txStateMachine); i++)
@@ -205,7 +205,7 @@ void interface_tx_sm_process(TXEvent ev, struct _hw_interface* interface)
 			{
 				interface->curr_tx_state = tx_state_machine[i].txNextState;
 				tx_state_machine[i].pfStateMachineEvnentHandler(interface, tx_state_machine[i].txState);
-				// LLDP_LOG(UBL_INFO, "[%s][%s] State changed %s -> %s(%s)\n", interface->if_name, __func__, get_state_name(tx_state_machine[i].txState), get_state_name(interface->curr_tx_state), get_state_name(ret));
+				// UB_LOG(UBL_INFO, "[%s][%s] State changed %s -> %s(%s)\n", interface->if_name, __func__, get_state_name(tx_state_machine[i].txState), get_state_name(interface->curr_tx_state), get_state_name(ret));
 			}
 		}
 	}

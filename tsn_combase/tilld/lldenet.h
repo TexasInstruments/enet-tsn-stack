@@ -158,13 +158,9 @@ typedef struct {
 	 */
 	bool dmaRxOwner;
 	/**
-     * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
-     */
-    uint32_t numRxChannels;
-    /**
-     * true: if receive packet timestamp is present in the DmaPktInfo.
-     */
-    bool isRxTsInPkt;
+	 * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
+	 */
+	uint32_t numRxChannels;
 } LLDEnetCfg_t;
 
 /**
@@ -332,7 +328,7 @@ int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
  * @param hLLDEnet Pointer to the LLDEnet instance.
  * @param macPort port number of the MAC port to be configured with TAS parameters.
  * @param arg input argument to be configured. The caller shall pass
- *        an object of `cbl_tas_sched_params_t` via this argument.
+ *		an object of `cbl_tas_sched_params_t` via this argument.
  * @return LLDENET_E_OK: on success, an error code otherwise.
  */
 int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *arg);
@@ -343,9 +339,9 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *arg);
  * @param hLLDEnet Pointer to the LLDEnet instance.
  * @param macPort port number of the MAC port to be configured with TAS parameters.
  * @param reqPrm input argument to be configured. The caller shall pass
- *        an object of `cbl_preempt_params_t` via this argument.
+ *		an object of `cbl_preempt_params_t` via this argument.
  * @param resPrm response parameters will be stored in this object. The caller shall pass
- *       address of an object `cbl_cb_event_t` to this API.
+ *	   address of an object `cbl_cb_event_t` to this API.
  * @return LLDENET_E_OK: on success, an error code otherwise.
  */
 int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm);

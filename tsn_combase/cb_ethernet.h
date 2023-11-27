@@ -93,6 +93,7 @@
 
 #define CB_OPEN open
 #define CB_CLOSE close
+#define CB_WRITE write
 #define CB_SOCKET socket
 #define CB_IF_NAMETOINDEX if_nametoindex
 #define CB_SOCK_BIND bind

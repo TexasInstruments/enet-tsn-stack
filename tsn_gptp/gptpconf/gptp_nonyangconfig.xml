@@ -159,8 +159,8 @@
 			<!--	10msec -->
 			<TSN_SCHEDULE_CYCLETIME type="uint32">10000000</TSN_SCHEDULE_CYCLETIME>
 
-			<!-- a file name to save debug log memory at the end of gptp2d run -->
-			<DEBUGLOG_MEMORY_FILE type="string">/tmp/gptp2d_debugmem.log</DEBUGLOG_MEMORY_FILE>
+			<!-- a file name to save debug log memory at the end of tsn_gptpd run -->
+			<DEBUGLOG_MEMORY_FILE type="string">/tmp/tsn_gptpd_debugmem.log</DEBUGLOG_MEMORY_FILE>
 
 			<!-- size of the debug log memory. if this is '0', no debug log memory is used
 					 Kbytes -->
@@ -174,7 +174,7 @@
 			<OVIP_MODE_STRT_PORTNO type="uint16">5018</OVIP_MODE_STRT_PORTNO>
 
 			<!-- for nomal use, set "". then it uses GPTP_MASTER_CLOCK_SHARED_MEM as hardcoded value.
-					 when the over ip mode is used, multiple gptp2d can be run.
+					 when the over ip mode is used, multiple tsn_gptpd can be run.
 					 Only in such case, the shared mem name must be changed. -->
 			<MASTER_CLOCK_SHARED_MEM type="string">""</MASTER_CLOCK_SHARED_MEM>
 

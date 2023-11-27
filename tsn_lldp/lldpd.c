@@ -71,24 +71,34 @@ void lldpd_uniconf_access_mode(uint8_t mode)
 	ydb_set_uniconf_access_mode(mode);
 }
 
-int lldpd_init(const char* lldp_db_name, int* vlanid)
+int lldpd_init(const char* lldp_db_name, int* vlanid, netdevname_t *netdevs, int ndev_size)
 {
 	int ret = -1;
 	// Init default params
 	init_default_cfg();
 	ub_list_init(&hw_if_lst);
 	init_timer_manager();
-	LLDP_LOG(UBL_INFO, "%s - DB [%s] \n", __func__, lldp_db_name);
+	UB_LOG(UBL_INFO, "%s - DB [%s] \n", __func__, lldp_db_name);
+	// Load LLDP yang db into mem
 	ret=initialize_cfg(lldp_db_name, &yang_lldp_cfg, true);
 	if (ret == 0)
 	{
-		init_socket_utils();
-		init_local_interfaces(&hw_if_lst, &yang_lldp_cfg);
-
-		ret = init_raw_sock(&hw_if_lst);
-		if (ret == 0)
+		// Open raw socket in all netdevs
+		if (init_socket_utils(netdevs, ndev_size) != 0)
 		{
-			start_db_mon_timer();
+			return -1;
+		}
+		else
+		{
+			// Create list of hw_if based on yangdb cfg_port* list
+			init_local_interfaces(&hw_if_lst, &yang_lldp_cfg);
+
+			// Map socket fd to hw_if. 1 socket fd can be map to 3 hw_if due to 3 valid dest-mac-addr per one port
+			ret = init_raw_sock(&hw_if_lst);
+			if (ret == 0)
+			{
+				start_db_mon_timer();
+			}
 		}
 	}
 	return ret;

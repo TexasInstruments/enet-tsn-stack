@@ -113,22 +113,35 @@
  *	e.g. UB_LOG(UBL_DEBUG, "%s:x=%d\n", __func__, x);
  *	if UBL_DEBUG<="the level in UB_LOGCAT", it is printed
  */
-#define UB_LOG(level, ...)						\
-	{								\
-		char coutstr[UB_CHARS_IN_LINE];				\
-		(void)snprintf(coutstr, UB_CHARS_IN_LINE, __VA_ARGS__);	\
-		(void)ub_log_print(UB_LOGCAT, 0, level, coutstr);	\
-	}
+#define UB_LOG(level, ...) UB_LOG_##level(__VA_ARGS__)
 
 /**
  * @brief UB_TLOG add timestamp regardless the timestamp option in the category
  */
-#define UB_TLOG(level, ...)						\
-	{								\
-		char coutstr[UB_CHARS_IN_LINE];				\
-		(void)snprintf(coutstr, UB_CHARS_IN_LINE, __VA_ARGS__);	\
-		(void)ub_log_print(UB_LOGCAT, UB_LOGTSTYPE, level, coutstr); \
-	}
+#define UB_TLOG(level, ...) UB_TLOG_##level(__VA_ARGS__)
+
+/**
+ * @brief UB_VLOG allows for flexible logging with a variable log level
+ * specified as an argument in the function call.
+ * Example Usage:
+ * void func(int level, int abc)
+ * {
+ *     UB_VLOG(level, "hello world\n");
+ * }
+ * The func can be called as: func(UBL_DEBUGV, abc);
+ * In this case UB_LOG and UB_TLOG can not work.
+ * @note This macro may be inefficient and can impact performance.
+ * Please use with the caution.
+ */
+#define UB_VLOG(var, ...) \
+	if((var)==UBL_DEBUGV){UB_LOG(UBL_DEBUGV,__VA_ARGS__);}\
+	else if((var)==UBL_DEBUG){UB_LOG(UBL_DEBUG,__VA_ARGS__);}\
+	else if((var)==UBL_INFOV){UB_LOG(UBL_INFOV,__VA_ARGS__);}\
+	else if((var)==UBL_INFO){UB_LOG(UBL_INFO,__VA_ARGS__);}\
+	else if((var)==UBL_WARN){UB_LOG(UBL_WARN,__VA_ARGS__);}\
+	else if((var)==UBL_ERROR){UB_LOG(UBL_ERROR,__VA_ARGS__);}\
+	else if((var)==UBL_FATAL){UB_LOG(UBL_FATAL,__VA_ARGS__);}\
+	else{;}
 
 /** @brief use this to print ub_streamid_t */
 #define UB_PRIhexB8 "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X"
