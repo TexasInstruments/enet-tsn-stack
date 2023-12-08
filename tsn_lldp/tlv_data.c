@@ -508,122 +508,129 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 		uint16_t tlv_length = get_tlv_length(buf[read_index], buf[read_index+1]);
 		if (tlv_length < len - read_index -1)
 		{
-			switch (tlv_type)
+			if (tlv_length > LLDP_REMOTE_INFO_STRING_MAX_LEN)
 			{
-				case END_OF_TLV:
-					read_done = true;
-					if (tlv_length > 0) 
-					{
-						UB_LOG(UBL_ERROR, "Malformed. END_OF_TLV length > 0 (%d)\n", tlv_length);
-						ret = RX_INVALID;
-					}
-					else
-					{
-						UB_LOG(UBL_DEBUG, "end of tlv\n");
-					}
-					break;
-				case CHASSIS_ID:
-				case PORT_ID:
-				case TIME_TO_LIVE:
-					read_done = true;
-					ret = RX_INVALID;
-					UB_LOG(UBL_INFO, "Malformed. Dupplicate tlv field %d\n", tlv_type);
-					break;
-				case PORT_DESCRIPTION:
-					memset(neighbor_info->port_desc, 0, sizeof(neighbor_info->port_desc));
-					memcpy(neighbor_info->port_desc, &buf[read_index+2], tlv_length);
-					UB_LOG(UBL_DEBUG, "%s: Port desc[%s]\n", __func__, neighbor_info->port_desc);
-					break;
-				case SYSTEM_NAME:
-					memset(neighbor_info->system_name, 0, sizeof(neighbor_info->system_name));
-					memcpy(neighbor_info->system_name, &buf[read_index+2], tlv_length);
-					UB_LOG(UBL_DEBUG, "%s: system name[%s]\n", __func__, neighbor_info->system_name);
-					break;
-				case SYSTEM_DESCRIPTION:
-					memset(neighbor_info->system_description, 0, sizeof(neighbor_info->system_description));
-					memcpy(neighbor_info->system_description, &buf[read_index+2], tlv_length);
-					UB_LOG(UBL_DEBUG, "%s: system desc[%s]\n", __func__, neighbor_info->system_description);
-					break;
-				case SYSTEM_CAPABILITIES: // Length must be 4
-					if (tlv_length == 4)
-					{
-						uint16_t system_caps = ((uint16_t)buf[read_index+2] << 8) & 0xFF00;
-						system_caps |= (((uint16_t)buf[read_index+3]) & 0x00FF);
-						neighbor_info->system_capabilities_supported = system_caps;
-
-						uint16_t enabled_caps = ((uint16_t)buf[read_index+4] << 8) & 0xFF00;
-						enabled_caps |= (((uint16_t)buf[read_index+5]) & 0x00FF);
-						neighbor_info->system_capabilities_enabled = enabled_caps;
-
-						UB_LOG(UBL_DEBUG, "%s: system_caps [%04x] enabled [%04x]\n", __func__, system_caps, enabled_caps);
-					}
-					else
-					{
-						UB_LOG(UBL_WARN, "Invalid system caps length\n");
+				UB_LOG(UBL_WARN, "TLV %d dropped due to tlv length %d > MAX(%d)\n", tlv_type, tlv_length, LLDP_REMOTE_INFO_STRING_MAX_LEN);
+			}
+			else
+			{
+				switch (tlv_type)
+				{
+					case END_OF_TLV:
+						read_done = true;
+						if (tlv_length > 0) 
+						{
+							UB_LOG(UBL_ERROR, "Malformed. END_OF_TLV length > 0 (%d)\n", tlv_length);
+							ret = RX_INVALID;
+						}
+						else
+						{
+							UB_LOG(UBL_DEBUG, "end of tlv\n");
+						}
+						break;
+					case CHASSIS_ID:
+					case PORT_ID:
+					case TIME_TO_LIVE:
 						read_done = true;
 						ret = RX_INVALID;
+						UB_LOG(UBL_INFO, "Malformed. Dupplicate tlv field %d\n", tlv_type);
+						break;
+					case PORT_DESCRIPTION:
+						memset(neighbor_info->port_desc, 0, sizeof(neighbor_info->port_desc));
+						memcpy(neighbor_info->port_desc, &buf[read_index+2], tlv_length);
+						UB_LOG(UBL_DEBUG, "%s: Port desc[%s]\n", __func__, neighbor_info->port_desc);
+						break;
+					case SYSTEM_NAME:
+						memset(neighbor_info->system_name, 0, sizeof(neighbor_info->system_name));
+						memcpy(neighbor_info->system_name, &buf[read_index+2], tlv_length);
+						UB_LOG(UBL_DEBUG, "%s: system name[%s]\n", __func__, neighbor_info->system_name);
+						break;
+					case SYSTEM_DESCRIPTION:
+						memset(neighbor_info->system_description, 0, sizeof(neighbor_info->system_description));
+						memcpy(neighbor_info->system_description, &buf[read_index+2], tlv_length);
+						UB_LOG(UBL_DEBUG, "%s: system desc[%s]\n", __func__, neighbor_info->system_description);
+						break;
+					case SYSTEM_CAPABILITIES: // Length must be 4
+						if (tlv_length == 4)
+						{
+							uint16_t system_caps = ((uint16_t)buf[read_index+2] << 8) & 0xFF00;
+							system_caps |= (((uint16_t)buf[read_index+3]) & 0x00FF);
+							neighbor_info->system_capabilities_supported = system_caps;
+
+							uint16_t enabled_caps = ((uint16_t)buf[read_index+4] << 8) & 0xFF00;
+							enabled_caps |= (((uint16_t)buf[read_index+5]) & 0x00FF);
+							neighbor_info->system_capabilities_enabled = enabled_caps;
+
+							UB_LOG(UBL_DEBUG, "%s: system_caps [%04x] enabled [%04x]\n", __func__, system_caps, enabled_caps);
+						}
+						else
+						{
+							UB_LOG(UBL_WARN, "Invalid system caps length\n");
+							read_done = true;
+							ret = RX_INVALID;
+						}
+						break;
+					case MANAGEMENT_ADDRESS:
+					{
+						uint8_t management_addr[32];
+						memset(management_addr, 0, sizeof(management_addr));
+						uint8_t management_address_len = buf[read_index+2];
+						uint8_t management_address_subtype = buf[read_index+3];
+						memcpy(management_addr, &buf[read_index+4], management_address_len - 1); // -1 is len of addr subtype
+						uint8_t interface_number_subtype = buf[read_index + 4 + management_address_len - 1];
+						uint32_t interface_number = *((uint32_t*)(&buf[read_index + 4 + management_address_len]));
+
+						// TODO: where could we store OID in yang structure?
+						management_address_t* mgmt_addr = init_mgmt_addr();
+						memset(mgmt_addr, 0, sizeof(management_address_t));
+						mgmt_addr->address_subtype = (address_subtype_t)management_address_subtype;
+						mgmt_addr->if_subtype = (man_addr_if_subtype_t)interface_number_subtype;
+						mgmt_addr->if_id = htonl(interface_number);
+						memset(mgmt_addr->address, 0, sizeof(mgmt_addr->address));
+						memcpy(mgmt_addr->address, management_addr, management_address_len - 1);
+						ub_list_append(&neighbor_info->management_address, (struct ub_list_node*)mgmt_addr);
+						
+						UB_LOG(UBL_DEBUG, "%s: management_address [subtype: %d] addr-len[%d] if [subtype: %d id: %d]\n", 
+											__func__, 
+											mgmt_addr->address_subtype, 
+											management_address_len,
+											mgmt_addr->if_subtype,
+											mgmt_addr->if_id);
+						// ub_hexdump(true, true, mgmt_addr->address, management_address_len - 1, 0);
 					}
 					break;
-				case MANAGEMENT_ADDRESS:
-				{
-					uint8_t management_addr[32];
-					memset(management_addr, 0, sizeof(management_addr));
-					uint8_t management_address_len = buf[read_index+2];
-					uint8_t management_address_subtype = buf[read_index+3];
-					memcpy(management_addr, &buf[read_index+4], management_address_len - 1); // -1 is len of addr subtype
-					uint8_t interface_number_subtype = buf[read_index + 4 + management_address_len - 1];
-					uint32_t interface_number = *((uint32_t*)(&buf[read_index + 4 + management_address_len]));
+					case ORGANIZATION_SPECIFIC_TLV:
+					{
+						if(ub_list_count(&neighbor_info->remote_org_defined_info) == 0) ub_list_init(&neighbor_info->remote_org_defined_info);
+						remote_org_defined_info_t* rm_org = init_rm_org_def();
+						memset(rm_org, 0, sizeof(remote_org_defined_info_t));
 
-					// TODO: where could we store OID in yang structure?
-					management_address_t* mgmt_addr = init_mgmt_addr();
-					memset(mgmt_addr, 0, sizeof(management_address_t));
-					mgmt_addr->address_subtype = (address_subtype_t)management_address_subtype;
-					mgmt_addr->if_subtype = (man_addr_if_subtype_t)interface_number_subtype;
-					mgmt_addr->if_id = htonl(interface_number);
-					memset(mgmt_addr->address, 0, sizeof(mgmt_addr->address));
-					memcpy(mgmt_addr->address, management_addr, management_address_len - 1);
-					ub_list_append(&neighbor_info->management_address, (struct ub_list_node*)mgmt_addr);
-					
-					UB_LOG(UBL_DEBUG, "%s: management_address [subtype: %d] addr-len[%d] if [subtype: %d id: %d]\n", 
-										__func__, 
-										mgmt_addr->address_subtype, 
-										management_address_len,
-										mgmt_addr->if_subtype,
-										mgmt_addr->if_id);
-					// ub_hexdump(true, true, mgmt_addr->address, management_address_len - 1, 0);
+						uint32_t oui = 0;
+						memcpy(&oui, &buf[read_index+2], 3); // sizeof(OUI) is 3 bytes
+						rm_org->info_identifier = byteswap24(oui);
+						rm_org->info_subtype = buf[read_index+5];
+						memcpy(rm_org->remote_info, &buf[read_index+6], tlv_length - 3  - 1);
+						// UB_LOG(UBL_DEBUG, "%s: Original OUI ID (%x %x %x) Subtype %d \n", __func__, buf[read_index+2], buf[read_index+3], buf[read_index+4], rm_org->info_subtype);
+						// UB_LOG(UBL_DEBUG, "%s: Converted OUI ID %d(%x) -> %d (%x) Subtype %d \n", __func__, oui, oui, rm_org->info_identifier, rm_org->info_identifier, rm_org->info_subtype);
+						// ub_hexdump(true, true,  &buf[read_index+6], tlv_length - 3  - 1, 0);
+						ub_list_append(&neighbor_info->remote_org_defined_info,  (struct ub_list_node*)rm_org);
+					}
+					break;
+					default:
+					{
+						UB_LOG(UBL_WARN, "%s: Got unknown TLV type %d \n", __func__, tlv_type);
+						// ub_hexdump(true, true,  &buf[read_index+2], tlv_length, 0);
+						remote_unknown_tlv_t* unknown_tlv = init_rm_unknown_tlv();
+						memset(unknown_tlv, 0, sizeof(remote_unknown_tlv_t));
+						unknown_tlv->tlv_type = tlv_type;
+						memcpy(unknown_tlv->tlv_info, &buf[read_index+2], tlv_length);
+
+						if(ub_list_count(&neighbor_info->remote_unknown_tlv) == 0) ub_list_init(&neighbor_info->remote_unknown_tlv);
+						ub_list_append(&neighbor_info->remote_unknown_tlv,  (struct ub_list_node*)unknown_tlv);
+					}
+					break;
+
 				}
-				break;
-				case ORGANIZATION_SPECIFIC_TLV:
-				{
-					if(ub_list_count(&neighbor_info->remote_org_defined_info) == 0) ub_list_init(&neighbor_info->remote_org_defined_info);
-					remote_org_defined_info_t* rm_org = init_rm_org_def();
-					memset(rm_org, 0, sizeof(remote_org_defined_info_t));
-
-					uint32_t oui = 0;
-					memcpy(&oui, &buf[read_index+2], 3); // sizeof(OUI) is 3 bytes
-					rm_org->info_identifier = byteswap24(oui);
-					rm_org->info_subtype = buf[read_index+5];
-					memcpy(rm_org->remote_info, &buf[read_index+6], tlv_length - 3  - 1);
-					// UB_LOG(UBL_DEBUG, "%s: Original OUI ID (%x %x %x) Subtype %d \n", __func__, buf[read_index+2], buf[read_index+3], buf[read_index+4], rm_org->info_subtype);
-					// UB_LOG(UBL_DEBUG, "%s: Converted OUI ID %d(%x) -> %d (%x) Subtype %d \n", __func__, oui, oui, rm_org->info_identifier, rm_org->info_identifier, rm_org->info_subtype);
-					// ub_hexdump(true, true,  &buf[read_index+6], tlv_length - 3  - 1, 0);
-					ub_list_append(&neighbor_info->remote_org_defined_info,  (struct ub_list_node*)rm_org);
-				}
-				break;
-				default:
-				{
-					UB_LOG(UBL_WARN, "%s: Got unknown TLV type %d \n", __func__, tlv_type);
-					// ub_hexdump(true, true,  &buf[read_index+2], tlv_length, 0);
-					remote_unknown_tlv_t* unknown_tlv = init_rm_unknown_tlv();
-					memset(unknown_tlv, 0, sizeof(remote_unknown_tlv_t));
-					unknown_tlv->tlv_type = tlv_type;
-					memcpy(unknown_tlv->tlv_info, &buf[read_index+2], tlv_length);
-
-					if(ub_list_count(&neighbor_info->remote_unknown_tlv) == 0) ub_list_init(&neighbor_info->remote_unknown_tlv);
-					ub_list_append(&neighbor_info->remote_unknown_tlv,  (struct ub_list_node*)unknown_tlv);
-				}
-				break;
-
 			}
 			read_index+= 2;
 			read_index+= tlv_length;

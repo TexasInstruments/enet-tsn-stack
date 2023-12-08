@@ -84,6 +84,11 @@
 // Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
 #define LLDP_CFG_PORT_INSTNUM (2 * 3)
 
+// LLDP system has one timer to check db change
+// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
+// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
+#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+
 // The information below apply  for max length of
 // - Local Chassis ID,
 // - Local Port ID,
@@ -98,7 +103,7 @@
 // - Port Description
 // - System name
 // - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 128
+#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
 
 // The information below apply  for max length of remote unknown TLV info
 // - Remote unknown TLV
