@@ -136,7 +136,14 @@ uint8_t yang_modules_get_node_enums(xl4_data_data_t *xdd, char *astr, uint8_t *a
 		break;
 	case XL4_EXTMOD_RW:
 		if(!xdd){return -1;}
-		q=strchr(p, '/');
+		if (p != NULL)
+		{
+		    q=strchr(p, '/');
+		}
+		else
+		{
+		    q = NULL;
+		}
 		if(q!=NULL){
 			*q=0;
 			q++;

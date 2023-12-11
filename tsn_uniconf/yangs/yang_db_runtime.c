@@ -491,7 +491,7 @@ static int proc_one_item(yang_db_runtime_dataq_t *ydrd, char *kstr, char *vstr, 
 		vsize=0;
 		res=yang_value_conv(vtype, vstr, &dbpara.value, &vsize, btkey);
 		if(res<0){
-			UB_LOG(UBL_ERROR, "%s:invalid value:%s\n", __func__, vstr);
+			UB_LOG(UBL_ERROR, "%s:invalid value:%s\n", __func__, vstr ? vstr : "NULL");
 			ydrd->api--;
 			if(ydrd->changtoRO){ydrd->aps[0]-=XL4_DATA_RO;}
 			return -1;
