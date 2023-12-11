@@ -222,7 +222,7 @@ int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIn
 int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8_t ddomain)
 {
 	int in;
-	uint8_t aps[5];
+	uint8_t aps[YDBI_MAX_AP_DEPTH] = {0};
 	yang_db_item_access_t *ydbia=ydbi_access_handle();
 	uint8_t sinst, dinst;
 	uint32_t sinst32, dinst32;

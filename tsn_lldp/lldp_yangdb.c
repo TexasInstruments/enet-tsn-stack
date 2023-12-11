@@ -667,7 +667,7 @@ int ietf_get_actual_hw_port_info(lldp_port_t* port)
 		if (port->port_id_subtype == P_MAC_ADDRESS)
 		{
 			ub_macaddr_t bmac;
-			char smac[17];
+			char smac[18];
 			memcpy(bmac, rval, sizeof(bmac));
 			lldp_bmac2smac(bmac, smac, '-');
 
@@ -2136,22 +2136,25 @@ static void fill_management_info(uint8_t* k, address_subtype_t addr_subtype, cha
 		man_addr_tx_port = get_existed_manament_addr_tx(port, addr_subtype, man_addr);
 	}
 	
-	switch (k[4])
+	if (man_addr_tx_port != NULL)
 	{
-	case IEEE802_DOT1AB_LLDP_TX_ENABLE:
-		man_addr_tx_port->tx_enable = *((bool*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_ADDR_LEN:
-		man_addr_tx_port->addr_len = *((uint32_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_IF_SUBTYPE:
-		man_addr_tx_port->if_subtype = *((man_addr_if_subtype_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_IF_ID:
-		man_addr_tx_port->if_id = *((uint32_t*)prm->value);
-		break;
-	default:
-		break;
+        switch (k[4])
+        {
+        case IEEE802_DOT1AB_LLDP_TX_ENABLE:
+            man_addr_tx_port->tx_enable = *((bool*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_ADDR_LEN:
+            man_addr_tx_port->addr_len = *((uint32_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_IF_SUBTYPE:
+            man_addr_tx_port->if_subtype = *((man_addr_if_subtype_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_IF_ID:
+            man_addr_tx_port->if_id = *((uint32_t*)prm->value);
+            break;
+        default:
+            break;
+        }
 	}
 }
 
@@ -2178,14 +2181,17 @@ static void fill_manament_addr(uint8_t* k, address_subtype_t addr_subtype, char*
 		mgr_addr = get_existed_manament_addr(rs_data, addr_subtype, addr);
 	}
 
-	switch(k[5])
+	if (mgr_addr != NULL)
 	{
-	case IEEE802_DOT1AB_LLDP_IF_SUBTYPE:
-		mgr_addr->if_subtype = *((man_addr_if_subtype_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_IF_ID:
-		mgr_addr->if_id = *((uint32_t*)prm->value);
-		break;
+        switch(k[5])
+        {
+        case IEEE802_DOT1AB_LLDP_IF_SUBTYPE:
+            mgr_addr->if_subtype = *((man_addr_if_subtype_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_IF_ID:
+            mgr_addr->if_id = *((uint32_t*)prm->value);
+            break;
+        }
 	}
 }
 
@@ -2270,72 +2276,75 @@ static void fill_remote_system_data(uint8_t* k, timeticks time_mark, uint32_t re
 	}
 	
 	// UB_LOG(UBL_DEBUG, "%s filling key %s \n", __func__, ieee802_dot1ab_lldp_get_string(k[4]));
-	switch (k[4])
+	if (remote_system_data != NULL)
 	{
-	case IEEE802_DOT1AB_LLDP_REMOTE_TOO_MANY_NEIGHBORS:
-		remote_system_data->remote_too_many_neighbors = *((bool*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_REMOTE_CHANGES:
-		remote_system_data->remote_changes = *((bool*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_PORT_ID_SUBTYPE:
-		remote_system_data->port_id_subtype = *((port_id_type_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_PORT_ID:
-		memcpy(remote_system_data->port_id, (char*)prm->value, strlen((char*)prm->value));
-		break;
-	case IEEE802_DOT1AB_LLDP_PORT_DESC:
-		memcpy(remote_system_data->port_desc, (char*)prm->value, strlen((char*)prm->value));
-		break;
-	case IEEE802_DOT1AB_LLDP_CHASSIS_ID:
-		memcpy(remote_system_data->chassis_id, (char*)prm->value, prm->vsize);
-		break;
-	case IEEE802_DOT1AB_LLDP_CHASSIS_ID_SUBTYPE:
-		remote_system_data->chassis_id_subtype = *((chassis_id_type_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_SYSTEM_NAME:
-		memcpy(remote_system_data->system_name, (char*)prm->value, prm->vsize);
-		break;
-	case IEEE802_DOT1AB_LLDP_SYSTEM_DESCRIPTION:
-		memcpy(remote_system_data->system_description, (char*)prm->value, prm->vsize);
-		break;
-	case IEEE802_DOT1AB_LLDP_SYSTEM_CAPABILITIES_ENABLED:
-		remote_system_data->system_capabilities_enabled = *((uint16_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_SYSTEM_CAPABILITIES_SUPPORTED:
-		remote_system_data->system_capabilities_supported = *((uint16_t*)prm->value);
-		break;
-	case IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS:
-		{
-			address_subtype_t addr_subtype = *((address_subtype_t*)prm->kvs[4]);
-			uint8_t* addr = (uint8_t*)prm->kvs[5];
-			if (addr_subtype == ipv4)
-			{
-				ub_hexdump(true, true, addr, 4, 0);
-			}
-			else if (addr_subtype == ipv6)
-			{
-				ub_hexdump(true, true, addr, 16, 0);
-			}
-			fill_manament_addr(k, addr_subtype, (char*)addr, prm, remote_system_data);
-		}
-		break;
-	case IEEE802_DOT1AB_LLDP_REMOTE_UNKNOWN_TLV:
-		{
-			uint32_t tlv_type = *((uint32_t*)prm->kvs[4]);
-			fill_remote_unknown_tlv(k, tlv_type, prm, remote_system_data);
-		}
-		break;
-	case IEEE802_DOT1AB_LLDP_REMOTE_ORG_DEFINED_INFO:
-		{
-			uint32_t info_id = *((uint32_t*)prm->kvs[4]);
-			uint32_t info_subtype = *((uint32_t*)prm->kvs[5]);
-			uint32_t info_index = *((uint32_t*)prm->kvs[6]);
-			fill_remote_org_info(k, info_id, info_subtype, info_index, prm, remote_system_data);
-		}
-		break;
-	default:
-		break;
+        switch (k[4])
+        {
+        case IEEE802_DOT1AB_LLDP_REMOTE_TOO_MANY_NEIGHBORS:
+            remote_system_data->remote_too_many_neighbors = *((bool*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_REMOTE_CHANGES:
+            remote_system_data->remote_changes = *((bool*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_PORT_ID_SUBTYPE:
+            remote_system_data->port_id_subtype = *((port_id_type_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_PORT_ID:
+            memcpy(remote_system_data->port_id, (char*)prm->value, strlen((char*)prm->value));
+            break;
+        case IEEE802_DOT1AB_LLDP_PORT_DESC:
+            memcpy(remote_system_data->port_desc, (char*)prm->value, strlen((char*)prm->value));
+            break;
+        case IEEE802_DOT1AB_LLDP_CHASSIS_ID:
+            memcpy(remote_system_data->chassis_id, (char*)prm->value, prm->vsize);
+            break;
+        case IEEE802_DOT1AB_LLDP_CHASSIS_ID_SUBTYPE:
+            remote_system_data->chassis_id_subtype = *((chassis_id_type_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_SYSTEM_NAME:
+            memcpy(remote_system_data->system_name, (char*)prm->value, prm->vsize);
+            break;
+        case IEEE802_DOT1AB_LLDP_SYSTEM_DESCRIPTION:
+            memcpy(remote_system_data->system_description, (char*)prm->value, prm->vsize);
+            break;
+        case IEEE802_DOT1AB_LLDP_SYSTEM_CAPABILITIES_ENABLED:
+            remote_system_data->system_capabilities_enabled = *((uint16_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_SYSTEM_CAPABILITIES_SUPPORTED:
+            remote_system_data->system_capabilities_supported = *((uint16_t*)prm->value);
+            break;
+        case IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS:
+            {
+                address_subtype_t addr_subtype = *((address_subtype_t*)prm->kvs[4]);
+                uint8_t* addr = (uint8_t*)prm->kvs[5];
+                if (addr_subtype == ipv4)
+                {
+                    ub_hexdump(true, true, addr, 4, 0);
+                }
+                else if (addr_subtype == ipv6)
+                {
+                    ub_hexdump(true, true, addr, 16, 0);
+                }
+                fill_manament_addr(k, addr_subtype, (char*)addr, prm, remote_system_data);
+            }
+            break;
+        case IEEE802_DOT1AB_LLDP_REMOTE_UNKNOWN_TLV:
+            {
+                uint32_t tlv_type = *((uint32_t*)prm->kvs[4]);
+                fill_remote_unknown_tlv(k, tlv_type, prm, remote_system_data);
+            }
+            break;
+        case IEEE802_DOT1AB_LLDP_REMOTE_ORG_DEFINED_INFO:
+            {
+                uint32_t info_id = *((uint32_t*)prm->kvs[4]);
+                uint32_t info_subtype = *((uint32_t*)prm->kvs[5]);
+                uint32_t info_index = *((uint32_t*)prm->kvs[6]);
+                fill_remote_org_info(k, info_id, info_subtype, info_index, prm, remote_system_data);
+            }
+            break;
+        default:
+            break;
+        }
 	}
 }
 
@@ -2358,95 +2367,98 @@ static void fill_port_info(uint8_t* k, char* if_name, uint8_t* mac, lldp_cfg_par
 		port = get_existed_port(lldp, if_name, mac);
 	}
 	// Port cannot NULL
-	switch(k[3])
+	if (port != NULL)
 	{
-		case IEEE802_DOT1AB_LLDP_ADMIN_STATUS:
-			port->admin_status = *((admin_status_t*)prm->value);
-			break;
-#if 0
-		case IEEE802_DOT1AB_LLDP_NOTIFICATION_ENABLE:
-			port->notification_enable = *((bool*)prm->value);
-			break;
-#endif
-		case IEEE802_DOT1AB_LLDP_TLVS_TX_ENABLE:
-			port->tlvs_tx_enable = *((uint8_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX:
-			port->message_fast_tx = *((uint32_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER:
-			port->message_tx_hold_multiplier = *((uint32_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL:
-			port->message_tx_interval = *((uint32_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_REINIT_DELAY:
-			port->reinit_delay = *((uint32_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX:
-			port->tx_credit_max = *((uint32_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_TX_FAST_INIT:
-			port->tx_fast_init = *((uint32_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS_TX_PORT:
-			{
-				char* man_addr = (char*)prm->kvs[3];
-				address_subtype_t addr_subtype = *((address_subtype_t*) prm->kvs[2]);
-				// UB_LOG(UBL_INFO, "%s: IP [%s] subtype: %d\n",port->name, man_addr, addr_subtype);
-				fill_management_info(k, addr_subtype, man_addr, prm, port);
-			}
-			break;
-		case IEEE802_DOT1AB_LLDP_PORT_ID_SUBTYPE:
-			port->port_id_subtype = *((port_id_type_t*)prm->value);
-			break;
-		case IEEE802_DOT1AB_LLDP_PORT_ID:
-			memcpy(port->port_id, (char*)prm->value, strlen((char*)prm->value));
-			break;
-		case IEEE802_DOT1AB_LLDP_PORT_DESC:
-			memcpy(port->port_desc, (char*)prm->value, strlen((char*)prm->value));
-			break;
-		case IEEE802_DOT1AB_LLDP_TX_STATISTICS:
-			switch(k[4])
-			{
-				case IEEE802_DOT1AB_LLDP_TOTAL_FRAMES:
-					port->tx_statistic.total_frames = *((uint32_t*)prm->value);
-					break;
-				case IEEE802_DOT1AB_LLDP_TOTAL_LENGTH_ERRORS:
-					port->tx_statistic.total_length_errors = *((uint32_t*)prm->value);
-					break;
-			}
-			break;
-		case IEEE802_DOT1AB_LLDP_RX_STATISTICS:
-			switch(k[4])
-			{
-				case IEEE802_DOT1AB_LLDP_TOTAL_AGEOUTS:
-					port->rx_statistic.total_ageouts = *((uint32_t*)prm->value);
-					break;
-				case IEEE802_DOT1AB_LLDP_TOTAL_DISCARDED_FRAMES:
-					port->rx_statistic.total_discarded_frames = *((uint32_t*)prm->value);
-					break;
-				case IEEE802_DOT1AB_LLDP_ERROR_FRAMES:
-					port->rx_statistic.error_frames = *((uint32_t*)prm->value);
-					break;
-				case IEEE802_DOT1AB_LLDP_TOTAL_DISCARDED_TLVS:
-					port->rx_statistic.total_discarded_tlvs = *((uint32_t*)prm->value);
-					break;
-				case IEEE802_DOT1AB_LLDP_TOTAL_UNRECOGNIZED_TLVS:
-					port->rx_statistic.total_unrecognized_tlvs = *((uint32_t*)prm->value);
-					break;
-				case IEEE802_DOT1AB_LLDP_TOTAL_FRAMES:
-					port->rx_statistic.total_frames = *((uint32_t*)prm->value);
-					break;
-			}
-			break;
-		case IEEE802_DOT1AB_LLDP_REMOTE_SYSTEMS_DATA:
-			{
-				timeticks time_mark = *((timeticks*)prm->kvs[2]);
-				uint32_t remote_index = *((uint32_t*)prm->kvs[3]);
-				fill_remote_system_data(k, time_mark, remote_index, prm, port);
-			}
-			break;
+        switch(k[3])
+        {
+            case IEEE802_DOT1AB_LLDP_ADMIN_STATUS:
+                port->admin_status = *((admin_status_t*)prm->value);
+                break;
+    #if 0
+            case IEEE802_DOT1AB_LLDP_NOTIFICATION_ENABLE:
+                port->notification_enable = *((bool*)prm->value);
+                break;
+    #endif
+            case IEEE802_DOT1AB_LLDP_TLVS_TX_ENABLE:
+                port->tlvs_tx_enable = *((uint8_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_MESSAGE_FAST_TX:
+                port->message_fast_tx = *((uint32_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_MESSAGE_TX_HOLD_MULTIPLIER:
+                port->message_tx_hold_multiplier = *((uint32_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_MESSAGE_TX_INTERVAL:
+                port->message_tx_interval = *((uint32_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_REINIT_DELAY:
+                port->reinit_delay = *((uint32_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_TX_CREDIT_MAX:
+                port->tx_credit_max = *((uint32_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_TX_FAST_INIT:
+                port->tx_fast_init = *((uint32_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_MANAGEMENT_ADDRESS_TX_PORT:
+                {
+                    char* man_addr = (char*)prm->kvs[3];
+                    address_subtype_t addr_subtype = *((address_subtype_t*) prm->kvs[2]);
+                    // UB_LOG(UBL_INFO, "%s: IP [%s] subtype: %d\n",port->name, man_addr, addr_subtype);
+                    fill_management_info(k, addr_subtype, man_addr, prm, port);
+                }
+                break;
+            case IEEE802_DOT1AB_LLDP_PORT_ID_SUBTYPE:
+                port->port_id_subtype = *((port_id_type_t*)prm->value);
+                break;
+            case IEEE802_DOT1AB_LLDP_PORT_ID:
+                memcpy(port->port_id, (char*)prm->value, strlen((char*)prm->value));
+                break;
+            case IEEE802_DOT1AB_LLDP_PORT_DESC:
+                memcpy(port->port_desc, (char*)prm->value, strlen((char*)prm->value));
+                break;
+            case IEEE802_DOT1AB_LLDP_TX_STATISTICS:
+                switch(k[4])
+                {
+                    case IEEE802_DOT1AB_LLDP_TOTAL_FRAMES:
+                        port->tx_statistic.total_frames = *((uint32_t*)prm->value);
+                        break;
+                    case IEEE802_DOT1AB_LLDP_TOTAL_LENGTH_ERRORS:
+                        port->tx_statistic.total_length_errors = *((uint32_t*)prm->value);
+                        break;
+                }
+                break;
+            case IEEE802_DOT1AB_LLDP_RX_STATISTICS:
+                switch(k[4])
+                {
+                    case IEEE802_DOT1AB_LLDP_TOTAL_AGEOUTS:
+                        port->rx_statistic.total_ageouts = *((uint32_t*)prm->value);
+                        break;
+                    case IEEE802_DOT1AB_LLDP_TOTAL_DISCARDED_FRAMES:
+                        port->rx_statistic.total_discarded_frames = *((uint32_t*)prm->value);
+                        break;
+                    case IEEE802_DOT1AB_LLDP_ERROR_FRAMES:
+                        port->rx_statistic.error_frames = *((uint32_t*)prm->value);
+                        break;
+                    case IEEE802_DOT1AB_LLDP_TOTAL_DISCARDED_TLVS:
+                        port->rx_statistic.total_discarded_tlvs = *((uint32_t*)prm->value);
+                        break;
+                    case IEEE802_DOT1AB_LLDP_TOTAL_UNRECOGNIZED_TLVS:
+                        port->rx_statistic.total_unrecognized_tlvs = *((uint32_t*)prm->value);
+                        break;
+                    case IEEE802_DOT1AB_LLDP_TOTAL_FRAMES:
+                        port->rx_statistic.total_frames = *((uint32_t*)prm->value);
+                        break;
+                }
+                break;
+            case IEEE802_DOT1AB_LLDP_REMOTE_SYSTEMS_DATA:
+                {
+                    timeticks time_mark = *((timeticks*)prm->kvs[2]);
+                    uint32_t remote_index = *((uint32_t*)prm->kvs[3]);
+                    fill_remote_system_data(k, time_mark, remote_index, prm, port);
+                }
+                break;
+        }
 	}
 	
 }

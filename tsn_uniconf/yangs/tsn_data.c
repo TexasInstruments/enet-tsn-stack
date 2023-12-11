@@ -94,6 +94,7 @@ static xl4extmod_data_t *find_xl4emd(ub_esarray_cstd_t *xl4mods, char *emodname,
 	en=ub_esarray_ele_nums(xl4mods);
 	for(i=0;i<en;i++){
 		xl4emd=(xl4extmod_data_t *)ub_esarray_get_ele(xl4mods, i);
+		if(ub_assert_fatal(xl4emd != NULL, __func__, NULL)){return NULL;}
 		if((emodname!=NULL) && !strcmp(xl4emd->modname, emodname)){return xl4emd;}
 		if((emodid!=0xffu) && (xl4emd->modid==emodid)){return xl4emd;}
 	}

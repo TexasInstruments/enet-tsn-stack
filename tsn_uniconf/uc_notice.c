@@ -276,6 +276,7 @@ static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *se
 	int refcounter=-1;;
 	for(i=0; i<ub_esarray_ele_nums(ucntd->putnotice_list); i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(ucntd->putnotice_list, i);
+		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return -1;}
 		if(strcmp(pnd->semname, semname)==0){
 			switch(action){
 			case PUTNOTICE_FIND:
@@ -391,6 +392,7 @@ static int incremant_actcounter(bool fromthread,
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
+		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return -1;}
 		if(!strcmp(pnd->semname, semname)) {
 			pnd->actcounter+=1;
 			break;
@@ -417,6 +419,7 @@ static void proc_refactcounter(bool fromthread, ub_esarray_cstd_t *putnotice_lis
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
+		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return;}
 		// the waiting process is responsible to handle multiple updates
 		// with one event.  Here we post one time instead of pnd->actcounter times
 		if(pnd->refcounter==0){
@@ -447,6 +450,7 @@ static void nu_clear_refcounter(bool fromthread, ub_esarray_cstd_t *putnotice_li
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
+		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return;}
 		pnd->refcounter=0;
 		UB_LOG(UBL_DEBUGV, "%s:%s cleared\n", __func__, pnd->semname);
 	}
@@ -461,6 +465,7 @@ static void nu_increment_refcounter(bool fromthread,
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
+		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return;}
 		if(!strcmp(pnd->semname, semname)){
 			pnd->refcounter++;
 			UB_LOG(UBL_DEBUGV, "%s:semname=%s, refcounter=%d\n", __func__,

@@ -619,8 +619,8 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 		for (i = 0U; i < cfg->numRxChannels; i++) {
 			/* get RX dma handle */
 			hLLDEnet->hLLDRxDma[i] = LLDEnetGetRxDma(cfg->dmaRxChId[i]);
-			hLLDEnet->hLLDRxDma[i]->rxChId = cfg->dmaRxChId[i];
 			EnetAppUtils_assert(hLLDEnet->hLLDRxDma[i] != NULL);
+			hLLDEnet->hLLDRxDma[i]->rxChId = cfg->dmaRxChId[i];
 			/* At first hLLDRxDma->hasOwner is false, user need to set the
 			 * cfg->dmaRxOwner to true.
 			 * When the hLLDRxDma->hasOwner is true, user can not set cfg->dmaRxOwner

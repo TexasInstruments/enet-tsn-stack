@@ -70,8 +70,8 @@
 #define IPV6_SIZE					(16)
 #define TLV_TTL_LENTH				(2)
 #define END_OF_TLV					(0x0000)
-#define MAX_CHASSIS_INFO_STRING_LEN	(255)
-#define MAX_PORT_INFO_STRING_LEN	(255)
+#define MAX_CHASSIS_INFO_STRING_LEN	LLDP_REMOTE_INFO_STRING_MAX_LEN
+#define MAX_PORT_INFO_STRING_LEN	LLDP_REMOTE_INFO_STRING_MAX_LEN
 
 static bool is_tx_enabled_for_tlv(lldp_port_t* cfg_port, LLDP_TLV tlv);
 static int get_port_info(uint8_t* buf, remote_systems_data_t* neighbor_info, int* read_index);

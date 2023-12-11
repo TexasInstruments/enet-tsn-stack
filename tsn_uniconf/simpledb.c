@@ -427,6 +427,7 @@ static int onedb_put(struct ub_list *dblist, simpledb_keydata_t *kd,
 			dbd->vsize=vlen;
 		}
 	}
+	if(ub_assert_fatal(dbd->vdata != NULL, __func__, NULL)){return -1;}
 	if(value && vlen){memcpy(dbd->vdata, value, vlen);}
 	return 0;
 }

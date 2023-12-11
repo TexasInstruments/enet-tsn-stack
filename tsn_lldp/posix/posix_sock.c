@@ -406,7 +406,7 @@ void assign_raw_socket_to_port(struct _hw_interface* interface)
 		if (strcmp(interface->cfg_port->name, lldp_rawsocks[i].name) == 0)
 		{
 			interface->lldpsock = &lldp_rawsocks[i];
-			char dst_mac[17] = {0};
+			char dst_mac[18] = {0};
 			lldp_bmac2smac(interface->cfg_port->dest_mac_address, dst_mac, '-');
 			UB_LOG(UBL_INFO, "%s:%s assigned to fd %d\n", interface->cfg_port->name, dst_mac, lldp_rawsocks[i].fd);
 			break;

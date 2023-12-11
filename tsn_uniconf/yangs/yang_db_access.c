@@ -493,8 +493,8 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		return -1;
 	}
 	if(res!=0){
-		UB_LOG(UBL_ERROR, "%s:conversion failed, vtype=%d, vstr=%s\n",
-		       __func__, vtype, vstr);
+        UB_LOG(UBL_ERROR, "%s:conversion failed, vtype=%d, vstr=%s\n",
+                       __func__, vtype, vstr ? vstr : "NULL");
 		return res;
 	}
 	return csize;

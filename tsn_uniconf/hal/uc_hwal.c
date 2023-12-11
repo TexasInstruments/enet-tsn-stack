@@ -768,14 +768,16 @@ static int preempt_hw_action(uc_hwald *hwald, const char *ifname)
 	cbl_preempt_params_t cpemp;
 	void *value;
 	cbl_cb_event_t nevent;
+	uint8_t size = 0U;
 	if(!ifname){
 		UB_LOG(UBL_ERROR, "%s:no ifname\n", __func__);
 		return -1;
 	}
+	size = UB_MIN(CB_MAX_NETDEVNAME-1, strlen(ifname));
 	memset(&cpemp, 0, sizeof(cpemp));
 	memset(&nevent, 0, sizeof(nevent));
-	memcpy(nevent.ifname, ifname,
-	       UB_MIN(CB_MAX_NETDEVNAME-1, strlen(ifname)));
+	memcpy(nevent.ifname, ifname, size);
+	nevent.ifname[size] = '\0';
 	if(get_queue_map_params(&cpemp.qmap, nevent.ifname)) return 0;
 	// read all priorities
 	for(i=0;i<8;i++){

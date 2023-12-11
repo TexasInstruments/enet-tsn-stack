@@ -186,6 +186,7 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv, char *vstr, bo
 			char *rstr=NULL;
 			if(!noerrmsg){
 				ub_hexdump(true, true, ydrd->apsd, ydrd->api+4u, 0);
+				if(ub_assert_fatal((ydrd->api + 4) < (sizeof(ydrd->apsd)/sizeof(uint8_t)), __func__, NULL)){return -1;}
 				ydrd->apsd[ydrd->api+4u]=255;
 				(void)yang_modules_get_node_string(ydrd->xdd, &rstr, &ydrd->apsd[2]);
 				if(rstr!=NULL) {
@@ -225,6 +226,7 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv, char *vstr, bo
 		ydrd->kss[tkpi]=res;
 		res=0;
 	}
+	if(ub_assert_fatal((ydrd->api - 1) < (sizeof(ydrd->kpi)/sizeof(uint8_t)), __func__, NULL)){return -1;}
 	ydrd->kpi[ydrd->api-1u]++; // key belongs to one upper node
 	tkpi++;
 	if(tkpi>=MAX_KV_DEPTH){
@@ -270,6 +272,7 @@ static int proc_set_onenode(yang_db_runtime_dataq_t *ydrd, char *kv, bool nokv)
 	uint8_t rv[2];
 	if(kv[0]>='0' && kv[0]<='9'){
 		// the string is a number
+	    if(ub_assert_fatal(ydrd->api < (sizeof(ydrd->kpi)/sizeof(uint8_t)), __func__, NULL)){return -1;}
 		ydrd->kpi[ydrd->api]=0;
 		i=strtol(kv, NULL, 0);
 		if(i<0 || i>0xff){return -1;}
@@ -288,6 +291,7 @@ static int proc_set_onenode(yang_db_runtime_dataq_t *ydrd, char *kv, bool nokv)
 	}
 	i=1;
 	if(!strcmp(kv, "..")){
+	    if(ub_assert_fatal((ydrd->api - 1) < (sizeof(ydrd->kpi)/sizeof(uint8_t)), __func__, NULL)){return -1;}
 		ydrd->kpi[ydrd->api-1u]=0;
 		if(nokv){ydrd->api--;}
 		return 0;
@@ -302,6 +306,7 @@ static int proc_set_onenode(yang_db_runtime_dataq_t *ydrd, char *kv, bool nokv)
 		       __func__, kv, ydrd->api);
 		return -1;
 	}
+	if(ub_assert_fatal(ydrd->api < (sizeof(ydrd->kpi)/sizeof(uint8_t)), __func__, NULL)){return -1;}
 	ydrd->kpi[ydrd->api]=0;
 	tkpi=total_kpi(ydrd);
 	if(ydrd->kvs[tkpi]!=NULL){
@@ -430,6 +435,7 @@ static int get_value_type(yang_db_runtime_dataq_t *ydrd)
 		if(uc_dbal_get(ydrd->dbald, ydrd->apsd, ydrd->api+2u, &value, &vsize)!=0){
 			char *rstr=NULL;
 			ub_hexdump(true, true, ydrd->apsd, ydrd->api+2u, 0);
+			if(ub_assert_fatal((ydrd->api+2u) < (sizeof(ydrd->apsd)/sizeof(uint8_t)), __func__, NULL)){return -1;}
 			ydrd->apsd[ydrd->api+2u]=255;
 			(void)yang_modules_get_node_string(ydrd->xdd, &rstr,
 							   &ydrd->apsd[2]);
@@ -772,7 +778,7 @@ int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname,
 {
 	void *inf;
 	char *cp;
-	char linebuf[LINE_BUF_SIZE];
+	char linebuf[LINE_BUF_SIZE + 1];
 	int np;
 	int nlen;
 	int rsize;
