@@ -73,7 +73,7 @@ static void perfmon_running_stat_add(PerfMonAncillaryDataRecord *anc, int64_t x)
 	 *
 	 * However, under the provision on section 7.6.3 (p.97) where implementation
 	 * may opt to compute conservative estimates instead of following the standard
-	 * formula, gptp2d will use recurrence formulas to compute for running mean (M)
+	 * formula, tsn_gptpd will use recurrence formulas to compute for running mean (M)
 	 * and running variance (V) below:
 	 *
 	 *  Mk = Mk-1 + ( xk - Mk-1 ) / k
@@ -214,33 +214,33 @@ void gptp_port_perfmon_dr_dump(PerfMonPortDS *ds, ub_dbgmsg_level_t lv, uint8_t 
 {
 	if((!ds)||(id>=PERFMON_ALL_DR)) return;
 
-	UB_LOG(lv, "PortPeerDelayDataRecord [%s] domain=%d port=%d index=%d PMTime=%d\n",
+	UB_VLOG(lv, "PortPeerDelayDataRecord [%s] domain=%d port=%d index=%d PMTime=%d\n",
 		id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval", di, pi, ds->index[id], ds->PMTime[id]);
-	UB_LOG(lv, "\t maxMeanLinkDelay=0x%"PRIx64" minMeanLinkDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t maxMeanLinkDelay=0x%"PRIx64" minMeanLinkDelay=0x%"PRIx64"\n",
 		ds->pdelayDR[id].maxMeanLinkDelay.scaledNanoseconds, ds->pdelayDR[id].minMeanLinkDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t aveMeanLinkDelay=0x%"PRIx64" stdDevMeanLinkDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t aveMeanLinkDelay=0x%"PRIx64" stdDevMeanLinkDelay=0x%"PRIx64"\n",
 		ds->pdelayDR[id].averageMeanLinkDelay.scaledNanoseconds, ds->pdelayDR[id].stdDevMeanLinkDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t meanLinkDelayCount=%d\n", ds->pdelayDR[id].meanLinkDelay.N);
+	UB_VLOG(lv, "\t meanLinkDelayCount=%d\n", ds->pdelayDR[id].meanLinkDelay.N);
 
-	UB_LOG(lv, "PortDataRecord [%s] domain=%d port=%d index=%d PMTime=%d\n",
+	UB_VLOG(lv, "PortDataRecord [%s] domain=%d port=%d index=%d PMTime=%d\n",
 		id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval", di, pi, ds->index[id], ds->PMTime[id]);
-	UB_LOG(lv, "\t announceTx=%d announceRx=%d announceForeignMasterRx=%d\n",
+	UB_VLOG(lv, "\t announceTx=%d announceRx=%d announceForeignMasterRx=%d\n",
 		ds->portDR[id].announceTx, ds->portDR[id].announceRx, ds->portDR[id].announceForeignMasterRx);
-	UB_LOG(lv, "\t syncTx=%d syncRx=%d\n", ds->portDR[id].syncTx, ds->portDR[id].syncRx);
-	UB_LOG(lv, "\t followUpTx=%d followUpRx=%d\n", ds->portDR[id].followUpTx, ds->portDR[id].followUpRx);
-	UB_LOG(lv, "\t delayReqTx=%d delayReqRx=%d\n", ds->portDR[id].delayReqRx, ds->portDR[id].delayReqTx);
-	UB_LOG(lv, "\t delayRespTx=%d delayRespRx=%d\n", ds->portDR[id].delayRespTx, ds->portDR[id].delayRespRx);
-	UB_LOG(lv, "\t pDelayReqTx=%d pDelayReqRx=%d\n", ds->portDR[id].pDelayReqTx, ds->portDR[id].pDelayReqRx);
-	UB_LOG(lv, "\t pDelayRespTx=%d pDelayRespRx=%d\n", ds->portDR[id].pDelayRespTx, ds->portDR[id].pDelayRespRx);
-	UB_LOG(lv, "\t pDelayRespFollowUpTx=%d pDelayRespFollowUpRx=%d\n",
+	UB_VLOG(lv, "\t syncTx=%d syncRx=%d\n", ds->portDR[id].syncTx, ds->portDR[id].syncRx);
+	UB_VLOG(lv, "\t followUpTx=%d followUpRx=%d\n", ds->portDR[id].followUpTx, ds->portDR[id].followUpRx);
+	UB_VLOG(lv, "\t delayReqTx=%d delayReqRx=%d\n", ds->portDR[id].delayReqRx, ds->portDR[id].delayReqTx);
+	UB_VLOG(lv, "\t delayRespTx=%d delayRespRx=%d\n", ds->portDR[id].delayRespTx, ds->portDR[id].delayRespRx);
+	UB_VLOG(lv, "\t pDelayReqTx=%d pDelayReqRx=%d\n", ds->portDR[id].pDelayReqTx, ds->portDR[id].pDelayReqRx);
+	UB_VLOG(lv, "\t pDelayRespTx=%d pDelayRespRx=%d\n", ds->portDR[id].pDelayRespTx, ds->portDR[id].pDelayRespRx);
+	UB_VLOG(lv, "\t pDelayRespFollowUpTx=%d pDelayRespFollowUpRx=%d\n",
 		ds->portDR[id].pDelayRespFollowUpTx, ds->portDR[id].pDelayRespFollowUpRx);
 
-	UB_LOG(lv, "PortSignalingDataRecord [%s] domain=%d port=%d index=%d PMTime=%d\n",
+	UB_VLOG(lv, "PortSignalingDataRecord [%s] domain=%d port=%d index=%d PMTime=%d\n",
 		id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval", di, pi, ds->index[id], ds->PMTime[id]);
-	UB_LOG(lv, "\t msgIntervalTx=%d msgIntervalRx=%d\n",
+	UB_VLOG(lv, "\t msgIntervalTx=%d msgIntervalRx=%d\n",
 		ds->signalingDR[id].msgIntervalTx, ds->signalingDR[id].msgIntervalRx);
-	UB_LOG(lv, "\t asCapableTx=%d asCapableRx=%d\n", ds->signalingDR[id].asCapableTx, ds->signalingDR[id].asCapableTx);
-	UB_LOG(lv, "\t signalingRx=%d\n", ds->signalingDR[id].signalingRx);
+	UB_VLOG(lv, "\t asCapableTx=%d asCapableRx=%d\n", ds->signalingDR[id].asCapableTx, ds->signalingDR[id].asCapableTx);
+	UB_VLOG(lv, "\t signalingRx=%d\n", ds->signalingDR[id].signalingRx);
 }
 
 static void gptp_port_perfmon_ppmpddr_reset(PortPerfMonPeerDelayDataRecord *dr)
@@ -445,32 +445,32 @@ void gptp_clock_perfmon_dr_dump(PerfMonClockDS *ds, ub_dbgmsg_level_t lv, uint8_
 {
 	if((!ds)||(id>=PERFMON_ALL_DR)) return;
 
-	UB_LOG(lv, "ClockPerfMonDataRecord [%s] index=%d PMTime=%d\n",
+	UB_VLOG(lv, "ClockPerfMonDataRecord [%s] index=%d PMTime=%d\n",
 		id==PERFMON_SHORTINTV_DR?"ShortInterval":"LongInterval", ds->index[id], ds->PMTime[id]);
 
-	UB_LOG(lv, "\t maxMasterSlaveDelay=0x%"PRIx64" minMasterSlaveDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t maxMasterSlaveDelay=0x%"PRIx64" minMasterSlaveDelay=0x%"PRIx64"\n",
 		ds->clockDR[id].maxMasterSlaveDelay.scaledNanoseconds, ds->clockDR[id].minMasterSlaveDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t aveMasterSlaveDelay=0x%"PRIx64" stdDevMeanLinkDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t aveMasterSlaveDelay=0x%"PRIx64" stdDevMeanLinkDelay=0x%"PRIx64"\n",
 		ds->clockDR[id].averageMasterSlaveDelay.scaledNanoseconds, ds->clockDR[id].stdDevMasterSlaveDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t masterSlaveDelayCount=%d\n", ds->clockDR[id].masterSlaveDelay.N);
+	UB_VLOG(lv, "\t masterSlaveDelayCount=%d\n", ds->clockDR[id].masterSlaveDelay.N);
 
-	UB_LOG(lv, "\t maxSlaveMasterDelay=0x%"PRIx64" minSlaveMasterDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t maxSlaveMasterDelay=0x%"PRIx64" minSlaveMasterDelay=0x%"PRIx64"\n",
 		ds->clockDR[id].maxSlaveMasterDelay.scaledNanoseconds, ds->clockDR[id].minSlaveMasterDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t averageSlaveMasterDelay=0x%"PRIx64" stdDevSlaveMasterDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t averageSlaveMasterDelay=0x%"PRIx64" stdDevSlaveMasterDelay=0x%"PRIx64"\n",
 		ds->clockDR[id].averageSlaveMasterDelay.scaledNanoseconds, ds->clockDR[id].stdDevSlaveMasterDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t slaveMasterDelayCount=%d\n", ds->clockDR[id].slaveMasterDelay.N);
+	UB_VLOG(lv, "\t slaveMasterDelayCount=%d\n", ds->clockDR[id].slaveMasterDelay.N);
 
-	UB_LOG(lv, "\t maxMeanPathDelay=0x%"PRIx64" minMeanPathDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t maxMeanPathDelay=0x%"PRIx64" minMeanPathDelay=0x%"PRIx64"\n",
 		ds->clockDR[id].maxMeanPathDelay.scaledNanoseconds, ds->clockDR[id].minMeanPathDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t averageMeanPathDelay=0x%"PRIx64" stdDevMeanLinkDelay=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t averageMeanPathDelay=0x%"PRIx64" stdDevMeanLinkDelay=0x%"PRIx64"\n",
 		ds->clockDR[id].averageMeanPathDelay.scaledNanoseconds, ds->clockDR[id].stdDevMeanPathDelay.scaledNanoseconds);
-	UB_LOG(lv, "\t meanPathDelayCount=%d\n", ds->clockDR[id].meanPathDelay.N);
+	UB_VLOG(lv, "\t meanPathDelayCount=%d\n", ds->clockDR[id].meanPathDelay.N);
 
-	UB_LOG(lv, "\t maxOffsetFromMaster=0x%"PRIx64" minOffsetFromMaster=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t maxOffsetFromMaster=0x%"PRIx64" minOffsetFromMaster=0x%"PRIx64"\n",
 		ds->clockDR[id].maxOffsetFromMaster.scaledNanoseconds, ds->clockDR[id].minOffsetFromMaster.scaledNanoseconds);
-	UB_LOG(lv, "\t averageOffsetFromMaster=0x%"PRIx64" stdDevOffsetFromMaster=0x%"PRIx64"\n",
+	UB_VLOG(lv, "\t averageOffsetFromMaster=0x%"PRIx64" stdDevOffsetFromMaster=0x%"PRIx64"\n",
 		ds->clockDR[id].averageOffsetFromMaster.scaledNanoseconds, ds->clockDR[id].stdDevOffsetFromMaster.scaledNanoseconds);
-	UB_LOG(lv, "\t offsetFromMasterCount=%d\n", ds->clockDR[id].offsetFromMaster.N);
+	UB_VLOG(lv, "\t offsetFromMasterCount=%d\n", ds->clockDR[id].offsetFromMaster.N);
 }
 
 static void gptp_clock_perfmon_cpmdr_reset(ClockPerfMonDataRecord *dr)

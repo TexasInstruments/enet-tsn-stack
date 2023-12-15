@@ -69,9 +69,22 @@ yang_db_runtime_dataq_t *yang_db_runtime_init(xl4_data_data_t *xdd, uc_dbald *db
 
 void yang_db_runtime_close(yang_db_runtime_dataq_t *ydrd);
 
-int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname);
 
-// return vtype, return -1 if error
+/**
+ * @brief read from a config file, and set data.
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param fname config file name
+ * @param ucntd uc_notice handle to ask an action to uniconf.
+ *              if NULL no action is pushed.
+ * @return -1:error, 0:success
+ */
+int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname,
+			     uc_notice_data_t *ucntd);
+
+/**
+ * @brief get value type of 'aps' leaf
+ * @return >=0:vtype, -1:error
+ */
 int yang_db_runtime_get_vtype(uc_dbald *dbald, uint8_t *aps);
 
 /**
@@ -153,18 +166,49 @@ int yang_db_runtime_getvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
 /**
  * @brief wait witem,
  *	if waitv!=NULL wait unitl the value matches. if waitv==NULL wait appearance of witem.
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param witem monitor item(s)
+ * @param waitv monitored item to be matched with this waitv. 
+ * @param wvsize size of monitored item(s)
+ * @param tout_ms timeout value
  * @return return 0:got the waitv, 1:timed out, -1:error
  */
 int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
 			     void *waitv, uint32_t wvsize, int tout_ms);
 
 /**
- * @return 'key node string' and 'value key node string' of key
- * return -1: error
- * return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
+ * @brief 'key node string' and 'value key node string' of key
+ * @return -1: error, 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
  */
 int yang_db_runtime_getkeyvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
 				void *key, uint32_t ksize, char **rstr);
+
+/**
+ * @return N>=0:set node and need N value keys, -1:set one value key, -2:pass leaf, -3:error
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param reset reset ydrd->api to start over
+ * @param kstr key stting
+ * @param vstr value string, if this is NULL, kstr should be node
+ */
+int yang_db_runtime_proc_nodestring(yang_db_runtime_dataq_t *ydrd, bool reset,
+				    char *kstr, char *vstr);
+
+/**
+ * @brief call yang_db_runtime_getkeyvkstr with the internal ydrd state
+ * @return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
+ */
+int yang_db_runtime_state_keyvkstr(yang_db_runtime_dataq_t *ydrd, char **rstr);
+
+// functions in convxml2conf.c
+/**
+ * @brief convert xml format config file to Excelfore format config file
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param ifname input xml format filename
+ * @param ofname output Excelfore format filename. if NULL, use a default temp file
+ * @return 'converted filename': success, NULL:fail
+ */
+const char *convxml2conf_getconf(yang_db_runtime_dataq_t *ydrd, const char *ifname,
+				 const char *ofname);
 
 #ifdef __cplusplus
 }

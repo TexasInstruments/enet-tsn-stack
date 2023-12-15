@@ -95,6 +95,11 @@ static bool RingIsFull(uint32_t pi, uint32_t ci)
 	return false;
 }
 
+bool BufRingIsEmpty(LLDEnetBufRing_t *ring)
+{
+	return RingIsEmpty(ring->pi, ring->ci);
+}
+
 bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
 {
 	uint32_t pi;
@@ -170,5 +175,10 @@ bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
 bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
 {
 	return false;
+}
+
+bool BufRingIsEmpty(LLDEnetBufRing_t *ring)
+{
+	return true;
 }
 #endif //!SOC_AM273X

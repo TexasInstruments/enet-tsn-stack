@@ -68,25 +68,6 @@ typedef enum {
 	REACTION,
 }md_sync_send_state_t;
 
-struct md_sync_send_data{
-	gptpnet_data_t *gpnetd;
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	MDEntityGlobal *mdeg;
-	md_sync_send_state_t state;
-	md_sync_send_state_t last_state;
-	MDSyncSendSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	MDSyncSend *rcvdMDSyncPtr;
-	uint64_t txSync_time;
-	uint64_t sync_ts;
-	uint64_t tsync_ts; // for debug use
-	uint64_t pgap_ts; // for debug use
-	uint64_t tfup_ts; // for debug use
-	uint64_t mock_txts64;
-};
-
 #define RCVD_MDSYNC sm->thisSM->rcvdMDSync
 #define RCVD_MDSYNC_PTR sm->rcvdMDSyncPtr
 #define PORT_OPER sm->ppg->forAllDomain->portOper
@@ -222,7 +203,7 @@ static md_sync_send_state_t allstate_condition(md_sync_send_data_t *sm)
 		sm->last_state=REACTION;
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (md_sync_send_state_t)sm->state;
 }
 
 static void *initializing_proc(md_sync_send_data_t *sm)

@@ -93,31 +93,34 @@ uint8_t yang_modules_get_enum(char *astr)
 	for(i=0;i<(int)YANG_MODULES_ENUM_END-(int)XL4_DATA_RO;i++){
 		if(!strcmp(astr, yang_modules_enum_strings[i])){return i;}
 	}
-        return 0xffu;
+		return 0xffu;
 }
 
 const char *yang_modules_get_string(uint8_t anum)
 {
 	if(anum>=(uint8_t)XL4_DATA_RO){anum-=(uint8_t)XL4_DATA_RO;}
-        if(anum>=(uint8_t)YANG_MODULES_ENUM_END-(uint8_t)XL4_DATA_RO){return NULL;}
+		if(anum>=(uint8_t)YANG_MODULES_ENUM_END-(uint8_t)XL4_DATA_RO){return NULL;}
 	return yang_modules_enum_strings[anum];
 }
 
 #ifndef UC_RUNCONF
 uint8_t yang_modules_get_node_enums(xl4_data_data_t *xdd, char *astr, uint8_t *anums, int maxele)
 {
-        return 255;
+		return 255;
 }
 #else
 uint8_t yang_modules_get_node_enums(xl4_data_data_t *xdd, char *astr, uint8_t *anums, int maxele)
 {
+	if(astr == NULL) {return -1;}
+	if(!*astr || !anums || !maxele){return -1;}
+
 	char *q, *p=astr;
-        get_enum_func get_enum;
+	get_enum_func get_enum;
 	int ec=0;
 	uint8_t ed, ef;
-	if(!astr || !*astr || !anums || !maxele){return -1;}
+
 	if(*p=='/'){
-        	p++;
+			p++;
 		q=strchr(p, '/');
 		if(q!=NULL){
 			*q=0;
@@ -133,13 +136,20 @@ uint8_t yang_modules_get_node_enums(xl4_data_data_t *xdd, char *astr, uint8_t *a
 		break;
 	case XL4_EXTMOD_RW:
 		if(!xdd){return -1;}
-		q=strchr(p, '/');
+		if (p != NULL)
+		{
+		    q=strchr(p, '/');
+		}
+		else
+		{
+		    q = NULL;
+		}
 		if(q!=NULL){
 			*q=0;
 			q++;
 			ef=xl4_data_get_modid(xdd, p);
 			anums[ec]=ef;
-        		ec++;
+				ec++;
 			p=q;
 		}else{
 			if(maxele==1){
@@ -182,13 +192,13 @@ uint8_t yang_modules_get_node_enums(xl4_data_data_t *xdd, char *astr, uint8_t *a
 	// get_node_enums_ENUM_END
 	default:
 		UB_LOG(UBL_ERROR, "%s:the top node=%d doesn't exist\n",
-		       __func__, anums[0]);
+			   __func__, anums[0]);
 		return -1;
 	}
 	while((ec<maxele) && (p!=NULL) && (*p!=0)){
 		q=strchr(p, '/');
 		if(q!=NULL){
-        		*q=0;
+				*q=0;
 			q++;
 		}
 		ed=get_enum(p);
@@ -213,20 +223,20 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 #else
 int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anums)
 {
-        const char *astr;
-        int rsize;
+		const char *astr;
+		int rsize;
 	int ec=1;
-        get_string_func get_string;
-        *rstr=NULL;
-        astr=yang_modules_get_string(anums[0]);
-        if(!astr){return -1;}
-        rsize=(int)strlen(astr)+2;
-        *rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, rsize);
-        if(ub_assert_fatal(*rstr!=NULL, __func__, NULL)){return -1;}
-        (void)memset(*rstr, 0, rsize);
-        *rstr[0]='/';
-        (void)strcpy(&(*rstr)[1], astr);
-        if(anums[1]==255u){return 0;}
+		get_string_func get_string = NULL;
+		*rstr=NULL;
+		astr=yang_modules_get_string(anums[0]);
+		if(!astr){return -1;}
+		rsize=(int)strlen(astr)+2;
+		*rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, rsize);
+		if(ub_assert_fatal(*rstr!=NULL, __func__, NULL)){return -1;}
+		(void)memset(*rstr, 0, rsize);
+		*rstr[0]='/';
+		(void)strcpy(&(*rstr)[1], astr);
+		if(anums[1]==255u){return 0;}
 
 	switch(anums[0]){
 	case XL4_DATA_RW:
@@ -285,24 +295,31 @@ int yang_modules_get_node_string(xl4_data_data_t *xdd, char **rstr, uint8_t *anu
 	// get_node_string_ENUM_END
 	default:
 		UB_LOG(UBL_ERROR, "%s:the top node=%d doesn't exist\n",
-		       __func__, anums[0]);
+			   __func__, anums[0]);
 		goto erexit;
 		break;
 	}
-	while(anums[ec]!=255u){
-		astr=get_string(anums[ec]);
-		if(!astr){break;}
-		rsize+=(int)strlen(astr)+1;
-		*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rsize);
-		if(ub_assert_fatal(*rstr!=NULL, __func__, "realloc")){return -1;}
-		(void)strcat(*rstr, "/");
-		(void)strcat(*rstr, astr);
-		ec++;
+	if (get_string != NULL)
+	{
+		while(anums[ec]!=255u){
+			astr=get_string(anums[ec]);
+			if(!astr){break;}
+			rsize+=(int)strlen(astr)+1;
+			*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rsize);
+			if(ub_assert_fatal(*rstr!=NULL, __func__, "realloc")){return -1;}
+			(void)strcat(*rstr, "/");
+			(void)strcat(*rstr, astr);
+			ec++;
+		}
+	}
+	else
+	{
+		goto erexit;
 	}
 	return 0;
 erexit:
-        UB_SD_RELMEM(YANGINIT_GEN_SMEM, *rstr);
-        *rstr=NULL;
-        return -1;
+		UB_SD_RELMEM(YANGINIT_GEN_SMEM, *rstr);
+		*rstr=NULL;
+		return -1;
 }
 #endif

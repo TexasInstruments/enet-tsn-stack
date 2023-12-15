@@ -58,6 +58,8 @@
 
 extern char *PTPMsgType_debug[];
 
+extern int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl);
+
 typedef struct {
 	int ndev_index;
 	uint8_t msgtype;
@@ -75,7 +77,8 @@ typedef struct {
 
 typedef struct {
 	CB_ETHHDR_T ehd;
-	uint8_t pdata[GPTP_MAX_PACKET_SIZE];
+	/* Might need to store the 64 bit rx timestamp at the end of the pkt */
+	uint8_t pdata[GPTP_MAX_PACKET_SIZE + 8U];
 } __attribute__((packed)) ptpkt_t;
 
 typedef struct netdevice {
@@ -98,8 +101,8 @@ struct gptpnet_data {
 	int64_t last_ts64;
 	ptpkt_t rxbuf;
 	CB_SOCKET_T lldsock;
-	ub_macaddr_t srcmac;
 	uint8_t gptpInstanceIndex;
+	bool is_rxts_inbuff;
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -133,9 +136,11 @@ static void txrx_notify_cb(void *arg)
 	CB_SEM_POST(&gpnet->semaphore);
 }
 
-static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet, netdevice_t *ndev, const char *netdev)
+static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet,
+					   netdevice_t *ndev, const char *netdev)
 {
 	ub_macaddr_t destmac = GPTP_MULTICAST_DEST_ADDR;
+	ub_macaddr_t srcmac;
 
 	(void)snprintf(ndev->nlstatus.devname, CB_MAX_NETDEVNAME, "%s", netdev);
 	if(cb_get_ptpdev_from_netdev(ndev->nlstatus.devname,
@@ -146,7 +151,6 @@ static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet, netdevi
 	ndev->txtslost_time = gptpgcfg_get_intitem(
 		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_TXTS_LOST_TIME,
 		YDBI_CONFIG);
-
 
 	/* We need a single lldsock for all the ports */
 	if (gpnet->lldsock == NULL) {
@@ -162,9 +166,10 @@ static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet, netdevi
 		llrawp.rw_type=CB_RAWSOCK_RDWR;
 
 		gptpgcfg_releasedb(gptpInstanceIndex);
-		if(cb_rawsock_open(&llrawp, &gpnet->lldsock, NULL, NULL, gpnet->srcmac) < 0) {
+		if(cb_rawsock_open(&llrawp, &gpnet->lldsock, NULL, NULL, srcmac) < 0) {
 			return -1;
 		}
+		gpnet->is_rxts_inbuff = cb_lld_is_rxts_inbuff(gpnet->lldsock);
 		cb_lld_set_txnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 		cb_lld_set_rxnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 
@@ -175,8 +180,12 @@ static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet, netdevi
 			gpnet->lldsock = NULL;
 			return -1;
 		}
+	} else {
+		if (cb_get_mac_bydev(gpnet->lldsock, ndev->nlstatus.devname, srcmac)) {
+			return -1;
+		}
 	}
-	memcpy(ndev->txbuf.ehd.H_SOURCE, gpnet->srcmac, ETH_ALEN);
+	memcpy(ndev->txbuf.ehd.H_SOURCE, srcmac, ETH_ALEN);
 	memcpy(ndev->txbuf.ehd.H_DEST, destmac, ETH_ALEN);
 	ndev->txbuf.ehd.H_PROTO = htons(ETH_P_1588);
 	eui48to64(ndev->txbuf.ehd.H_SOURCE, ndev->nlstatus.portid, NULL);
@@ -193,13 +202,13 @@ static int onenet_activate(gptpnet_data_t *gpnet, int ndevIndex)
 
 	ndev->nlstatus.up=0;
 	YDBI_GET_ITEM_VSUBST(uint8_t*, ifk1vk0, ndev->nlstatus.up, value,
-			     ndev->nlstatus.devname, IETF_INTERFACES_OPER_STATUS, YDBI_STATUS);
+				 ndev->nlstatus.devname, IETF_INTERFACES_OPER_STATUS, YDBI_STATUS);
 	ndev->nlstatus.duplex=1;
 	YDBI_GET_ITEM_VSUBST(uint32_t*, ifk1vk0, ndev->nlstatus.duplex, value,
-			     ndev->nlstatus.devname, IETF_INTERFACES_DUPLEX, YDBI_STATUS);
+				 ndev->nlstatus.devname, IETF_INTERFACES_DUPLEX, YDBI_STATUS);
 
 	YDBI_GET_ITEM_VSUBST(uint64_t*, ifk1vk0, speed, value,
-			     ndev->nlstatus.devname, IETF_INTERFACES_SPEED, YDBI_STATUS);
+				 ndev->nlstatus.devname, IETF_INTERFACES_SPEED, YDBI_STATUS);
 	ndev->nlstatus.speed=speed/1000000u;
 	if(ndev->nlstatus.speed == 0u){ndev->nlstatus.up = false;}
 	UB_LOG(UBL_INFO, "%s:%s status=%d, duplex=%d, speed=%dMbps\n", __func__,
@@ -211,8 +220,8 @@ static int onenet_activate(gptpnet_data_t *gpnet, int ndevIndex)
 }
 
 gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
-			     void *cb_data, const char *netdev[], uint8_t num_ports,
-			     char *master_ptpdev)
+				 void *cb_data, const char *netdev[], uint8_t num_ports,
+				 char *master_ptpdev)
 {
 	gptpnet_data_t *gpnet;
 	LLDTSyncCfg_t tsyncfg;
@@ -256,8 +265,13 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 	gpnet->cb_data = cb_data;
 	gpnet->event_ts64 = ub_mt_gettime64();
 
+	if(gptpgcfg_set_netdevs(gptpInstanceIndex, netdev, num_ports)!=0){
+		UB_LOG(UBL_ERROR,"%s:failed to set netdevs!\n", __func__);
+		goto error;
+	}
+
 	if (CB_SEM_INIT(&gpnet->semaphore, 0, 0) < 0) {
-		UB_LOG(UBL_ERROR,"%s:failed to open timeSync!\n", __func__);
+		UB_LOG(UBL_ERROR,"%s:failed to init sem!\n", __func__);
 		goto error;
 	}
 
@@ -288,6 +302,7 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 {
 	UB_LOG(UBL_DEBUGV, "%s:\n",__func__);
 	if (!gpnet) {return -1;}
+	gptpgcfg_remove_netdevs(gpnet->gptpInstanceIndex);
 	if (gpnet->lldsock) {
 		cb_rawsock_close(gpnet->lldsock);
 		gpnet->lldsock = NULL;
@@ -309,41 +324,6 @@ uint8_t *gptpnet_get_sendbuf(gptpnet_data_t *gpnet, int ndev_index)
 {
 	return gpnet->netdevices[ndev_index].txbuf.pdata;
 }
-
-static int poll_linkstate(gptpnet_data_t *gpnet)
-{
-	int64_t ts64;
-	netdevice_t *ndev;
-	int i;
-	uint32_t linkstate;
-	uint32_t speed;
-	uint32_t duplex;
-	gptpnet_event_t event;
-
-	ts64 = ub_mt_gettime64();
-	for (i = 0; i < gpnet->num_netdevs; i++) {
-		ndev = &gpnet->netdevices[i];
-		linkstate = 0;
-		speed = 0;
-		duplex = 0;
-		cb_get_ethtool_linkstate(gpnet->lldsock, ndev->nlstatus.devname, &linkstate);
-		if (ndev->nlstatus.up == linkstate) {
-			continue;
-		}
-		if (linkstate) {
-			cb_get_ethtool_info(gpnet->lldsock, ndev->nlstatus.devname, &speed, &duplex);
-			event = GPTPNET_EVENT_DEVUP;
-			ndev->nlstatus.speed = speed;
-			ndev->nlstatus.duplex = duplex;
-		} else {
-			event = GPTPNET_EVENT_DEVDOWN;
-		}
-		ndev->nlstatus.up = linkstate;
-		gpnet->cb_func(gpnet->cb_data, i+1, event,  &ts64, &ndev->nlstatus);
-	}
-	return 0;
-}
-
 
 int gptpnet_activate(gptpnet_data_t *gpnet)
 {
@@ -455,7 +435,7 @@ static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf, int size, int ma
 	/* Do not handle non PTP packets */
 	if(ntohs(*(uint16_t *)(buf + 12))!=ETH_P_1588){
 		UB_LOG(UBL_ERROR, "%s: RX not ETH_P_1588 packet 0x%02X%02X\n",
-		       __func__, buf[12], buf[13]);
+			   __func__, buf[12], buf[13]);
 		return -1;
 	}
 
@@ -465,12 +445,18 @@ static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf, int size, int ma
 	edtrecv.msgtype = PTP_HEAD_MSGTYPE(buf+ETH_HLEN);
 	seqid = PTP_HEAD_SEQID(buf+ETH_HLEN);
 	if (edtrecv.msgtype < 8) {
-		res = LLDTSyncGetRxTime(gpnet->lldtsync, macport, edtrecv.msgtype,
-								seqid, edtrecv.domain, (uint64_t *)&edtrecv.ts64);
-		if (res != LLDENET_E_OK) {
-			UB_LOG(UBL_ERROR,"%s:macport=%d, no RxTs msgtype=%s\n",
-				   __func__, macport, PTPMsgType_debug[edtrecv.msgtype]);
-			return -1;
+		if(gpnet->is_rxts_inbuff) {
+			/* If rxts is present in pkt,
+			 * 8 bytes after the pkt are the timestamp */
+			memcpy(&edtrecv.ts64, &(buf[size]), 8U);
+		} else {
+			res = LLDTSyncGetRxTime(gpnet->lldtsync, macport, edtrecv.msgtype,
+									seqid, edtrecv.domain, (uint64_t *)&edtrecv.ts64);
+			if (res != LLDENET_E_OK) {
+				UB_LOG(UBL_ERROR,"%s:macport=%d, no RxTs msgtype=%s\n",
+					   __func__, macport, PTPMsgType_debug[edtrecv.msgtype]);
+				return -1;
+			}
 		}
 	}
 	ndev_index = macport_to_ndev_index(gpnet, macport);
@@ -524,7 +510,42 @@ static int process_txts(gptpnet_data_t *gpnet)
 	return 0;
 }
 
-#define GPTPNET_INTERVAL_TIMEOUT 125000000
+static int find_netdev(netdevice_t *devices, int dnum, char *netdev)
+{
+	int i;
+	for(i=0;i<dnum;i++){
+		if(!strcmp(netdev, devices[i].nlstatus.devname)){return i;}
+	}
+	return -1;
+}
+
+static int gptpnet_link_check(gptpnet_data_t *gpnet, int64_t ts64)
+{
+	int res;
+	gptpnet_data_netlink_t edtnl;
+	int ndevIndex;
+	gptpnet_event_t event;
+	char *ptpdev;
+	netdevice_t *ndev;
+	res=gptpgcfg_link_check(gpnet->gptpInstanceIndex, &edtnl);
+	if(res<0){return -1;}
+	if(res!=0){return 0;}
+	ndevIndex=find_netdev(gpnet->netdevices, gpnet->num_netdevs, edtnl.devname);
+	ndev=&gpnet->netdevices[ndevIndex];
+	if(ndev->nlstatus.up==edtnl.up){return 0;}/* link no changes */
+	ndev->nlstatus.up=edtnl.up;
+	ndev->nlstatus.speed=edtnl.speed;
+	ndev->nlstatus.duplex=edtnl.duplex;
+	if(edtnl.up!=0u){
+		event=GPTPNET_EVENT_DEVUP;
+	}else{
+		event=GPTPNET_EVENT_DEVDOWN;
+	}
+	ptpdev=ndev->nlstatus.ptpdev;
+	memcpy(edtnl.ptpdev, ptpdev, strlen(ptpdev)+1);
+	return gpnet->cb_func(gpnet->cb_data, ndevIndex+1, event, &ts64, &edtnl);
+}
+
 static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 {
 	int64_t ts64, tstout64;
@@ -532,6 +553,8 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 	int err;
 
 	ts64 = ub_mt_gettime64();
+	(void)gptpnet_link_check(gpnet, ts64);
+
 	tstout64 = ts64-gpnet->last_ts64;
 	// every 10 seconds, print clock parameters for debug
 	if (tstout64>=(10*UB_SEC_NS)){
@@ -539,22 +562,22 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 		gpnet->last_ts64 = ts64;
 	}
 
-	poll_linkstate(gpnet);
-
 	if (gpnet->next_tout64!=0) {
 		tstout64 = gpnet->next_tout64-ts64;
 		if (tstout64<0) {
 			gpnet->next_tout64 = 0;
 			UB_LOG(UBL_DEBUG,"%s:call missed or extra TIMEOUT CB\n", __func__);
 			return gpnet->cb_func(gpnet->cb_data, 0, GPTPNET_EVENT_TIMEOUT,
-					     &ts64, NULL);
+						 &ts64, NULL);
 		}
 	} else {
-		gpnet->next_tout64 = ((ts64 / GPTPNET_INTERVAL_TIMEOUT) + 1) *
-			GPTPNET_INTERVAL_TIMEOUT;
+		gpnet->next_tout64 = ((ts64 / GPTPNET_INTERVAL_TIMEOUT_NSEC) + 1) *
+			GPTPNET_INTERVAL_TIMEOUT_NSEC;
 	}
-	tstout64 = gpnet->next_tout64-ts64;
 
+	gptpgcfg_releasedb(gpnet->gptpInstanceIndex);
+
+	tstout64 = gpnet->next_tout64-ts64;
 	ts64=ub_rt_gettime64();
 	UB_NSEC2TS(ts64+tstout64, ts);
 	err = CB_SEM_TIMEDWAIT(&gpnet->semaphore, &ts);
@@ -563,8 +586,8 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 		if (cb_lld_sem_wait_status(&gpnet->semaphore) == TILLD_TIMEDOUT) {
 			gpnet->next_tout64 = 0;
 			return gpnet->cb_func(gpnet->cb_data, 0,
-					      GPTPNET_EVENT_TIMEOUT,
-					      &gpnet->event_ts64, NULL);
+						  GPTPNET_EVENT_TIMEOUT,
+						  &gpnet->event_ts64, NULL);
 		}
 		UB_LOG(UBL_ERROR,"%s:CB_SEM_TIMEDWAIT error\n", __func__);
 		return -1;
@@ -591,7 +614,7 @@ char *gptpnet_ptpdev(gptpnet_data_t *gpnet, int ndevIndex)
 }
 
 void gptpnet_create_clockid(gptpnet_data_t *gpnet, uint8_t *id,
-			    int ndevIndex, int8_t domainNumber)
+				int ndevIndex, int8_t domainNumber)
 {
 	memcpy(id, gpnet->netdevices[ndevIndex].nlstatus.portid, sizeof(ClockIdentity));
 	if(domainNumber==0){return;}

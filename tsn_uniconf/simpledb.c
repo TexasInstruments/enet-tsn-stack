@@ -74,7 +74,7 @@ struct simpledb_data{
 	const char *pfname;
 	struct ub_list dblist;
 	CB_THREAD_MUTEX_T dbmutex;
-	CB_THREAD_MUTEX_T relwait_mutex;
+	CB_SEM_T relwait_sem;
 };
 
 struct simpledb_range{
@@ -111,14 +111,18 @@ UB_SD_GETMEM_DEF(SIMPLEDB_RANGEINST, sizeof(simpledb_range_t),
 		 SIMPLEDB_RANGENUM);
 
 #define SIMPLEDB_KDATAINST simpledb_kdatainst
+#ifndef SIMPLEDB_KDATASIZE
 #define SIMPLEDB_KDATASIZE 8
+#endif
 // mostly less than 8, '*2' must be appropriate
 #define SIMPLEDB_KDATANUM (SIMPLEDB_DBDATANUM*2u)
 UB_SD_GETMEM_DEF(SIMPLEDB_KDATAINST, SIMPLEDB_KDATASIZE,
 		 SIMPLEDB_KDATANUM);
 
 #define SIMPLEDB_VDATAINST simpledb_vdatainst
+#ifndef SIMPLEDB_VDATASIZE
 #define SIMPLEDB_VDATASIZE 8
+#endif
 // mostly less than 8, '*2' must be appropriate
 #define SIMPLEDB_VDATANUM (SIMPLEDB_DBDATANUM*2u)
 UB_SD_GETMEM_DEF(SIMPLEDB_VDATAINST, SIMPLEDB_VDATASIZE,
@@ -423,6 +427,7 @@ static int onedb_put(struct ub_list *dblist, simpledb_keydata_t *kd,
 			dbd->vsize=vlen;
 		}
 	}
+	if(ub_assert_fatal(dbd->vdata != NULL, __func__, NULL)){return -1;}
 	if(value && vlen){memcpy(dbd->vdata, value, vlen);}
 	return 0;
 }
@@ -437,7 +442,7 @@ simpledb_data_t *simpledb_open(const char *pfname)
 	(void)memset(sdbd, 0, sizeof(simpledb_data_t));
 	sdbd->pfname=pfname;
 	if(CB_THREAD_MUTEX_INIT(&sdbd->dbmutex, NULL)!=0){goto erexit;}
-	if(CB_THREAD_MUTEX_INIT(&sdbd->relwait_mutex, NULL)!=0){goto erexit;}
+	if(CB_SEM_INIT(&sdbd->relwait_sem, 0, 0)!=0){goto erexit;}
 	if(sdbd->pfname!=NULL){inf=ub_fioopen(sdbd->pfname, "r");}
 	if(inf==NULL){
 		UB_LOG(UBL_INFO, "%s:no data is imported\n", __func__);
@@ -493,7 +498,7 @@ void simpledb_close(simpledb_data_t *sdbd)
 {
 	if(!sdbd){return;}
 	CB_THREAD_MUTEX_DESTROY(&sdbd->dbmutex);
-	CB_THREAD_MUTEX_DESTROY(&sdbd->relwait_mutex);
+	CB_SEM_DESTROY(&sdbd->relwait_sem);
 	ub_list_clear(&sdbd->dblist, dbnode_clear, NULL);
 	UB_SD_RELMEM(SIMPLEDB_INSTMEM, sdbd);
 }
@@ -514,7 +519,6 @@ int simpledb_get(simpledb_data_t *sdbd, simpledb_keydata_t *kd,
 	int res;
 	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);
 	res=onedb_get(&sdbd->dblist, kd, value, vlen);
-	CB_THREAD_MUTEX_TRYLOCK(&sdbd->relwait_mutex);
 	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
 	return res;
 }
@@ -522,9 +526,11 @@ int simpledb_get(simpledb_data_t *sdbd, simpledb_keydata_t *kd,
 int simpledb_get_release(simpledb_data_t *sdbd, simpledb_keydata_t *kd)
 {
 	int res;
+	int semval;
 	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);
 	res=onedb_get_release(&sdbd->dblist, kd);
-	CB_THREAD_MUTEX_UNLOCK(&sdbd->relwait_mutex);
+	CB_SEM_GETVALUE(&sdbd->relwait_sem, &semval);
+	if(semval==0){CB_SEM_POST(&sdbd->relwait_sem);}
 	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
 	return res;
 }
@@ -538,11 +544,15 @@ int simpledb_del(simpledb_data_t *sdbd, simpledb_keydata_t *kd)
 	return res;
 }
 
+/*
+ * 2023.10.9 stop locking by 'dbd->refcounter+=1u'
+ * the locking is rarely needed.
+ * If the caller want to lock, it should lock by the other operations.
+ */
 simpledb_range_t *simpledb_get_range(simpledb_data_t *sdbd,
 				     key_range_t *krange)
 {
 	simpledb_range_t *rangedp;
-	dbdata_t *dbd;
 	rangedp=(simpledb_range_t*)UB_SD_GETMEM(SIMPLEDB_RANGEINST, sizeof(simpledb_range_t));
 	if(ub_assert_fatal(rangedp!=NULL, __func__, NULL)){return NULL;}
 	(void)memset(rangedp, 0, sizeof(simpledb_range_t));
@@ -553,14 +563,6 @@ simpledb_range_t *simpledb_get_range(simpledb_data_t *sdbd,
 		goto erexit;
 	}
 	rangedp->np=rangedp->n1;
-	while(rangedp->np!=NULL){
-		dbd=(dbdata_t *)(rangedp->np->data);
-		dbd->refcounter+=1u;
-		if(rangedp->np==rangedp->n2){break;}
-		rangedp->np=rangedp->np->next;
-	}
-	rangedp->np=rangedp->n1;
-	CB_THREAD_MUTEX_TRYLOCK(&sdbd->relwait_mutex);
 erexit:
 	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
 	return rangedp;
@@ -568,17 +570,7 @@ erexit:
 
 void simpledb_get_range_release(simpledb_data_t *sdbd, simpledb_range_t *rangedp)
 {
-	dbdata_t *dbd;
-	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);
-	while(rangedp->n1!=NULL){
-		dbd=(dbdata_t *)(rangedp->n1->data);
-		if(dbd->refcounter>0u){dbd->refcounter-=1u;}
-		if(rangedp->n1==rangedp->n2){break;}
-		rangedp->n1=rangedp->n1->next;
-	}
 	UB_SD_RELMEM(SIMPLEDB_RANGEINST, rangedp);
-	CB_THREAD_MUTEX_UNLOCK(&sdbd->relwait_mutex);
-	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
 	return;
 }
 
@@ -599,19 +591,23 @@ int simpledb_get_from_range(simpledb_data_t *sdbd, simpledb_range_t *rangedp,
 		*vdata=dbd->vdata;
 		*vsize=dbd->vsize;
 	}
-	if(direction>0){
+	if(direction==UC_DBAL_FORWARD){
 		if(rangedp->np==rangedp->n2){
 			rangedp->np=NULL;
 		}else{
 			rangedp->np=rangedp->np->next;
 		}
-	}else if(direction<0){
+	}else if(direction==UC_DBAL_BACKWARD){
 		if(rangedp->np==rangedp->n1){
 			rangedp->np=NULL;
 		}else{
 			rangedp->np=rangedp->np->prev;
 		}
-	}else{}
+	}else if(direction==UC_DBAL_NOMOVE){
+	}else{
+		UB_LOG(UBL_ERROR, "%s:invlid direction\n", __func__);
+		goto erexit;
+	}
 	res=0;
 erexit:
 	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
@@ -622,19 +618,23 @@ static int move_in_range(simpledb_data_t *sdbd, simpledb_range_t *rangedp,
 			 int direction)
 {
 	int res=0;
-	if(direction>0){
+	if(direction==UC_DBAL_FORWARD){
 		if(rangedp->np==rangedp->n2){
 			res=-1;
 		}else{
 			rangedp->np=rangedp->np->next;
 		}
-	}else if(direction<0){
+	}else if(direction==UC_DBAL_BACKWARD){
 		if(rangedp->np==rangedp->n1){
 			res=-1;
 		}else{
 			rangedp->np=rangedp->np->prev;
 		}
-	}else{}
+	}else if(direction==UC_DBAL_NOMOVE){
+	}else{
+		UB_LOG(UBL_ERROR, "%s:invlid direction\n", __func__);
+		res=-1;
+	}
 	return res;
 }
 
@@ -671,10 +671,10 @@ int simpledb_del_in_range(simpledb_data_t *sdbd, simpledb_range_t *rangedp,
 			  int direction)
 {
 	dbdata_t *dbd;
-	int res=0;
+	int res=-1;
 	struct ub_list_node *dnp;
 
-	if(direction==0){
+	if(direction==UC_DBAL_NOMOVE){
 		UB_LOG(UBL_ERROR, "%s:directon must be forward or back\n", __func__);
 		return -1;
 	}
@@ -682,9 +682,8 @@ int simpledb_del_in_range(simpledb_data_t *sdbd, simpledb_range_t *rangedp,
 	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);
 	dnp=rangedp->np;
 	dbd=(dbdata_t *)(dnp->data);
-	if(dbd->refcounter>1u){
+	if(dbd->refcounter>0u){
 		UB_LOG(UBL_ERROR, "%s:the other user is locking the data\n", __func__);
-		res=-1;
 		goto erexit;
 	}
 
@@ -694,13 +693,30 @@ int simpledb_del_in_range(simpledb_data_t *sdbd, simpledb_range_t *rangedp,
 		rangedp->np=NULL;
 	}else if(dnp==rangedp->n2){
 		rangedp->n2=dnp->prev;
-		rangedp->np=rangedp->n2;
+		if(direction==UC_DBAL_FORWARD){
+			rangedp->np=NULL;
+		}else if(direction==UC_DBAL_BACKWARD){
+			rangedp->np=rangedp->n2;
+		}else{
+			goto erexit;
+		}
 	}else if(dnp==rangedp->n1){
 		rangedp->n1=dnp->next;
-		rangedp->np=rangedp->n1;
+		if(direction==UC_DBAL_FORWARD){
+			rangedp->np=rangedp->n1;
+		}else if(direction==UC_DBAL_BACKWARD){
+			rangedp->np=NULL;
+		}else{
+			goto erexit;
+		}
 	}else{
-		if(direction>0){rangedp->np=rangedp->np->next;}
-		else{rangedp->np=rangedp->np->prev;}
+		if(direction==UC_DBAL_FORWARD){
+			rangedp->np=rangedp->np->next;
+		}else if(direction==UC_DBAL_BACKWARD){
+			rangedp->np=rangedp->np->prev;
+		}else{
+			goto erexit;
+		}
 	}
 	ub_list_unlink(&sdbd->dblist, dnp);
 	dbnode_clear(dnp, NULL);
@@ -717,11 +733,9 @@ int simpledb_wait_release(simpledb_data_t *sdbd, int toutms)
 	int64_t mtout;
 	mtout=(int64_t)ub_rt_gettime64()+(toutms*UB_MSEC_NS);
 	UB_NSEC2TS(mtout, mtots);
-	if(CB_THREAD_MUTEX_TIMEDLOCK(&sdbd->relwait_mutex, &mtots)!=0){
-		UB_LOG(UBL_ERROR, "%s:can't lock relwait_mutex\n", __func__);
+	if(CB_SEM_TIMEDWAIT(&sdbd->relwait_sem, &mtots)!=0){
+		UB_LOG(UBL_ERROR, "%s:can't get relwait_sem\n", __func__);
 		res=-1;
-	}else{
-		CB_THREAD_MUTEX_UNLOCK(&sdbd->relwait_mutex);
 	}
 	return res;
 }

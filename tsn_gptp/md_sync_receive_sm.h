@@ -50,6 +50,26 @@
 #ifndef MD_SYNC_RECEIVE_SM_H_
 #define MD_SYNC_RECEIVE_SM_H_
 
+struct md_sync_receive_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	MDEntityGlobal *mdeg;
+	int state;
+	int last_state;
+	MDSyncReceiveSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	MDSyncReceive mdSyncReceive;
+	uint64_t syncEventIngressTimestamp;
+	union {
+		MDPTPMsgSync recSync;
+		MDPTPMsgSyncOneStep recOneStepSync;
+	}u;
+	MDPTPMsgFollowUp recFollowUp;
+	uint64_t rsync_ts; // for debug use
+	uint64_t rfup_ts; // for debug use
+};
+
 typedef struct md_sync_receive_data md_sync_receive_data_t;
 
 void *md_sync_receive_sm(md_sync_receive_data_t *sm, uint64_t cts64);

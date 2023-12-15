@@ -74,20 +74,6 @@ typedef enum {
 	REACTION,
 }port_state_selection_state_t;
 
-struct port_state_selection_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal **ppgl;
-	BmcsPerTimeAwareSystemGlobal *bptasg;
-	BmcsPerPortGlobal **bppgl;
-	port_state_selection_state_t state;
-	port_state_selection_state_t last_state;
-	PortStateSelectionSM *thisSM;
-	int domainIndex;
-	int max_ports;
-	int64_t init_slave_ts;
-	bool deferred_gmsync;
-};
-
 void updateStateDisabledTree(port_state_selection_data_t *sm)
 {
 	/* 10.3.12.2.1 ... sets all elements of selectedState to DisablePort
@@ -438,7 +424,7 @@ static port_state_selection_state_t allstate_condition(port_state_selection_data
 	    (sm->bptasg->externalPortConfiguration == VALUE_DISABLED)) {
 		return INIT_BRIDGE;
 	}
-	return sm->state;
+	return (port_state_selection_state_t)sm->state;
 }
 
 static void *init_bridge_proc(port_state_selection_data_t *sm, int64_t cts64)
@@ -536,7 +522,7 @@ static port_state_selection_state_t state_selection_condition(port_state_selecti
 		sm->last_state = REACTION;
 		return STATE_SELECTION;
 	}
-	return sm->state;
+	return (port_state_selection_state_t)sm->state;
 }
 
 // return clockIdentity when GM has changed

@@ -50,6 +50,16 @@
 #ifndef GPTP_CAPABLE_RECEIVE_SM_H_
 #define GPTP_CAPABLE_RECEIVE_SM_H_
 
+struct gptp_capable_receive_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	gPtpCapableReceiveSM *thisSM;
+	int domainIndex;
+	int portIndex;
+};
+
 typedef struct gptp_capable_receive_data gptp_capable_receive_data_t;
 
 void *gptp_capable_receive_sm(gptp_capable_receive_data_t *sm, uint64_t cts64);

@@ -50,6 +50,25 @@
 #ifndef MD_SYNC_SEND_SM_H_
 #define MD_SYNC_SEND_SM_H_
 
+struct md_sync_send_data{
+	gptpnet_data_t *gpnetd;
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	MDEntityGlobal *mdeg;
+	int state;
+	int last_state;
+	MDSyncSendSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	MDSyncSend *rcvdMDSyncPtr;
+	uint64_t txSync_time;
+	uint64_t sync_ts;
+	uint64_t tsync_ts; // for debug use
+	uint64_t pgap_ts; // for debug use
+	uint64_t tfup_ts; // for debug use
+	uint64_t mock_txts64;
+};
+
 typedef struct md_sync_send_data md_sync_send_data_t;
 
 int md_sync_send_sm(md_sync_send_data_t *sm, uint64_t cts64);

@@ -62,15 +62,6 @@ typedef enum {
 	REACTION,
 }clock_master_sync_send_state_t;
 
-struct clock_master_sync_send_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	clock_master_sync_send_state_t state;
-	clock_master_sync_send_state_t last_state;
-	ClockMasterSyncSendSM *thisSM;
-	int domainIndex;
-	PortSyncSync portSyncSync;
-};
-
 #define SYNC_SEND_TIME sm->thisSM->syncSendTime
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
@@ -119,7 +110,7 @@ static clock_master_sync_send_state_t allstate_condition(clock_master_sync_send_
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable ) {
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (clock_master_sync_send_state_t)sm->state;
 }
 
 static void *initializing_proc(clock_master_sync_send_data_t *sm, uint64_t cts64)
@@ -140,16 +131,12 @@ static void *send_sync_indication_proc(clock_master_sync_send_data_t *sm, uint64
 {
 	UB_LOG(UBL_DEBUGV, "clock_master_sync_send:%s:domainIndex=%d\n", __func__, sm->domainIndex);
 	SYNC_SEND_TIME.nsec = cts64 + sm->ptasg->clockMasterSyncInterval.nsec;
-	// align time in 25msec
-	SYNC_SEND_TIME.nsec = ((SYNC_SEND_TIME.nsec + 12500000u)/25000000u)*25000000u;
 	return setPSSyncCMSS(sm);
 }
 
 static clock_master_sync_send_state_t send_sync_indication_condition(
 	clock_master_sync_send_data_t *sm, uint64_t cts64)
 {
-	// align time in 25msec
-	cts64 = ((cts64 + 12500000)/25000000)*25000000;
 	if(cts64 >= SYNC_SEND_TIME.nsec){
 		sm->last_state = REACTION;
 	}

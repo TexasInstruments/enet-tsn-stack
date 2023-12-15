@@ -50,6 +50,19 @@
 #ifndef MD_SIGNALING_SEND_SM_H_
 #define MD_SIGNALING_SEND_SM_H_
 
+struct md_signaling_send_data{
+	gptpnet_data_t *gpnetd;
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	int domainIndex;
+	int portIndex;
+	int stype;
+	void *rcvd_txmsg;
+	uint16_t sequenceId;
+};
+
 typedef struct md_signaling_send_data md_signaling_send_data_t;
 
 void *md_signaling_send_sm(md_signaling_send_data_t *sm, uint64_t cts64);

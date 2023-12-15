@@ -25,6 +25,8 @@ tsn_gptp/gptp2d.c
 tsn_gptp/gptp2_gen_debug.py
 tsn_gptp/gptpcommon_unittest.c
 tsn_gptp/md_abnormal_hooks_unittest.c
+tsn_lldp/posix
+tsn_lldp/test
 tsn_unibase/configure.ac
 tsn_unibase/ub_cmocka_unittest.h
 tsn_unibase/ub_confutils_unittest.c

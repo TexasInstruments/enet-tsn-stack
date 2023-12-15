@@ -71,19 +71,6 @@ typedef enum {
 	REACTION,
 }port_announce_receive_state_t;
 
-struct port_announce_receive_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	BmcsPerTimeAwareSystemGlobal *bptasg;
-	BmcsPerPortGlobal *bppg;
-	port_announce_receive_state_t state;
-	port_announce_receive_state_t last_state;
-	PortAnnounceReceiveSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	PTPMsgAnnounce rcvdAnnounce;
-};
-
 static bool qualifyAnnounce(port_announce_receive_data_t *sm)
 {
 	uint16_t i, N;
@@ -151,7 +138,7 @@ static port_announce_receive_state_t allstate_condition(port_announce_receive_da
 	    (sm->bptasg->externalPortConfiguration == VALUE_DISABLED)){
 			return DISCARD;
 	}
-	return sm->state;
+	return (port_announce_receive_state_t)sm->state;
 }
 
 static void *discard_proc(port_announce_receive_data_t *sm)
@@ -182,7 +169,7 @@ static port_announce_receive_state_t receive_condition(port_announce_receive_dat
 {
 	if(RCVD_ANNOUNCE && PORT_OPER && PTP_PORT_ENABLED &&
 	   AS_CAPABLE && !RCVD_MSG){return RECEIVE;}
-	return sm->state;
+	return (port_announce_receive_state_t)sm->state;
 }
 
 void *port_announce_receive_sm(port_announce_receive_data_t *sm, uint64_t cts64)

@@ -60,4 +60,99 @@ int ydbi_listener_tu(yang_db_item_access_t *ydbia, uint8_t instIndex, uint8_t *s
 		     uint32_t ltindex, const char *netdev, uint32_t cfindex,
 		     uint8_t pcp, uint16_t vid, bool reg);
 
+/**
+ * @brief scan all streams to get an end station
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param count this 'count'th stream is searched
+ * @param t_or_l, 't':search talker, 'l':search listener, other:search any
+ * @return 0: found, -1:not found,
+ * 	      the result comes to stream_id, mac_address, ifname
+ */
+int ydbi_find_end_station_tu(yang_db_item_access_t *ydbia, uint8_t instIndex,
+			     uint8_t count, char t_or_l,
+			     uint8_t **stream_id, uint8_t **mac_address, char **ifname);
+
+/**
+ * @brief get data in 'data-frame-specification' section
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param streamid stream_id
+ * @param dfs_index index of 'data-frame-specification' list
+ * @param k1
+ * @return >0:data size, -1:error
+ */
+int ydbi_get_item_tufspec(yang_db_item_access_t *ydbia, void **rval, uint8_t instIndex,
+			  ub_bytearray8_t streamid, uint8_t dfs_index,
+			  uint8_t k1, uint8_t k2);
+
+/**
+ * @brief release of data by ydbi_get_item_tufspec
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param streamid stream_id
+ * @param dfs_index index of 'data-frame-specification' list
+ * @param k1
+ * @return 0:released, -1:error
+ */
+int ydbi_rel_item_tufspec(yang_db_item_access_t *ydbia, uint32_t instIndex,
+			  ub_bytearray8_t streamid, uint8_t dfs_index,
+			  uint8_t k1, uint8_t k2);
+
+/**
+ * @brief set data in 'data-frame-specification' section
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param streamid stream_id
+ * @param dfs_index index of 'data-frame-specification' list
+ * @param k1
+ * @param value
+ * @param vsize
+ * @param notice
+ * @return 0:success, -1:error
+ */
+int ydbi_set_item_tufspec(yang_db_item_access_t *ydbia, uint32_t instIndex,
+			  ub_bytearray8_t streamid, uint8_t dfs_index,
+			  uint8_t k1, uint8_t k2,
+			  void *value, uint32_t vsize, uint8_t notice);
+
+/**
+ * @brief get data in 'traffic-specification' section
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param streamid stream_id
+ * @param k1
+ * @param k2
+ * @return >0:data size, -1:error
+ */
+int ydbi_get_item_tutspec(yang_db_item_access_t *ydbia, void **rval, uint8_t instIndex,
+			  ub_bytearray8_t streamid, uint8_t k1, uint8_t k2);
+
+/**
+ * @brief get data in 'traffic-specification' section
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param streamid stream_id
+ * @param k1
+ * @param k2
+ * @return 0:released, -1:error
+ */
+int ydbi_rel_item_tutspec(yang_db_item_access_t *ydbia, void **rval, uint8_t instIndex,
+			  ub_bytearray8_t streamid, uint8_t k1, uint8_t k2);
+/**
+ * @brief get data in 'traffic-specification' section
+ * @param ydbia ydbia handle
+ * @param instIndex 'domain00' the bottom 2digits of hex string
+ * @param streamid stream_id
+ * @param k1
+ * @param k2
+ * @param value
+ * @param vsize
+ * @param notice
+ * @return 0:success, -1:error
+ */
+int ydbi_set_item_tutspec(yang_db_item_access_t *ydbia, void **rval, uint8_t instIndex,
+			  ub_bytearray8_t streamid, uint8_t k1, uint8_t k2,
+			  void *value, uint32_t vsize, uint8_t notice);
+
 #endif

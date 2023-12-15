@@ -54,7 +54,8 @@
 
 int main(int argc, char *argv[])
 {
-	int i, runtime;
+	int i;
+	int runtime = 0;
 	clock_t t1;
 	double rt;
 	double rsum=0.0;
@@ -77,4 +78,5 @@ int main(int argc, char *argv[])
 		rsum+=rt;
 	}
 	printf("rmin=%.06f, rmax=%.06f, ravg=%.06f\n", rmin, rmax, rsum/(double)runtime);
+	return (0);
 }

@@ -47,25 +47,98 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+/**
+ * @file ub_getmem.h
+ * @brief Header file for Static and Dynamic memory allocation functions
+ */
+
 #ifndef UB_GETMEM_H_
 #define UB_GETMEM_H_
 
+/**
+ * @brief Concatenates two tokens
+ * @param A First token
+ * @param B Second token
+ * @return Concatenated tokens
+ */
 #define UB_CONCAT2(A, B) UB_CONCAT2_(A, B)
+
+/**
+ * @brief Helper macro for UB_CONCAT2
+ * @param A First token
+ * @param B Second token
+ * @return Concatenated tokens
+ */
 #define UB_CONCAT2_(A, B) A##B
 
-/*
- * to be safe to cast any type of data, the fragmet is aligned to 'sizeof(void*)' size
+/**
+ * @brief Aligns a memory address to the nearest multiple of sizeof(void*)
+ * @param x Memory address to align
+ * @return Aligned memory address
  */
 #define UB_SD_ALIGN(x) ((((uint32_t)(x))+(sizeof(void*)-1u))&(~(sizeof(void*)-1u)))
 
 #ifdef UB_SD_STATIC
+
+/**
+ * @brief Allocates memory from a static memory pool
+ * @param size Size of memory to allocate
+ * @param mem Pointer to the static memory pool
+ * @param busysizes Array of busy sizes for each fragment in the memory pool
+ * @param fragnum Number of fragments in the memory pool
+ * @param fragsize Size of each fragment in the memory pool
+ * @param mname Name of the memory pool
+ * @param nolock Whether to use a lock to protect the memory pool
+ * @return Pointer to the allocated memory
+ */
 void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
-		       int fragnum, uint16_t fragsize, const char *mname, bool nolock);
+			 int fragnum, uint16_t fragsize, const char *mname, bool nolock);
+
+/**
+ * @brief Reallocates memory from a static memory pool
+ * @param p Pointer to the memory to reallocate
+ * @param nsize New size of the memory
+ * @param mem Pointer to the static memory pool
+ * @param busysizes Array of busy sizes for each fragment in the memory pool
+ * @param fragnum Number of fragments in the memory pool
+ * @param fragsize Size of each fragment in the memory pool
+ * @param mname Name of the memory pool
+ * @return Pointer to the reallocated memory
+ */
 void *ub_static_regetmem(void *p, size_t nsize, void *mem, uint16_t *busysizes,
 			 int fragnum, uint16_t fragsize, const char *mname);
+
+/**
+ * @brief Frees memory from a static memory pool
+ * @param p Pointer to the memory to free
+ * @param mem Pointer to the static memory pool
+ * @param busysizes Array of busy sizes for each fragment in the memory pool
+ * @param fragnum Number of fragments in the memory pool
+ * @param fragsize Size of each fragment in the memory pool
+ */
 void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
 		      int fragnum, uint16_t fragsize);
 
+/**
+ * @brief Prints memory usage if the log level is enabled.
+ *
+ * @param busysizes Array of busy sizes for each fragment in the memory pool
+ * @param fragnum Number of fragments in the memory pool
+ * @param fragsize Size of each fragment in the memory pool
+ * @param mname Name of the memory pool
+ * @param nolock Whether to use a lock to protect the memory pool
+ * @param level The log level
+ * @return Number of freed frags
+ */
+int ub_static_print_usage(uint16_t* busysizes, int fragnum,
+		uint16_t fragsize, const char *mname, bool nolock, ub_dbgmsg_level_t level);
+
+/**
+ * @brief Defines a static memory pool and associated memory allocation functions
+ * @param NAME Name of the memory pool
+ * @param FRAGSIZE Size of each fragment in the memory pool
+ * @param FRAGNUM Number of fragments in the memory pool
+ */
 #define UB_SD_GETMEM_DEF(NAME, FRAGSIZE, FRAGNUM)			\
 	static uint8_t UB_CONCAT2(NAME, mem)[UB_SD_ALIGN(FRAGSIZE)*(uint32_t)(FRAGNUM)] \
 		__attribute__ ((aligned (sizeof(void*))));		\
@@ -88,23 +161,86 @@ void *UB_CONCAT2(static_regetmem, NAME)(void *p, size_t nsize)		\
 void UB_CONCAT2(static_relmem, NAME)(void *p)				\
 {									\
 	return ub_static_relmem(p, UB_CONCAT2(NAME, mem), UB_CONCAT2(NAME, busysizes), \
-			      FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE)); \
+			    FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE)); \
+}															 \
+int UB_CONCAT2(static_print_usage, NAME)(ub_dbgmsg_level_t level)		\
+{																		\
+	return ub_static_print_usage(UB_CONCAT2(NAME, busysizes),			\
+				FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE), #NAME, false, level); \
 }
 
+/**
+ * @brief Declares the memory allocation functions for a static memory pool
+ * @param NAME Name of the memory pool
+ */
 #define UB_SD_GETMEM_DEF_EXTERN(NAME)				\
 extern void *UB_CONCAT2(static_getmem, NAME)(size_t size);	\
 extern void *UB_CONCAT2(static_regetmem, NAME)(void *p, size_t nsize);	\
-extern void UB_CONCAT2(static_relmem, NAME)(void *p)
+extern void UB_CONCAT2(static_relmem, NAME)(void *p);					\
+extern int UB_CONCAT2(static_print_usage, NAME)(ub_dbgmsg_level_t level)
 
+/**
+ * @brief Allocates memory from a static or dynamic memory pool
+ * @param name Name of the memory pool
+ * @param size Size of memory to allocate
+ * @return Pointer to the allocated memory
+ */
 #define UB_SD_GETMEM(name, size) UB_CONCAT2(static_getmem, name)(size)
+
+/**
+ * @brief Reallocates memory from a static or dynamic memory pool
+ * @param name Name of the memory pool
+ * @param p Pointer to the memory to reallocate
+ * @param size New size of the memory
+ * @return Pointer to the reallocated memory
+ */
 #define UB_SD_REGETMEM(name, p, size) UB_CONCAT2(static_regetmem, name)(p, size)
+
+/**
+ * @brief Frees memory from a static or dynamic memory pool
+ * @param name Name of the memory pool
+ * @param p Pointer to the memory to free
+ */
 #define UB_SD_RELMEM(name, p) UB_CONCAT2(static_relmem, name)(p)
+
+/**
+ * @brief Prints memory usage if the log level is enabled.
+ *
+ * @param name Name of the memory pool
+ * @param level The log level
+ * @return Number of freed frags
+ */
+#define UB_SD_PRINT_USAGE(name, level) UB_CONCAT2(static_print_usage, name)(level)
+
 #else
 #define UB_SD_GETMEM_DEF(NAME, FRAGSIZE, FRAGNUM)
 #define UB_SD_GETMEM_DEF_EXTERN(NAME)
+#define UB_SD_PRINT_USAGE(name, level)
+
+/**
+ * @brief Allocates memory from the system heap
+ * @param name Name of the memory pool (unused)
+ * @param size Size of memory to allocate
+ * @return Pointer to the allocated memory
+ */
 #define UB_SD_GETMEM(name, size) malloc(size)
+
+/**
+ * @brief Reallocates memory from the system heap
+ * @param name Name of the memory pool (unused)
+ * @param p Pointer to the memory to reallocate
+ * @param size New size of the memory
+ * @return Pointer to the reallocated memory
+ */
 #define UB_SD_REGETMEM(name, p, size) realloc(p, size)
+
+/**
+ * @brief Frees memory from the system heap
+ * @param name Name of the memory pool (unused)
+ * @param p Pointer to the memory to free
+ */
 #define UB_SD_RELMEM(name, p) free(p)
+
 #endif
 
 #endif

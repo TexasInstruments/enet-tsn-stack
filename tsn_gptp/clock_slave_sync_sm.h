@@ -50,6 +50,14 @@
 #ifndef CLOCK_SLAVE_SYNC_SM_H_
 #define CLOCK_SLAVE_SYNC_SM_H_
 
+struct clock_slave_sync_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	int state;
+	int last_state;
+	ClockSlaveSyncSM *thisSM;
+	int domainIndex;
+};
+
 typedef struct clock_slave_sync_data clock_slave_sync_data_t;
 
 void *clock_slave_sync_sm(clock_slave_sync_data_t *sm, uint64_t cts64);

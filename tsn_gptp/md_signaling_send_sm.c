@@ -69,19 +69,6 @@ typedef enum {
 	MD_SIGNALING_GPTP_CAPABLE,
 } md_signaling_type_t;
 
-struct md_signaling_send_data{
-	gptpnet_data_t *gpnetd;
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	md_signaling_send_state_t state;
-	md_signaling_send_state_t last_state;
-	int domainIndex;
-	int portIndex;
-	md_signaling_type_t stype;
-	void *rcvd_txmsg;
-	uint16_t sequenceId;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
@@ -168,7 +155,7 @@ static md_signaling_send_state_t allstate_condition(md_signaling_send_data_t *sm
 		sm->last_state=REACTION;
 		return INITIALIZE;
 	}
-	return sm->state;
+	return (md_signaling_send_state_t)sm->state;
 }
 
 static void *initialize_proc(md_signaling_send_data_t *sm)

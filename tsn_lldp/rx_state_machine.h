@@ -47,29 +47,71 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-/* Automatically generated file.  Don't edit this file.*/
-#ifndef IETF_YANG_LIBRARY_H_
-#define IETF_YANG_LIBRARY_H_
+/*
+ * rx_state_machine.h Handle rx state machine
+ *
+ *  Created on: Jun 20, 2023
+ *      Author: hoangloc
+ */
 
-#include "yang_db_access.h"
+#ifndef XL4LLDP_RX_STATE_MACHINE_H_
+#define XL4LLDP_RX_STATE_MACHINE_H_
 
-typedef enum {
-	IETF_YANG_LIBRARY_VALUEKEY, // 0(0x0)
-	IETF_YANG_LIBRARY_DUMMY, // 1(0x1)
-	IETF_YANG_LIBRARY_MODULES_STATE, // 2(0x2)
-	IETF_YANG_LIBRARY_MODULE_SET_ID, // 3(0x3)
-	IETF_YANG_LIBRARY_MODULE, // 4(0x4)
-	IETF_YANG_LIBRARY_NAME, // 5(0x5)
-	IETF_YANG_LIBRARY_REVISION, // 6(0x6)
-	IETF_YANG_LIBRARY_SCHEMA, // 7(0x7)
-	IETF_YANG_LIBRARY_NAMESPACE, // 8(0x8)
-	IETF_YANG_LIBRARY_FEATURE, // 9(0x9)
-	IETF_YANG_LIBRARY_DEVIATION, // 10(0xa)
-	IETF_YANG_LIBRARY_CONFORMANCE_TYPE, // 11(0xb)
-	IETF_YANG_LIBRARY_SUBMODULE, // 12(0xc)
-	IETF_YANG_LIBRARY_ENUM_END,
-} ietf_yang_library_enum_t;
+typedef enum
+{
+	LLDP_WAIT_PORT_OPERATIONAL,
+	RX_LLDP_INITIALIZE,
+	DELETE_AGED_INFO,
+	DELETE_AGED_INFO_IN_INITIALIZE,	//!< Section 9.2.9 missed one aged-out on RX_LLDP_INITIALIZE state
+	RX_WAIT_FOR_FRAME,
+	RX_FRAME,
+	DELETE_INFO,
+	UPDATE_INFO,
+	REMOTE_CHANGES,
+	// For Rx Extended 
+	RX_EXTENDED,
+	RX_XPDU_REQUEST,
+	LAST_STATE
+} RXState;
 
-int ietf_yang_library_config_init(uc_dbald *dbald, uc_hwald *hwald);
+typedef enum
+{
+	PORT_ENABLE,                    //!< network interface enable
+	RX_PORT_DISABLE,                    //!< network interface disabled
+	RX_INFO_AGE_TTL_EXPIRED,        //!< Time to live timer expired but not received data from [portid-chassid]
+	RX_ENABLED,         			//!< adminStatus = rxtx or rxOnly or sendManifest = TRUE
+	RX_DISABLED,        			//!< adminStatus = disable or txOnly or sendManifest = FALSE
+	FRAME_RECEIVED,     //!< recvFrame = True and rxInfoAge = FALSE
+	TTL_EXPIRED,     //!< recvFrame = True and rxInfoAge = FALSE
+	RX_TYPE_XREQ,     //!< receive request send LLDP PDU
+	RX_TYPE_NORMAL,           //!< receive Normal remote TLVs
+	RX_TYPE_XPDU,           //!< receive XPDU or MANIFEST
+	RX_TYPE_MANF,           //!< receive XPDU or MANIFEST
+	RX_TYPE_SHUTDOWN,               //!< receive SHUTDOWN
+	RX_TYPE_MALFORM,               //!< receive incorrect format
+	RX_MANIFEST_COMPLETED,             //!< rxExtended = FALSE and manifest completed = TRUE
+	RX_MANIFEST_NOT_COMPLETED,             //!< rxExtended = FALSE and manifest completed = TRUE
+	RX_SOMETHING_CHANGED,                     //!< Something changed on remote side
+	RX_BAD_FRAME,                   //!< 
+	RX_NOTHING_CHANGED,              //!< 
+	RX_UCT,                             //!< Done process, comeback to waiting for frame
+	LAST_EVENT
+} RXEvent;
 
-#endif
+struct _hw_interface ;
+struct event_queue ;
+//typedef of function pointer
+typedef void (*lldp_rx_event_handle)(struct _hw_interface* interface, RXState pre_state);
+
+//structure of state and event with event handler
+typedef struct
+{
+	RXState rxState; //!< current state
+	RXEvent event;   //!< incomming event
+	lldp_rx_event_handle pfStateMachineEvnentHandler; // corresponding handle
+	RXState rxNextState; //!< current state
+} rxStateMachine;
+
+void interface_rx_sm_process(RXEvent ev, struct _hw_interface* interface);
+
+#endif /* XL4LLDP_RX_STATE_MACHINE_H_ */

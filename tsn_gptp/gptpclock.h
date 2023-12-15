@@ -99,7 +99,7 @@ static inline int gptpclock_mutex_trylock(CB_THREAD_MUTEX_T *mutex)
 		if(CB_THREAD_MUTEX_TIMEDLOCK(mutex, &mtots)!=0){
 			// the mutex is on hold such a long time; the holder must crash
 			UB_LOG(UBL_WARN, "%s:the process is very slow,"
-			       " or some gptp2d client may crash\n", __func__);
+			       " or some tsn_gptpd client may crash\n", __func__);
 			return -1;
 		}
 	}

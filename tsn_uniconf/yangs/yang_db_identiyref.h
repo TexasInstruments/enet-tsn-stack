@@ -52,12 +52,15 @@
 /*-----------------------------------------------------------------------------
  * CONSTANT Defenitions / Macros
  *----------------------------------------------------------------------------*/
+
 #define INVALID_IDENTIY_VALUE   (0xFFFFFFFFU)
 
 /*-----------------------------------------------------------------------------
  * Type Definitions
  *----------------------------------------------------------------------------*/
+
 typedef struct yang_identity_map {
+    const char *nsprefix;
     const char *name;
     const uint32_t value;
 } yang_identity_map_t;
@@ -71,10 +74,14 @@ typedef struct yang_identityref {
 /*-----------------------------------------------------------------------------
  * External Variables
  *----------------------------------------------------------------------------*/
+
 extern const yang_identityref_t yang_identityref_list[];
 
 /*-----------------------------------------------------------------------------
  * External APIs
  *----------------------------------------------------------------------------*/
+
 uint32_t yang_identityref_getval(char *identity_str, char *hints);
 char* yang_identityref_getstr(uint32_t identity_val, char *hints);
+char* yang_identityref_getns(uint32_t identity_val, char *hints);
+

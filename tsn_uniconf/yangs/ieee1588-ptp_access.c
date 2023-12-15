@@ -488,7 +488,7 @@ int ydbi_clear_perfmon_clock_ds(yang_db_item_access_t *ydbia,
 {
 	int res;
 	int32_t instIndex=0;
-	uint8_t aps[7]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+	uint8_t aps[YDBI_MAX_AP_DEPTH]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
 		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
 		IEEE1588_PTP_RECORD_LIST, 255};
 	void *kvs[2]={&instIndex, NULL};
@@ -505,7 +505,7 @@ int ydbi_clear_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
 {
 	int res;
 	int32_t instIndex=0;
-	uint8_t aps[9]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+	uint8_t aps[YDBI_MAX_AP_DEPTH]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
 		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
 		IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS, list,
 		255};
@@ -541,7 +541,7 @@ int ydbi_cascade_perfmon_clock_ds(yang_db_item_access_t *ydbia,
 {
 	int res;
 	int32_t instIndex=0;
-	uint8_t aps[8]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+	uint8_t aps[YDBI_MAX_AP_DEPTH]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
 		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
 		IEEE1588_PTP_RECORD_LIST, 255, 255};
 	void *kvs[3]={&instIndex, NULL, NULL};
@@ -575,7 +575,7 @@ int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
 {
 	int res;
 	int32_t instIndex=0;
-	uint8_t aps[10]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
+	uint8_t aps[YDBI_MAX_AP_DEPTH]={IEEE1588_PTP_RO, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCES,
 		IEEE1588_PTP_INSTANCE, IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
 		IEEE1588_PTP_PERFORMANCE_MONITORING_PORT_DS, list, 255, 255};
 

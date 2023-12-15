@@ -50,6 +50,21 @@
 #ifndef PORT_STATE_SETTING_EXT_SM_H_
 #define PORT_STATE_SETTING_EXT_SM_H_
 
+struct port_state_setting_ext_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal **ppgl;
+	BmcsPerTimeAwareSystemGlobal *bptasg;
+	BmcsPerPortGlobal **bppgl;
+	int state;
+	int last_state;
+	PortStateSettingExtSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	int max_ports;
+
+	UInteger224 messagePriority;
+};
+
 typedef struct port_state_setting_ext_data port_state_setting_ext_data_t;
 
 void *port_state_setting_ext_sm(port_state_setting_ext_data_t *sm, uint64_t cts64);

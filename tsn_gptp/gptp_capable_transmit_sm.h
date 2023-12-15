@@ -50,6 +50,17 @@
 #ifndef GPTP_CAPABLE_TRANSMIT_SM_H_
 #define GPTP_CAPABLE_TRANSMIT_SM_H_
 
+struct gptp_capable_transmit_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	int state;
+	int last_state;
+	gPtpCapableTransmitSM *thisSM;
+	int domainIndex;
+	int portIndex;
+	PTPMsgGPTPCapableTLV signalingMsg;
+};
+
 typedef struct gptp_capable_transmit_data gptp_capable_transmit_data_t;
 
 void *gptp_capable_transmit_sm(gptp_capable_transmit_data_t *sm, uint64_t cts64);

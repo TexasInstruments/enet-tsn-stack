@@ -50,6 +50,13 @@
 #ifndef COMBASE_LINUX_H__
 #define COMBASE_LINUX_H__
 
+/**
+ * Duplex values which are used by xl4 modules
+ */
+#define CB_DUPLEX_FULL		(1)
+#define CB_DUPLEX_HALF		(2)
+#define CB_DUPLEX_UNKNOWN	(3)
+
 typedef struct cbl_linkstatus{
 	ub_macaddr_t address;
 	uint32_t speed;
@@ -102,12 +109,22 @@ typedef struct cbl_cb_event{
 #define CBL_EVENT_TAS_DISABLED (1<<8)
 #define CBL_EVENT_PREEMPT_STATUS (1<<9)
 
+enum {
+	CBL_CAPABILITY_ETHSTATUS=0,
+	CBL_CAPABILITY_CBS,
+	CBL_CAPABILITY_TAS,
+	CBL_CAPABILITY_PREEMPT,
+};
+#define CBL_CAPABILITY_FLAG(x) (1<<x)
+
 /*
  * this callback function is called when a uchw message is received and it is
  * related to UCHW_EVENT_*
  * Both a response to a query and a notice from uchw event call this fuction.
  */
 typedef int (*cbl_cb_t)(void *cbdata, cbl_cb_event_t *nevent);
+
+typedef int (*cbl_extfdcb_t)(void *cbdata, int index, void *data, int size);
 
 typedef struct combase_link_data combase_link_data_t;
 
@@ -186,6 +203,12 @@ typedef struct cbl_preempt_params{
 	uint8_t prioiry_preempt[8];
 } cbl_preempt_params_t;
 
+typedef struct cbl_query_thread_data{
+	combase_link_data_t *cbld;
+	CB_SEM_T *sigp;
+	bool running;
+} cbl_query_thread_data_t;
+
 /*
  * this layer's APIs are only for uc_hwal.c in uniconf.
  * The other layer should read the status in the uniconf DB.
@@ -199,13 +222,36 @@ typedef struct cbl_preempt_params{
  * @param cb_arg callback argument
  * @return combase_link_data instance
  */
-combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg);
+#define COMBASE_LINK_EXTFD_MAX 2
+typedef struct combase_link_extfd{
+	CB_SOCKET_T extfds[COMBASE_LINK_EXTFD_MAX];
+	cbl_extfdcb_t extfdcb;
+	void *extfdcb_arg;
+} combase_link_extfd_t;
+combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg,
+				       combase_link_extfd_t *extfdp);
 
 /**
  * @brief combase_link close
  * @param cbld combase_link_data
  */
 void combase_link_close(combase_link_data_t *cbld);
+
+/**
+ * @brief get cbl capability flags
+ * @param cbld combase_link_data
+ * @return capability flags
+ */
+uint32_t cbl_get_capabilities(combase_link_data_t *cbld);
+
+/**
+ * @brief catch HW events to process
+ * @param cbl_query_thread_data_t pointer
+ * @note don't process data inside the thread. just signal the semaphore by events.
+ *	If polling actions are needed, make periodic siganl on the semaphore.
+ *	The main thread should do polling.
+ */
+void *cbl_query_thread(void *ptr);
 
 /**
  * @brief get query response

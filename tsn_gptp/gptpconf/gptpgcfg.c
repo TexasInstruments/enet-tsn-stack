@@ -222,7 +222,7 @@ int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIn
 int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8_t ddomain)
 {
 	int in;
-	uint8_t aps[5];
+	uint8_t aps[YDBI_MAX_AP_DEPTH] = {0};
 	yang_db_item_access_t *ydbia=ydbi_access_handle();
 	uint8_t sinst, dinst;
 	uint32_t sinst32, dinst32;
@@ -305,8 +305,6 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 #define GPTP_RUNCONF_INIT(xdd,dbald,hwald) 0
 #endif
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
-
 #define GPTP_LINKSEMNAME "/gptplinksem"
 
 struct gptpgcfg_data{
@@ -321,9 +319,18 @@ struct gptpgcfg_data{
 	char semname[12+16+1]; // strlen(GPTP_LINKSEMNAME)+64bitTS+NULL
 };
 
-#define GPTP_YANCONF_INST gptp_yanconf_inst
-// uniconf needs '1', gptp needs 'GPTP_MAX_INSTANCES'
-UB_SD_GETMEM_DEF(GPTP_YANCONF_INST, sizeof(gptpgcfg_data_t), GPTP_MAX_INSTANCES+1u);
+#define GPTP_YANCONF_MEM gptp_yanconf_mem
+#define GPTP_YANCONF_AFSIZE 4u
+#define GPTP_YANCONF_ALIGN(x) GPTP_ALIGN(x, GPTP_YANCONF_AFSIZE)
+#define GPTP_YANGCONF_TOTAL_SIZE \
+	(GPTP_YANCONF_ALIGN(sizeof(gptpgcfg_data_t))+			\
+	 GPTP_YANCONF_ALIGN(sizeof(gptpgcfg_data_t*))+			\
+	 GPTP_YANCONF_ALIGN(sizeof(uint8_t)*GPTP_MAX_DOMAINS))
+
+#define GPTP_YANCONF_AFNUM \
+	(GPTP_MAX_INSTANCES*(GPTP_YANGCONF_TOTAL_SIZE/GPTP_YANCONF_AFSIZE))
+
+UB_SD_GETMEM_DEF(GPTP_YANCONF_MEM, GPTP_YANCONF_AFSIZE, GPTP_YANCONF_AFNUM);
 
 static gptpgcfg_data_t **gycdl;
 static uint8_t gycdl_num;
@@ -359,8 +366,9 @@ static int instance_domain_Init(gptpgcfg_data_t *gycd, uint8_t gptpInstanceIndex
 		       __func__, gptpInstanceIndex);
 		return -1;
 	}
+
 	if(gycd->max_domain<1u){gycd->max_domain=1;}
-	gycd->instance_domain_map=(uint8_t*)UB_SD_GETMEM(GPTP_SMALL_ALLOC,
+	gycd->instance_domain_map=(uint8_t*)UB_SD_GETMEM(GPTP_YANCONF_MEM,
 							 gycd->max_domain*sizeof(uint8_t));
 	if(ub_assert_fatal(gycd->instance_domain_map!=NULL, __func__, NULL)){return -1;}
 
@@ -417,7 +425,8 @@ static int gptp_nonyang_init(xl4_data_data_t *xdd, uc_dbald *dbald)
 
 
 int gptpgcfg_init(const char *dbname, const char **confnames,
-		  uint8_t gptpInstanceIndex, bool ucthread)
+		uint8_t gptpInstanceIndex, bool ucthread,
+		int (*nonconfile_cb)(uint8_t gptpInstanceIndex))
 {
 	gptpgcfg_data_t *gycd;
 	yang_db_runtime_dataq_t *ydrd;
@@ -428,8 +437,9 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 		       __func__, gptpInstanceIndex);
 		return -1;
 	}
+
 	if(gycdl_num<=gptpInstanceIndex){
-		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_INST, gycdl,
+		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_MEM, gycdl,
 							sizeof(gptpgcfg_data_t*)*(gptpInstanceIndex+1u));
 		if(ub_assert_fatal(gycdl, __func__, "realloc")){return -1;}
 		uint8_t i;
@@ -438,7 +448,7 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 		}
 		gycdl_num=gptpInstanceIndex+1u;
 	}
-	gycd=(gptpgcfg_data_t*)UB_SD_GETMEM(GPTP_YANCONF_INST, sizeof(gptpgcfg_data_t));
+	gycd=(gptpgcfg_data_t*)UB_SD_GETMEM(GPTP_YANCONF_MEM, sizeof(gptpgcfg_data_t));
 	if(ub_assert_fatal(gycd!=NULL, __func__, NULL)){return -1;}
 	(void)memset(gycd, 0, sizeof(gptpgcfg_data_t));
 	// 'tsn_uniconf' must run before this, to connect to the DB
@@ -470,6 +480,9 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 		if(res!=0){goto erexit;}
 		confnames++;
 	}
+	if(nonconfile_cb){
+		nonconfile_cb(gptpInstanceIndex);
+	}
 	if(instance_domain_Init(gycd, gptpInstanceIndex)){
 		goto erexit;
 	}
@@ -493,13 +506,13 @@ void gptpgcfg_close(uint8_t gptpInstanceIndex)
 	if(gycd->xdd!=NULL){xl4_data_close(gycd->xdd);}
 	if(gycd->dbald!=NULL){uc_dbal_close(gycd->dbald, gycd->callmode);}
 	if(gycd->instance_domain_map!=NULL){
-		UB_SD_RELMEM(GPTP_SMALL_ALLOC, gycd->instance_domain_map);
+		UB_SD_RELMEM(GPTP_YANCONF_MEM, gycd->instance_domain_map);
 	}
-	UB_SD_RELMEM(GPTP_YANCONF_INST, gycd);
+	UB_SD_RELMEM(GPTP_YANCONF_MEM, gycd);
 	gycdl[gptpInstanceIndex]=NULL;
 	if((gptpInstanceIndex+1u)==gycdl_num){
 		gycdl_num--;
-		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_INST, gycdl,
+		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_MEM, gycdl,
 							sizeof(gptpgcfg_data_t*)*gycdl_num);
 	}
 	UB_LOG(UBL_DEBUG, "%s:the instance was closed for gptpInstanceIndex=%d\n",
@@ -714,11 +727,13 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	uint32_t vsize;
 	const char *emes="";
 	int res;
+	bool thread_mode;
 
 	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
 	gycd=gycdl[gptpInstanceIndex];
 	if(!gycd->linksem){return -1;}
-	if(CB_SEM_TRYWAIT((CB_SEM_T*)gycd->linksem)!=0){return 1;}
+	thread_mode=(gycd->callmode==UC_CALLMODE_THREAD);
+	if(uc_notice_sig_trywait(thread_mode, gycd->linksem)!=0){return 1;}
 	UB_TLOG(UBL_DEBUG, "%s:signaled by linksem\n", __func__);
 	res=uc_nc_get_notice_act(gycd->ucntd, gycd->dbald, gycd->semname, key, &ksize);
 	if(res!=0){

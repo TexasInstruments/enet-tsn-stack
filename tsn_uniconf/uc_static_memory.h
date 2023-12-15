@@ -60,7 +60,7 @@
 // keydata size fragment
 // in 'simpledb', keydata area is SIMPLEDB_KDATASIZE*(SIMPLEDB_DBDATANUM*2)
 // 2 fragments are taken as average, which is a guess
-#define SIMPLEDB_KDATASIZE 8
+#define SIMPLEDB_KDATASIZE 16
 
 // value data size fragment
 // in 'simpledb', keydata area is SIMPLEDB_VDATASIZE*(SIMPLEDB_DBDATANUM*2)

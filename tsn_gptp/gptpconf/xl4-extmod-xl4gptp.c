@@ -291,7 +291,7 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_DEBUGLOG_MEMORY_FILE;
-	res=yang_value_conv(YANG_VTYPE_STRING, "/tmp/gptp2d_debugmem.log",
+	res=yang_value_conv(YANG_VTYPE_STRING, "/tmp/tsn_gptpd_debugmem.log",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;

@@ -53,6 +53,7 @@
 #include "uc_private.h"
 #include "ucman.h"
 #include "yangs/yang_modules.h"
+#include "uniconfmon_thread.h"
 
 extern int yang_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
@@ -103,6 +104,7 @@ void *uniconf_main(void *ptr)
 
 	ucd.ucntd=uc_notice_init(ucmd->ucmode, ucmd->dbname);
 	if(!ucd.ucntd){goto erexit;}
+	if(uc_notice_start_events_thread(ucd.ucntd, ucd.hwald)!=0){goto erexit;}
 	ydbi_access_init(ucd.dbald, ucd.xdd, ucd.ucntd);
 	uc_dbal_releasedb(ucd.dbald);
 	if(ucmd->ucmanstart!=NULL){
@@ -111,25 +113,14 @@ void *uniconf_main(void *ptr)
 	UB_TLOG(UBL_INFO, "%s:uniconf started\n", __func__);
 	if(uc_dbal_create(ucd.dbald, apsd, 4, &vtype, 1)){goto erexit;}
 	if(uc_dbal_create(ucd.dbald, uc_rap, 3, &uc_rv, 1)){goto erexit;}
+	if(ucmd->ucmon_thread_port && (UC_CALL_THREAD(ucmd->ucmode)!=0)){
+		if(uniconfmon_thread_start(ucmd->ucmon_thread_port)!=0){goto erexit;}
+	}
 	while(!*ucmd->stoprun){
-		/*
-		 * here each detect fuction has 50msec timeout, so the worst case response
-		 * time becomes 50msec. 50msec can be smaller for better response time.
-		 * If optimized timeout time is still too long, this part may need threading.
-		 */
-		uc_dbal_releasedb(ucd.dbald);
-		res=uc_hwal_detect_notice(ucd.hwald, ucd.ucntd, 50);
-		if(res<0){
-			if(res==-1){
-				UB_TLOG(UBL_ERROR,
-					"%s:error in uc_hwal_detect_notice\n", __func__);
-			}
-			goto erexit;
-		}
-		if(*ucmd->stoprun){break;}
+		// 'uc_hwal_detect_notice' is called inside 'uc_nu_proc_asked_actions'
 		// this returns '2', when the DB should be saved
 		res=uc_nu_proc_asked_actions(ucd.ucntd,
-					     ucd.dbald, ucd.hwald, 50);
+					     ucd.dbald, ucd.hwald, 100);
 		if(res<0){
 			UB_TLOG(UBL_ERROR, "%s:error in uc_nu_proc_asked_actions\n",
 				__func__);
@@ -142,6 +133,9 @@ void *uniconf_main(void *ptr)
 	}
 	ucmd->rval=0;
 erexit:
+	if(ucmd->ucmon_thread_port && uniconfmon_thread_running()){
+		(void)uniconfmon_thread_stop();
+	}
 	if(ucd.dbald!=NULL){uc_dbal_del(ucd.dbald, uc_rap, 3);}
 	UB_TLOG(UBL_INFO, "%s:closing\n", __func__);
 	*ucmd->stoprun=true;

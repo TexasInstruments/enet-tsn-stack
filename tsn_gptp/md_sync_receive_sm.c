@@ -65,26 +65,6 @@ typedef enum {
 	REACTION,
 }md_sync_receive_state_t;
 
-struct md_sync_receive_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	MDEntityGlobal *mdeg;
-	md_sync_receive_state_t state;
-	md_sync_receive_state_t last_state;
-	MDSyncReceiveSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	MDSyncReceive mdSyncReceive;
-	uint64_t syncEventIngressTimestamp;
-	union {
-		MDPTPMsgSync recSync;
-		MDPTPMsgSyncOneStep recOneStepSync;
-	}u;
-	MDPTPMsgFollowUp recFollowUp;
-	uint64_t rsync_ts; // for debug use
-	uint64_t rfup_ts; // for debug use
-};
-
 #define RCVD_SYNC sm->thisSM->rcvdSync
 #define RCVD_SYNC_PTR sm->thisSM->u.rcvdSyncPtr
 #define RCVD_SYNC_ONESETP_PTR sm->thisSM->u.rcvdSyncOneStepPtr
@@ -216,7 +196,7 @@ static md_sync_receive_state_t allstate_condition(md_sync_receive_data_t *sm)
 		sm->last_state=REACTION;
 		return DISCARD;
 	}
-	return sm->state;
+	return (md_sync_receive_state_t)sm->state;
 }
 
 static void *discard_proc(md_sync_receive_data_t *sm)
@@ -439,6 +419,7 @@ void *md_sync_receive_sm_recv_sync(md_sync_receive_data_t *sm, event_data_recv_t
 	RCVD_SYNC=true;
 	size=GET_TWO_STEP_BYTE_FLAG(edrecv->recbptr)?
 		sizeof(MDPTPMsgSync):sizeof(MDPTPMsgSyncOneStep);
+	if(ub_assert_fatal(size <= (sizeof(sm->u.recSync)/sizeof(uint8_t)), __func__, NULL)){return NULL;}
 	memcpy(&sm->u.recSync, edrecv->recbptr, size);
 	RCVD_SYNC_PTR = &sm->u.recSync;
 	sm->syncEventIngressTimestamp = edrecv->ts64;

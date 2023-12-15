@@ -47,11 +47,53 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-/* Automatically generated file.  Don't edit this file.*/
-#ifndef _YANG_MODULES_CAPABILITY_H_
-#define _YANG_MODULES_CAPABILITY_H_
+/*
+ * tx_timer_state_machine.h Handle txtimer state machine
+ *
+ *  Created on: Jul 3, 2023
+ *      Author: hoangloc
+ */
 
-/* capability getter function */
-extern const char **yang_db_get_capabilities(void);
+#ifndef XL4LLDP_TX_TIMER_STATE_MACHINE_H_
+#define XL4LLDP_TX_TIMER_STATE_MACHINE_H_
 
-#endif /* _YANG_MODULES_CAPABILITY_H_ */
+typedef enum
+{
+	TX_TIMER_INITIALIZE,
+	TX_TIMER_IDLE,
+	TX_TIMER_EXPIRES,
+	SIGNAL_TX,
+	TX_TICK,
+	TX_FAST_START,
+	TXTIMER_LAST_STATE
+} TXTimerState;
+
+typedef enum
+{
+	TXTIMER_PORT_DISABLE,                 //!< adminStatus = rxtx or txOnly
+	TXTIMER_TX_DISABLED,                //!< adminStatus = disable or rxOnly
+	TXTIMER_TX_ENABLE,                //!< adminStatus = disable or rxOnly
+	TXTIMER_TX_EXPIRED,                //!< adminStatus = disable or rxOnly
+	TXTIMER_NEW_NEIGHBOR,                //!< adminStatus = disable or rxOnly
+	TXTIMER_TXTICK_EXPIRED,                //!< adminStatus = disable or rxOnly
+	TXTIMER_TX_UCT,                        //!< tx done
+	TXTIMER_LOCAL_CHANGED,                        //!< tx done
+	TXTIMER_LAST_EVENT
+} TXTimerEvent;
+
+struct _hw_interface ;
+//typedef of function pointer
+typedef void (*lldp_txtimer_event_handle)(struct _hw_interface* interface, TXTimerState pre_state);
+
+//structure of state and event with event handler
+typedef struct
+{
+	TXTimerState txTimerState; //!< current state
+	TXTimerEvent event;   //!< incomming event
+	lldp_txtimer_event_handle pfStateMachineEvnentHandler; // corresponding handle
+	TXTimerState txTimerNextState; //!< next state. Before process function pfStateMachineEvnentHandler, the state should be changed first
+} txTimerStateMachine;
+
+void interface_tx_timer_sm_process(TXTimerEvent ev, struct _hw_interface* interface);
+
+#endif /* XL4LLDP_TX_TIMER_STATE_MACHINE_H_ */

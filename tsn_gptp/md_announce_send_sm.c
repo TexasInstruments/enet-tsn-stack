@@ -64,18 +64,6 @@ typedef enum {
 	REACTION,
 }md_announce_send_state_t;
 
-struct md_announce_send_data{
-	gptpnet_data_t *gpnetd;
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	BmcsPerPortGlobal *bppg;
-	md_announce_send_state_t state;
-	md_announce_send_state_t last_state;
-	MDAnnounceSendSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
-
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 #define AS_CAPABLE sm->ppg->asCapable
@@ -149,7 +137,7 @@ static md_announce_send_state_t allstate_condition(md_announce_send_data_t *sm)
 		sm->last_state=REACTION;
 		return INITIALIZE;
 	}
-	return sm->state;
+	return (md_announce_send_state_t)sm->state;
 }
 
 static void *initialize_proc(md_announce_send_data_t *sm)

@@ -47,55 +47,64 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-/* Automatically generated file.  Don't edit this file.*/
-#ifndef IETF_NETCONF_MONITORING_H_
-#define IETF_NETCONF_MONITORING_H_
+/*
+ * tlv_data.h Provide APIs to build/collect tlv infos
+ *
+ *  Created on: Jul 3, 2023
+ *      Author: hoangloc
+ */
 
-#include "yang_db_access.h"
+#ifndef XL4LLDP_TLV_DATA_H_
+#define XL4LLDP_TLV_DATA_H_
+#include "lldp_yangdb.h"
+#define LLDP_PROTO              0x88cc
 
-typedef enum {
-	IETF_NETCONF_MONITORING_VALUEKEY, // 0(0x0)
-	IETF_NETCONF_MONITORING_DUMMY, // 1(0x1)
-	IETF_NETCONF_MONITORING_NETCONF_STATE, // 2(0x2)
-	IETF_NETCONF_MONITORING_CAPABILITIES, // 3(0x3)
-	IETF_NETCONF_MONITORING_CAPABILITY, // 4(0x4)
-	IETF_NETCONF_MONITORING_DATASTORES, // 5(0x5)
-	IETF_NETCONF_MONITORING_DATASTORE, // 6(0x6)
-	IETF_NETCONF_MONITORING_NAME, // 7(0x7)
-	IETF_NETCONF_MONITORING_LOCKS, // 8(0x8)
-	IETF_NETCONF_MONITORING_GLOBAL_LOCK, // 9(0x9)
-	IETF_NETCONF_MONITORING_LOCKED_BY_SESSION, // 10(0xa)
-	IETF_NETCONF_MONITORING_LOCKED_TIME, // 11(0xb)
-	IETF_NETCONF_MONITORING_PARTIAL_LOCK, // 12(0xc)
-	IETF_NETCONF_MONITORING_LOCK_ID, // 13(0xd)
-	IETF_NETCONF_MONITORING_SELECT, // 14(0xe)
-	IETF_NETCONF_MONITORING_LOCKED_NODE, // 15(0xf)
-	IETF_NETCONF_MONITORING_SCHEMAS, // 16(0x10)
-	IETF_NETCONF_MONITORING_SCHEMA, // 17(0x11)
-	IETF_NETCONF_MONITORING_IDENTIFIER, // 18(0x12)
-	IETF_NETCONF_MONITORING_VERSION, // 19(0x13)
-	IETF_NETCONF_MONITORING_FORMAT, // 20(0x14)
-	IETF_NETCONF_MONITORING_NAMESPACE, // 21(0x15)
-	IETF_NETCONF_MONITORING_LOCATION, // 22(0x16)
-	IETF_NETCONF_MONITORING_SESSIONS, // 23(0x17)
-	IETF_NETCONF_MONITORING_SESSION, // 24(0x18)
-	IETF_NETCONF_MONITORING_SESSION_ID, // 25(0x19)
-	IETF_NETCONF_MONITORING_TRANSPORT, // 26(0x1a)
-	IETF_NETCONF_MONITORING_USERNAME, // 27(0x1b)
-	IETF_NETCONF_MONITORING_SOURCE_HOST, // 28(0x1c)
-	IETF_NETCONF_MONITORING_LOGIN_TIME, // 29(0x1d)
-	IETF_NETCONF_MONITORING_IN_RPCS, // 30(0x1e)
-	IETF_NETCONF_MONITORING_IN_BAD_RPCS, // 31(0x1f)
-	IETF_NETCONF_MONITORING_OUT_RPC_ERRORS, // 32(0x20)
-	IETF_NETCONF_MONITORING_OUT_NOTIFICATIONS, // 33(0x21)
-	IETF_NETCONF_MONITORING_STATISTICS, // 34(0x22)
-	IETF_NETCONF_MONITORING_NETCONF_START_TIME, // 35(0x23)
-	IETF_NETCONF_MONITORING_IN_BAD_HELLOS, // 36(0x24)
-	IETF_NETCONF_MONITORING_IN_SESSIONS, // 37(0x25)
-	IETF_NETCONF_MONITORING_DROPPED_SESSIONS, // 38(0x26)
-	IETF_NETCONF_MONITORING_ENUM_END,
-} ietf_netconf_monitoring_enum_t;
+// New type defined in admenment 802.1ABdh-2021
+/// @brief Receive type
+typedef enum
+{
+	RX_XREQ = 0,
+	RX_XPDU = 1,
+	RX_SHUTDOWN = 2,
+	RX_MANIFEST = 3,
+	RX_NORMAL = 4,
+	RX_INVALID = 5
+} LLDP_RX_TYPE;
 
-int ietf_netconf_monitoring_config_init(uc_dbald *dbald, uc_hwald *hwald);
+/// @brief TLV type
+typedef enum
+{
+	END_OF_TLV = 0,
+	CHASSIS_ID,
+	PORT_ID,
+	TIME_TO_LIVE,
+	PORT_DESCRIPTION,
+	SYSTEM_NAME,
+	SYSTEM_DESCRIPTION,
+	SYSTEM_CAPABILITIES,
+	MANAGEMENT_ADDRESS,
+	ORGANIZATION_SPECIFIC_TLV = 127,
+} LLDP_TLV;
 
-#endif
+/// @brief Build normal LLDPDU buffer to be sent-out. In case of cfg->extension_support=true. Need to collect manifest_tlv
+/// @param lldp_cfg 
+/// @param send_buf 
+/// @param cfg_port 
+/// @return 
+int lldpdu_builder(yang_lldp_t* lldp_cfg, uint8_t* send_buf, lldp_port_t* cfg_port);
+
+/// @brief Build shutdown LLDPDU buffer to be sent-out
+/// @param lldp_cfg 
+/// @param send_buf 
+/// @param cfg_port 
+/// @return 
+int tlv_shutdown_builder(yang_lldp_t* lldp_cfg, uint8_t* send_buf, lldp_port_t* cfg_port);
+
+/// @brief Collect tlv info from buffer
+/// @param buf 
+/// @param len 
+/// @param [out] neighbor_info 
+/// @param [out] rx_ttl 
+/// @return 
+LLDP_RX_TYPE collect_tlv_info(uint8_t* buf, int len, remote_systems_data_t* neighbor_info, timeticks* rx_ttl);
+#endif /* XL4LLDP_TLV_DATA_H_ */

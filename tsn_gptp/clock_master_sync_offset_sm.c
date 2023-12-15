@@ -62,14 +62,6 @@ typedef enum {
 	REACTION,
 }clock_master_sync_offset_state_t;
 
-struct clock_master_sync_offset_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	clock_master_sync_offset_state_t state;
-	clock_master_sync_offset_state_t last_state;
-	ClockMasterSyncOffsetSM *thisSM;
-	int domainIndex;
-};
-
 #define RCVD_SYNC_RECEIPT_TIME sm->thisSM->rcvdSyncReceiptTime
 #define SELECTED_STATE sm->ptasg->selectedState
 #define SYNC_RECEIPT_TIME sm->ptasg->SyncReceiptTime
@@ -80,7 +72,7 @@ static clock_master_sync_offset_state_t allstate_condition(clock_master_sync_off
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable ) {
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (clock_master_sync_offset_state_t)sm->state;
 }
 
 static void *initializing_proc(clock_master_sync_offset_data_t *sm)

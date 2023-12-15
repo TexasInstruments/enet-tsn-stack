@@ -50,6 +50,17 @@
 #ifndef ANNOUNCE_INTERVAL_SETTING_SM_H_
 #define ANNOUNCE_INTERVAL_SETTING_SM_H_
 
+struct announce_interval_setting_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	BmcsPerPortGlobal *bppg;
+	int state;
+	int last_state;
+	AnnounceIntervalSettingSM *thisSM;
+	int domainIndex;
+	int portIndex;
+};
+
 typedef struct announce_interval_setting_data announce_interval_setting_data_t;
 
 void *announce_interval_setting_sm(announce_interval_setting_data_t *sm, uint64_t cts64);

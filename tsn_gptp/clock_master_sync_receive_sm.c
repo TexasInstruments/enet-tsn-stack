@@ -70,24 +70,6 @@ typedef enum {
 	OFFSET_STABLE_ADJ,
 }offset_state_t;
 
-struct clock_master_sync_receive_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	clock_master_sync_receive_state_t state;
-	clock_master_sync_receive_state_t last_state;
-	ClockMasterSyncReceiveSM *thisSM;
-	int domainIndex;
-	double mrate;
-	uint64_t last_lts;
-	uint64_t last_mts;
-	int gmadjppb;
-	double alpha;
-	int rate_stable;
-	int64_t offsetGM;
-	offset_state_t offsetGM_stable;
-	int gmchange_ind;
-	uint64_t unstable_ts64;
-};
-
 #define RCVD_CLOCK_SOURCE_REQ sm->thisSM->rcvdClockSourceReq
 #define RCVD_CLOCK_SOURCE_REQ_PTR sm->thisSM->rcvdClockSourceReqPtr
 #define	RCVD_LOCAL_CLOCK_TICK sm->thisSM->rcvdLocalClockTick
@@ -340,7 +322,7 @@ static clock_master_sync_receive_state_t allstate_condition(clock_master_sync_re
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable ) {
 		return INITIALIZING;
 	}
-	return sm->state;
+	return (clock_master_sync_receive_state_t)sm->state;
 }
 
 static void *initializing_proc(clock_master_sync_receive_data_t *sm)

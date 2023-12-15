@@ -53,30 +53,10 @@
 // definitions to use the combase headers
 #define COMBASE_NO_INET
 #define COMBASE_NO_CRC
-#define COMBASE_NO_XTIMER
 #define COMBASE_NO_IPCSOCK
 #define UB_SD_STATIC
 #define UC_RUNCONF
-// there are 25 state machines and each uses 2 UD_SD_MALLOC, 3 state machines with 1 UD_SD_MALLOC
-// With SM_DATA_FSIZE above, 9 fragments each can work for a single domain and a single port.
-// Increasing ports/domain, 7 fragments each port, 12 fragments for domain/2ports
-// (25*2+3)*(9+7*[number of extra ports - 1]+12*[number of domains - 1])
-// The default is set here is for 2 ports and 2 domains
-#define SM_DATA_FNUM_DEFAULT (((25u*2u)+3u)*(9u+7u+12u))
-#define SM_DATA_FNUM (2*SM_DATA_FNUM_DEFAULT) // 4 ports
 
-// 80 fragments can work for a single domain and a single port.
-// Increasing ports/domain, 12 fragments each port, 12 fragments for domain/2ports
-// The default is set here is for 2 ports and 2 domains
-#define GPTP_SMALL_AFNUM_DEFAULT (80u+12u+12u)
-#define GPTP_SMALL_AFNUM (2*GPTP_SMALL_AFNUM_DEFAULT) // 4 ports
-
-
-// 135 fragments can work for a single domain and a single port.
-// Increasing ports/domain, 65 fragments each port, 125 fragment for domain/2ports
-// The default is set here is for 2 ports and 2 domains
-#define GPTP_MEDIUM_AFNUM_DEFAULT (135u+65u+125u)
-#define GPTP_MEDIUM_AFNUM (2*GPTP_MEDIUM_AFNUM_DEFAULT) // 4 ports
 #define UB_ESARRAY_DFNUM 256
 
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
@@ -84,5 +64,46 @@
 #define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
 #define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
 #define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+
+#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+
+#define CB_XTIMER_TMNUM 30
+
+/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
+#define GPTP_MAX_PORTS 4
+#define GPTP_MAX_DOMAINS 2
+
+/*LLDP Definition*/
+// Each port can have 3 LLDP agents     
+// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
+// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
+// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
+#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+
+// The information below apply  for max length of 
+// - Local Chassis ID, 
+// - Local Port ID, 
+// - Local Port Description
+// - Local System name
+// - Local System Description
+#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+
+// The information below apply  for max length of remote info
+// - Chassis ID
+// - Port ID
+// - Port Description
+// - System name
+// - System Description
+#define LLDP_REMOTE_INFO_STRING_MAX_LEN 128
+
+// The information below apply  for max length of remote unknown TLV info
+// - Remote unknown TLV
+#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
+
+// The information below apply  for max length of Remote organization info
+// - Remote organization info TLV
+#define MAX_RM_ORG_INFO_LEN  64
+
+/* LLDP Definition End */
 
 #endif /* __TSN_TILLD_INCLUDE_H_ */

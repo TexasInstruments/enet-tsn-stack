@@ -64,17 +64,6 @@ typedef enum {
 	REACTION,
 }port_sync_sync_send_state_t;
 
-struct port_sync_sync_send_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	port_sync_sync_send_state_t state;
-	port_sync_sync_send_state_t last_state;
-	PortSyncSyncSendSM *thisSM;
-	int domainIndex;
-	int portIndex;
-	MDSyncSend mdSyncSend;
-};
-
 #define RCVD_PSSYNC sm->thisSM->rcvdPSSync
 #define RCVD_PSSYNC_PTR sm->thisSM->rcvdPSSyncPtr
 #define PORT_OPER sm->ppg->forAllDomain->portOper
@@ -115,7 +104,7 @@ static port_sync_sync_send_state_t allstate_condition(port_sync_sync_send_data_t
 		sm->last_state=REACTION;
 		return TRANSMIT_INIT;
 	}
-	return sm->state;
+	return (port_sync_sync_send_state_t)sm->state;
 }
 
 static void *transmit_init_proc(port_sync_sync_send_data_t *sm)

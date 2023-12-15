@@ -50,6 +50,15 @@
 #ifndef CLOCK_MASTER_SYNC_SEND_SM_H_
 #define CLOCK_MASTER_SYNC_SEND_SM_H_
 
+struct clock_master_sync_send_data{
+	PerTimeAwareSystemGlobal *ptasg;
+	int state;
+	int last_state;
+	ClockMasterSyncSendSM *thisSM;
+	int domainIndex;
+	PortSyncSync portSyncSync;
+};
+
 typedef struct clock_master_sync_send_data clock_master_sync_send_data_t;
 
 void *clock_master_sync_send_sm(clock_master_sync_send_data_t *sm, uint64_t cts64);

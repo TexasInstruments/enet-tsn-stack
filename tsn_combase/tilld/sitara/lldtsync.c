@@ -54,6 +54,12 @@
 #include "tilld/lldtsync.h"
 #include "combase_private.h"
 
+extern int32_t EnetApp_setTimeStampComplete(Enet_Handle hEnet, uint32_t coreId);
+extern int32_t EnetApp_enablePortTsEvent(Enet_Handle hEnet, uint32_t coreId,
+				uint32_t macPort[], uint32_t numPorts);
+extern int32_t EnetApp_getRxTimeStamp(Enet_Handle hEnet, uint32_t coreId,
+				EnetTimeSync_GetEthTimestampInArgs* inArgs, uint64_t *ts);
+
 struct LLDTSync {
 	Enet_Type enetType;
 	uint32_t instId;
@@ -115,26 +121,27 @@ int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
 					  uint16_t seqId, uint8_t domain, uint64_t *ts)
 {
 	int32_t status = ENET_SOK;
-	Enet_IoctlPrms prms;
 	EnetTimeSync_GetEthTimestampInArgs inArgs;
 
 	if ((hTSync == NULL) || (ts == NULL)) {
 		return LLDENET_E_PARAM;
 	}
-
+	/* For ENET-ICSSG the dmaPktInfo has the time stamp, this API is not valid */
+	if (Enet_isCpswFamily(hTSync->enetType) == false) {
+		return LLDENET_E_UNSUPPORT;
+	}
 	memset(&inArgs, 0, sizeof(inArgs));
 	inArgs.msgType = (EnetTimeSync_MsgType)msgType;
 	inArgs.seqId   = seqId;
 	inArgs.portNum = rxPort;
 	inArgs.domain  = domain;
 
-	ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, ts);
-	ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
-			   ENET_TIMESYNC_IOCTL_GET_ETH_RX_TIMESTAMP, &prms, status);
+	status = EnetApp_getRxTimeStamp(hTSync->hEnet, hTSync->coreId, &inArgs, ts);
 	if (status != ENET_SOK) {
 		UB_LOG(UBL_ERROR,"Enet_ioctl GET_ETH_RX_TIMESTAMP failed %d\n", status);
 		return LLDENET_E_IOCTL;
 	}
+
 	return LLDENET_E_OK;
 }
 
@@ -200,6 +207,8 @@ int LLDTSyncSetTime(LLDTSync_t *hTSync, uint64_t ts)
 
 	memset((void *)(&timestamp), 0, sizeof(timestamp));
 	timestamp.tsLoadVal = ts;
+	timestamp.clkMode = 0U;
+	timestamp.clkSign = 0U;
 	ENET_IOCTL_SET_IN_ARGS(&prms, &timestamp);
 	ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
 			   ENET_TIMESYNC_IOCTL_SET_TIMESTAMP, &prms, status);
@@ -207,7 +216,9 @@ int LLDTSyncSetTime(LLDTSync_t *hTSync, uint64_t ts)
 		UB_LOG(UBL_ERROR,"Enet_ioctl SET_TIMESTAMP failed %d\n", status);
 		return LLDENET_E_IOCTL;
 	}
-
+	if(Enet_isIcssFamily(hTSync->enetType)) {
+		EnetApp_setTimeStampComplete(hTSync->hEnet, hTSync->coreId);
+	}
 	return LLDENET_E_OK;
 }
 
@@ -231,46 +242,21 @@ int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
 	return LLDENET_E_OK;
 }
 
-static void SetPortTsEventPrms(CpswMacPort_TsEventCfg *tsPortEventCfg)
-{
-	memset(tsPortEventCfg, 0, sizeof(CpswMacPort_TsEventCfg));
-
-	tsPortEventCfg->txAnnexFEn = true;
-	tsPortEventCfg->rxAnnexFEn = true;
-	tsPortEventCfg->txHostTsEn = true;
-	/* Enable ts for SYNC, PDELAY_REQUEST, PDELAY_RESPONSE */
-	tsPortEventCfg->messageType = 13;
-	tsPortEventCfg->seqIdOffset = 30;
-	tsPortEventCfg->domainOffset = 4;
-}
-
 int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPorts)
 {
-	int32_t status = ENET_SOK;
-	Enet_IoctlPrms prms;
-	CpswMacPort_EnableTsEventInArgs enableTsEventInArgs;
-	uint8_t i = 0U;
 	uint32_t maxMacPorts = 0U;
 
 	if ((hTSync == NULL) || (ports == NULL) || (numPorts == 0)) {
 		return LLDENET_E_PARAM;
 	}
-	maxMacPorts = Enet_getMacPortMax(hTSync->enetType, hTSync->instId);
-	if (numPorts > maxMacPorts) {
-		numPorts = maxMacPorts;
-	}
-	SetPortTsEventPrms(&enableTsEventInArgs.tsEventCfg);
 
-	for (i = 0U; i < numPorts; i++) {
-		enableTsEventInArgs.macPort = (Enet_MacPort)ports[i];
-		ENET_IOCTL_SET_IN_ARGS(&prms, &enableTsEventInArgs);
-		ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
-				   CPSW_MACPORT_IOCTL_ENABLE_CPTS_EVENT, &prms, status);
-		if (status != ENET_SOK) {
-			UB_LOG(UBL_ERROR,"Enet_ioctl ENABLE_CPTS_EVENT failed %d port %d\n",
-				   status, ports[i]);
-			return LLDENET_E_IOCTL;
+	/* No MacPort TS Enable ioctl for ICSSG peripheral */
+	if (Enet_isCpswFamily(hTSync->enetType)) {
+		maxMacPorts = Enet_getMacPortMax(hTSync->enetType, hTSync->instId);
+		if (numPorts > maxMacPorts) {
+			numPorts = maxMacPorts;
 		}
+		EnetApp_enablePortTsEvent(hTSync->hEnet, hTSync->coreId, ports, numPorts);
 	}
 
 	return LLDENET_E_OK;

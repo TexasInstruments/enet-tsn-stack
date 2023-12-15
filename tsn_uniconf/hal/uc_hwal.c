@@ -63,6 +63,8 @@ struct uc_hwald {
 	uc_dbald *dbald;
 	uc_notice_data_t *ucntd;
 	uint8_t operating_tc;
+	CB_THREAD_T catch_event;
+	cbl_query_thread_data_t cqtd;
 };
 
 static int notice_cb(void *cbdata, cbl_cb_event_t *nevent);
@@ -502,6 +504,9 @@ static int set_oper_gate_schedules(uc_dbald *dbald, const char *ifname, bool ena
 		       index, enabled);
 	}
 	uc_get_range_release(dbald, range);
+#if !UB_LOG_IS_COMPILED(UBL_DEBUG)
+	(void)index;
+#endif
 	return 0;
 }
 
@@ -683,6 +688,9 @@ static int get_gate_schedules(uc_hwald *hwald, ub_esarray_cstd_t *clst, const ch
 		       __func__, index, entry.operation, entry.interval, entry.gate);
 	}
 	uc_get_range_release(hwald->dbald, range);
+#if !UB_LOG_IS_COMPILED(UBL_DEBUG)
+	(void)index;
+#endif
 	return ub_esarray_ele_nums(clst);
 }
 
@@ -760,14 +768,16 @@ static int preempt_hw_action(uc_hwald *hwald, const char *ifname)
 	cbl_preempt_params_t cpemp;
 	void *value;
 	cbl_cb_event_t nevent;
+	uint8_t size = 0U;
 	if(!ifname){
 		UB_LOG(UBL_ERROR, "%s:no ifname\n", __func__);
 		return -1;
 	}
+	size = UB_MIN(CB_MAX_NETDEVNAME-1, strlen(ifname));
 	memset(&cpemp, 0, sizeof(cpemp));
 	memset(&nevent, 0, sizeof(nevent));
-	memcpy(nevent.ifname, ifname,
-	       UB_MIN(CB_MAX_NETDEVNAME-1, strlen(ifname)));
+	memcpy(nevent.ifname, ifname, size);
+	nevent.ifname[size] = '\0';
 	if(get_queue_map_params(&cpemp.qmap, nevent.ifname)) return 0;
 	// read all priorities
 	for(i=0;i<8;i++){
@@ -907,7 +917,7 @@ uc_hwald *uc_hwal_open(uc_dbald *dbald)
 	if(ub_assert_fatal(hwald!=NULL, __func__, NULL)){return NULL;}
 	memset(hwald, 0, sizeof(uc_hwald));
 	hwald->dbald=dbald;
-	hwald->hwctx=combase_link_init(notice_cb, hwald);
+	hwald->hwctx=combase_link_init(notice_cb, hwald, NULL);
 	if(!hwald->hwctx){
 		UB_SD_RELMEM(UC_HWAL_NLINST, hwald);
 		return NULL;
@@ -919,6 +929,10 @@ void uc_hwal_close(uc_hwald *hwald)
 {
 	UB_LOG(UBL_INFO, "%s:\n", __func__);
 	if(!hwald){return;}
+	if(hwald->cqtd.running){
+		hwald->cqtd.running=false;
+		CB_THREAD_JOIN(hwald->catch_event, NULL);
+	}
 	combase_link_close(hwald->hwctx);
 }
 
@@ -976,17 +990,28 @@ erexit:
 	return 0;
 }
 
-int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd, int tout_ms)
+int uc_hwal_catch_events_thread(uc_hwald *hwald, CB_SEM_T *sigp)
+{
+	cb_tsn_thread_attr_t attr;
+	if(hwald->cqtd.running){return 0;}
+	hwald->cqtd.cbld=hwald->hwctx;
+	hwald->cqtd.sigp=sigp;
+	cb_tsn_thread_attr_init(&attr, 0, 0, "uniconf_hwal_thread");
+	return CB_THREAD_CREATE(&hwald->catch_event, &attr, cbl_query_thread,
+				&hwald->cqtd);
+}
+
+int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd)
 {
 	int res;
 	if(!hwald){return 0;}
 	hwald->ucntd=ucntd;
-	uc_dbal_releasedb(hwald->dbald);
-	res=cbl_query_response(hwald->hwctx, tout_ms);
+	res=cbl_query_response(hwald->hwctx, 0);
 	if(res<0){
 		UB_LOG(UBL_WARN, "%s:error in cbl_query_response\n", __func__);
+		return res;
 	}
-	return 0;
+	return res;
 }
 
 int notice_cb(void *cbdata, cbl_cb_event_t *nevent)

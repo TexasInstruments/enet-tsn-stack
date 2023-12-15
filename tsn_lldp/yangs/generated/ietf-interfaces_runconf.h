@@ -48,33 +48,13 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /* Automatically generated file.  Don't edit this file.*/
-#ifndef EXCELFORE_NETCONF_SERVER_H_
-#define EXCELFORE_NETCONF_SERVER_H_
+#ifndef IETF_INTERFACES_RUNCONF_H_
+#define IETF_INTERFACES_RUNCONF_H_
 
-#include "yang_db_access.h"
+#include <tsn_uniconf/yangs/yang_db_access.h>
 
-typedef enum {
-	EXCELFORE_NETCONF_SERVER_VALUEKEY, // 0(0x0)
-	EXCELFORE_NETCONF_SERVER_DUMMY, // 1(0x1)
-	EXCELFORE_NETCONF_SERVER_X4NCONF_SERVER, // 2(0x2)
-	EXCELFORE_NETCONF_SERVER_TRANSPORT, // 3(0x3)
-	EXCELFORE_NETCONF_SERVER_TLS, // 4(0x4)
-	EXCELFORE_NETCONF_SERVER_PORT, // 5(0x5)
-	EXCELFORE_NETCONF_SERVER_SERVER_CERT, // 6(0x6)
-	EXCELFORE_NETCONF_SERVER_SERVER_KEY, // 7(0x7)
-	EXCELFORE_NETCONF_SERVER_CAPATH, // 8(0x8)
-	EXCELFORE_NETCONF_SERVER_CERT_TO_NAME, // 9(0x9)
-	EXCELFORE_NETCONF_SERVER_ID, // 10(0xa)
-	EXCELFORE_NETCONF_SERVER_FINGERPRINT, // 11(0xb)
-	EXCELFORE_NETCONF_SERVER_MAP_TYPE, // 12(0xc)
-	EXCELFORE_NETCONF_SERVER_NAME, // 13(0xd)
-	EXCELFORE_NETCONF_SERVER_SSH, // 14(0xe)
-	EXCELFORE_NETCONF_SERVER_USE_UNIX_DOMAIN_SOCKET, // 15(0xf)
-	EXCELFORE_NETCONF_SERVER_SUB_IPC_PORT, // 16(0x10)
-	EXCELFORE_NETCONF_SERVER_SUB_SOCKET_NAME, // 17(0x11)
-	EXCELFORE_NETCONF_SERVER_ENUM_END,
-} excelfore_netconf_server_enum_t;
+int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-int excelfore_netconf_server_config_init(uc_dbald *dbald, uc_hwald *hwald);
-
+uint8_t ietf_interfaces_get_enum(char *astr);
+const char *ietf_interfaces_get_string(uint8_t anum);
 #endif

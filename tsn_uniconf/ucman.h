@@ -65,6 +65,7 @@ typedef struct ucman_data {
 	int rval;
 	UC_NOTICE_SIG_T *ucmanstart;
 	const char *hwmod;
+	uint16_t ucmon_thread_port;
 } ucman_data_t;
 
 /*

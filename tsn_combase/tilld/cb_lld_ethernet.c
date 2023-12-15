@@ -96,6 +96,8 @@ static void bufsize_to_num_pkts(uint32_t bufsize, uint32_t *npkts)
 static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 				cb_socket_lldcfg_update_t *update_cfg)
 {
+	uint32_t i;
+
 	if (s_socket_lldcfg_update_cb == NULL) {
 		return 0;
 	}
@@ -103,11 +105,14 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 	update_cfg->proto = llrawp->proto;
 	update_cfg->vlanid = llrawp->vlanid;
 	update_cfg->dmaTxChId = -1;
-	update_cfg->dmaRxChId = -1;
+	for (i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE; i++) {
+		update_cfg->dmaRxChId[i] = -1;
+	}
 	update_cfg->unusedDmaRx = -1;
 	update_cfg->unusedDmaTx = -1;
 	update_cfg->dmaRxShared = -1;
 	update_cfg->dmaRxOwner = -1;
+	update_cfg->numRxChannels = 0;
 	if (s_socket_lldcfg_update_cb(update_cfg) < 0) {
 		UB_LOG(UBL_ERROR,"%s:update lldcfg failed\n", __func__);
 		return -1;
@@ -115,17 +120,22 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 	if (update_cfg->nTxPkts > 0) {
 		ecfg->nTxPkts = update_cfg->nTxPkts;
 	}
-	if (update_cfg->nRxPkts > 0) {
-		ecfg->nRxPkts = update_cfg->nRxPkts;
+	for (i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE; i++) {
+		if (update_cfg->nRxPkts[i] > 0) {
+			ecfg->nRxPkts[i] = update_cfg->nRxPkts[i];
+		}
+		if (update_cfg->dmaRxChId[i] >= 0) {
+			ecfg->dmaRxChId[i] = update_cfg->dmaRxChId[i];
+		}
 	}
-	if (update_cfg->pktSize > 0) {
-		ecfg->pktSize = update_cfg->pktSize;
-	}
+	 if (update_cfg->pktSize > 0) {
+			ecfg->pktSize = update_cfg->pktSize;
+		}
 	if (update_cfg->dmaTxChId >= 0) {
 		ecfg->dmaTxChId = update_cfg->dmaTxChId;
 	}
-	if (update_cfg->dmaRxChId >= 0) {
-		ecfg->dmaRxChId = update_cfg->dmaRxChId;
+	if (update_cfg->numRxChannels >= 0) {
+		ecfg->numRxChannels = update_cfg->numRxChannels;
 	}
 	if (llrawp->proto == ETH_P_NETLINK) {
 		ecfg->unusedDmaRx = true; /* always not use DMA */
@@ -149,14 +159,32 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 }
 
 static void cb_update_mac_addr(CB_SOCKET_T sfd,
-			       const char *dev, ub_macaddr_t bmac)
+				   const char *dev, ub_macaddr_t bmac)
 {
 	int i;
 	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		if (!strncmp(dev, s_ndevmap_table[i].netdev, strlen(dev))) {
 			memcpy(s_ndevmap_table[i].srcmac, bmac, ETH_ALEN);
+			s_ndevmap_table[i].sock = sfd;
 			break;
+		}
+	}
+	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
+}
+
+static void cb_free_mac_addr(CB_SOCKET_T sfd)
+{
+	int i;
+
+	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
+	for (i = 0; i < s_num_devs; i++) {
+		if (s_ndevmap_table[i].sock == sfd) { /* multiple macs can have the same fd */
+			if (MAC_VALID(s_ndevmap_table[i].srcmac)) {
+				LLDEnetFreeMac(sfd->lldenet, s_ndevmap_table[i].srcmac);
+				s_ndevmap_table[i].sock = NULL;
+				memset(s_ndevmap_table[i].srcmac, 0, ETH_ALEN);
+			}
 		}
 	}
 	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
@@ -190,8 +218,9 @@ static int find_mac_addr_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bm
 	return res;
 }
 
+/* If can not find, will try to allocate a new mac */
 static int cb_alloc_mac_addr(const char *ifname,
-			     lld_socket_t *sock, ub_macaddr_t bmac)
+				 lld_socket_t *sock, ub_macaddr_t bmac)
 {
 	int res = -1;
 
@@ -202,10 +231,10 @@ static int cb_alloc_mac_addr(const char *ifname,
 	}
 
 	/* user does not init dev with src mac, we will alloc it */
-	if (LLDEnetAllocMac(sock->lldenet, sock->alloc_srcmac) != LLDENET_E_OK) {
+	if (LLDEnetAllocMac(sock->lldenet, bmac) != LLDENET_E_OK) {
 		UB_LOG(UBL_ERROR, "Failed to alloc MAC address! \n");
 	} else {
-		memcpy(bmac, sock->alloc_srcmac, ETH_ALEN);
+		UB_LOG(UBL_INFO,"%s: alloc mac: "UB_PRIhexB6"\n", ifname, UB_ARRAY_B6(bmac));
 		/* Update this macaddr to a global table to share mac address
 		   with other socket instance which is openned on the same port */
 		cb_update_mac_addr(sock, ifname, bmac);
@@ -217,11 +246,13 @@ static int cb_alloc_mac_addr(const char *ifname,
 }
 
 int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_T *addr,
-		    int *mtusize, ub_macaddr_t bmac)
+			int *mtusize, ub_macaddr_t bmac)
 {
 	lld_socket_t *sock = NULL;
 	LLDEnetCfg_t ecfg;
 	cb_socket_lldcfg_update_t update_cfg;
+	uint32_t i;
+
 	memset(&update_cfg, 0, sizeof(cb_socket_lldcfg_update_t));
 
 	UB_LOG(UBL_INFO, "%s:combase-"TSNPKGVERSION"\n", __func__);
@@ -237,6 +268,8 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	}
 	sock = (lld_socket_t*) UB_SD_GETMEM(CB_LLDSOCKET_MMEM, sizeof(lld_socket_t));
 	if (sock == NULL) {
+		UB_LOG(UBL_ERROR,"%s:SOCK is NULL\n",
+			   __func__);
 		return -1;
 	}
 	(void)memset(sock, 0, sizeof(lld_socket_t));
@@ -244,23 +277,32 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	LLDEnetCfgInit(&ecfg);
 	cb_lld_get_type_instance(&ecfg.enetType, &ecfg.instId);
 	bufsize_to_num_pkts(llrawp->sndbuf, &ecfg.nTxPkts);
-	bufsize_to_num_pkts(llrawp->rcvbuf, &ecfg.nRxPkts);
+	for (i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE; i++) {
+		bufsize_to_num_pkts(llrawp->rcvbuf, &ecfg.nRxPkts[i]);
+	}
 	ecfg.ethType = llrawp->proto;
 	ecfg.vlanId = llrawp->vlanid;
 	if (update_enet_cfg(llrawp, &ecfg, &update_cfg) < 0) {
+		UB_LOG(UBL_ERROR,"%s:update_enet_cfg() failure.\n",
+			   __func__);
 		goto error;
 	}
-	UB_LOG(UBL_INFO,"%s:dmaTxChId=%d dmaRxChId=%d nTxPkts=%u nRxPkts=%u pktSize=%u\n",
-		   __func__, ecfg.dmaTxChId, ecfg.dmaRxChId,
-		   ecfg.nTxPkts, ecfg.nRxPkts, ecfg.pktSize);
+	UB_LOG(UBL_INFO,"%s:dmaTxChId=%d numRxChannels=%d dmaRxChId=%d"
+		   " nTxPkts=%u nRxPkts=%u pktSize=%u\n",
+		   __func__, ecfg.dmaTxChId, ecfg.numRxChannels, ecfg.dmaRxChId[0],
+		   ecfg.nTxPkts, ecfg.nRxPkts[0], ecfg.pktSize);
 
 	sock->lldenet = LLDEnetOpen(&ecfg);
 	if (sock->lldenet == NULL) {
+		UB_LOG(UBL_ERROR,"%s:sock->lldenet() failure.\n",
+			   __func__);
 		goto error;
 	}
 	sock->vlanid = llrawp->vlanid;
 	sock->eth_type = llrawp->proto;
 	if (cb_alloc_mac_addr(llrawp->dev, sock, bmac)) {
+		UB_LOG(UBL_ERROR,"%s:cb_alloc_mac_addr() failure.\n",
+			   __func__);
 		goto error;
 	}
 	strncpy(sock->devname, llrawp->dev, IFNAMSIZ-1);
@@ -272,10 +314,15 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	if (update_cfg.rxDefaultDataCb != NULL) {
 		if (cb_lld_set_default_rxdata_cb(sock, update_cfg.rxDefaultDataCb,
 					update_cfg.rxDefaultCbArg) < 0) {
+		UB_LOG(UBL_ERROR,"%s:cb_lld_set_default_rxdata_cb() failure.\n",
+			   __func__);
 			goto error;
 		}
 	}
 
+	if (mtusize != NULL) {
+		*mtusize = CB_LLD_MAX_ETH_FRAME_SIZE;
+	}
 	*fd = sock;
 	return 0;
 
@@ -289,10 +336,11 @@ int cb_rawsock_close(CB_SOCKET_T fd)
 	if (fd == NULL) {
 		return -1;
 	}
-	if (MAC_VALID(fd->alloc_srcmac)) {
-		LLDEnetFreeMac(fd->lldenet, fd->alloc_srcmac);
-		memset(fd->alloc_srcmac, 0, sizeof(fd->alloc_srcmac));
-	}
+
+	CB_THREAD_MUTEX_LOCK(&alloc_mac_lock);
+	cb_free_mac_addr(fd);
+	CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
+
 	if (fd->lldenet != NULL) {
 		LLDEnetClose(fd->lldenet);
 		fd->lldenet = NULL;
@@ -315,8 +363,7 @@ int cb_set_promiscuous_mode(CB_SOCKET_T sfd, const char *dev, bool enable)
 
 int cb_get_mac_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bmac)
 {
-	int res = find_mac_addr_bydev(sfd, dev, bmac);
-	return (res == LLDENET_E_OK? 0: -1);
+	return cb_alloc_mac_addr(dev, sfd, bmac);
 }
 
 int cb_get_ip_bydev(CB_SOCKET_T sfd, const char *dev, CB_IN_ADDR_T *inp)
@@ -332,7 +379,7 @@ int cb_get_brdip_bydev(CB_SOCKET_T sfd, const char *dev, CB_IN_ADDR_T *inp)
 }
 
 int cb_reg_multicast_address(CB_SOCKET_T fd, const char *dev,
-			     const unsigned char *mcastmac, int del)
+				 const unsigned char *mcastmac, int del)
 {
 	int result = LLDENET_E_OK;
 
@@ -367,7 +414,7 @@ int cb_get_ethtool_info(CB_SOCKET_T cfd, const char *dev,
 }
 
 int cb_lld_get_link_info(CB_SOCKET_T cfd, const char *dev,
-		     uint32_t *speed, uint32_t *duplex)
+			 uint32_t *speed, uint32_t *duplex)
 {
 	int macport;
 	int res;
@@ -472,6 +519,8 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 		strncpy(s_ndevmap_table[i].netdev, ethdevs[i].netdev, IFNAMSIZ-1);
 		s_ndevmap_table[i].macport = ethdevs[i].macport;
 		memcpy(s_ndevmap_table[i].srcmac, ethdevs[i].srcmac, ETH_ALEN);
+		UB_LOG(UBL_INFO,"%s: has mac: "UB_PRIhexB6"\n",
+			   s_ndevmap_table[i].netdev, UB_ARRAY_B6(s_ndevmap_table[i].srcmac));
 		s_num_devs++;
 	}
 	if (s_num_devs == 0) {
@@ -510,7 +559,7 @@ int cb_lld_get_netdevs(char* netdevs[], int *len)
 
 	if (s_num_devs == 0) {
 		UB_LOG(UBL_ERROR, "%s:the cb_lld_init_devs_table() must be called first\n",
-		       __func__);
+			   __func__);
 		return -1;
 	}
 	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
@@ -533,7 +582,7 @@ int cb_lld_netdev_to_macport(const char *netdev)
 }
 
 int cb_lld_sendto(CB_SOCKET_T sfd, void *data, int size, int flags,
-				  CB_SOCKADDR_LL_T *addr, int addrsize)
+				 const CB_SOCKADDR_LL_T *addr, int addrsize)
 {
 	int result;
 	LLDEnetFrame_t eframe = {0};
@@ -645,4 +694,9 @@ int cb_socket_set_lldcfg_update_cb(cb_socket_lldcfg_update_cb_t lldcfg_update_cb
 	}
 	s_socket_lldcfg_update_cb = lldcfg_update_cb;
 	return 0;
+}
+
+bool cb_lld_is_rxts_inbuff(CB_SOCKET_T sfd)
+{
+	return LLDEnetIsRxTsInPkt(sfd->lldenet);
 }

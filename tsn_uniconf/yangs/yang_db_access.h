@@ -77,7 +77,7 @@
 #define UC_RUNCONF_DATA yang_db_runtime_dataq_t
 #define UC_RUNCONF_INIT(xdd,dbald,hwald) yang_db_runtime_init(xdd,dbald,hwald)
 #define UC_RUNCONF_CLOSE(ydrd) yang_db_runtime_close(ydrd)
-#define UC_RUNCONF_READFILE(ydrd,fname) yang_db_runtime_readfile(ydrd, fname)
+#define UC_RUNCONF_READFILE(ydrd,fname) yang_db_runtime_readfile(ydrd, fname, NULL)
 #else
 #define UC_RUNCONF_DATA void
 #define UC_RUNCONF_INIT(xdd,dbald,hwald) NULL
@@ -366,6 +366,18 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **d, uint32_t *size, char *h
 char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t index, char *hints);
 
 /**
+ * @brief get the namespace of the given vtype and value combination
+ * @param	vtype: yang vtype (yang_vtype_enum_t) that you want to check.
+ * @param	index:leaf-list index, depending of the type handler, this parameter might be
+ *		ignored specially on non leaf-list configs.
+ * @param	hints:a constant string to identify the correct table to use
+ *		during search.
+ * @return	the namespace prefix associate with the vtype and value.
+ * @note	the return string is a static value, and not thread-safe.
+ */
+char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, char *hints);
+
+/**
  * @brief get sizeof vtype
  * @param	vtype: yang vtype (yang_vtype_enum_t) that you want to get the size of.
  * @return	fixed size of passed vtype, if vtypes that has no fixed size -1 will be return.
@@ -380,6 +392,13 @@ int yang_sizeof_vtype(uint8_t vtype);
  * @note	return true if vtype is a string base data type, else false
  */
 bool yang_isstring_vtype(uint8_t vtype);
+
+/**
+ * @brief check if vtype is an enum or identitref base data type
+ * @param	vtype: yang vtype (yang_vtype_enum_t) that you want to check.
+ * @note	return true if vtype is an enum base data type, else false
+ */
+bool yang_isenum_vtype(uint8_t vtype);
 
 /**
  * @brief Action(YANG_DB_ACTION_*) set in dbpara->atype

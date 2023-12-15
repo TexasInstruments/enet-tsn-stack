@@ -66,17 +66,6 @@ typedef enum {
 	REACTION,
 }announce_interval_setting_state_t;
 
-struct announce_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	BmcsPerPortGlobal *bppg;
-	announce_interval_setting_state_t state;
-	announce_interval_setting_state_t last_state;
-	AnnounceIntervalSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
-
 static announce_interval_setting_state_t allstate_condition(announce_interval_setting_data_t *sm)
 {
         if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable || !PORT_OPER ||
@@ -84,7 +73,7 @@ static announce_interval_setting_state_t allstate_condition(announce_interval_se
             sm->ppg->forAllDomain->useMgtSettableLogAnnounceInterval){
                    return NOT_ENABLED;
         }
-        return sm->state;
+        return (announce_interval_setting_state_t)sm->state;
 }
 
 static void *not_enabled_proc(announce_interval_setting_data_t *sm)

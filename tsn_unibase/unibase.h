@@ -90,7 +90,7 @@ extern "C" {
 #endif
 
 #ifdef NO_GETOPT_LONG
-#include <getopt.h>
+#include "getopt.h"
 struct option
 {
 	char *name;

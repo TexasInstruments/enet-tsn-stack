@@ -50,6 +50,28 @@
 #ifndef MD_PDELAY_REQ_SM_H_
 #define MD_PDELAY_REQ_SM_H_
 
+struct md_pdelay_req_data{
+	gptpnet_data_t *gpnetd;
+	PerTimeAwareSystemGlobal *ptasg;
+	PerPortGlobal *ppg;
+	MDEntityGlobal *mdeg;
+	int state;
+	int last_state;
+	MDPdelayReqSM *thisSM;
+	int portIndex;
+	uint64_t t1ts64;
+	uint64_t t2ts64;
+	uint64_t t3ts64;
+	uint64_t t4ts64;
+	MDPTPMsgPdelayReq txPdeayReq;
+	MDPTPMsgPdelayResp recPdelayResp;
+	MDPTPMsgPdelayRespFollowUp recPdelayRespFup;
+	int cmlds_mode;
+	uint64_t mock_txts64;
+	uint64_t prev_t1ts64;
+	uint64_t prev_t2ts64;
+};
+
 typedef struct md_pdelay_req_data md_pdelay_req_data_t;
 
 int md_pdelay_req_sm(md_pdelay_req_data_t *sm, uint64_t cts64);

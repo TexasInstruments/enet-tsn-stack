@@ -64,7 +64,7 @@ typedef void uc_range;
 /* the size shouldn't be very big */
 #define UC_MAX_KEYSIZE 128
 #define UC_MAX_VALUEKEYS 8 // max number of value keys
-#define UC_MAX_VALUESIZE 256
+#define UC_MAX_VALUESIZE 320
 
 #define UC_CALLMODE_UNICONF (1u<<0u)
 #define UC_CALLMODE_THREAD (1u<<1u)

@@ -55,13 +55,13 @@ struct lld_socket {
 	uint16_t vlanid;
 	uint16_t eth_type;
 	char devname[IFNAMSIZ];
-	uint8_t alloc_srcmac[ETH_ALEN];
 };
 
 typedef struct {
 	char netdev[IFNAMSIZ];
 	uint8_t srcmac[ETH_ALEN];
 	uint8_t macport;
+	struct lld_socket *sock;
 } netdev_map_t;
 
 #endif

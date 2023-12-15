@@ -110,8 +110,10 @@ typedef struct {
 
 /* RX dma can be shared between multiple apps */
 typedef struct {
+	/* FreeQ dedicated to each channel */
 	EnetDma_PktQ rxFreeQ;
-	EnetDma_PktQ rxReadyQ;
+	/* pointer to common ReadyQ to store all the received pkts on all the channels owned by the owner. */
+	EnetDma_PktQ *pRxReadyQ;
 	EnetDma_RxChHandle hRxCh;
 	uint32_t rxFlowStartIdx;
 	uint32_t rxFlowIdx;
@@ -147,16 +149,25 @@ typedef struct {
 
 struct LLDEnet {
 	Enet_Handle hEnet;
+	/* If this is the Rx Owner, dmaRxOwner = true, This will store the received pkts on all the dma channels */
+	EnetDma_PktQ rxReadyQ;
 	uint32_t coreId;
 	uint32_t coreKey;
+	uint32_t numRxChannels;
 	LLDEnetTxDma_t *hLLDTxDma;
-	LLDEnetRxDma_t *hLLDRxDma;
+	LLDEnetRxDma_t *hLLDRxDma[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	Enet_Type enetType;
 	uint32_t instId;
 	/* only dmaRxOwner=true has the permission to call the SDK RX DMA APIs*/
 	bool dmaRxOwner;
+	/* valid only when dmaRxOwner = false, and numRxChannels = 1*/
 	int subRxIndex;
+	/* true when Rx timestamp is in the dmaPktInfo, should be set as true for ICSSG */
+	bool isRxTsInPkt;
 };
+
+extern int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dstMacAddr, uint32_t vlanId,
+										uint32_t ethType, uint32_t rxFlowIdx);
 
 static LLDEnetTxDma_t s_lldTxDmaTable[LLDNET_TXDMA_CHANNEL_NUM];
 static LLDEnetRxDma_t s_lldRxDmaTable[LLDNET_RXDMA_CHANNEL_NUM];
@@ -193,46 +204,50 @@ static int LLDEnetSetRxDmaCfg(void *arg)
 	ProtectRxArg_t *protArg = (ProtectRxArg_t *)arg;
 	LLDEnet_t *hLLDEnet = protArg->hLLDEnet;
 	LLDEnetCfg_t *cfg = protArg->cfg;
-	LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma;
-
-	if (hLLDRxDma->nSubRx == LLDENET_SUB_RX_NUM) {
-		UB_LOG(UBL_ERROR,"Reached sub Rx channel: %d\n", hLLDRxDma->nSubRx);
-		return -1;
-	}
-	if (cfg->dmaRxOwner) {
-		hLLDRxDma->nRxPkts = cfg->nRxPkts;
-		if (hLLDRxDma->nRxPkts == 0) {
-			hLLDRxDma->nRxPkts = ENET_MEM_NUM_RX_PKTS;
-		}
-		hLLDRxDma->pktSize = cfg->pktSize;
-		if (hLLDRxDma->pktSize == 0) {
-			hLLDRxDma->pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
-		}
-		hLLDRxDma->rxOwnerNotifyCb = cfg->rxNotifyCb;
-		hLLDRxDma->rxOwnerCbArg = cfg->rxCbArg;
-		hLLDRxDma->rxChId = cfg->dmaRxChId;
-		hLLDRxDma->nSubRx = 0;
-		hLLDRxDma->dmaRxShared = cfg->dmaRxShared;
-		UB_LOG(UBL_INFO,"rxChId %d has owner dmaRxShared %d\n",
-			   hLLDRxDma->rxChId, hLLDRxDma->dmaRxShared);
-	} else {
-		if (!hLLDRxDma->dmaRxShared) {
-			UB_LOG(UBL_ERROR,"rxChId %d is not shared by owner\n",
-				   hLLDRxDma->rxChId);
+	uint32_t i = 0U;
+	for(i = 0U; i < cfg->numRxChannels; i++) {
+		LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma[i];
+		if (hLLDRxDma->nSubRx == LLDENET_SUB_RX_NUM) {
+			UB_LOG(UBL_ERROR,"Reached sub Rx channel: %d\n", hLLDRxDma->nSubRx);
 			return -1;
 		}
-		LLDEnetSubRx_t *subRx;
-		hLLDEnet->subRxIndex = hLLDRxDma->nSubRx;
-		subRx = &hLLDRxDma->subRxTable[hLLDEnet->subRxIndex];
-		subRx->rxNotifyCb = cfg->rxNotifyCb;
-		subRx->rxCbArg = cfg->rxCbArg;
-		subRx->subRxIndex = hLLDRxDma->nSubRx;
-		InitBufRing(&subRx->bufRing);
+		if (cfg->dmaRxOwner) {
+			hLLDRxDma->nRxPkts = cfg->nRxPkts[i];
+			if (hLLDRxDma->nRxPkts == 0) {
+				hLLDRxDma->nRxPkts = ENET_MEM_NUM_RX_PKTS;
+			}
+			hLLDRxDma->pktSize = cfg->pktSize;
+			if (hLLDRxDma->pktSize == 0) {
+				hLLDRxDma->pktSize = ENET_MEM_LARGE_POOL_PKT_SIZE;
+			}
+			hLLDRxDma->rxOwnerNotifyCb = cfg->rxNotifyCb;
+			hLLDRxDma->rxOwnerCbArg = cfg->rxCbArg;
+			hLLDRxDma->rxChId = cfg->dmaRxChId[i];
+			hLLDRxDma->nSubRx = 0;
+			hLLDRxDma->dmaRxShared = cfg->dmaRxShared;
+			UB_LOG(UBL_INFO,"rxChId %d has owner dmaRxShared %d\n",
+				   hLLDRxDma->rxChId, hLLDRxDma->dmaRxShared);
+		} else {
+			if (!hLLDRxDma->dmaRxShared) {
+				UB_LOG(UBL_ERROR,"rxChId %d is not shared by owner\n",
+					   hLLDRxDma->rxChId);
+				return -1;
+			}
+			/* If it is not the owner of DMA channel, only one DMA channel is supported */
+			EnetAppUtils_assert(cfg->numRxChannels == 1);
+			LLDEnetSubRx_t *subRx;
+			hLLDEnet->subRxIndex = hLLDRxDma->nSubRx;
+			subRx = &hLLDRxDma->subRxTable[hLLDEnet->subRxIndex];
+			subRx->rxNotifyCb = cfg->rxNotifyCb;
+			subRx->rxCbArg = cfg->rxCbArg;
+			subRx->subRxIndex = hLLDRxDma->nSubRx;
+			InitBufRing(&subRx->bufRing);
 
-		UB_LOG(UBL_INFO,"subRxIndex %d reused rxChId %d dmaRxShared %d\n",
-			   subRx->subRxIndex, hLLDRxDma->rxChId, hLLDRxDma->dmaRxShared);
+			UB_LOG(UBL_INFO,"subRxIndex %d reused rxChId %d dmaRxShared %d\n",
+				   subRx->subRxIndex, hLLDRxDma->rxChId, hLLDRxDma->dmaRxShared);
 
-		hLLDRxDma->nSubRx++;
+			hLLDRxDma->nSubRx++;
+		}
 	}
 	return 0;
 }
@@ -269,9 +284,8 @@ static void DmaRxQInit(LLDEnetRxDma_t *hLLDRxDma)
 	int32_t status;
 
 	EnetQueue_initQ(&rxReadyQ);
-	EnetQueue_initQ(&hLLDRxDma->rxReadyQ);
 
-	DmaBufQInit(&hLLDRxDma->rxFreeQ, NULL, hLLDRxDma->nRxPkts, hLLDRxDma->pktSize);
+	DmaBufQInit(&hLLDRxDma->rxFreeQ, (void *)hLLDRxDma, hLLDRxDma->nRxPkts, hLLDRxDma->pktSize);
 
 	/* Retrieve any CPSW packets which are ready */
 	status = EnetDma_retrieveRxPktQ(hLLDRxDma->hRxCh, &rxReadyQ);
@@ -296,25 +310,30 @@ static int DmaRxOpen(LLDEnet_t *hLLDEnet)
 {
 	EnetApp_GetDmaHandleInArgs rxInArgs;
 	EnetApp_GetRxDmaHandleOutArgs rxChInfo;
-	LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma;
+	uint32_t i = 0U;
 
-	/* Open the RX channel */
-	rxInArgs.notifyCb = LLDEnetRxNotifyCb;
-	rxInArgs.cbArg = hLLDRxDma;
-	EnetApp_getRxDmaHandle(hLLDRxDma->rxChId, &rxInArgs, &rxChInfo);
+	for (i = 0U; i < hLLDEnet->numRxChannels; i++) {
+		LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma[i];
+		hLLDRxDma->pRxReadyQ = &hLLDEnet->rxReadyQ;
+		/* Open the RX channel */
+		rxInArgs.notifyCb = LLDEnetRxNotifyCb;
+		rxInArgs.cbArg = hLLDRxDma;
+		EnetApp_getRxDmaHandle(hLLDRxDma->rxChId, &rxInArgs, &rxChInfo);
 
 #ifdef ENET_SOC_HOSTPORT_DMA_TYPE_UDMA
-	hLLDRxDma->rxFlowStartIdx = rxChInfo.rxFlowStartIdx;
-	hLLDRxDma->rxFlowIdx = rxChInfo.rxFlowIdx;
+		hLLDRxDma->rxFlowStartIdx = rxChInfo.rxFlowStartIdx;
+		hLLDRxDma->rxFlowIdx = rxChInfo.rxFlowIdx;
 #else
-	hLLDRxDma->rxFlowIdx = rxChInfo.rxChNum;
+		hLLDRxDma->rxFlowIdx = rxChInfo.rxChNum;
 #endif
-	hLLDRxDma->hRxCh = rxChInfo.hRxCh;
-	EnetAppUtils_assert(hLLDRxDma->hRxCh != NULL);
+		hLLDRxDma->hRxCh = rxChInfo.hRxCh;
+		EnetAppUtils_assert(hLLDRxDma->hRxCh != NULL);
 
-	/* Submit all ready RX buffers to DMA.*/
-	DmaRxQInit(hLLDRxDma);
-
+		/* Submit all ready RX buffers to DMA.*/
+		DmaRxQInit(hLLDRxDma);
+	}
+	/* init the rxReadyQ */
+	EnetQueue_initQ(&hLLDEnet->rxReadyQ);
 	return 0;
 }
 
@@ -374,22 +393,23 @@ static void DmaClose(LLDEnet_t *hLLDEnet)
 {
 	EnetDma_PktQ fqPktInfoQ;
 	EnetDma_PktQ cqPktInfoQ;
+	uint32_t i = 0U;
 
-	LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma;
-	LLDEnetTxDma_t *hLLDTxDma = hLLDEnet->hLLDTxDma;
+	for (i = 0U; i < hLLDEnet->numRxChannels; i++) {
+		LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma[i];
+		/* Close RX Flow */
+		if ((hLLDRxDma != NULL) && (hLLDRxDma->hRxCh != NULL)) {
+			EnetQueue_initQ(&fqPktInfoQ);
+			EnetQueue_initQ(&cqPktInfoQ);
 
-	/* Close RX Flow */
-	if ((hLLDRxDma != NULL) && (hLLDRxDma->hRxCh != NULL)) {
-		EnetQueue_initQ(&fqPktInfoQ);
-		EnetQueue_initQ(&cqPktInfoQ);
-
-		EnetApp_closeRxDma(hLLDRxDma->rxChId, hLLDEnet->hEnet, hLLDEnet->coreKey,
-						   hLLDEnet->coreId, &fqPktInfoQ, &cqPktInfoQ);
-		EnetAppUtils_freePktInfoQ(&fqPktInfoQ);
-		EnetAppUtils_freePktInfoQ(&cqPktInfoQ);
-		EnetAppUtils_freePktInfoQ(&hLLDRxDma->rxFreeQ);
+			EnetApp_closeRxDma(hLLDRxDma->rxChId, hLLDEnet->hEnet, hLLDEnet->coreKey,
+							   hLLDEnet->coreId, &fqPktInfoQ, &cqPktInfoQ);
+			EnetAppUtils_freePktInfoQ(&fqPktInfoQ);
+			EnetAppUtils_freePktInfoQ(&cqPktInfoQ);
+			EnetAppUtils_freePktInfoQ(&hLLDRxDma->rxFreeQ);
+		}
 	}
-
+	LLDEnetTxDma_t *hLLDTxDma = hLLDEnet->hLLDTxDma;
 	/* Close TX channel */
 	if ((hLLDTxDma != NULL) && (hLLDTxDma->hTxCh != NULL)) {
 		EnetQueue_initQ(&fqPktInfoQ);
@@ -416,97 +436,89 @@ static bool IsMacAddrSet(uint8_t *mac)
 int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
 				  uint32_t vlanId, uint32_t ethType)
 {
-	Enet_IoctlPrms prms;
-	CpswAle_SetPolicerEntryOutArgs setPolicerEntryOutArgs;
-	CpswAle_SetPolicerEntryInArgs setPolicerEntryInArgs;
 	LLDEnetRxDma_t *hLLDRxDma;
-	int32_t status;
+	int32_t status = ENET_SOK;
+	uint32_t i;
 
 	if ((hLLDEnet == NULL) || (dstMacAddr == NULL)) {
 		return LLDENET_E_PARAM;
 	}
-	hLLDRxDma = hLLDEnet->hLLDRxDma;
-	if (hLLDRxDma == NULL) {
-		return LLDENET_E_DENY;
-	}
-	if ((IsMacAddrSet(dstMacAddr) == false) && (ethType == 0)) {
-		return LLDENET_E_PARAM;
-	}
-	if (hLLDEnet->dmaRxOwner == false) {
-		LLDEnetSubRx_t *subRx = &hLLDEnet->hLLDRxDma->subRxTable[hLLDEnet->subRxIndex];
-		if (vlanId > 0) {
-			subRx->rxFilter.vlanId = vlanId;
+	for (i = 0U; i < hLLDEnet->numRxChannels; i++) {
+		hLLDRxDma = hLLDEnet->hLLDRxDma[i];
+		if (hLLDRxDma == NULL) {
+			return LLDENET_E_DENY;
 		}
-		if (ethType > 0) {
-			subRx->rxFilter.ethType = ethType;
+		if ((IsMacAddrSet(dstMacAddr) == false) && (ethType == 0)) {
+			return LLDENET_E_PARAM;
 		}
-		if (IsMacAddrSet(dstMacAddr)) {
-			memcpy(subRx->rxFilter.dstMacAddr, dstMacAddr, ENET_MAC_ADDR_LEN);
+		if (hLLDEnet->dmaRxOwner == false) {
+			/* For LLDEnet with shared Rx DMA, only one DMA channel is supported */
+			EnetAppUtils_assert(hLLDEnet->numRxChannels == 1);
+			LLDEnetSubRx_t *subRx = &hLLDEnet->hLLDRxDma[i]->subRxTable[hLLDEnet->subRxIndex];
+			if (vlanId > 0) {
+				subRx->rxFilter.vlanId = vlanId;
+			}
+			if (ethType > 0) {
+				subRx->rxFilter.ethType = ethType;
+			}
+			if (IsMacAddrSet(dstMacAddr)) {
+				memcpy(subRx->rxFilter.dstMacAddr, dstMacAddr, ENET_MAC_ADDR_LEN);
+			}
+		} else {
+			if (vlanId > 0) {
+				hLLDRxDma->ownerFilter.vlanId = vlanId;
+			}
+			if (ethType > 0) {
+				hLLDRxDma->ownerFilter.ethType = ethType;
+			}
+			if (IsMacAddrSet(dstMacAddr)) {
+				memcpy(hLLDRxDma->ownerFilter.dstMacAddr, dstMacAddr, ENET_MAC_ADDR_LEN);
+			}
 		}
-	} else {
-		if (vlanId > 0) {
-			hLLDRxDma->ownerFilter.vlanId = vlanId;
-		}
-		if (ethType > 0) {
-			hLLDRxDma->ownerFilter.ethType = ethType;
-		}
-		if (IsMacAddrSet(dstMacAddr)) {
-			memcpy(hLLDRxDma->ownerFilter.dstMacAddr, dstMacAddr, ENET_MAC_ADDR_LEN);
-		}
-	}
-
-	memset(&setPolicerEntryInArgs, 0, sizeof (setPolicerEntryInArgs));
-	if (IsMacAddrSet(dstMacAddr) == true) {
-		setPolicerEntryInArgs.policerMatch.policerMatchEnMask =
-			CPSW_ALE_POLICER_MATCH_MACDST;
-		setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.portNum = 0U;
-		setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.vlanId = vlanId;
-		memcpy(&setPolicerEntryInArgs.policerMatch.dstMacAddrInfo.addr.addr[0U],
-			&dstMacAddr[0U], ENET_MAC_ADDR_LEN);
 	}
 
-	/* Set policer params for ARP EtherType matching */
-	if (ethType > 0) {
-		setPolicerEntryInArgs.policerMatch.policerMatchEnMask |=
-			CPSW_ALE_POLICER_MATCH_ETHERTYPE;
-		setPolicerEntryInArgs.policerMatch.etherType = ethType;
-	}
-	setPolicerEntryInArgs.policerMatch.portIsTrunk = false;
-	setPolicerEntryInArgs.threadIdEn = true;
-	setPolicerEntryInArgs.threadId = hLLDRxDma->rxFlowIdx;
+	/* This is a work around for now, CPSW only has one dma channel, so [0] is fine.
+	 * and the current ICSSG classifier is not exactly based on dma channel number
+	 * but the first dma channel number matches the ICSSG queue number needed for classification.
+	 * TODO: refine this logic */
+	hLLDRxDma = hLLDEnet->hLLDRxDma[0];
 
-	ENET_IOCTL_SET_INOUT_ARGS(&prms, &setPolicerEntryInArgs, &setPolicerEntryOutArgs);
-	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
-			CPSW_ALE_IOCTL_SET_POLICER, &prms, status);
+	/* For the Sitara AM273x SoC, setting dmaRxShared to true is required.
+	 * Policers/classifiers aren't effective on this SoC, and configuring them could
+	 * lead to a shortage when enabling multiple TSN modules as it supports only 4.*/
+	if(hLLDRxDma->dmaRxShared == false) {
+		status = EnetApp_applyClassifier(hLLDEnet->hEnet, hLLDEnet->coreId, dstMacAddr,
+										 vlanId, ethType, hLLDRxDma->rxFlowIdx);
+	}
+
 	if (status != ENET_SOK) {
 		UB_LOG(UBL_ERROR,"Enet_ioctl failed %d\n", status);
 		return LLDENET_E_IOCTL;
 	}
-
 	return LLDENET_E_OK;
 }
 
 static uint32_t LLDEnetReceiveRxReadyPkts(LLDEnetRxDma_t *hLLDRxDma)
 {
-	EnetDma_PktQ rxReadyQ;
+	EnetDma_PktQ rxTempQ;
 	EnetDma_Pkt *pktInfo;
 	int32_t status;
 	uint32_t rxReadyCnt = 0U;
 
-	EnetQueue_initQ(&rxReadyQ);
+	EnetQueue_initQ(&rxTempQ);
 
 	/* Retrieve any CPSW packets which are ready */
-	status = EnetDma_retrieveRxPktQ(hLLDRxDma->hRxCh, &rxReadyQ);
-	rxReadyCnt = EnetQueue_getQCount(&rxReadyQ);
+	status = EnetDma_retrieveRxPktQ(hLLDRxDma->hRxCh, &rxTempQ);
+	rxReadyCnt = EnetQueue_getQCount(&rxTempQ);
 	if (status == ENET_SOK) {
 		/* Queue the received packet to rxReadyQ and pass new ones from rxFreeQ */
-		pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&rxReadyQ);
+		pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&rxTempQ);
 		while (pktInfo != NULL) {
 			EnetDma_checkPktState(&pktInfo->pktState, ENET_PKTSTATE_MODULE_APP,
 					ENET_PKTSTATE_APP_WITH_DRIVER, ENET_PKTSTATE_APP_WITH_READYQ);
 
-			EnetQueue_enq(&hLLDRxDma->rxReadyQ, &pktInfo->node);
-			pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&rxReadyQ);
+			EnetQueue_enq(hLLDRxDma->pRxReadyQ, &pktInfo->node);
+			pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&rxTempQ);
 		}
 	}
 
@@ -598,18 +610,23 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 	hLLDEnet->coreKey = attachInfo.coreKey;
 	hLLDEnet->enetType = (Enet_Type)cfg->enetType;
 	hLLDEnet->instId = cfg->instId;
+	hLLDEnet->isRxTsInPkt = Enet_isIcssFamily(hLLDEnet->enetType);
+	hLLDEnet->numRxChannels = cfg->numRxChannels;
 
 	if (cfg->unusedDmaRx == false) {
 		ProtectRxArg_t protArg;
-		/* get RX dma handle */
-		hLLDEnet->hLLDRxDma = LLDEnetGetRxDma(cfg->dmaRxChId);
-		EnetAppUtils_assert(hLLDEnet->hLLDRxDma != NULL);
-		/* At first hLLDRxDma->hasOwner is false, user need to set the
-		 * cfg->dmaRxOwner to true.
-		 * When the hLLDRxDma->hasOwner is true, user can not set cfg->dmaRxOwner
-		 * to true because only one can own the RX DMA channel */
-		EnetAppUtils_assert(cfg->dmaRxOwner != hLLDEnet->hLLDRxDma->hasOwner);
-
+		uint32_t i = 0U;
+		for (i = 0U; i < cfg->numRxChannels; i++) {
+			/* get RX dma handle */
+			hLLDEnet->hLLDRxDma[i] = LLDEnetGetRxDma(cfg->dmaRxChId[i]);
+			EnetAppUtils_assert(hLLDEnet->hLLDRxDma[i] != NULL);
+			hLLDEnet->hLLDRxDma[i]->rxChId = cfg->dmaRxChId[i];
+			/* At first hLLDRxDma->hasOwner is false, user need to set the
+			 * cfg->dmaRxOwner to true.
+			 * When the hLLDRxDma->hasOwner is true, user can not set cfg->dmaRxOwner
+			 * to true because only one can own the RX DMA channel */
+			EnetAppUtils_assert(cfg->dmaRxOwner != hLLDEnet->hLLDRxDma[i]->hasOwner);
+		}
 		protArg.hLLDEnet = hLLDEnet;
 		protArg.cfg = cfg;
 		res = ub_protected_func(LLDEnetSetRxDmaCfg, (void *)&protArg);
@@ -619,10 +636,13 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 		}
 		hLLDEnet->dmaRxOwner = cfg->dmaRxOwner;
 		if (hLLDEnet->dmaRxOwner) {
-			hLLDEnet->hLLDRxDma->hasOwner = true;
+			for (i = 0U; i < cfg->numRxChannels; i++) {
+				hLLDEnet->hLLDRxDma[i]->hasOwner = true;
+			}
 		}
 		if (IsMacAddrSet(cfg->dstMacAddr) || (cfg->ethType > 0)) {
-			res = LLDEnetFilter(hLLDEnet, cfg->dstMacAddr, cfg->vlanId, cfg->ethType);
+			res = LLDEnetFilter(hLLDEnet, cfg->dstMacAddr, cfg->vlanId,
+					cfg->ethType);
 			EnetAppUtils_assert(res == 0);
 		}
 	}
@@ -649,8 +669,6 @@ LLDEnet_t *LLDEnetOpen(LLDEnetCfg_t *cfg)
 		hLLDEnet->hLLDTxDma->txNotifyCb = cfg->txNotifyCb;
 		hLLDEnet->hLLDTxDma->txCbArg = cfg->txCbArg;
 		hLLDEnet->hLLDTxDma->txChId = cfg->dmaTxChId;
-		hLLDEnet->hLLDRxDma->rxChId = cfg->dmaRxChId;
-
 		DmaTxOpen(hLLDEnet);
 	}
 
@@ -700,8 +718,21 @@ int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFram
 		EnetAppUtils_assert(pktInfo->sgList.list[0].segmentAllocLen >= frames[i].size);
 		txFrame = (uint8_t *)pktInfo->sgList.list[0].bufPtr;
 		memcpy(txFrame, frames[i].buf, frames[i].size);
+		if(Enet_isIcssFamily(hLLDEnet->enetType)) {
+			//TODO: Other than PTP we will not handle this
+			/* Time stamp only Event msg class packets.
+			 * IEEE 802.1AS-2020 - clause 11.4.2.2 - only
+			 * Sync, Pdelay_Req, Pdelay_Resp are Event class */
+			EthFrame *txframe = (EthFrame *)frames[i].buf;
+			uint8_t *payload = txframe->payload;
+			if(PTP_HEAD_MSGTYPE(payload) < 8U) {
+				pktInfo->tsInfo.enableHostTxTs = true;
+				pktInfo->txTsId = PTP_HEAD_SEQID(payload);
+			}
+		}
 		pktInfo->sgList.list[0].segmentFilledLen = frames[i].size;
 		pktInfo->appPriv = (void *)hLLDEnet;
+		EnetAppUtils_assert(frames[i].port >= 0U);
 		pktInfo->txPortNum = (Enet_MacPort)ENET_MACPORT_NORM(frames[i].port);
 #ifdef ENET_SOC_HOSTPORT_DMA_TYPE_UDMA
 		if (frames[i].tc < 0) {
@@ -773,10 +804,9 @@ static bool FilterIsMatched(LLDEnetRxFilter_t *filter, uint8_t *buf, int size)
 	return true;
 }
 
-static int LLDEnetPushFrameToMatchedSubRx(LLDEnet_t *hLLDEnet, int portNum,
+static int LLDEnetPushFrameToMatchedSubRx(LLDEnetRxDma_t *hLLDRxDma, int portNum,
 				void *buf, int size)
 {
-	LLDEnetRxDma_t *hLLDRxDma = hLLDEnet->hLLDRxDma;
 	int i;
 
 	for (i = 0; i < hLLDRxDma->nSubRx; i++) {
@@ -805,16 +835,21 @@ static int LLDEnetPushFrameToMatchedSubRx(LLDEnet_t *hLLDEnet, int portNum,
 	return 0;
 }
 
-static bool IsRxFrameForDmaOwner(LLDEnet_t *hLLDEnet, void *frame, int size)
+static bool IsRxFrameForDmaOwner(LLDEnetRxDma_t *hLLDRxDma, void *frame, int size)
 {
-	return FilterIsMatched(&hLLDEnet->hLLDRxDma->ownerFilter, (uint8_t*)frame, size);
+	return FilterIsMatched(&hLLDRxDma->ownerFilter, (uint8_t*)frame, size);
 }
 
 static int LLDEnetRecvSubRx(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 {
-	LLDEnetSubRx_t *subRx = &hLLDEnet->hLLDRxDma->subRxTable[hLLDEnet->subRxIndex];
+	/* Only one channel for subRx */
+	EnetAppUtils_assert(hLLDEnet->numRxChannels == 1);
+	LLDEnetSubRx_t *subRx = &hLLDEnet->hLLDRxDma[0]->subRxTable[hLLDEnet->subRxIndex];
 	LLDEnetPktBuf_t pktBuf;
 
+	if (BufRingIsEmpty(&subRx->bufRing)) {
+		return LLDENET_E_NOAVAIL;
+	}
 	pktBuf.buf = frame->buf;
 	pktBuf.size = frame->size;
 	if (!BufRingPop(&subRx->bufRing, &pktBuf)) {
@@ -839,49 +874,54 @@ int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 		(frame->buf == NULL) || (frame->size == 0)) {
 		return LLDENET_E_PARAM;
 	}
-	hLLDRxDma = hLLDEnet->hLLDRxDma;
 
-	/* When the RX DMA is unused */
-	if (hLLDRxDma == NULL) {
-		return LLDENET_E_DENY;
-	}
-	if ((hLLDRxDma->dmaRxShared == true) && (hLLDEnet->dmaRxOwner == false)) {
+	if (hLLDEnet->dmaRxOwner == false) {
 		/* This code will not be called by dmaRxOwner */
 		return LLDEnetRecvSubRx(hLLDEnet, frame);
 	}
-
 	/* This code will be called by the dmaRxOwner */
-	rxReadyCnt = EnetQueue_getQCount(&hLLDRxDma->rxReadyQ);
+	rxReadyCnt = EnetQueue_getQCount(&hLLDEnet->rxReadyQ);
 	if (rxReadyCnt == 0) {
 		return LLDENET_E_NOAVAIL;
 	}
 	/* Consume the received packets and release them */
-	pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&hLLDRxDma->rxReadyQ);
+	pktInfo = (EnetDma_Pkt *)EnetQueue_deq(&hLLDEnet->rxReadyQ);
 	EnetDma_checkPktState(&pktInfo->pktState, ENET_PKTSTATE_MODULE_APP,
 				ENET_PKTSTATE_APP_WITH_READYQ, ENET_PKTSTATE_APP_WITH_FREEQ);
 
 	EnetAppUtils_assert(pktInfo->sgList.numScatterSegments == 1);
-
+	/* Get back the packet's dma channel handle from appPriv */
+	hLLDRxDma = (LLDEnetRxDma_t *)pktInfo->appPriv;
+	EnetAppUtils_assert(hLLDRxDma != NULL);
 	rxFrame = (EthFrame *)pktInfo->sgList.list[0].bufPtr;
 	pktSize = pktInfo->sgList.list[0].segmentFilledLen;
 
 	if ((hLLDRxDma->dmaRxShared == false) ||
-		IsRxFrameForDmaOwner(hLLDEnet, rxFrame, pktSize)) {
+		IsRxFrameForDmaOwner(hLLDRxDma, rxFrame, pktSize)) {
 		if (frame->size >= pktSize) {
 			frame->size = pktSize;
 			memcpy(frame->buf, rxFrame, frame->size);
 			frame->port = (uint8_t)pktInfo->rxPortNum;
+			if(Enet_isIcssFamily(hLLDEnet->enetType)) {
+				//TODO: Other than PTP we will not handle this
+				EnetAppUtils_assert(hLLDEnet->isRxTsInPkt == true);
+				EnetAppUtils_assert(pktSize <= 1500);
+				/* Copy the time stamp at the end of packet */
+				 memcpy(&(frame->buf[pktSize]), &(pktInfo->tsInfo.rxPktTs), 8U);
+			} else {
+				memset(&(frame->buf[pktSize]), 0U, 8U);
+			}
 		} else {
 			res = LLDENET_E_BUFSIZE;
 		}
 	} else {
-		/* only happens when the dmaRxShared = true */
-		LLDEnetPushFrameToMatchedSubRx(hLLDEnet, pktInfo->rxPortNum, rxFrame,
+		/* only happens when the dmaRxShared = true and this function is called by owner */
+		LLDEnetPushFrameToMatchedSubRx(hLLDRxDma, pktInfo->rxPortNum, rxFrame,
 								pktInfo->sgList.list[0].segmentFilledLen);
 		res = LLDENET_E_NOMATCH;
 	}
 
-	/* Release the received packet */
+	/* Release the received packet to the correct DMA channel */
 	EnetQueue_enq(&hLLDRxDma->rxFreeQ, &pktInfo->node);
 
 	EnetAppUtils_validatePacketState(&hLLDRxDma->rxFreeQ, ENET_PKTSTATE_APP_WITH_FREEQ,
@@ -894,12 +934,17 @@ int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 
 void LLDEnetCfgInit(LLDEnetCfg_t *cfg)
 {
+	uint32_t i;
+
 	if (cfg == NULL) {
 		return;
 	}
 	memset(cfg, 0, sizeof(LLDEnetCfg_t));
 	cfg->dmaTxChId = -1;
-	cfg->dmaRxChId = -1;
+	cfg->numRxChannels = 1;
+	for (i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE ; i++) {
+		cfg->dmaRxChId[i] = -1;
+	}
 	cfg->dmaRxOwner = true;
 	cfg->dmaRxShared = false;
 	cfg->unusedDmaTx = false;
@@ -918,7 +963,8 @@ bool LLDEnetIsPortUp(LLDEnet_t *hLLDEnet, uint8_t portNum)
 int LLDEnetGetLinkInfo(LLDEnet_t *hLLDEnet, uint8_t portNum,
 					   uint32_t *speed, uint32_t *duplex)
 {
-	EnetPhy_GenericInArgs phyInArgs;
+
+	Enet_MacPort phyInArgs;
 	EnetMacPort_LinkCfg phyOutArgs;
 	Enet_IoctlPrms prms;
 	int32_t status;
@@ -928,10 +974,10 @@ int LLDEnetGetLinkInfo(LLDEnet_t *hLLDEnet, uint8_t portNum,
 	}
 
 	/* Get port link state (speed & duplexity) from PHY */
-	phyInArgs.macPort = (Enet_MacPort)(ENET_MACPORT_NORM(portNum));
+	phyInArgs = (Enet_MacPort)(ENET_MACPORT_NORM(portNum));
 	ENET_IOCTL_SET_INOUT_ARGS(&prms, &phyInArgs, &phyOutArgs);
 	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
-			   ENET_PHY_IOCTL_GET_LINK_MODE, &prms, status);
+				ENET_PER_IOCTL_GET_PORT_LINK_CFG, &prms, status);
 	if (status != ENET_SOK) {
 		UB_LOG(UBL_ERROR,"Failed to get link info: %d\n", status);
 		return LLDENET_E_IOCTL;
@@ -996,21 +1042,27 @@ int LLDEnetSetTxNotifyCb(LLDEnet_t *hLLDEnet, void (*txNotifyCb)(void *arg), voi
 
 int LLDEnetSetRxNotifyCb(LLDEnet_t *hLLDEnet, void (*rxNotifyCb)(void *arg), void *arg)
 {
+	uint32_t i = 0U;
 	if (hLLDEnet == NULL) {
 		return LLDENET_E_PARAM;
 	}
-	if (hLLDEnet->hLLDRxDma == NULL) {
-		return LLDENET_E_DENY;
+	for( i = 0U; i < hLLDEnet->numRxChannels; i++) {
+		if (hLLDEnet->hLLDRxDma[i] == NULL) {
+			return LLDENET_E_DENY;
+		}
+		if (hLLDEnet->dmaRxOwner) {
+			hLLDEnet->hLLDRxDma[i]->rxOwnerNotifyCb = rxNotifyCb;
+			hLLDEnet->hLLDRxDma[i]->rxOwnerCbArg = arg;
+		} else {
+			/* If it is not the owner of DMA channel, only one DMA channel is supported */
+			EnetAppUtils_assert(hLLDEnet->numRxChannels == 1);
+			LLDEnetSubRx_t *subRx;
+			subRx = &hLLDEnet->hLLDRxDma[0]->subRxTable[hLLDEnet->subRxIndex];
+			subRx->rxNotifyCb = rxNotifyCb;
+			subRx->rxCbArg = arg;
+		}
 	}
-	if (hLLDEnet->dmaRxOwner) {
-		hLLDEnet->hLLDRxDma->rxOwnerNotifyCb = rxNotifyCb;
-		hLLDEnet->hLLDRxDma->rxOwnerCbArg = arg;
-	} else {
-		LLDEnetSubRx_t *subRx;
-		subRx = &hLLDEnet->hLLDRxDma->subRxTable[hLLDEnet->subRxIndex];
-		subRx->rxNotifyCb = rxNotifyCb;
-		subRx->rxCbArg = arg;
-	}
+
 	return LLDENET_E_OK;
 }
 
@@ -1018,17 +1070,26 @@ int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
 		void (*rxDefaultDataCb)(void *data, int size, int port, void *arg), void *arg)
 {
 	LLDEnetRxDma_t *hLLDRxDma;
+	uint32_t i = 0U;
 
 	if (hLLDEnet == NULL) {
 		return LLDENET_E_PARAM;
 	}
-	hLLDRxDma = hLLDEnet->hLLDRxDma;
-	if (hLLDRxDma == NULL) {
-		return LLDENET_E_DENY;
+	for (i = 0U; i < hLLDEnet->numRxChannels; i++) {
+		hLLDRxDma = hLLDEnet->hLLDRxDma[i];
+		if (hLLDRxDma == NULL) {
+			return LLDENET_E_DENY;
+		}
+		hLLDRxDma->rxDefaultDataCb = rxDefaultDataCb;
+		hLLDRxDma->rxDefaultCbArg = arg;
 	}
-	hLLDRxDma->rxDefaultDataCb = rxDefaultDataCb;
-	hLLDRxDma->rxDefaultCbArg = arg;
+
 	return LLDENET_E_OK;
+}
+
+bool LLDEnetIsRxTsInPkt(LLDEnet_t *hLLDEnet)
+{
+	return hLLDEnet->isRxTsInPkt;
 }
 
 #if ENET_CFG_IS_ON(CPSW_EST)
@@ -1048,7 +1109,7 @@ static uint64_t getCurrentTime(Enet_Handle hEnet, uint32_t coreId)
 }
 
 // First admin will have AdminBaseTime = CurrentTime + EST_ADMIN_LIST_DELAY
-#define EST_ADMIN_LIST_DELAY             (1000000000ULL)
+#define EST_ADMIN_LIST_DELAY			 (1000000000ULL)
 static uint64_t getDefaultAdminBaseTime(Enet_Handle hEnet, uint32_t coreId,
 					Enet_MacPort macPort, EnetTas_TasState state)
 {
@@ -1065,7 +1126,7 @@ static uint64_t getDefaultAdminBaseTime(Enet_Handle hEnet, uint32_t coreId,
 }
 
 static EnetTas_TasState getEstState(Enet_Handle hEnet,
-			     uint32_t coreId, Enet_MacPort macPort)
+				 uint32_t coreId, Enet_MacPort macPort)
 {
 	Enet_IoctlPrms prms;
 	EnetTas_GenericInArgs stateInArgs;
@@ -1085,98 +1146,98 @@ static EnetTas_TasState getEstState(Enet_Handle hEnet,
 }
 
 static int32_t setEstState(Enet_Handle hEnet, uint32_t coreId,
-		    Enet_MacPort macPort, EnetTas_TasState state)
+			Enet_MacPort macPort, EnetTas_TasState state)
 {
-    Enet_IoctlPrms prms;
-    EnetTas_SetStateInArgs setStateInArgs;
-    int32_t status;
+	Enet_IoctlPrms prms;
+	EnetTas_SetStateInArgs setStateInArgs;
+	int32_t status;
 
-    setStateInArgs.macPort = macPort;
-    setStateInArgs.state   = state;
-    ENET_IOCTL_SET_IN_ARGS(&prms, &setStateInArgs);
+	setStateInArgs.macPort = macPort;
+	setStateInArgs.state   = state;
+	ENET_IOCTL_SET_IN_ARGS(&prms, &setStateInArgs);
 
-    ENET_IOCTL(hEnet, coreId, ENET_TAS_IOCTL_SET_STATE, &prms, status);
-    if (status != ENET_SOK) {
-	    UB_LOG(UBL_ERROR, "Failed to set TAS state %u: %d\n",
+	ENET_IOCTL(hEnet, coreId, ENET_TAS_IOCTL_SET_STATE, &prms, status);
+	if (status != ENET_SOK) {
+		UB_LOG(UBL_ERROR, "Failed to set TAS state %u: %d\n",
 		   (uint32_t)state, status);
-    } else {
-	    UB_LOG(UBL_INFO, "TAS state is set to %u\n", (uint32_t)state);
-    }
+	} else {
+		UB_LOG(UBL_INFO, "TAS state is set to %u\n", (uint32_t)state);
+	}
 
-    return status;
+	return status;
 }
 
 static void printEstList(EnetTas_ControlList *list)
 {
-    uint8_t gateMask = 0U;
-    uint32_t start = 0U;
-    uint32_t end;
-    uint32_t dur;
-    uint32_t i;
+	uint8_t gateMask = 0U;
+	uint32_t start = 0U;
+	uint32_t end;
+	uint32_t dur;
+	uint32_t i;
 
-    for (i = 0U; i < list->listLength; i++) {
-        gateMask = list->gateCmdList[i].gateStateMask;
-        dur = list->gateCmdList[i].timeInterval;
-        end = start + dur - 1U;
+	for (i = 0U; i < list->listLength; i++) {
+		gateMask = list->gateCmdList[i].gateStateMask;
+		dur = list->gateCmdList[i].timeInterval;
+		end = start + dur - 1U;
 
-        // o = Gate open, C = Gate closed
-        UB_LOG(UBL_INFO, "Gate mask=%s%s%s%s%s%s%s%s (0x%02x), start=%u ns, end=%u ns, dur=%u ns\n",
-	       ENET_IS_BIT_SET(gateMask, 7U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 6U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 5U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 4U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 3U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 2U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 1U) ? "o" : "C",
-	       ENET_IS_BIT_SET(gateMask, 0U) ? "o" : "C",
-	       gateMask,
-	       start, end, dur);
+		// o = Gate open, C = Gate closed
+		UB_LOG(UBL_INFO, "Gate mask=%s%s%s%s%s%s%s%s (0x%02x), start=%u ns, end=%u ns, dur=%u ns\n",
+		   ENET_IS_BIT_SET(gateMask, 7U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 6U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 5U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 4U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 3U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 2U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 1U) ? "o" : "C",
+		   ENET_IS_BIT_SET(gateMask, 0U) ? "o" : "C",
+		   gateMask,
+		   start, end, dur);
 
-        start += dur;
-    }
+		start += dur;
+	}
 
-    UB_LOG(UBL_INFO, "Cycle time=%llu \n", list->cycleTime);
-    UB_LOG(UBL_INFO, "Base time=%llu \n", list->baseTime);
+	UB_LOG(UBL_INFO, "Cycle time=%llu \n", list->cycleTime);
+	UB_LOG(UBL_INFO, "Base time=%llu \n", list->baseTime);
 }
 
 static int validateOperListParams(Enet_Handle hEnet, uint32_t coreId,
 				  Enet_MacPort macPort,
 				  EnetTas_ControlList *adminList)
 {
-    Enet_IoctlPrms prms;
-    EnetTas_GenericInArgs inArgs;
-    EnetTas_ControlList operList;
-    int32_t status, res = -1, i;
+	Enet_IoctlPrms prms;
+	EnetTas_GenericInArgs inArgs;
+	EnetTas_ControlList operList;
+	int32_t status, res = -1, i;
 
-    inArgs.macPort = macPort;
-    ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &operList);
+	inArgs.macPort = macPort;
+	ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &operList);
 
-    ENET_IOCTL(hEnet, coreId, ENET_TAS_IOCTL_GET_OPER_LIST, &prms, status);
-    if (status != ENET_SOK) {
-	    UB_LOG(UBL_ERROR, "Failed to get TAS oper list: %d\n", status);
-    } else {
-	    UB_LOG(UBL_INFO, "MAC %u: Oper List\n", ENET_MACPORT_ID(macPort));
-	    UB_LOG(UBL_INFO, "-------------------------------------------\n");
-	    res = -1;
+	ENET_IOCTL(hEnet, coreId, ENET_TAS_IOCTL_GET_OPER_LIST, &prms, status);
+	if (status != ENET_SOK) {
+		UB_LOG(UBL_ERROR, "Failed to get TAS oper list: %d\n", status);
+	} else {
+		UB_LOG(UBL_INFO, "MAC %u: Oper List\n", ENET_MACPORT_ID(macPort));
+		UB_LOG(UBL_INFO, "-------------------------------------------\n");
+		res = -1;
 #ifdef TAS_SHOW_OPERLIST
-	    printEstList(&operList);
+		printEstList(&operList);
 #endif
-	    for (i = 0; i < operList.listLength; i++) {
-		    if (operList.gateCmdList[i].timeInterval !=
+		for (i = 0; i < operList.listLength; i++) {
+			if (operList.gateCmdList[i].timeInterval !=
 			adminList->gateCmdList[i].timeInterval) {
-			    return res;
-		    }
-		    if (operList.gateCmdList[i].gateStateMask !=
+				return res;
+			}
+			if (operList.gateCmdList[i].gateStateMask !=
 			adminList->gateCmdList[i].gateStateMask) {
-			    return res;
-		    }
-	    }
-	    if (operList.cycleTime != adminList->cycleTime) {
-		    return res;
-	    }
-	    res = 0;
-    }
-    return res;
+				return res;
+			}
+		}
+		if (operList.cycleTime != adminList->cycleTime) {
+			return res;
+		}
+		res = 0;
+	}
+	return res;
 }
 
 #define OPER_LIST_UPDATE_CHECK_RETRY_MAX (10U)
@@ -1194,7 +1255,7 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 	inArgs.macPort = (Enet_MacPort)mac_port;
 	if (ctsp->action == CBL_ACTION_DEL) {
 		status = setEstState(hLLDEnet->hEnet, hLLDEnet->coreId,
-				     (Enet_MacPort)mac_port, ENET_TAS_RESET);
+					 (Enet_MacPort)mac_port, ENET_TAS_RESET);
 		return LLDENET_E_OK;
 	}
 
@@ -1210,9 +1271,9 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 	uint64_t base_time = ctsp->base_time_sec*UB_SEC_NS + ctsp->base_time_nsec;
 	if (base_time == 0ULL) {
 		EnetTas_TasState state = getEstState(hLLDEnet->hEnet, hLLDEnet->coreId,
-						     inArgs.macPort);
+							 inArgs.macPort);
 		base_time = getDefaultAdminBaseTime(hLLDEnet->hEnet, hLLDEnet->coreId,
-						    inArgs.macPort, state);
+							inArgs.macPort, state);
 	}
 	adminListInArgs.adminList.baseTime = base_time;
 	uint64_t cycle_time = ctsp->cycle_time_denominator > 0?
@@ -1232,16 +1293,16 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 	}
 	if (ctsp->extp) {
 		memcpy(adminListInArgs.adminList.sduTable.maxSDU,
-		       ctsp->extp->max_sdu,
-		       sizeof(EnetTas_MaxSDUTable));
+			   ctsp->extp->max_sdu,
+			   sizeof(EnetTas_MaxSDUTable));
 	} else {
 		memcpy(&adminListInArgs.adminList.sduTable,
-		       &adminList.sduTable,
-		       sizeof(EnetTas_MaxSDUTable));
+			   &adminList.sduTable,
+			   sizeof(EnetTas_MaxSDUTable));
 	}
 	// Set TAS state to `RESET`
 	status = setEstState(hLLDEnet->hEnet, hLLDEnet->coreId,
-			     (Enet_MacPort)mac_port, ENET_TAS_RESET);
+				 (Enet_MacPort)mac_port, ENET_TAS_RESET);
 	if (status != ENET_SOK) {
 		UB_LOG(UBL_ERROR, "Failed to reset TAS state \n");
 		return LLDENET_E_IOCTL;
@@ -1262,7 +1323,7 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 			   ENET_TAS_IOCTL_GET_OPER_LIST_STATUS, &prms, status);
 		if (status != ENET_SOK) {
 			UB_LOG(UBL_ERROR,"Failed to check TAS operational list update status: %d\n",
-			       status);
+				   status);
 			break;
 		}
 		if (operStatus == ENET_TAS_OPER_LIST_UPDATED) {
@@ -1272,14 +1333,14 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t mac_port, void *arg)
 	}
 	// Set TAS state to `ENABLE`
 	status = setEstState(hLLDEnet->hEnet, hLLDEnet->coreId,
-			     (Enet_MacPort)mac_port, ENET_TAS_ENABLE);
+				 (Enet_MacPort)mac_port, ENET_TAS_ENABLE);
 	if (status != ENET_SOK) {
 		UB_LOG(UBL_ERROR, "Failed to enable TAS \n");
 		return LLDENET_E_IOCTL;
 	}
 	if (!validateOperListParams(hLLDEnet->hEnet, hLLDEnet->coreId,
-				    (Enet_MacPort)mac_port,
-				    &adminListInArgs.adminList)) {
+					(Enet_MacPort)mac_port,
+					&adminListInArgs.adminList)) {
 		UB_LOG(UBL_INFO, "Successfully configure TAS \n");
 		return LLDENET_E_OK;
 	}
