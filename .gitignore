@@ -15,8 +15,6 @@ tsn_combase/cb_noipcshmem_unittest.c
 tsn_combase/cb_thread_waitpoint_unittest.c
 tsn_combase/cb_timer_unittest.c
 tsn_combase/cb_tmevent.c
-tsn_combase/cb_xtimer.c
-tsn_combase/cb_xtimer.h
 tsn_combase/cb_xtimer_unittest.c
 tsn_combase/configure.ac
 tsn_gptp/configure.ac
