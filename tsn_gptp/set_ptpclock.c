@@ -49,7 +49,7 @@
 */
 #include <fcntl.h>
 #include <stdio.h>
-#include "getopt.h"
+#include <getopt.h>
 #include <time.h>
 #include "ll_gptpsupport.h"
 

@@ -55,6 +55,4 @@
 
 int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t ietf_netconf_monitoring_get_enum(char *astr);
-const char *ietf_netconf_monitoring_get_string(uint8_t anum);
 #endif

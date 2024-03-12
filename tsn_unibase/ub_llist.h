@@ -63,6 +63,10 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief ub_list node structure
  */
@@ -229,6 +233,10 @@ static inline bool ub_list_isempty(const struct ub_list *ub_list){
  */
 #define UB_LIST_FOREACH_ITER(ub_list, node) \
 	(node) = ub_list_head((ub_list)); (node); (node) = (node)->next
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @}*/

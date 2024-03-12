@@ -60,15 +60,15 @@ struct LLDTSync {
 	uint32_t instId;
 	Enet_Handle hEnet;
 	uint32_t coreId;
-	uint32_t coreKey;
-	EnetMcm_CmdIf hMcmCmdIf;
 };
+
+void OpenMcmProtected(Enet_Type enetType, uint32_t *coreKey,
+					  Enet_Handle *hEnet, Udma_DrvHandle *hUdmaDrv);
+void CloseMcmProtected(Enet_Type enetType);
 
 LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 {
 	LLDTSync_t *hTSync;
-	EnetMcm_HandleInfo handleInfo;
-	EnetPer_AttachCoreOutArgs attachInfo;
 
 	if (cfg == NULL) {
 		return NULL;
@@ -82,17 +82,8 @@ LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
 	hTSync->instId = cfg->instId;
 	hTSync->coreId = EnetSoc_getCoreId();
 
-	EnetMcm_getCmdIf(hTSync->enetType, &hTSync->hMcmCmdIf);
-	EnetAppUtils_assert(hTSync->hMcmCmdIf.hMboxCmd != NULL);
-	EnetAppUtils_assert(hTSync->hMcmCmdIf.hMboxResponse != NULL);
-
-	//FIXME: Is it neccessary to call EnetMcm_coreAttach()???
-	EnetMcm_acquireHandleInfo(&hTSync->hMcmCmdIf, &handleInfo);
-	EnetMcm_coreAttach(&hTSync->hMcmCmdIf, hTSync->coreId, &attachInfo);
-	EnetAppUtils_assert(handleInfo.hEnet != NULL);
-
-	hTSync->hEnet = handleInfo.hEnet;
-	hTSync->coreKey  = attachInfo.coreKey;
+	UB_PROTECTED_FUNC_VOID(OpenMcmProtected, hTSync->enetType,
+						   NULL, &hTSync->hEnet, NULL);
 
 	return hTSync;
 }
@@ -110,11 +101,8 @@ void LLDTSyncClose(LLDTSync_t *hTSync)
 	if (hTSync == NULL) {
 		return;
 	}
-	EnetMcm_coreDetach(&hTSync->hMcmCmdIf, hTSync->coreId, hTSync->coreKey);
-	EnetMcm_releaseHandleInfo(&hTSync->hMcmCmdIf);
-	//FIXME: J7200 SDK does not support this API but J721EVM does.
-	//Need to confirm with TI
-	//EnetMcm_releaseCmdIf(hTSync->enetType, &hTSync->hMcmCmdIf);
+	UB_PROTECTED_FUNC_VOID(CloseMcmProtected, hTSync->enetType);
+
 	free(hTSync);
 }
 

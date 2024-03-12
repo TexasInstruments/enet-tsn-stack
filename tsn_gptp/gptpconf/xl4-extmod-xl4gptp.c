@@ -50,12 +50,16 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "tsn_uniconf/yangs/yang_modules.h"
+#include <tsn_uniconf/yangs/yang_modules.h>
+#include <tsn_uniconf/yangs/yang_db_access.h>
+#include <tsn_uniconf/yangs/yang_node.h>
 #include "xl4-extmod-xl4gptp.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+YANG_NODE_CACHED_EXTMODULE_GET_ENUM_DEF(XL4GPTP, "xl4gptp");
+#define XL4_EXTMOD_XL4GPTP XL4_EXTMOD_XL4GPTP_func(dbald)
 
-int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwald *hwald)
+int xl4_extmod_xl4gptp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 {
 	uint8_t aps[5];
 	int i;
@@ -65,9 +69,10 @@ int xl4_extmod_xl4gptp_config_init(xl4_data_data_t *xdd, uc_dbald *dbald, uc_hwa
 	uint8_t kss[2];
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE,YANG_DB_ONHW_ALWAYS,
 	                              NULL,aps,kvs,kss,NULL,0};
+	if(yang_node_extmod_set_enum(dbald, "xl4gptp")<0){return -1;};
 	dbpara.atype=YANG_DB_ACTION_READ;
 	aps[0] = XL4_EXTMOD_RO;
-	aps[1] = xl4_data_get_modid(xdd, "xl4gptp");
+	aps[1] = XL4_EXTMOD_XL4GPTP;
 	aps[2] = XL4_EXTMOD_XL4GPTP_VALUEKEY;
 	aps[3] = 255;
 	if(yang_db_action(dbald, hwald, &dbpara)==0){
@@ -411,3 +416,4 @@ erexit:
 	}
 	return res;
 }
+

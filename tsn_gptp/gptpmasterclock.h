@@ -108,6 +108,17 @@ int gptpmasterclock_wait_until_ts64(int64_t tts, int64_t vclose, int64_t toofar)
 uint64_t gptpmasterclock_expand_timestamp(uint32_t timestamp);
 
 /**
+ * @brief expand 32-bit nsec time to 64 bit with aligning to
+ * gptp clock at the time `ts64`.
+ * @param timestamp timestamp which we are going to convert into 32bit to 64 bit.
+ * @param ts64 the gptp clock time that the `timestamp` will be aligned to.
+ * @return expanded time
+ * @note        a range of  -2.147 to 2.147 secconds can be correctly aligned
+ *
+ */
+uint64_t gptpmasterclock_expand_timestamp_ts64(uint32_t timestamp, int64_t ts64);
+
+/**
  * @brief get GM change indicator, the number is incremented whenever GM is changed
  * @return GM change indicator value, -1: on error
  */

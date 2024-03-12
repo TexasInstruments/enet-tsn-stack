@@ -54,8 +54,10 @@
 #include "ucman.h"
 #include "yangs/yang_modules.h"
 #include "uniconfmon_thread.h"
+#include "yangs/yang_node.h"
 
 extern int yang_config_init(uc_dbald *dbald, uc_hwald *hwald);
+extern int yang_nconf_config_init(uc_dbald *dbald);
 
 void *uniconf_main(void *ptr)
 {
@@ -75,8 +77,8 @@ void *uniconf_main(void *ptr)
 		UB_LOG(UBL_ERROR, "%s:can't open the db\n", __func__);
 		goto erexit;
 	}
+	yang_node_uniconf_init(ucd.dbald);
 	uniconf_cleanup_status(ucd.dbald);
-	ucd.xdd=xl4_data_init(ucd.dbald);
 	if(!ucmd->hwmod[0]){
 		ucd.hwald=uc_hwal_open(ucd.dbald);
 	}else if(!strcmp(ucmd->hwmod, "NONE")){
@@ -92,7 +94,8 @@ void *uniconf_main(void *ptr)
 	}
 
 	if(yang_config_init(ucd.dbald, ucd.hwald)!=0){goto erexit;}
-	ydrd=UC_RUNCONF_INIT(ucd.xdd, ucd.dbald, ucd.hwald);
+	if(yang_nconf_config_init(ucd.dbald)!=0){goto erexit;}
+	ydrd=UC_RUNCONF_INIT(ucd.dbald, ucd.hwald);
 	for(i=0;i<ucmd->numconfigfile;i++){
 		if(UC_RUNCONF_READFILE(ydrd, ucmd->configfiles[i])!=0){
 			UB_LOG(UBL_ERROR, "%s:can't read run-time cofnig file=%s\n",
@@ -105,7 +108,7 @@ void *uniconf_main(void *ptr)
 	ucd.ucntd=uc_notice_init(ucmd->ucmode, ucmd->dbname);
 	if(!ucd.ucntd){goto erexit;}
 	if(uc_notice_start_events_thread(ucd.ucntd, ucd.hwald)!=0){goto erexit;}
-	ydbi_access_init(ucd.dbald, ucd.xdd, ucd.ucntd);
+	ydbi_access_init(ucd.dbald, ucd.ucntd);
 	uc_dbal_releasedb(ucd.dbald);
 	if(ucmd->ucmanstart!=NULL){
 		(void)uc_notice_sig_post(UC_CALL_THREAD(ucmd->ucmode), ucmd->ucmanstart);
@@ -129,6 +132,7 @@ void *uniconf_main(void *ptr)
 		if(res==2){
 			// save the DB to a file
 			if(uc_dbal_save(ucd.dbald)){goto erexit;}
+			if(uc_dbal_create(ucd.dbald, uc_rap, 3, &uc_rv, 1)){goto erexit;}
 		}
 	}
 	ucmd->rval=0;
@@ -144,10 +148,8 @@ erexit:
 	}
 	if(ucd.ucntd!=NULL){uc_notice_close(ucd.ucntd, ucmd->ucmode);}
 	if(ucd.hwald!=NULL){uc_hwal_close(ucd.hwald);}
-	if(ucd.xdd!=NULL){
-		xl4_data_close(ucd.xdd);
-	}
 	if(ucd.dbald!=NULL){uc_dbal_close(ucd.dbald, ucmd->ucmode);}
+	ydbi_access_close();
 	return NULL;
 }
 

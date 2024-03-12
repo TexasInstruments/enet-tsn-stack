@@ -52,12 +52,17 @@
 #include "yang_db_access.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
 
+extern uint8_t IEEE802_DOT1Q_TSN_CONFIG_UNI_func(uc_dbald *dbald);
+#define IEEE802_DOT1Q_TSN_CONFIG_UNI_RW IEEE802_DOT1Q_TSN_CONFIG_UNI_func(dbald)
+#define IEEE802_DOT1Q_TSN_CONFIG_UNI_RW_Y IEEE802_DOT1Q_TSN_CONFIG_UNI_func(ydbia->dbald)
+#define IEEE802_DOT1Q_TSN_CONFIG_UNI_RO (IEEE802_DOT1Q_TSN_CONFIG_UNI_func(dbald)|0x80u)
+
 #define TSNUNI_CUC_ID "cuc0" // multiple-CUC is out of the scope
 #define TSNUNI_DOMAIN_ID "domain00" // replace this '00' to instanceIndex
 static char cuc_id[]=TSNUNI_CUC_ID;
 static char domain_id[]=TSNUNI_DOMAIN_ID;
 
-static void set_dpara_k0vk0(yang_db_access_para_t *dbpara,
+static void set_dpara_k0vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    uint8_t instIndex, uint8_t *streamid, bool status)
 {
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
@@ -91,7 +96,7 @@ int ydbi_listener_tu(yang_db_item_access_t *ydbia, uint8_t instIndex, uint8_t *s
 	}else{
 		if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
 	}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_LISTENER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_INTERFACE_CONFIGURATION;
 	ydbia->dbpara.aps[7]=IEEE802_DOT1Q_TSN_CONFIG_UNI_INTERFACE_LIST;
@@ -138,7 +143,7 @@ int ydbi_talker_tu(yang_db_item_access_t *ydbia, uint8_t instIndex, ub_bytearray
 	}else{
 		if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
 	}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_INTERFACE_CONFIGURATION;
 	ydbia->dbpara.aps[7]=IEEE802_DOT1Q_TSN_CONFIG_UNI_INTERFACE_LIST;
@@ -176,7 +181,7 @@ int ydbi_find_end_station_tu(yang_db_item_access_t *ydbia, uint8_t instIndex,
 	uint8_t *p;
 	uint32_t i;
 	int res=-1;
-	uint8_t aps1[5] = {IEEE802_DOT1Q_TSN_CONFIG_UNI_RW,
+	uint8_t aps1[5] = {IEEE802_DOT1Q_TSN_CONFIG_UNI_RW_Y,
 		IEEE802_DOT1Q_TSN_CONFIG_UNI_TSN_UNI,
 		IEEE802_DOT1Q_TSN_CONFIG_UNI_DOMAIN,
 		IEEE802_DOT1Q_TSN_CONFIG_UNI_CUC,
@@ -232,7 +237,7 @@ int ydbi_get_item_tufspec(yang_db_item_access_t *ydbia, void **rval, uint8_t ins
 			  uint8_t k1, uint8_t k2)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_DATA_FRAME_SPECIFICATION;
 	ydbia->dbpara.aps[7]=k1;
@@ -249,7 +254,7 @@ int ydbi_rel_item_tufspec(yang_db_item_access_t *ydbia, uint32_t instIndex,
 			  uint8_t k1, uint8_t k2)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_DATA_FRAME_SPECIFICATION;
 	ydbia->dbpara.aps[7]=k1;
@@ -267,7 +272,7 @@ int ydbi_set_item_tufspec(yang_db_item_access_t *ydbia, uint32_t instIndex,
 			  void *value, uint32_t vsize, uint8_t notice)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_DATA_FRAME_SPECIFICATION;
 	ydbia->dbpara.aps[7]=k1;
@@ -285,7 +290,7 @@ int ydbi_get_item_tutspec(yang_db_item_access_t *ydbia, void **rval, uint8_t ins
 			  ub_bytearray8_t streamid, uint8_t k1, uint8_t k2)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TRAFFIC_SPECIFICATION;
 	ydbia->dbpara.aps[7]=k1;
@@ -298,7 +303,7 @@ int ydbi_rel_item_tutspec(yang_db_item_access_t *ydbia, void **rval, uint8_t ins
 			  ub_bytearray8_t streamid, uint8_t k1, uint8_t k2)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TRAFFIC_SPECIFICATION;
 	ydbia->dbpara.aps[7]=k1;
@@ -312,7 +317,7 @@ int ydbi_set_item_tutspec(yang_db_item_access_t *ydbia, void **rval, uint8_t ins
 			  void *value, uint32_t vsize, uint8_t notice)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k0vk0(&ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
+	set_dpara_k0vk0(ydbia->dbald, &ydbia->dbpara, instIndex, streamid, YDBI_CONFIG);
 	ydbia->dbpara.aps[5]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TALKER;
 	ydbia->dbpara.aps[6]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TRAFFIC_SPECIFICATION;
 	ydbia->dbpara.aps[7]=k1;

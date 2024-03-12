@@ -74,6 +74,10 @@
 #ifndef UB_ESARRAY_ARRAY_H_
 #define UB_ESARRAY_ARRAY_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief the data handle of ub_esarray object, the inside of it is private
  */
@@ -198,6 +202,10 @@ int ub_esarray_del_pointer(ub_esarray_cstd_t *eah, ub_esarray_element_t *ed);
  * NOT THREAD-SAFE; index may not be right number, if other delete happens after getting index.
  */
 int ub_esarray_del_index(ub_esarray_cstd_t *eah, int index);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @}*/

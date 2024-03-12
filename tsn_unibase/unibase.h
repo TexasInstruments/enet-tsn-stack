@@ -90,7 +90,7 @@ extern "C" {
 #endif
 
 #ifdef NO_GETOPT_LONG
-#include "getopt.h"
+#include <getopt.h>
 struct option
 {
 	char *name;
@@ -214,13 +214,6 @@ uint64_t ub_mt_gettime64(void);
  * @return clock value
  */
 uint64_t ub_gptp_gettime64(void);
-
-/**
- * @brief call cbfunc with an internal mutex protection
- * @return cbfunc return code
- */
-typedef int (*ub_protected_callback)(void*);
-int ub_protected_func(ub_protected_callback cbfunc, void *cbdata);
 
 #ifdef __cplusplus
 }

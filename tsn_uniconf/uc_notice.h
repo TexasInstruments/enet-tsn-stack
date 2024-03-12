@@ -67,7 +67,7 @@
 #define UC_NOTICE_SIGNUM 4
 #endif
 
-typedef void UC_NOTICE_SIG_T;
+typedef CB_SEM_T UC_NOTICE_SIG_T;
 
 typedef struct uc_notice_data uc_notice_data_t;
 

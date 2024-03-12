@@ -101,6 +101,7 @@
 #define CB_SOCK_CLOSE close
 #define CB_SETSOCKOPT setsockopt
 #define CB_SOCK_SENDTO sendto
+#define CB_SELECT select
 #define CB_SOCK_RECVFROM recvfrom
 #define CB_SOCK_RECVMSG recvmsg
 #define CB_SOCK_WRITE write

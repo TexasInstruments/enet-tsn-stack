@@ -50,48 +50,58 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ietf-yang-library.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee802-dot1ab-lldp.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-monitoring.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t IETF_YANG_LIBRARY_func(uc_dbald *dbald);
+#define IETF_YANG_LIBRARY_RW IETF_YANG_LIBRARY_func(dbald)
+#define IETF_YANG_LIBRARY_RO (IETF_YANG_LIBRARY_func(dbald)|0x80u)
 
 const char *ietf_yang_library_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"modules-state", 		// 2(0x2)
-	"module-set-id", 		// 3(0x3)
-	"module", 		// 4(0x4)
-	"name", 		// 5(0x5)
-	"revision", 		// 6(0x6)
-	"schema", 		// 7(0x7)
-	"namespace", 		// 8(0x8)
-	"feature", 		// 9(0x9)
-	"deviation", 		// 10(0xa)
-	"conformance-type", 		// 11(0xb)
-	"submodule", 		// 12(0xc)
+	"nsasc", 		// 2(0x2)
+	"modules-state", 		// 3(0x3)
+	"module-set-id", 		// 4(0x4)
+	"module", 		// 5(0x5)
+	"name", 		// 6(0x6)
+	"revision", 		// 7(0x7)
+	"schema", 		// 8(0x8)
+	"namespace", 		// 9(0x9)
+	"feature", 		// 10(0xa)
+	"deviation", 		// 11(0xb)
+	"conformance-type", 		// 12(0xc)
+	"submodule", 		// 13(0xd)
 };
+const uint8_t ietf_yang_library_enum_max=14;
 
-uint8_t ietf_yang_library_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)IETF_YANG_LIBRARY_ENUM_END;i++){
-		if(!strcmp(astr, ietf_yang_library_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "yanglib",
+		"urn:ietf:params:xml:ns:yang:ietf-yang-library")!=0){
+		return -1;
 	}
-        return 0xffu;
+	return 0;
 }
 
-const char *ietf_yang_library_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)IETF_YANG_LIBRARY_ENUM_END){return NULL;}
-	return ietf_yang_library_enum_strings[anum];
+	uint8_t apsd[7];
+	apsd[0]=IETF_YANG_LIBRARY_RW;
+	apsd[1]=IETF_YANG_LIBRARY_MODULES_STATE;
+	apsd[2]=IETF_YANG_LIBRARY_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"yanglib", 8)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -100,6 +110,9 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_ietf-yang-library/modules-state/module/deviation
 	aps[0] = IETF_YANG_LIBRARY_RO;
 	aps[1] = IETF_YANG_LIBRARY_MODULES_STATE;
@@ -158,3 +171,4 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 erexit:
 	return res;
 }
+

@@ -50,89 +50,99 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee802-dot1ab-lldp.h"
-#include "ieee1588-ptp.h"
-#include "ietf-netconf-monitoring.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t IEEE802_DOT1Q_TSN_CONFIG_UNI_func(uc_dbald *dbald);
+#define IEEE802_DOT1Q_TSN_CONFIG_UNI_RW IEEE802_DOT1Q_TSN_CONFIG_UNI_func(dbald)
+#define IEEE802_DOT1Q_TSN_CONFIG_UNI_RO (IEEE802_DOT1Q_TSN_CONFIG_UNI_func(dbald)|0x80u)
 
 const char *ieee802_dot1q_tsn_config_uni_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"tsn-uni", 		// 2(0x2)
-	"domain", 		// 3(0x3)
-	"domain-id", 		// 4(0x4)
-	"cnc-enabled", 		// 5(0x5)
-	"cuc", 		// 6(0x6)
-	"cuc-id", 		// 7(0x7)
-	"stream", 		// 8(0x8)
-	"stream-id", 		// 9(0x9)
-	"stream-status", 		// 10(0xa)
-	"talker", 		// 11(0xb)
-	"stream-rank", 		// 12(0xc)
-	"rank", 		// 13(0xd)
-	"end-station-interfaces", 		// 14(0xe)
-	"mac-address", 		// 15(0xf)
-	"interface-name", 		// 16(0x10)
-	"data-frame-specification", 		// 17(0x11)
-	"index", 		// 18(0x12)
-	"ieee802-mac-addresses", 		// 19(0x13)
-	"destination-mac-address", 		// 20(0x14)
-	"source-mac-address", 		// 21(0x15)
-	"ieee802-vlan-tag", 		// 22(0x16)
-	"priority-code-point", 		// 23(0x17)
-	"vlan-id", 		// 24(0x18)
-	"traffic-specification", 		// 25(0x19)
-	"interval", 		// 26(0x1a)
-	"numerator", 		// 27(0x1b)
-	"denominator", 		// 28(0x1c)
-	"max-frames-per-interval", 		// 29(0x1d)
-	"max-frame-size", 		// 30(0x1e)
-	"transmission-selection", 		// 31(0x1f)
-	"time-aware", 		// 32(0x20)
-	"earliest-transmit-offset", 		// 33(0x21)
-	"latest-transmit-offset", 		// 34(0x22)
-	"jitter", 		// 35(0x23)
-	"user-to-network-requirements", 		// 36(0x24)
-	"num-seamless-trees", 		// 37(0x25)
-	"max-latency", 		// 38(0x26)
-	"interface-capabilities", 		// 39(0x27)
-	"vlan-tag-capable", 		// 40(0x28)
-	"cb-stream-iden-type-list", 		// 41(0x29)
-	"cb-sequence-type-list", 		// 42(0x2a)
-	"accumulated-latency", 		// 43(0x2b)
-	"interface-configuration", 		// 44(0x2c)
-	"interface-list", 		// 45(0x2d)
-	"config-list", 		// 46(0x2e)
-	"time-aware-offset", 		// 47(0x2f)
-	"listener", 		// 48(0x30)
-	"status-info", 		// 49(0x31)
-	"talker-status", 		// 50(0x32)
-	"listener-status", 		// 51(0x33)
-	"failure-code", 		// 52(0x34)
-	"failed-interfaces", 		// 53(0x35)
+	"nsasc", 		// 2(0x2)
+	"tsn-uni", 		// 3(0x3)
+	"domain", 		// 4(0x4)
+	"domain-id", 		// 5(0x5)
+	"cnc-enabled", 		// 6(0x6)
+	"cuc", 		// 7(0x7)
+	"cuc-id", 		// 8(0x8)
+	"stream", 		// 9(0x9)
+	"stream-id", 		// 10(0xa)
+	"stream-status", 		// 11(0xb)
+	"talker", 		// 12(0xc)
+	"stream-rank", 		// 13(0xd)
+	"rank", 		// 14(0xe)
+	"end-station-interfaces", 		// 15(0xf)
+	"mac-address", 		// 16(0x10)
+	"interface-name", 		// 17(0x11)
+	"data-frame-specification", 		// 18(0x12)
+	"index", 		// 19(0x13)
+	"ieee802-mac-addresses", 		// 20(0x14)
+	"destination-mac-address", 		// 21(0x15)
+	"source-mac-address", 		// 22(0x16)
+	"ieee802-vlan-tag", 		// 23(0x17)
+	"priority-code-point", 		// 24(0x18)
+	"vlan-id", 		// 25(0x19)
+	"traffic-specification", 		// 26(0x1a)
+	"interval", 		// 27(0x1b)
+	"numerator", 		// 28(0x1c)
+	"denominator", 		// 29(0x1d)
+	"max-frames-per-interval", 		// 30(0x1e)
+	"max-frame-size", 		// 31(0x1f)
+	"transmission-selection", 		// 32(0x20)
+	"time-aware", 		// 33(0x21)
+	"earliest-transmit-offset", 		// 34(0x22)
+	"latest-transmit-offset", 		// 35(0x23)
+	"jitter", 		// 36(0x24)
+	"user-to-network-requirements", 		// 37(0x25)
+	"num-seamless-trees", 		// 38(0x26)
+	"max-latency", 		// 39(0x27)
+	"interface-capabilities", 		// 40(0x28)
+	"vlan-tag-capable", 		// 41(0x29)
+	"cb-stream-iden-type-list", 		// 42(0x2a)
+	"cb-sequence-type-list", 		// 43(0x2b)
+	"accumulated-latency", 		// 44(0x2c)
+	"interface-configuration", 		// 45(0x2d)
+	"interface-list", 		// 46(0x2e)
+	"config-list", 		// 47(0x2f)
+	"time-aware-offset", 		// 48(0x30)
+	"listener", 		// 49(0x31)
+	"status-info", 		// 50(0x32)
+	"talker-status", 		// 51(0x33)
+	"listener-status", 		// 52(0x34)
+	"failure-code", 		// 53(0x35)
+	"failed-interfaces", 		// 54(0x36)
 };
+const uint8_t ieee802_dot1q_tsn_config_uni_enum_max=55;
 
-uint8_t ieee802_dot1q_tsn_config_uni_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)IEEE802_DOT1Q_TSN_CONFIG_UNI_ENUM_END;i++){
-		if(!strcmp(astr, ieee802_dot1q_tsn_config_uni_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "dot1q-tsn-config-uni",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-tsn-config-uni")!=0){
+		return -1;
 	}
-        return 0xffu;
+	return 0;
 }
 
-const char *ieee802_dot1q_tsn_config_uni_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)IEEE802_DOT1Q_TSN_CONFIG_UNI_ENUM_END){return NULL;}
-	return ieee802_dot1q_tsn_config_uni_enum_strings[anum];
+	uint8_t apsd[13];
+	apsd[0]=IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
+	apsd[1]=IEEE802_DOT1Q_TSN_CONFIG_UNI_TSN_UNI;
+	apsd[2]=IEEE802_DOT1Q_TSN_CONFIG_UNI_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"dot1q-tsn-config-uni", 21)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -141,6 +151,9 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc/stream/talker/stream-rank
 	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[1] = IEEE802_DOT1Q_TSN_CONFIG_UNI_TSN_UNI;
@@ -407,12 +420,12 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0027_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc/stream
-	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[5] = IEEE802_DOT1Q_TSN_CONFIG_UNI_STREAM_STATUS;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0028_ieee802-dot1q-tsn-config-uni/tsn-uni/domain/cuc
 	//0029_ieee802-dot1q-tsn-config-uni/tsn-uni/domain
+	aps[0] = IEEE802_DOT1Q_TSN_CONFIG_UNI_RW;
 	aps[3] = IEEE802_DOT1Q_TSN_CONFIG_UNI_CNC_ENABLED;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
@@ -424,3 +437,4 @@ int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *
 erexit:
 	return res;
 }
+

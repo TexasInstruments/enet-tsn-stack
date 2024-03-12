@@ -86,7 +86,10 @@ typedef struct cb_lld_task cb_lld_task_t;
 #define CB_THREAD_MUTEX_DESTROY cb_lld_mutex_destroy
 #define CB_THREAD_IS_MUTEX_INITIALIZED(x) ((x).lldmutex!=NULL)
 #define CB_STATIC_MUTEX_INITIALIZER(x) x=TILLD_MUTEX_INITIALIZER
-#define CB_STATIC_MUTEX_CONSTRUCTOR(x) ub_protected_func(cb_lld_mutex_init_protect,&(x))
+#define CB_STATIC_MUTEX_CONSTRUCTOR(x) \
+	UB_PROTECTED_FUNC_VOID(cb_lld_mutex_init_protect,&(x))
+#define CB_STATIC_MUTEX_DESTRUCTOR(x) \
+	UB_PROTECTED_FUNC_VOID(cb_lld_mutex_destroy_protect, &(x))
 
 /* does not need to support these macros */
 #define CB_THREAD_MUTEXATTR_T void*
@@ -199,10 +202,10 @@ int cb_lld_sem_wait_status(CB_SEM_T *sem);
 int cb_lld_mutex_init(CB_THREAD_MUTEX_T *mutex, CB_THREAD_MUTEXATTR_T attr);
 
 /**
- * @brief Initializes a mutex that will be protected by the @ref ub_protected_func().
+ * @brief Initializes a mutex that will be protected by the @ref UB_PROTECTED_FUNC_VOID().
  *
  * This function is primarily designed for initializing a mutex used in conjunction
- * with the @ref ub_protected_func(). For general use cases, consider utilizing
+ * with the @ref UB_PROTECTED_FUNC_VOID(). For general use cases, consider utilizing
  * the @ref cb_lld_mutex_init() function instead.
  *
  * @param mutex Pointer to a mutex of type CB_THREAD_MUTEX_T.
@@ -221,6 +224,23 @@ static inline int cb_lld_mutex_init_protect(void *mutex)
  * @return 0 on success, or -1 on error.
  */
 int cb_lld_mutex_destroy(CB_THREAD_MUTEX_T *mutex);
+
+/**
+ * @brief Destroy a mutex that will be protected by the @ref UB_PROTECTED_FUNC_VOID().
+ *
+ * This function is primarily designed for destroying a mutex used in conjunction
+ * with the @ref UB_PROTECTED_FUNC_VOID(). For general use cases, consider utilizing
+ * the @ref cb_lld_mutex_destroy() function instead.
+ *
+ * @param mutex Pointer to a mutex of type CB_THREAD_MUTEX_T.
+ */
+static inline void cb_lld_mutex_destroy_protect(void *mutex)
+{
+	CB_THREAD_MUTEX_T *cbmutex = (CB_THREAD_MUTEX_T *)mutex;
+	if(cbmutex->lldmutex == NULL) {return;}
+	cb_lld_mutex_destroy(cbmutex);
+	cbmutex->lldmutex = NULL;
+}
 
 /**
  * @brief Locks a mutex.

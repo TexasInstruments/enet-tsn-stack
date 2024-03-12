@@ -50,96 +50,106 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ieee802-dot1ab-lldp.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-monitoring.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t IEEE802_DOT1AB_LLDP_func(uc_dbald *dbald);
+#define IEEE802_DOT1AB_LLDP_RW IEEE802_DOT1AB_LLDP_func(dbald)
+#define IEEE802_DOT1AB_LLDP_RO (IEEE802_DOT1AB_LLDP_func(dbald)|0x80u)
 
 const char *ieee802_dot1ab_lldp_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"lldp", 		// 2(0x2)
-	"message-fast-tx", 		// 3(0x3)
-	"message-tx-hold-multiplier", 		// 4(0x4)
-	"message-tx-interval", 		// 5(0x5)
-	"reinit-delay", 		// 6(0x6)
-	"tx-credit-max", 		// 7(0x7)
-	"tx-fast-init", 		// 8(0x8)
-	"remote-statistics", 		// 9(0x9)
-	"last-change-time", 		// 10(0xa)
-	"remote-inserts", 		// 11(0xb)
-	"remote-deletes", 		// 12(0xc)
-	"remote-drops", 		// 13(0xd)
-	"remote-ageouts", 		// 14(0xe)
-	"local-system-data", 		// 15(0xf)
-	"chassis-id-subtype", 		// 16(0x10)
-	"chassis-id", 		// 17(0x11)
-	"system-name", 		// 18(0x12)
-	"system-description", 		// 19(0x13)
-	"system-capabilities-supported", 		// 20(0x14)
-	"system-capabilities-enabled", 		// 21(0x15)
-	"port", 		// 22(0x16)
-	"name", 		// 23(0x17)
-	"dest-mac-address", 		// 24(0x18)
-	"admin-status", 		// 25(0x19)
-	"tlvs-tx-enable", 		// 26(0x1a)
-	"management-address-tx-port", 		// 27(0x1b)
-	"address-subtype", 		// 28(0x1c)
-	"man-address", 		// 29(0x1d)
-	"tx-enable", 		// 30(0x1e)
-	"addr-len", 		// 31(0x1f)
-	"if-subtype", 		// 32(0x20)
-	"if-id", 		// 33(0x21)
-	"port-id-subtype", 		// 34(0x22)
-	"port-id", 		// 35(0x23)
-	"port-desc", 		// 36(0x24)
-	"tx-statistics", 		// 37(0x25)
-	"total-frames", 		// 38(0x26)
-	"total-length-errors", 		// 39(0x27)
-	"rx-statistics", 		// 40(0x28)
-	"total-ageouts", 		// 41(0x29)
-	"total-discarded-frames", 		// 42(0x2a)
-	"error-frames", 		// 43(0x2b)
-	"total-discarded-tlvs", 		// 44(0x2c)
-	"total-unrecognized-tlvs", 		// 45(0x2d)
-	"remote-systems-data", 		// 46(0x2e)
-	"time-mark", 		// 47(0x2f)
-	"remote-index", 		// 48(0x30)
-	"remote-too-many-neighbors", 		// 49(0x31)
-	"remote-changes", 		// 50(0x32)
-	"management-address", 		// 51(0x33)
-	"address", 		// 52(0x34)
-	"remote-unknown-tlv", 		// 53(0x35)
-	"tlv-type", 		// 54(0x36)
-	"tlv-info", 		// 55(0x37)
-	"remote-org-defined-info", 		// 56(0x38)
-	"info-identifier", 		// 57(0x39)
-	"info-subtype", 		// 58(0x3a)
-	"info-index", 		// 59(0x3b)
-	"remote-info", 		// 60(0x3c)
+	"nsasc", 		// 2(0x2)
+	"lldp", 		// 3(0x3)
+	"message-fast-tx", 		// 4(0x4)
+	"message-tx-hold-multiplier", 		// 5(0x5)
+	"message-tx-interval", 		// 6(0x6)
+	"reinit-delay", 		// 7(0x7)
+	"tx-credit-max", 		// 8(0x8)
+	"tx-fast-init", 		// 9(0x9)
+	"remote-statistics", 		// 10(0xa)
+	"last-change-time", 		// 11(0xb)
+	"remote-inserts", 		// 12(0xc)
+	"remote-deletes", 		// 13(0xd)
+	"remote-drops", 		// 14(0xe)
+	"remote-ageouts", 		// 15(0xf)
+	"local-system-data", 		// 16(0x10)
+	"chassis-id-subtype", 		// 17(0x11)
+	"chassis-id", 		// 18(0x12)
+	"system-name", 		// 19(0x13)
+	"system-description", 		// 20(0x14)
+	"system-capabilities-supported", 		// 21(0x15)
+	"system-capabilities-enabled", 		// 22(0x16)
+	"port", 		// 23(0x17)
+	"name", 		// 24(0x18)
+	"dest-mac-address", 		// 25(0x19)
+	"admin-status", 		// 26(0x1a)
+	"tlvs-tx-enable", 		// 27(0x1b)
+	"management-address-tx-port", 		// 28(0x1c)
+	"address-subtype", 		// 29(0x1d)
+	"man-address", 		// 30(0x1e)
+	"tx-enable", 		// 31(0x1f)
+	"addr-len", 		// 32(0x20)
+	"if-subtype", 		// 33(0x21)
+	"if-id", 		// 34(0x22)
+	"port-id-subtype", 		// 35(0x23)
+	"port-id", 		// 36(0x24)
+	"port-desc", 		// 37(0x25)
+	"tx-statistics", 		// 38(0x26)
+	"total-frames", 		// 39(0x27)
+	"total-length-errors", 		// 40(0x28)
+	"rx-statistics", 		// 41(0x29)
+	"total-ageouts", 		// 42(0x2a)
+	"total-discarded-frames", 		// 43(0x2b)
+	"error-frames", 		// 44(0x2c)
+	"total-discarded-tlvs", 		// 45(0x2d)
+	"total-unrecognized-tlvs", 		// 46(0x2e)
+	"remote-systems-data", 		// 47(0x2f)
+	"time-mark", 		// 48(0x30)
+	"remote-index", 		// 49(0x31)
+	"remote-too-many-neighbors", 		// 50(0x32)
+	"remote-changes", 		// 51(0x33)
+	"management-address", 		// 52(0x34)
+	"address", 		// 53(0x35)
+	"remote-unknown-tlv", 		// 54(0x36)
+	"tlv-type", 		// 55(0x37)
+	"tlv-info", 		// 56(0x38)
+	"remote-org-defined-info", 		// 57(0x39)
+	"info-identifier", 		// 58(0x3a)
+	"info-subtype", 		// 59(0x3b)
+	"info-index", 		// 60(0x3c)
+	"remote-info", 		// 61(0x3d)
 };
+const uint8_t ieee802_dot1ab_lldp_enum_max=62;
 
-uint8_t ieee802_dot1ab_lldp_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)IEEE802_DOT1AB_LLDP_ENUM_END;i++){
-		if(!strcmp(astr, ieee802_dot1ab_lldp_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "lldp",
+		"urn:ieee:std:802.1AB:yang:ieee802-dot1ab-lldp")!=0){
+		return -1;
 	}
-        return 0xffu;
+	return 0;
 }
 
-const char *ieee802_dot1ab_lldp_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)IEEE802_DOT1AB_LLDP_ENUM_END){return NULL;}
-	return ieee802_dot1ab_lldp_enum_strings[anum];
+	uint8_t apsd[8];
+	apsd[0]=IEEE802_DOT1AB_LLDP_RW;
+	apsd[1]=IEEE802_DOT1AB_LLDP_LLDP;
+	apsd[2]=IEEE802_DOT1AB_LLDP_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"lldp", 5)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -148,6 +158,9 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_ieee802-dot1ab-lldp/lldp/remote-statistics
 	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[1] = IEEE802_DOT1AB_LLDP_LLDP;
@@ -393,3 +406,4 @@ int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 erexit:
 	return res;
 }
+

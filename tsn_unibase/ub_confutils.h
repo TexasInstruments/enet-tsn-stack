@@ -63,6 +63,10 @@
 #ifndef UB_CONFUTILS_H_
 #define UB_CONFUTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Callback function for configuring a single item.
  * 
@@ -89,6 +93,10 @@ typedef int (*ub_set_item_cb_t)(char *itemp, void *v);
  * @return 0 on success, or a negative value on error.
  */
 int ub_read_config_file(char *fname, ub_set_item_cb_t set_item);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @}*/

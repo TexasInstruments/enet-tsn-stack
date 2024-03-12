@@ -50,7 +50,7 @@
 #include <tsn_unibase/unibase.h>
 #include "mind.h"
 #include "gptpconf/gptpgcfg.h"
-#include <tsn_uniconf/yangs/ieee1588-ptp.h>
+#include <tsn_uniconf/yangs/ieee1588-ptp-tt.h>
 #include "gptpnet.h"
 #include "gptpclock.h"
 #include "gptpcommon.h"
@@ -67,7 +67,7 @@ void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 	(*tasglb)->BEGIN=false;
 	(*tasglb)->clockMasterLogSyncInterval=gptpgcfg_get_yang_portds_intitem(
 		gptpInstanceIndex,
-		IEEE1588_PTP_LOG_SYNC_INTERVAL,
+		IEEE1588_PTP_TT_LOG_SYNC_INTERVAL,
 		domainIndex, 0, YDBI_STATUS); // use the data of port=0
 	(*tasglb)->clockMasterSyncInterval.nsec=LOG_TO_NSEC(
 		(*tasglb)->clockMasterLogSyncInterval);
@@ -80,8 +80,8 @@ void ptas_glb_init(PerTimeAwareSystemGlobal **tasglb,
 
 	(*tasglb)->perfmonEnable = gptpgcfg_get_yang_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_PERFORMANCE_MONITORING_DS,
-			IEEE1588_PTP_ENABLE, 255,
+			IEEE1588_PTP_TT_PERFORMANCE_MONITORING_DS,
+			IEEE1588_PTP_TT_ENABLE, 255,
 			domainIndex, YDBI_CONFIG);
 	UB_LOG(UBL_INFO, "IEEE1588-2019 performance monitoring %s.\n",
 		(*tasglb)->perfmonEnable?"enabled":"disabled");
@@ -123,7 +123,7 @@ static bool get_pp_ptpPortEnabled(uint8_t gptpInstanceIndex, uint16_t portIndex,
 {
 	int res;
 	res=gptpgcfg_get_yang_portds_intitem(
-		gptpInstanceIndex, IEEE1588_PTP_PORT_ENABLE,
+		gptpInstanceIndex, IEEE1588_PTP_TT_PORT_ENABLE,
 		portIndex, domainIndex, YDBI_CONFIG);
 	UB_LOG(UBL_DEBUG, "domainIndex=%d, ptpPortEnabled[%d]=%d\n",
 	       domainIndex, portIndex, res);
@@ -170,13 +170,13 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 		(*ppglb)->forAllDomain->mgtSettableLogAnnounceInterval =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_LOG_ANNOUNCE_INTERVAL,
+				IEEE1588_PTP_TT_LOG_ANNOUNCE_INTERVAL,
 				portIndex, domainIndex, YDBI_CONFIG);
 		(*ppglb)->forAllDomain->useMgtSettableLogPdelayReqInterval = false;
 		(*ppglb)->forAllDomain->mgtSettableLogPdelayReqInterval =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_INITIAL_LOG_PDELAY_REQ_INTERVAL,
+				IEEE1588_PTP_TT_INITIAL_LOG_PDELAY_REQ_INTERVAL,
 				portIndex, domainIndex, YDBI_CONFIG);
 		(*ppglb)->useMgtSettableLogSyncInterval = false;
 	}
@@ -185,24 +185,24 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 	(*ppglb)->currentLogSyncInterval =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_CURRENT_LOG_SYNC_INTERVAL,
+			IEEE1588_PTP_TT_CURRENT_LOG_SYNC_INTERVAL,
 			portIndex, domainIndex, YDBI_STATUS);
 	(*ppglb)->initialLogSyncInterval =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_INITIAL_LOG_SYNC_INTERVAL,
+			IEEE1588_PTP_TT_INITIAL_LOG_SYNC_INTERVAL,
 			portIndex, domainIndex, YDBI_CONFIG);
 	(*ppglb)->syncReceiptTimeout =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_SYNC_RECEIPT_TIMEOUT,
+			IEEE1588_PTP_TT_SYNC_RECEIPT_TIMEOUT,
 			portIndex, domainIndex, YDBI_CONFIG);
 	(*ppglb)->syncInterval.nsec =
 		LOG_TO_NSEC(gptpgcfg_get_yang_portds_intitem(
 				    gptpInstanceIndex,
-				    IEEE1588_PTP_LOG_SYNC_INTERVAL,
+				    IEEE1588_PTP_TT_LOG_SYNC_INTERVAL,
 				    portIndex, domainIndex, YDBI_STATUS));
-	// we don't use IEEE1588_PTP_SYNC_RECEIPT_TIMEOUT_INTERVAL
+	// we don't use IEEE1588_PTP_TT_SYNC_RECEIPT_TIMEOUT_INTERVAL
 	(*ppglb)->syncReceiptTimeoutTimeInterval.nsec =
 		(uint8_t)(*ppglb)->syncReceiptTimeout * (*ppglb)->syncInterval.nsec;
 	(*ppglb)->ptpPortEnabled = get_pp_ptpPortEnabled(gptpInstanceIndex,
@@ -215,17 +215,33 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 	(*ppglb)->logGptpCapableMessageInterval =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_CURRENT_LOG_GPTP_CAP_INTERVAL,
+			IEEE1588_PTP_TT_CURRENT_LOG_GPTP_CAP_INTERVAL,
 			portIndex, domainIndex, YDBI_STATUS);
 	(*ppglb)->gPtpCapableReceiptTimeout =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_GPTP_CAP_RECEIPT_TIMEOUT,
+			IEEE1588_PTP_TT_GPTP_CAP_RECEIPT_TIMEOUT,
 			portIndex, domainIndex, YDBI_CONFIG);
-	(*ppglb)->useMgtSettableOneStepTxOper = true;
-	(*ppglb)->mgtSettableOneStepTxOper = false;
-	(*ppglb)->initialOneStepTxOper = false;
-	(*ppglb)->currentOneStepTxOper = false;
+	(*ppglb)->useMgtSettableOneStepTxOper =
+		(gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_TT_USE_MGT_ONE_STEP_TX_OPER,
+			portIndex, domainIndex, YDBI_STATUS)==1);
+	(*ppglb)->mgtSettableOneStepTxOper =
+		(gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_TT_MGT_ONE_STEP_TX_OPER,
+			portIndex, domainIndex, YDBI_STATUS)==1);
+	(*ppglb)->initialOneStepTxOper =
+		(gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_TT_INITIAL_ONE_STEP_TX_OPER,
+			portIndex, domainIndex, YDBI_STATUS)==1);
+	(*ppglb)->currentOneStepTxOper =
+		(gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_TT_CURRENT_ONE_STEP_TX_OPER,
+			portIndex, domainIndex, YDBI_STATUS)==1);
 
 	if(tasglb->perfmonEnable){
 		(*ppglb)->perfmonDS=
@@ -265,8 +281,8 @@ void bmcs_ptas_glb_init(uint8_t gptpInstanceIndex, BmcsPerTimeAwareSystemGlobal 
 	(*btasglb)->externalPortConfiguration =
 		gptpgcfg_get_yang_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_DEFAULT_DS,
-			IEEE1588_PTP_EXTERNAL_PORT_CONFIG_ENABLE, 255,
+			IEEE1588_PTP_TT_DEFAULT_DS,
+			IEEE1588_PTP_TT_EXTERNAL_PORT_CONFIG_ENABLE, 255,
 			domainIndex, YDBI_CONFIG);
 	(*btasglb)->bmcsQuickUpdate =
 		gptpgcfg_get_intitem(
@@ -285,8 +301,8 @@ void bmcs_ptas_glb_update(uint8_t gptpInstanceIndex,
 		(*btasglb)->sysCurrentUTCOffsetValid = false;
 		(*btasglb)->sysPtpTimescale = gptpgcfg_get_yang_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_DEFAULT_DS,
-			IEEE1588_PTP_PTP_TIMESCALE, 255,
+			IEEE1588_PTP_TT_DEFAULT_DS,
+			IEEE1588_PTP_TT_PTP_TIMESCALE, 255,
 			domainIndex, YDBI_STATUS);
 		(*btasglb)->sysTimeTraceable = false;
 		(*btasglb)->sysFrequencyTraceable = false;
@@ -299,43 +315,43 @@ void bmcs_ptas_glb_update(uint8_t gptpInstanceIndex,
 		}
 		(*btasglb)->sysTimeSource = gptpgcfg_get_yang_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_DEFAULT_DS,
-			IEEE1588_PTP_TIME_SOURCE, 255,
+			IEEE1588_PTP_TT_DEFAULT_DS,
+			IEEE1588_PTP_TT_TIME_SOURCE, 255,
 			domainIndex, YDBI_STATUS);
 		/* 10.3.5 systemPriority vector */
 		// systemPriority = {SS: 0: {CS: 0}: 0}
 		(*btasglb)->systemPriority.rootSystemIdentity.priority1 =
 			gptpgcfg_get_yang_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_DEFAULT_DS,
-				IEEE1588_PTP_PRIORITY1, 255,
+				IEEE1588_PTP_TT_DEFAULT_DS,
+				IEEE1588_PTP_TT_PRIORITY1, 255,
 				domainIndex, YDBI_CONFIG);
 		(*btasglb)->systemPriority.rootSystemIdentity.clockClass =
 			gptpgcfg_get_yang_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_DEFAULT_DS,
-				IEEE1588_PTP_CLOCK_QUALITY,
-				IEEE1588_PTP_CLOCK_CLASS,
+				IEEE1588_PTP_TT_DEFAULT_DS,
+				IEEE1588_PTP_TT_CLOCK_QUALITY,
+				IEEE1588_PTP_TT_CLOCK_CLASS,
 				domainIndex, YDBI_CONFIG);
 		(*btasglb)->systemPriority.rootSystemIdentity.clockAccuracy =
 			gptpgcfg_get_yang_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_DEFAULT_DS,
-				IEEE1588_PTP_CLOCK_QUALITY,
-				IEEE1588_PTP_CLOCK_ACCURACY,
+				IEEE1588_PTP_TT_DEFAULT_DS,
+				IEEE1588_PTP_TT_CLOCK_QUALITY,
+				IEEE1588_PTP_TT_CLOCK_ACCURACY,
 				domainIndex, YDBI_CONFIG);
 		(*btasglb)->systemPriority.rootSystemIdentity.offsetScaledLogVariance =
 			gptpgcfg_get_yang_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_DEFAULT_DS,
-				IEEE1588_PTP_CLOCK_QUALITY,
-				IEEE1588_PTP_OFFSET_SCALED_LOG_VARIANCE,
+				IEEE1588_PTP_TT_DEFAULT_DS,
+				IEEE1588_PTP_TT_CLOCK_QUALITY,
+				IEEE1588_PTP_TT_OFFSET_SCALED_LOG_VARIANCE,
 				domainIndex, YDBI_CONFIG);
 		(*btasglb)->systemPriority.rootSystemIdentity.priority2 =
 			gptpgcfg_get_yang_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_DEFAULT_DS,
-				IEEE1588_PTP_PRIORITY2, 255,
+				IEEE1588_PTP_TT_DEFAULT_DS,
+				IEEE1588_PTP_TT_PRIORITY2, 255,
 				domainIndex, YDBI_CONFIG);
 		memcpy((*btasglb)->systemPriority.rootSystemIdentity.clockIdentity,
 		       ptasglb->thisClock, sizeof(ClockIdentity));
@@ -367,12 +383,12 @@ void bmcs_pp_glb_init(uint8_t gptpInstanceIndex, BmcsPerPortGlobal **bppglb,
 	(*bppglb)->initialLogAnnounceInterval =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_INITIAL_LOG_ANNOUNCE_INTERVAL,
+			IEEE1588_PTP_TT_INITIAL_LOG_ANNOUNCE_INTERVAL,
 			portIndex, domainIndex, YDBI_CONFIG);
 	(*bppglb)->announceReceiptTimeout =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
-			IEEE1588_PTP_ANNOUNCE_RECEIPT_TIMEOUT,
+			IEEE1588_PTP_TT_ANNOUNCE_RECEIPT_TIMEOUT,
 			portIndex, domainIndex, YDBI_CONFIG);
 }
 

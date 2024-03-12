@@ -77,8 +77,7 @@ typedef struct {
 
 typedef struct {
 	CB_ETHHDR_T ehd;
-	/* Might need to store the 64 bit rx timestamp at the end of the pkt */
-	uint8_t pdata[GPTP_MAX_PACKET_SIZE + 8U];
+	uint8_t pdata[GPTP_MAX_PACKET_SIZE];
 } __attribute__((packed)) ptpkt_t;
 
 typedef struct netdevice {
@@ -102,7 +101,6 @@ struct gptpnet_data {
 	ptpkt_t rxbuf;
 	CB_SOCKET_T lldsock;
 	uint8_t gptpInstanceIndex;
-	bool is_rxts_inbuff;
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -169,7 +167,6 @@ static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet,
 		if(cb_rawsock_open(&llrawp, &gpnet->lldsock, NULL, NULL, srcmac) < 0) {
 			return -1;
 		}
-		gpnet->is_rxts_inbuff = cb_lld_is_rxts_inbuff(gpnet->lldsock);
 		cb_lld_set_txnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 		cb_lld_set_rxnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 
@@ -412,7 +409,8 @@ static int macport_to_ndev_index(gptpnet_data_t *gpnet, int macport)
 	return -1;
 }
 
-static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf, int size, int macport)
+static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf,
+						   int size, int macport, uint64_t rxts)
 {
 	event_data_recv_t edtrecv;
 	int seqid;
@@ -445,10 +443,8 @@ static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf, int size, int ma
 	edtrecv.msgtype = PTP_HEAD_MSGTYPE(buf+ETH_HLEN);
 	seqid = PTP_HEAD_SEQID(buf+ETH_HLEN);
 	if (edtrecv.msgtype < 8) {
-		if(gpnet->is_rxts_inbuff) {
-			/* If rxts is present in pkt,
-			 * 8 bytes after the pkt are the timestamp */
-			memcpy(&edtrecv.ts64, &(buf[size]), 8U);
+		if(rxts > 0) {
+			edtrecv.ts64 = rxts;
 		} else {
 			res = LLDTSyncGetRxTime(gpnet->lldtsync, macport, edtrecv.msgtype,
 									seqid, edtrecv.domain, (uint64_t *)&edtrecv.ts64);
@@ -469,12 +465,13 @@ static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf, int size, int ma
 
 static int process_rxdata(gptpnet_data_t *gpnet)
 {
-	int macport = 0;
+	CB_SOCKADDR_LL_T addr;
 	int res;
 
 	while (1) {
 		res = cb_lld_recv(gpnet->lldsock, &gpnet->rxbuf,
-						  sizeof(gpnet->rxbuf), &macport);
+				  sizeof(gpnet->rxbuf), &addr,
+				  sizeof(CB_SOCKADDR_LL_T));
 		if (res <= 0) {
 			break;
 		}
@@ -482,7 +479,7 @@ static int process_rxdata(gptpnet_data_t *gpnet)
 		if (res == 0xFFFF) {
 			continue;
 		}
-		provide_rxframe(gpnet, (uint8_t*)&gpnet->rxbuf, res, macport);
+		provide_rxframe(gpnet, (uint8_t*)&gpnet->rxbuf, res, addr.macport, addr.rxts);
 	}
 	return 0;
 }

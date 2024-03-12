@@ -257,12 +257,13 @@ int try_recv_packet(hw_interface_list* hw_if_list, int timeout_usec)
 	{
 		while(1)
 		{
-			int macport = 0;
+			CB_SOCKADDR_LL_T addr;
 			uint8_t buf[MAX_LLDP_SIZE] = {0};
 			int recv_len = cb_lld_recv(lldpsock, 
 										buf, 
 										MAX_LLDP_SIZE, 
-										&macport);
+										&addr,
+										sizeof(CB_SOCKADDR_LL_T));
 
 			if(recv_len > 0 && recv_len != 0xFFFF)
 			{
@@ -270,10 +271,10 @@ int try_recv_packet(hw_interface_list* hw_if_list, int timeout_usec)
 				ub_macaddr_t dst_mac = {0, 0, 0, 0, 0, 0};
 				get_dest_mac_addr((const char*)buf, &read_idx, dst_mac);
 
-				hw_interface *interface = find_receiving_port(hw_if_list, macport, dst_mac);
+				hw_interface *interface = find_receiving_port(hw_if_list, addr.macport, dst_mac);
 				if (interface && (interface->cfg_port->admin_status == rx_only || interface->cfg_port->admin_status == tx_and_rx) )
 				{
-					UB_LOG(UBL_DEBUG, "%s Received %d bytes from %s:macport %d \n", __func__, interface->lldpsock->recv_len, interface->if_name, macport);
+					UB_LOG(UBL_DEBUG, "%s Received %d bytes from %s:macport %d \n", __func__, recv_len, interface->if_name, adddr.macport);
 					if ( interface->agent_info.rxInfoAge == false)
 					{
 						interface->lldpsock->recv_len = recv_len;

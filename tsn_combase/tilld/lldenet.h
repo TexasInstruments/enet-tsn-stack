@@ -63,8 +63,6 @@
  */
 typedef struct LLDEnet LLDEnet_t;
 
-#define MAX_NUM_RX_DMA_CH_PER_INSTANCE 2
-
 /**
  * @brief Configuration structure for LLDEnet.
  */
@@ -184,6 +182,10 @@ typedef struct {
 	 * Set to -1 to not assign a traffic class.
 	 */
 	int tc;
+	/**
+	 * timestamp of rx packet which was captured by host port.
+	 */
+	uint64_t rxts;
 } LLDEnetFrame_t;
 
 /**
@@ -269,6 +271,17 @@ int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFram
 int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame);
 
 /**
+ * @brief Receives an Ethernet frame using LLDEnet in the Zero-Copy way.
+ *
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @param LLDEnetRecvCb Receive callback
+ * @param cbArg Callback argument
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDEnetRecvZeroCopy(LLDEnet_t *hLLDEnet,
+		void (*LLDEnetRecvCb)(LLDEnetFrame_t *frame, void *cbArg),  void *cbArg);
+
+/**
  * @brief Checks if the specified port is up.
  *
  * @param hLLDEnet Pointer to the LLDEnet instance.
@@ -323,36 +336,13 @@ int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
 		void (*rxDefaultDataCb)(void *data, int size, int port, void *arg), void *arg);
 
 /**
- * @brief Set parameters for schedule traffic
- *
- * @param hLLDEnet Pointer to the LLDEnet instance.
- * @param macPort port number of the MAC port to be configured with TAS parameters.
- * @param arg input argument to be configured. The caller shall pass
- *		an object of `cbl_tas_sched_params_t` via this argument.
- * @return LLDENET_E_OK: on success, an error code otherwise.
- */
-int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *arg);
-
-/**
- * @brief Set frame preemption parameters for the port indicated by `macPort`.
- *
- * @param hLLDEnet Pointer to the LLDEnet instance.
- * @param macPort port number of the MAC port to be configured with TAS parameters.
- * @param reqPrm input argument to be configured. The caller shall pass
- *		an object of `cbl_preempt_params_t` via this argument.
- * @param resPrm response parameters will be stored in this object. The caller shall pass
- *	   address of an object `cbl_cb_event_t` to this API.
- * @return LLDENET_E_OK: on success, an error code otherwise.
- */
-int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort, void *reqPrm, void *resPrm);
-
-/**
  * @brief Checks the receive packet timestamping mode.
  *
  * @param hLLDEnet Pointer to the LLDEnet instance.
  * @return true if isRxTsInPkt is true for the LLDEnet handle.
  */
 bool LLDEnetIsRxTsInPkt(LLDEnet_t *hLLDEnet);
+
 #endif //LLDENET_H_
 
 /** @}*/

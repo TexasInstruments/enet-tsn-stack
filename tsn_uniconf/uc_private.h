@@ -53,13 +53,11 @@
 #include "uc_dbal.h"
 #include "hal/uc_hwal.h"
 #include "uc_notice.h"
-#include "yangs/tsn_data.h"
 
 typedef struct uc_data {
 	uc_dbald *dbald;
 	uc_hwald *hwald;
 	uc_notice_data_t *ucntd;
-	xl4_data_data_t *xdd;
 } uc_data_t;
 
 #endif

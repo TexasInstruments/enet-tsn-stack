@@ -53,7 +53,12 @@
 #include "yang_db_access.h"
 #include "ietf-interfaces.h"
 
-static void set_dpara_k3vk0(yang_db_access_para_t *dbpara,
+extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
+#define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
+#define IETF_INTERFACES_RO (IETF_INTERFACES_func(dbald)|0x80u)
+#define IETF_INTERFACES_RO_Y (IETF_INTERFACES_func(ydbia->dbald)|0x80u)
+
+static void set_dpara_k3vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
@@ -69,7 +74,7 @@ static void set_dpara_k3vk0(yang_db_access_para_t *dbpara,
 	dbpara->kvs[1]=NULL;
 }
 
-static void set_dpara_k4vk1(yang_db_access_para_t *dbpara,
+static void set_dpara_k4vk1(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    char *name, uint8_t k1, uint8_t k2, uint8_t k3,
 			    uint8_t k4, void *kv1, uint32_t kvs1, bool status,
 			    uint8_t onhw)
@@ -94,7 +99,7 @@ static void set_dpara_k4vk1(yang_db_access_para_t *dbpara,
 // vk_sz indicates how many bytes used to encode the parameter `vk`.
 // when the vk_sz is equal to 0, the value of `vk` shall not be used by this
 // function.
-static void set_dpara_knvk1(yang_db_access_para_t *dbpara,
+static void set_dpara_knvk1(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    char *name, uint32_t vk, uint8_t vk_sz,
 			    uint8_t kn[], uint8_t kn_sz, bool status)
 {
@@ -126,7 +131,7 @@ int ydbi_get_item_ifknvk0(yang_db_item_access_t *ydbia, void **rval,
 			  char *name, uint8_t kn[], uint8_t sz, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvk1(&ydbia->dbpara, name, 0, 0, kn, sz, status);
+	set_dpara_knvk1(ydbia->dbald, &ydbia->dbpara, name, 0, 0, kn, sz, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
@@ -135,7 +140,7 @@ int ydbi_set_item_ifknvk0(yang_db_item_access_t *ydbia,
 			  void *value, uint32_t vsize, uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvk1(&ydbia->dbpara, name, 0, 0, kn, sz, status);
+	set_dpara_knvk1(ydbia->dbald, &ydbia->dbpara, name, 0, 0, kn, sz, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -145,7 +150,7 @@ int ydbi_del_item_ifknvk0(yang_db_item_access_t *ydbia, char *name,
 			  uint8_t kn[], uint8_t sz, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvk1(&ydbia->dbpara, name, 0, 0, kn, sz, status);
+	set_dpara_knvk1(ydbia->dbald, &ydbia->dbpara, name, 0, 0, kn, sz, status);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
@@ -154,7 +159,7 @@ int ydbi_get_item_ifknvk1(yang_db_item_access_t *ydbia, void **rval,
 			  uint8_t kn[], uint8_t sz, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvk1(&ydbia->dbpara, name, vk, vk_sz, kn, sz, status);
+	set_dpara_knvk1(ydbia->dbald, &ydbia->dbpara, name, vk, vk_sz, kn, sz, status);
 	int err=ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 	return err;
 }
@@ -165,7 +170,7 @@ int ydbi_set_item_ifknvk1(yang_db_item_access_t *ydbia,
 			  void *value, uint32_t vsize, uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvk1(&ydbia->dbpara, name, vk, vk_sz, kn, sz, status);
+	set_dpara_knvk1(ydbia->dbald, &ydbia->dbpara, name, vk, vk_sz, kn, sz, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -177,7 +182,7 @@ int ydbi_del_item_ifknvk1(yang_db_item_access_t *ydbia,
 			  uint8_t kn[], uint8_t sz, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvk1(&ydbia->dbpara, name, vk, vk_sz, kn, sz, status);
+	set_dpara_knvk1(ydbia->dbald, &ydbia->dbpara, name, vk, vk_sz, kn, sz, status);
 	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 	return err;
 }
@@ -186,7 +191,7 @@ int ydbi_get_item_ifk3vk0(yang_db_item_access_t *ydbia, void **rval,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(&ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
@@ -194,7 +199,7 @@ int ydbi_rel_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(&ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
 	return ydbi_rel_foot(ydbia, __func__);
 }
 
@@ -203,7 +208,7 @@ int ydbi_set_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  void *value, uint32_t vsize, uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(&ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -213,7 +218,7 @@ int ydbi_del_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(&ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
@@ -222,7 +227,7 @@ int ydbi_get_item_ifk4vk1(yang_db_item_access_t *ydbia, void **rval,
 			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(&ydbia->dbpara, name, k1, k2, k3,
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
 			k4, kv1, kvs1, status, YANG_DB_ONHW_NOACTION);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
@@ -232,7 +237,7 @@ int ydbi_rel_item_ifk4vk1(yang_db_item_access_t *ydbia,
 			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(&ydbia->dbpara, name, k1, k2, k3,
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
 			k4, kv1, kvs1, status, YANG_DB_ONHW_NOACTION);
 	return ydbi_rel_foot(ydbia, __func__);
 }
@@ -244,7 +249,7 @@ int ydbi_set_item_ifk4vk1(yang_db_item_access_t *ydbia,
 			  uint8_t onhw)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(&ydbia->dbpara, name, k1, k2, k3,
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
 			k4, kv1, kvs1, status, onhw);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
@@ -256,7 +261,7 @@ int ydbi_del_item_ifk4vk1(yang_db_item_access_t *ydbia,
 			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(&ydbia->dbpara, name, k1, k2, k3,
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
 			k4, kv1, kvs1, status, YANG_DB_ONHW_NOACTION);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
@@ -291,7 +296,7 @@ int ydbi_get_ifupdown(yang_db_item_access_t *ydbia, const char *netdev)
 {
 	void *kvs[2]={(void*)netdev, NULL};
 	uint8_t kss[1]={strlen(netdev)};
-	uint8_t aps[5]={IETF_INTERFACES_RO, IETF_INTERFACES_INTERFACES,
+	uint8_t aps[5]={IETF_INTERFACES_RO_Y, IETF_INTERFACES_INTERFACES,
 			IETF_INTERFACES_INTERFACE, IETF_INTERFACES_OPER_STATUS, 255};
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ, YANG_DB_ONHW_NOACTION,
 				      NULL, aps, kvs, kss, NULL, 0};
@@ -310,7 +315,7 @@ int ydbi_set_ifupdown_ucnotice(yang_db_item_access_t *ydbia, const char *netdev,
 {
 	void *kvs[3]={(void*)netdev, (char*)semname, NULL};
 	uint8_t kss[2]={strlen(netdev)+1, 0};
-	uint8_t aps[5]={IETF_INTERFACES_RO, IETF_INTERFACES_INTERFACES,
+	uint8_t aps[5]={IETF_INTERFACES_RO_Y, IETF_INTERFACES_INTERFACES,
 			IETF_INTERFACES_INTERFACE, IETF_INTERFACES_OPER_STATUS, 255};
 	kss[1]=strlen(semname)+1;
 	return uc_nc_notice_register(ydbia->ucntd, ydbia->dbald, aps, kvs, kss,

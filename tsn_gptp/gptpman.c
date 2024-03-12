@@ -47,11 +47,11 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#include <tsn_unibase/unibase.h>
 #include <signal.h>
-#include "gptpman_private.h"
+#include <tsn_unibase/unibase.h>
+#include <tsn_combase/combase_link.h>
 #include "gptpcommon.h"
-#include "tsn_combase/combase_link.h"
+#include "gptpman_private.h"
 
 extern char *PTPMsgType_debug[16];
 extern char *gptpnet_event_debug[8];
@@ -268,8 +268,7 @@ static int gptpnet_cb_devup(gptpman_data_t *gpmand, int portIndex,
 	case CB_DUPLEX_HALF: dup="half"; break;
 	default: dup="unknown"; break;
 	}
-	UB_LOG(UBL_INFO, "index=%d speed=%d, duplex=%s, ptpdev=%s\n",
-	       portIndex, (int)ed->speed, dup, ed->ptpdev);
+	UB_LOG(UBL_INFO, "index=%d speed=%d, duplex=%s\n", portIndex, (int)ed->speed, dup);
 
 	if((ed->speed<100u) || (ed->duplex!=1u)){
 		UB_LOG(UBL_WARN,"!!! Full duplex link with "
@@ -973,7 +972,7 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	UB_SD_PRINT_USAGE(SM_DATA_INST, UBL_INFO);
 	UB_LOG(UBL_INFO, "%s:GPTPNET_INTERVAL_TIMEOUT_NSEC=%d\n",
 		   __func__,(int)GPTPNET_INTERVAL_TIMEOUT_NSEC);
-	(void)gptpnet_eventloop(gpmand->gpnetd, stopgptp);
+	res=gptpnet_eventloop(gpmand->gpnetd, stopgptp);
 	(void)all_sm_close(gpmand);
 	md_abnormal_close();
 erexit:

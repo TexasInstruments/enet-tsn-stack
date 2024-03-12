@@ -56,20 +56,88 @@
 #define UB_SD_STATIC
 #define UC_RUNCONF
 #define UB_ESARRAY_DFNUM 256
-#define CB_NOIPCSHMEM_DFSIZE 32
-#define CB_LLDSEM_INSTNUM 15
+
+#define CB_NOIPCSHMEM_DFNUM 200 /* To support avtp RX 40Mbps */
+#define CB_NOIPCSHMEM_DFSIZE 1024
+
+#define SIMPLEDB_DBDATANUM 1600
+
+// Default values in case of unuse avtp
+//#define CB_LLDTASK_INSTNUM 10
+//#define CB_LLDSEM_INSTNUM 12
+//#define CB_LLDTASK_STACK_INSTNUM 1
+
+#define TSN_USE_LOG_BUFFER 0
+
+#if TSN_USE_LOG_BUFFER == 1
+#define LOG_TASK_NUM 1
+#else
+#define LOG_TASK_NUM 0
+#endif
+// To enable up to 2 avtp applications, use below configurations:
+// Note: Increase the configuration values will cause memory size increased.
+// Number of task(s) to be used:
+
+// To configure CB_LLDTASK_INSTNUM
+// Log task: LOG_TASK_NUM
+// Per system: uniconf, gptp2, avtpd, uc_hwal_catch_events_thread (total 4)
+// Avtp RX: alwas 1 (even if there are multiple interfaces tilld0,1,..)
+// Per stream (+2 per app):
+//      +1 per avtp apps (talker or listener)
+//      +1 avtpc connection handle if the stream is listener
+//      +1 avtpd connection handle if the stream is the talker
+// => To enable 1 avtp app: we need 4 + 1 + 2 = 7 tasks
+// => To enable 2 avtp app: we need 4 + 1 + 2*2 = 9 tasks
+#define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
+
+// To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
+// inside the combase.
+// Per system: uc_hwal_catch_events_thread (total: 1)
+// Avtp RX: alwas 1 (even if there are multiple interfaces tilld0,1,..)
+// Per stream (+1 per app):
+//      +1 avtpc connection handle if the stream is listener
+//      +1 avtpd connection handle if the stream is the talker
+// => To enable 1 avtp app: we need 1 + 1 + 1 = 3 stacks
+// => To enable 2 avtp app: we need 1 + 1 + 1*2 = 4 stacks
+#define CB_LLDTASK_STACK_INSTNUM 4
+
+// To configure CB_LLDSEM_INSTNUM (CB_SEM_INIT)
+// Per system:
+//      tsnapp  (total 2)
+//          ucReadySem
+//          g_avtpd_ready_sem(in case avtp enabled) +1)
+//      uniconf (total 3)
+//          simpledb open
+//          uc_notice_init
+//          ydbi_access_init
+//      gptp2   (total 3)
+//          ydbi_access_init
+//          ifup/down notice
+//          rx sem
+//      avtpd   (total 4)
+//          ydbi_access_init
+//          avtpd_init sem_request/sem_response + 2
+//          rx sem + 1
+// Per stream:
+//      avtpd (+4 per stream tsem_set/tsem_rel/rsem_set/rsem_rel)
+// => To enable 1 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*1 = 16 SEMs
+// => To enable 2 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*2 = 20 SEMs
+#define CB_LLDSEM_INSTNUM 20
+
+#define AVTP_ETHPKT_NUM 1
 #define DISABLE_FAT_FS
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
 #define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
 #define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
 #define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
 #define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#define AVTP_PLATFORM_INCLUDE "tsn_l2/tilld/frtos_avtp_include.h"
 
 /* Disable the DEBUG and DEBUGV log level at the compilation time */
 #define UB_LOG_COMPILE_LEVEL UBL_INFOV
 
-/* Interval timeout in nanoseconds used to generate timers in GPTP. Supported
- * values are 125, 62.5, 31.25, 15.625 and 7.8125 milliseconds. */
+/* Interval timeout in nanoseconds used to generate timers in GPTP.
+ * Supported values are 125, 62.5, 31.25, 15.625 and 7.8125 milliseconds. */
 //#define GPTPNET_INTERVAL_TIMEOUT_NSEC 15625000u
 
 /* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */

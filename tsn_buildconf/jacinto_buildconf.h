@@ -58,6 +58,7 @@
 #define UC_RUNCONF
 
 #define UB_ESARRAY_DFNUM 256
+#define SIMPLEDB_DBDATANUM 1600
 
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
 #define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
@@ -67,11 +68,10 @@
 
 #define UB_LOG_COMPILE_LEVEL UBL_INFOV
 
-#define CB_XTIMER_TMNUM 30
-
 /* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
 #define GPTP_MAX_PORTS 4
 #define GPTP_MAX_DOMAINS 2
+#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
 
 /*LLDP Definition*/
 // Each port can have 3 LLDP agents     
@@ -79,6 +79,11 @@
 // Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
 // Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
 #define LLDP_CFG_PORT_INSTNUM (4 * 3)
+
+// LLDP system has one timer to check db change
+// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
+// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
+#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
 
 // The information below apply  for max length of 
 // - Local Chassis ID, 
@@ -94,7 +99,7 @@
 // - Port Description
 // - System name
 // - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 128
+#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
 
 // The information below apply  for max length of remote unknown TLV info
 // - Remote unknown TLV

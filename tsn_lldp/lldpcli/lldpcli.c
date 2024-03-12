@@ -62,7 +62,7 @@
 #include "../lldp_yangdb.h"
 #include "../lldp_utils.h"
 #include <signal.h>
-#include "getopt.h"
+#include <getopt.h>
 
 bool terminated = false;
 char* lldp_db_name = "cfg/lldp_db";

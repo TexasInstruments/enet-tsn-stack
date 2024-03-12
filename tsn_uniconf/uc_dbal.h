@@ -66,6 +66,13 @@ typedef void uc_range;
 #define UC_MAX_VALUEKEYS 8 // max number of value keys
 #define UC_MAX_VALUESIZE 320
 
+#ifndef UC_MAX_AP_DEPTH
+#define UC_MAX_AP_DEPTH 16
+#endif
+#ifndef UC_MAX_KV_DEPTH
+#define UC_MAX_KV_DEPTH 10
+#endif
+
 #define UC_CALLMODE_UNICONF (1u<<0u)
 #define UC_CALLMODE_THREAD (1u<<1u)
 #define UC_CALL_UNICONF(x) ((x)&UC_CALLMODE_UNICONF)
@@ -122,11 +129,11 @@ int uc_dbal_get_release(uc_dbald *dbald, void *key, uint32_t ksize,
 
 int uc_dbal_del(uc_dbald *dbald, void *key, uint32_t ksize);
 
-// get the range as 'key1 <= range <= key2', all values are locked.
+// get the range as 'key1 <= range <= key2'
 uc_range *uc_get_range(uc_dbald *dbald, void *key1, uint32_t ksize1,
 		       void *key2, uint32_t ksize2);
 
-// release the locks in the range
+// release the range object
 void uc_get_range_release(uc_dbald *dbald, uc_range *range);
 
 #define UC_DBAL_FORWARD 1

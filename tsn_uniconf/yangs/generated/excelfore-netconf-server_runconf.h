@@ -55,6 +55,4 @@
 
 int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t excelfore_netconf_server_get_enum(char *astr);
-const char *excelfore_netconf_server_get_string(uint8_t anum);
 #endif

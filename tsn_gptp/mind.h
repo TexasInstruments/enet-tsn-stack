@@ -50,6 +50,7 @@
 #ifndef MIND_H_
 #define MIND_H_
 
+#include <tsn_uniconf/yangs/yang_db_access.h>
 #include "gptpbasetypes.h"
 #include <stdint.h>
 

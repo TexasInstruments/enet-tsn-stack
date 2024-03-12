@@ -54,12 +54,12 @@
 #include "cb_ethernet.h"
 #include "lld_ethernet_private.h"
 #include "cb_lld_thread.h"
+#include "lldenetext.h"
 
 #define MAC_VALID(mac) (((mac)[0]|(mac)[1]|(mac)[2]|(mac)[3]|(mac)[4]|(mac)[5]) != 0)
+#define CB_LLD_PRIORITY_MAX (7U)
 
 static netdev_map_t s_ndevmap_table[MAX_NUMBER_ENET_DEVS];
-static CB_THREAD_MUTEX_T s_ndevmap_table_lock;
-static CB_THREAD_MUTEX_T alloc_mac_lock;
 static int s_num_devs;
 static uint32_t s_enet_type;
 static uint32_t s_instance_id;
@@ -80,7 +80,7 @@ static cb_socket_lldcfg_update_cb_t s_socket_lldcfg_update_cb;
 UB_SD_GETMEM_DEF(CB_LLDSOCKET_MMEM, (int)sizeof(lld_socket_t),
 		 CB_LLDSOCKET_INSTNUM);
 
-static netdev_map_t* find_netdev_map(const char *netdev);
+static netdev_map_t *find_netdev_map(const char *netdev);
 
 static int ovip_socket_open(CB_SOCKET_T *sfd, cb_rawsock_ovip_para_t *ovipp)
 {
@@ -97,10 +97,8 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 				cb_socket_lldcfg_update_t *update_cfg)
 {
 	uint32_t i;
+	int res;
 
-	if (s_socket_lldcfg_update_cb == NULL) {
-		return 0;
-	}
 	update_cfg->dev = llrawp->dev;
 	update_cfg->proto = llrawp->proto;
 	update_cfg->vlanid = llrawp->vlanid;
@@ -113,9 +111,12 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 	update_cfg->dmaRxShared = -1;
 	update_cfg->dmaRxOwner = -1;
 	update_cfg->numRxChannels = 0;
-	if (s_socket_lldcfg_update_cb(update_cfg) < 0) {
-		UB_LOG(UBL_ERROR,"%s:update lldcfg failed\n", __func__);
-		return -1;
+	if (s_socket_lldcfg_update_cb != NULL) {
+		UB_PROTECTED_FUNC(s_socket_lldcfg_update_cb, res, update_cfg);
+		if (res != 0) {
+			UB_LOG(UBL_ERROR,"%s:update lldcfg failed\n", __func__);
+			return -1;
+		}
 	}
 	if (update_cfg->nTxPkts > 0) {
 		ecfg->nTxPkts = update_cfg->nTxPkts;
@@ -128,9 +129,9 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 			ecfg->dmaRxChId[i] = update_cfg->dmaRxChId[i];
 		}
 	}
-	 if (update_cfg->pktSize > 0) {
-			ecfg->pktSize = update_cfg->pktSize;
-		}
+	if (update_cfg->pktSize > 0) {
+		ecfg->pktSize = update_cfg->pktSize;
+	}
 	if (update_cfg->dmaTxChId >= 0) {
 		ecfg->dmaTxChId = update_cfg->dmaTxChId;
 	}
@@ -158,11 +159,10 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 	return 0;
 }
 
-static void cb_update_mac_addr(CB_SOCKET_T sfd,
+static void update_mac_addr(CB_SOCKET_T sfd,
 				   const char *dev, ub_macaddr_t bmac)
 {
 	int i;
-	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		if (!strncmp(dev, s_ndevmap_table[i].netdev, strlen(dev))) {
 			memcpy(s_ndevmap_table[i].srcmac, bmac, ETH_ALEN);
@@ -170,14 +170,12 @@ static void cb_update_mac_addr(CB_SOCKET_T sfd,
 			break;
 		}
 	}
-	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 }
 
-static void cb_free_mac_addr(CB_SOCKET_T sfd)
+static void free_mac_addr(CB_SOCKET_T sfd)
 {
 	int i;
 
-	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		if (s_ndevmap_table[i].sock == sfd) { /* multiple macs can have the same fd */
 			if (MAC_VALID(s_ndevmap_table[i].srcmac)) {
@@ -187,7 +185,6 @@ static void cb_free_mac_addr(CB_SOCKET_T sfd)
 			}
 		}
 	}
-	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 }
 
 static int find_mac_addr_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bmac)
@@ -200,33 +197,23 @@ static int find_mac_addr_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bm
 		return res;
 	}
 
-	/**
-	 * Note: The find_netdev_map locks and unlocks the s_ndevmap_table_lock
-	 * but since the find_netdev_map returns address of an element
-	 * from the global table, we have to lock that mutex again here to ensure
-	 * no other threads modify the table while we are copying mac address.
-	 */
-	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	if (!MAC_VALID(ndevmap->srcmac)) {
 		res = LLDENET_E_NOAVAIL;
 	} else {
 		memcpy(bmac, ndevmap->srcmac, ETH_ALEN);
 		res = LLDENET_E_OK;
 	}
-	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 
 	return res;
 }
 
 /* If can not find, will try to allocate a new mac */
-static int cb_alloc_mac_addr(const char *ifname,
+static int alloc_mac_addr(const char *ifname,
 				 lld_socket_t *sock, ub_macaddr_t bmac)
 {
 	int res = -1;
 
-	CB_THREAD_MUTEX_LOCK(&alloc_mac_lock);
 	if ((res = find_mac_addr_bydev(sock, ifname, bmac)) != LLDENET_E_NOAVAIL) {
-		CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
 		return (res == LLDENET_E_OK? 0: -1);
 	}
 
@@ -236,13 +223,21 @@ static int cb_alloc_mac_addr(const char *ifname,
 	} else {
 		UB_LOG(UBL_INFO,"%s: alloc mac: "UB_PRIhexB6"\n", ifname, UB_ARRAY_B6(bmac));
 		/* Update this macaddr to a global table to share mac address
-		   with other socket instance which is openned on the same port */
-		cb_update_mac_addr(sock, ifname, bmac);
+		 * with other socket instance which is openned on the same port */
+		update_mac_addr(sock, ifname, bmac);
 		res = 0;
 	}
-	CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
 
 	return res;
+}
+
+static int get_macports(uint8_t *mac_ports)
+{
+	int i;
+	for (i = 0; i < s_num_devs; i++) {
+		mac_ports[i] = s_ndevmap_table[i].macport;
+	}
+	return i;
 }
 
 int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_T *addr,
@@ -266,7 +261,7 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 			   __func__);
 		return -1;
 	}
-	sock = (lld_socket_t*) UB_SD_GETMEM(CB_LLDSOCKET_MMEM, sizeof(lld_socket_t));
+	sock = (lld_socket_t*)UB_SD_GETMEM(CB_LLDSOCKET_MMEM, sizeof(lld_socket_t));
 	if (sock == NULL) {
 		UB_LOG(UBL_ERROR,"%s:SOCK is NULL\n",
 			   __func__);
@@ -300,8 +295,8 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	}
 	sock->vlanid = llrawp->vlanid;
 	sock->eth_type = llrawp->proto;
-	if (cb_alloc_mac_addr(llrawp->dev, sock, bmac)) {
-		UB_LOG(UBL_ERROR,"%s:cb_alloc_mac_addr() failure.\n",
+	if (cb_get_mac_bydev(sock, llrawp->dev, bmac)) {
+		UB_LOG(UBL_ERROR,"%s:alloc_mac_addr() failure.\n",
 			   __func__);
 		goto error;
 	}
@@ -323,6 +318,14 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 	if (mtusize != NULL) {
 		*mtusize = CB_LLD_MAX_ETH_FRAME_SIZE;
 	}
+	if (sock->eth_type == ETH_P_1588) {
+		/* Map DMA Tx channel ID of untagged packets to highest HW queue */
+		uint8_t mac_ports[MAX_NUMBER_ENET_DEVS];
+		int res;
+		UB_PROTECTED_FUNC(get_macports, res, mac_ports);
+		LLDEnetEnableQueueDMAChannelMapping(sock->lldenet, mac_ports,
+						    res, CB_LLD_PRIORITY_MAX);
+	}
 	*fd = sock;
 	return 0;
 
@@ -337,9 +340,7 @@ int cb_rawsock_close(CB_SOCKET_T fd)
 		return -1;
 	}
 
-	CB_THREAD_MUTEX_LOCK(&alloc_mac_lock);
-	cb_free_mac_addr(fd);
-	CB_THREAD_MUTEX_UNLOCK(&alloc_mac_lock);
+	UB_PROTECTED_FUNC_VOID(free_mac_addr, fd);
 
 	if (fd->lldenet != NULL) {
 		LLDEnetClose(fd->lldenet);
@@ -363,7 +364,9 @@ int cb_set_promiscuous_mode(CB_SOCKET_T sfd, const char *dev, bool enable)
 
 int cb_get_mac_bydev(CB_SOCKET_T sfd, const char *dev, ub_macaddr_t bmac)
 {
-	return cb_alloc_mac_addr(dev, sfd, bmac);
+	int res;
+	UB_PROTECTED_FUNC(alloc_mac_addr, res, dev, sfd, bmac);
+	return res;
 }
 
 int cb_get_ip_bydev(CB_SOCKET_T sfd, const char *dev, CB_IN_ADDR_T *inp)
@@ -484,7 +487,7 @@ int cb_get_ptpdev_from_netdev(char *netdev, char *ptpdev)
 }
 
 /* TI lld specific combase APIs */
-int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
+static int lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 						   uint32_t enet_type, uint32_t instance_id)
 {
 	int i;
@@ -500,17 +503,6 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 
 	if (ndevs > MAX_NUMBER_ENET_DEVS) {
 		ndevs = MAX_NUMBER_ENET_DEVS;
-	}
-	if (!s_ndevmap_table_lock.lldmutex) {
-		if (CB_THREAD_MUTEX_INIT(&s_ndevmap_table_lock, NULL)) {
-			return -1;
-		}
-	}
-	if (!alloc_mac_lock.lldmutex) {
-		if (CB_THREAD_MUTEX_INIT(&alloc_mac_lock, NULL)) {
-			CB_THREAD_MUTEX_DESTROY(&s_ndevmap_table_lock);
-			return -1;
-		}
 	}
 	for (i = 0; i < ndevs; i++) {
 		if ((ethdevs[i].netdev == NULL) || (ethdevs[i].netdev[0] == 0)) {
@@ -533,7 +525,16 @@ int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 	return 0;
 }
 
-static netdev_map_t* find_netdev_map(const char *netdev)
+int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
+						   uint32_t enet_type, uint32_t instance_id)
+{
+	int res;
+	UB_PROTECTED_FUNC(lld_init_devs_table, res, ethdevs,
+					  ndevs, enet_type, instance_id);
+	return res;
+}
+
+static netdev_map_t *find_netdev_map(const char *netdev)
 {
 	int i;
 
@@ -541,19 +542,16 @@ static netdev_map_t* find_netdev_map(const char *netdev)
 		return NULL;
 	}
 
-	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		if (strcmp(s_ndevmap_table[i].netdev, netdev) == 0) {
-			CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 			return &s_ndevmap_table[i];
 		}
 	}
-	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 
 	return NULL;
 }
 
-int cb_lld_get_netdevs(char* netdevs[], int *len)
+static int lld_get_netdevs(char* netdevs[], int *len)
 {
 	int i;
 
@@ -562,23 +560,40 @@ int cb_lld_get_netdevs(char* netdevs[], int *len)
 			   __func__);
 		return -1;
 	}
-	CB_THREAD_MUTEX_LOCK(&s_ndevmap_table_lock);
 	for (i = 0; i < s_num_devs; i++) {
 		netdevs[i] = s_ndevmap_table[i].netdev;
 	}
-	CB_THREAD_MUTEX_UNLOCK(&s_ndevmap_table_lock);
 	*len = i;
 	return 0;
 }
 
-int cb_lld_netdev_to_macport(const char *netdev)
+int cb_lld_get_netdevs(char* netdevs[], int *len)
 {
-	netdev_map_t *ndevmap = find_netdev_map(netdev);
+	int res;
+	UB_PROTECTED_FUNC(lld_get_netdevs, res, netdevs, len);
+	return res;
+}
+
+static int lld_netdev_to_macport(const char *netdev)
+{
+	int macport = -1;
+	netdev_map_t *ndevmap = NULL;
+
+	ndevmap = find_netdev_map(netdev);
 	if (ndevmap == NULL) {
 		UB_LOG(UBL_ERROR, "%s:no macport for netdev %s\n", __func__, netdev);
-		return -1;
+	} else {
+		macport = ndevmap->macport;
 	}
-	return ndevmap->macport;
+
+	return macport;
+}
+
+int cb_lld_netdev_to_macport(const char *netdev)
+{
+	int res;
+	UB_PROTECTED_FUNC(lld_netdev_to_macport, res, netdev);
+	return res;
 }
 
 int cb_lld_sendto(CB_SOCKET_T sfd, void *data, int size, int flags,
@@ -605,16 +620,18 @@ int cb_lld_sendto(CB_SOCKET_T sfd, void *data, int size, int flags,
 	return size;
 }
 
-int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size, int *port)
+int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size,
+		CB_SOCKADDR_LL_T *addr, int addrsize)
 {
 	LLDEnetFrame_t frame;
 	int res;
 
-	if ((sfd == NULL) || (buf == NULL) || (size <= 0) || (port == NULL)) {
+	if ((sfd == NULL) || (buf == NULL) || (size <= 0) || (addr == NULL)) {
 		UB_LOG(UBL_ERROR,"%s:invalid param\n", __func__);
 		return -1;
 	}
 
+	memset(&frame, 0, sizeof(frame));
 	frame.buf = (uint8_t *)buf;
 	frame.size = size;
 	res = LLDEnetRecv(sfd->lldenet, &frame);
@@ -628,8 +645,55 @@ int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size, int *port)
 		UB_LOG(UBL_ERROR,"%s:received error %d\n", __func__, res);
 		return -1;
 	}
-	*port = frame.port;
+	addr->macport = frame.port;
+	addr->rxts = frame.rxts;
+
 	return frame.size;
+}
+
+typedef struct {
+	cb_lld_zerocopy_recv_cb_t cblld_recv_cb;
+	void *cblld_cbarg;
+} LLDEnetRecvCbArg_t;
+
+static void LLDEnetRecvCb(LLDEnetFrame_t *frame, void *cbarg)
+{
+	CB_SOCKADDR_LL_T addr;
+	LLDEnetRecvCbArg_t *lldEnetCbArg = (LLDEnetRecvCbArg_t *)cbarg;
+
+	memset(&addr, 0, sizeof(addr));
+	addr.macport = frame->port;
+	addr.rxts = frame->rxts;
+	lldEnetCbArg->cblld_recv_cb(frame->buf, frame->size, &addr,
+								lldEnetCbArg->cblld_cbarg);
+}
+
+int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, cb_lld_zerocopy_recv_cb_t cblld_recv_cb,
+						 void *cbarg)
+{
+	LLDEnetRecvCbArg_t lldEnetCbArg;
+	int res;
+
+	if (sfd == NULL) {
+		UB_LOG(UBL_ERROR,"%s:invalid param\n", __func__);
+		return -1;
+	}
+
+	memset(&lldEnetCbArg, 0, sizeof(lldEnetCbArg));
+	lldEnetCbArg.cblld_recv_cb = cblld_recv_cb;
+	lldEnetCbArg.cblld_cbarg = cbarg;
+	res = LLDEnetRecvZeroCopy(sfd->lldenet, LLDEnetRecvCb, &lldEnetCbArg);
+	if (res != LLDENET_E_OK) {
+		if (res == LLDENET_E_NOAVAIL) {
+			return 0;
+		}
+		if (res == LLDENET_E_NOMATCH) {
+			return 0xFFFF;
+		}
+		UB_LOG(UBL_ERROR,"%s:received error %d\n", __func__, res);
+		return -1;
+	}
+	return 1;
 }
 
 /* This txnotify_cb and rxnotify_cb callback should be set when calling LLDEnetCfgInit()
@@ -696,7 +760,15 @@ int cb_socket_set_lldcfg_update_cb(cb_socket_lldcfg_update_cb_t lldcfg_update_cb
 	return 0;
 }
 
-bool cb_lld_is_rxts_inbuff(CB_SOCKET_T sfd)
+int cb_lld_get_port_stats(CB_SOCKET_T sfd, int port, cb_tilld_port_stats_t *stats)
 {
-	return LLDEnetIsRxTsInPkt(sfd->lldenet);
+	int res;
+	res = LLDEnetGetPortStats(sfd->lldenet, port, stats, sizeof(cb_tilld_port_stats_t));
+
+	return (res == LLDENET_E_OK? 0: -1);
+}
+
+void cb_lld_reset_port_stats(CB_SOCKET_T sfd, int port)
+{
+	LLDEnetResetPortStats(sfd->lldenet, port);
 }

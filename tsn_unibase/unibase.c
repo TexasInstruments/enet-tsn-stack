@@ -147,11 +147,14 @@ uint64_t ub_gptp_gettime64(void)
 	return ubcd.cbset.gettime64(UB_CLOCK_GPTP);
 }
 
-int ub_protected_func(ub_protected_callback cbfunc, void *cbdata)
+int ub_func_private_mutex_lock(void)
 {
-	int res;
-	if(ubcd.threadding){ubcd.cbset.mutex_lock(ubcd.func_mutex);}
-	res=cbfunc(cbdata);
-	if(ubcd.threadding){ubcd.cbset.mutex_unlock(ubcd.func_mutex);}
-	return res;
+	if(ubcd.threadding){return ubcd.cbset.mutex_lock(ubcd.func_mutex);}
+	return -1;
+}
+
+int ub_func_private_mutex_unlock(void)
+{
+	if(ubcd.threadding){return ubcd.cbset.mutex_unlock(ubcd.func_mutex);}
+	return -1;
 }

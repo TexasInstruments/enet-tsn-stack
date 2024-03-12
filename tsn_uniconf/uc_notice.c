@@ -102,7 +102,7 @@
 #include <errno.h>
 #include "uc_notice.h"
 #include "yangs/yang_modules.h"
-#include "uc_static_memory.h"
+#include "yangs/yang_node.h"
 
 #define MAX_NOTICE_PUSH 1000
 
@@ -176,7 +176,7 @@ static int respond_getnotice(uc_notice_data_t *ucntd, uc_dbald *dbald, uc_hwald 
 		dbpara.aps=caps;
 		dbpara.kvs=ckvs;
 		dbpara.kss=ckss;
-		yang_db_keydump_log(UBL_DEBUGV, dbpara.aps, dbpara.kvs, dbpara.kss);
+		yang_db_keydump_log(UBL_DEBUGV, dbald, dbpara.aps, dbpara.kvs, dbpara.kss);
 		/* data in '/XL4_DATA_RO/UC_ASKACTION_REG' is pushed by a notice like
 		 * 'YDBI_PUSH_NOTICE'.  Update or Create case, the data can be found,
 		 * Delete case, the data can't be found.
@@ -204,7 +204,7 @@ static int respond_getnotice(uc_notice_data_t *ucntd, uc_dbald *dbald, uc_hwald 
 				res=uc_hwal_dereghw(hwald, dbpara.aps, dbpara.kvs,
 						    dbpara.kss);
 			}
-			yang_db_keydump_log(UBL_DEBUG, dbpara.aps, dbpara.kvs, dbpara.kss);
+			yang_db_keydump_log(UBL_DEBUG, dbald, dbpara.aps, dbpara.kvs, dbpara.kss);
 			UB_LOG(UBL_INFO, "%s:a notice with a deletion\n", __func__);
 		}
 		(void)uc_nu_putnotice_push(ucntd, dbald, caps, ckvs, ckss);
@@ -276,7 +276,7 @@ static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *se
 	int refcounter=-1;;
 	for(i=0; i<ub_esarray_ele_nums(ucntd->putnotice_list); i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(ucntd->putnotice_list, i);
-		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return -1;}
+		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return -1;}
 		if(strcmp(pnd->semname, semname)==0){
 			switch(action){
 			case PUTNOTICE_FIND:
@@ -392,7 +392,7 @@ static int incremant_actcounter(bool fromthread,
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
-		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return -1;}
+		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return -1;}
 		if(!strcmp(pnd->semname, semname)) {
 			pnd->actcounter+=1;
 			break;
@@ -419,7 +419,7 @@ static void proc_refactcounter(bool fromthread, ub_esarray_cstd_t *putnotice_lis
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
-		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return;}
+		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return;}
 		// the waiting process is responsible to handle multiple updates
 		// with one event.  Here we post one time instead of pnd->actcounter times
 		if(pnd->refcounter==0){
@@ -450,7 +450,7 @@ static void nu_clear_refcounter(bool fromthread, ub_esarray_cstd_t *putnotice_li
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
-		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return;}
+		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return;}
 		pnd->refcounter=0;
 		UB_LOG(UBL_DEBUGV, "%s:%s cleared\n", __func__, pnd->semname);
 	}
@@ -465,7 +465,7 @@ static void nu_increment_refcounter(bool fromthread,
 	en=ub_esarray_ele_nums(putnotice_list);
 	for(i=0;i<en;i++){
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
-		if(ub_assert_fatal(pnd!=NULL, __func__, NULL)){return;}
+		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return;}
 		if(!strcmp(pnd->semname, semname)){
 			pnd->refcounter++;
 			UB_LOG(UBL_DEBUGV, "%s:semname=%s, refcounter=%d\n", __func__,
@@ -574,6 +574,7 @@ void uc_notice_close(uc_notice_data_t *ucntd, uint8_t callmode)
 	ucntd->getnotice_sem=NULL;
 	ucntd->fromthread=false;
 	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
+	CB_STATIC_MUTEX_DESTRUCTOR(ntmutex);
 	return;
 }
 
@@ -632,7 +633,7 @@ int uc_nu_proc_asked_actions(uc_notice_data_t *ucntd,
 	if(res==0){
 		if(hwald){
 			res=uc_hwal_detect_notice(hwald, ucntd);
-			if(res<=0){return res;}
+			if(res<0){return res;}
 		}
 		// ntmutex is locked inside respond_getnotice
 		UB_TLOG(UBL_DEBUG, "%s:got a signal\n", __func__);

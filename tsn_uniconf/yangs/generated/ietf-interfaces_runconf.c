@@ -50,121 +50,230 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee802-dot1ab-lldp.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-monitoring.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
+#define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
+#define IETF_INTERFACES_RO (IETF_INTERFACES_func(dbald)|0x80u)
 
 const char *ietf_interfaces_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"interfaces", 		// 2(0x2)
-	"interface", 		// 3(0x3)
-	"name", 		// 4(0x4)
-	"enabled", 		// 5(0x5)
-	"oper-status", 		// 6(0x6)
-	"if-index", 		// 7(0x7)
-	"phys-address", 		// 8(0x8)
-	"speed", 		// 9(0x9)
+	"nsasc", 		// 2(0x2)
+	"interfaces", 		// 3(0x3)
+	"interface", 		// 4(0x4)
+	"name", 		// 5(0x5)
+	"enabled", 		// 6(0x6)
+	"oper-status", 		// 7(0x7)
+	"if-index", 		// 8(0x8)
+	"phys-address", 		// 9(0x9)
+	"speed", 		// 10(0xa)
 	// augmented by ieee802-dot1q-bridge
-	"bridge-port",		// 10(0xa)
-	"component-name",		// 11(0xb)
-	"pvid",		// 12(0xc)
-	"default-priority",		// 13(0xd)
-	"priority-regeneration",		// 14(0xe)
-	"priority0",		// 15(0xf)
-	"priority1",		// 16(0x10)
-	"priority2",		// 17(0x11)
-	"priority3",		// 18(0x12)
-	"priority4",		// 19(0x13)
-	"priority5",		// 20(0x14)
-	"priority6",		// 21(0x15)
-	"priority7",		// 22(0x16)
-	"traffic-class",		// 23(0x17)
-	"traffic-class-table",		// 24(0x18)
-	"number-of-traffic-classes",		// 25(0x19)
-	"transmission-selection-algorithm-table",		// 26(0x1a)
-	"transmission-selection-algorithm-map",		// 27(0x1b)
-	"transmission-selection-algorithm",		// 28(0x1c)
-	"address",		// 29(0x1d)
+	"bridge-port",		// 11(0xb)
+	"bridge-name",		// 12(0xc)
+	"component-name",		// 13(0xd)
+	"pvid",		// 14(0xe)
+	"default-priority",		// 15(0xf)
+	"priority-regeneration",		// 16(0x10)
+	"priority0",		// 17(0x11)
+	"priority1",		// 18(0x12)
+	"priority2",		// 19(0x13)
+	"priority3",		// 20(0x14)
+	"priority4",		// 21(0x15)
+	"priority5",		// 22(0x16)
+	"priority6",		// 23(0x17)
+	"priority7",		// 24(0x18)
+	"traffic-class",		// 25(0x19)
+	"traffic-class-table",		// 26(0x1a)
+	"number-of-traffic-classes",		// 27(0x1b)
+	"transmission-selection-algorithm-table",		// 28(0x1c)
+	"transmission-selection-algorithm-map",		// 29(0x1d)
+	"transmission-selection-algorithm",		// 30(0x1e)
+	"address",		// 31(0x1f)
 	// augmented by xl4interfaces
-	"tc-data",		// 30(0x1e)
-	"tc",		// 31(0x1f)
-	"lqueue",		// 32(0x20)
-	"admin-idleslope",		// 33(0x21)
-	"oper-idleslope",		// 34(0x22)
-	"max-interference-size",		// 35(0x23)
-	"max-frame-size",		// 36(0x24)
-	"cbs-enabled",		// 37(0x25)
-	"number-of-pqueues",		// 38(0x26)
-	"pqueue-map",		// 39(0x27)
-	"pqueue",		// 40(0x28)
-	"duplex",		// 41(0x29)
-	"discon-workaround-time",		// 42(0x2a)
+	"tc-data",		// 32(0x20)
+	"tc",		// 33(0x21)
+	"lqueue",		// 34(0x22)
+	"admin-idleslope",		// 35(0x23)
+	"oper-idleslope",		// 36(0x24)
+	"max-interference-size",		// 37(0x25)
+	"max-frame-size",		// 38(0x26)
+	"cbs-enabled",		// 39(0x27)
+	"number-of-pqueues",		// 40(0x28)
+	"pqueue-map",		// 41(0x29)
+	"pqueue",		// 42(0x2a)
+	"duplex",		// 43(0x2b)
+	"discon-workaround-time",		// 44(0x2c)
 	// augmented by ieee802-dot1q-sched-bridge
-	"gate-parameter-table",		// 43(0x2b)
-	"queue-max-sdu-table",		// 44(0x2c)
-	"queue-max-sdu",		// 45(0x2d)
-	"transmission-overrun",		// 46(0x2e)
-	"gate-enabled",		// 47(0x2f)
-	"admin-gate-states",		// 48(0x30)
-	"oper-gate-states",		// 49(0x31)
-	"admin-control-list",		// 50(0x32)
-	"gate-control-entry",		// 51(0x33)
-	"index",		// 52(0x34)
-	"operation-name",		// 53(0x35)
-	"time-interval-value",		// 54(0x36)
-	"gate-states-value",		// 55(0x37)
-	"oper-control-list",		// 56(0x38)
-	"admin-cycle-time",		// 57(0x39)
-	"numerator",		// 58(0x3a)
-	"denominator",		// 59(0x3b)
-	"oper-cycle-time",		// 60(0x3c)
-	"admin-cycle-time-extension",		// 61(0x3d)
-	"oper-cycle-time-extension",		// 62(0x3e)
-	"admin-base-time",		// 63(0x3f)
-	"seconds",		// 64(0x40)
-	"nanoseconds",		// 65(0x41)
-	"oper-base-time",		// 66(0x42)
-	"config-change",		// 67(0x43)
-	"config-change-time",		// 68(0x44)
-	"tick-granularity",		// 69(0x45)
-	"current-time",		// 70(0x46)
-	"config-pending",		// 71(0x47)
-	"config-change-error",		// 72(0x48)
-	"supported-list-max",		// 73(0x49)
-	"supported-cycle-max",		// 74(0x4a)
-	"supported-interval-max",		// 75(0x4b)
+	"gate-parameter-table",		// 45(0x2d)
+	"queue-max-sdu-table",		// 46(0x2e)
+	"queue-max-sdu",		// 47(0x2f)
+	"transmission-overrun",		// 48(0x30)
+	"gate-enabled",		// 49(0x31)
+	"admin-gate-states",		// 50(0x32)
+	"oper-gate-states",		// 51(0x33)
+	"admin-control-list",		// 52(0x34)
+	"gate-control-entry",		// 53(0x35)
+	"index",		// 54(0x36)
+	"operation-name",		// 55(0x37)
+	"time-interval-value",		// 56(0x38)
+	"gate-states-value",		// 57(0x39)
+	"oper-control-list",		// 58(0x3a)
+	"admin-cycle-time",		// 59(0x3b)
+	"numerator",		// 60(0x3c)
+	"denominator",		// 61(0x3d)
+	"oper-cycle-time",		// 62(0x3e)
+	"admin-cycle-time-extension",		// 63(0x3f)
+	"oper-cycle-time-extension",		// 64(0x40)
+	"admin-base-time",		// 65(0x41)
+	"seconds",		// 66(0x42)
+	"nanoseconds",		// 67(0x43)
+	"oper-base-time",		// 68(0x44)
+	"config-change",		// 69(0x45)
+	"config-change-time",		// 70(0x46)
+	"tick-granularity",		// 71(0x47)
+	"current-time",		// 72(0x48)
+	"config-pending",		// 73(0x49)
+	"config-change-error",		// 74(0x4a)
+	"supported-list-max",		// 75(0x4b)
+	"supported-cycle-max",		// 76(0x4c)
+	"supported-interval-max",		// 77(0x4d)
 	// augmented by ieee802-dot1q-preemption-bridge
-	"frame-preemption-parameters",		// 76(0x4c)
-	"frame-preemption-status-table",		// 77(0x4d)
-	"hold-advance",		// 78(0x4e)
-	"release-advance",		// 79(0x4f)
-	"preemption-active",		// 80(0x50)
-	"hold-request",		// 81(0x51)
+	"frame-preemption-parameters",		// 78(0x4e)
+	"frame-preemption-status-table",		// 79(0x4f)
+	"hold-advance",		// 80(0x50)
+	"release-advance",		// 81(0x51)
+	"preemption-active",		// 82(0x52)
+	"hold-request",		// 83(0x53)
 };
+const uint8_t ietf_interfaces_enum_max=84;
 
-uint8_t ietf_interfaces_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)IETF_INTERFACES_ENUM_END;i++){
-		if(!strcmp(astr, ietf_interfaces_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "preempt-bridge",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption-bridge")!=0){
+		return -1;
 	}
-        return 0xffu;
+	if(yang_node_set_prefix_namespace(dbald, "dot1q",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "xl4if",
+		"http://excelfore.com/ns/xl4interfaces")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "if",
+		"urn:ietf:params:xml:ns:yang:ietf-interfaces")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "sched-bridge",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched-bridge")!=0){
+		return -1;
+	}
+	return 0;
 }
 
-const char *ietf_interfaces_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)IETF_INTERFACES_ENUM_END){return NULL;}
-	return ietf_interfaces_enum_strings[anum];
+	uint8_t apsd[10];
+	apsd[0]=IETF_INTERFACES_RW;
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"if", 3)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_NSASC;
+	apsd[5]=255u;
+	if(uc_dbal_create(dbald, apsd, 6, (void*)"dot1q", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_TRAFFIC_CLASS;
+	apsd[5]=IETF_INTERFACES_TC_DATA;
+	apsd[6]=IETF_INTERFACES_NSASC;
+	apsd[7]=255u;
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"xl4if", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_TRAFFIC_CLASS;
+	apsd[5]=IETF_INTERFACES_CBS_ENABLED;
+	apsd[6]=IETF_INTERFACES_NSASC;
+	apsd[7]=255u;
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"xl4if", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_TRAFFIC_CLASS;
+	apsd[5]=IETF_INTERFACES_NUMBER_OF_PQUEUES;
+	apsd[6]=IETF_INTERFACES_NSASC;
+	apsd[7]=255u;
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"xl4if", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_TRAFFIC_CLASS;
+	apsd[5]=IETF_INTERFACES_PQUEUE_MAP;
+	apsd[6]=IETF_INTERFACES_NSASC;
+	apsd[7]=255u;
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"xl4if", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_GATE_PARAMETER_TABLE;
+	apsd[5]=IETF_INTERFACES_NSASC;
+	apsd[6]=255u;
+	if(uc_dbal_create(dbald, apsd, 7, (void*)"sched-bridge", 13)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_BRIDGE_PORT;
+	apsd[4]=IETF_INTERFACES_FRAME_PREEMPTION_PARAMETERS;
+	apsd[5]=IETF_INTERFACES_NSASC;
+	apsd[6]=255u;
+	if(uc_dbal_create(dbald, apsd, 7, (void*)"preempt-bridge", 15)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_DUPLEX;
+	apsd[4]=IETF_INTERFACES_NSASC;
+	apsd[5]=255u;
+	if(uc_dbal_create(dbald, apsd, 6, (void*)"xl4if", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IETF_INTERFACES_INTERFACES;
+	apsd[2]=IETF_INTERFACES_INTERFACE;
+	apsd[3]=IETF_INTERFACES_DISCON_WORKAROUND_TIME;
+	apsd[4]=IETF_INTERFACES_NSASC;
+	apsd[5]=255u;
+	if(uc_dbal_create(dbald, apsd, 6, (void*)"xl4if", 6)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -173,6 +282,9 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_ietf-interfaces/interfaces/interface/bridge-port/priority-regeneration
 	aps[0] = IETF_INTERFACES_RW;
 	aps[1] = IETF_INTERFACES_INTERFACES;
@@ -487,8 +599,11 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0022_ietf-interfaces/interfaces/interface/bridge-port
 	aps[0] = IETF_INTERFACES_RW;
+	aps[4] = IETF_INTERFACES_BRIDGE_NAME;
+	vtype=YANG_VTYPE_LEAFREF;
+	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_INTERFACES_COMPONENT_NAME;
-	vtype=YANG_VTYPE_STRING;
+	vtype=YANG_VTYPE_LEAFREF;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_INTERFACES_PVID;
 	vtype=YANG_VTYPE_DOT1QTYPES_VLAN_INDEX_TYPE;
@@ -533,3 +648,4 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 erexit:
 	return res;
 }
+

@@ -309,5 +309,27 @@
  */
 #define UB_STATIC_ASSERT(cond, error) typedef char type[(cond) ? 1 : -1]
 
+/**
+ * @brief call the cbfunc with an internal mutex protection.
+ * The ub_func_private_mutex_lock() and ub_func_private_mutex_unlock()
+ * are only used privately in this macro. Please do not use them freely elsewhere.
+ */
+#define UB_PROTECTED_FUNC(cbfunc, rval, ...) \
+	int ub_func_private_mutex_lock(void); \
+	int ub_func_private_mutex_unlock(void); \
+	ub_func_private_mutex_lock(); \
+	rval=cbfunc(__VA_ARGS__); \
+	ub_func_private_mutex_unlock();
+
+/**
+ * @brief similar to the @ref UB_PROTECTED_FUNC without return value rval
+ */
+#define UB_PROTECTED_FUNC_VOID(cbfunc, ...) \
+	int ub_func_private_mutex_lock(void); \
+	int ub_func_private_mutex_unlock(void); \
+	ub_func_private_mutex_lock(); \
+	cbfunc(__VA_ARGS__); \
+	ub_func_private_mutex_unlock();
+
 #endif
 /** @}*/

@@ -52,10 +52,12 @@
 #include "uc_dbal.h"
 #include "simpledb.h"
 
-uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
+static simpledb_data_t *sdbd_shared;
+static int sdbd_refcounter;
+
+static uc_dbald *opendb_protect(const char *pfname, const char *mode, uint8_t callmode)
 {
 	simpledb_data_t *sdbd;
-	static simpledb_data_t *sdbd_shared=NULL;
 	if(UC_CALL_THREADSLAVE(callmode)){
 		if(!sdbd_shared){
 			if((mode!=NULL) && (strchr(mode, 'm')!=NULL)) return NULL;
@@ -63,6 +65,7 @@ uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
 			       __func__);
 			return NULL;
 		}
+		sdbd_refcounter++;
 		return (uc_dbald *)sdbd_shared;
 	}
 	sdbd=simpledb_open(pfname);
@@ -73,14 +76,31 @@ uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
 		}
 	}
 	sdbd_shared=sdbd;
+	sdbd_refcounter++;
 	return (uc_dbald *)sdbd;
+}
+
+uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
+{
+	simpledb_data_t *sdbd;
+	UB_PROTECTED_FUNC(opendb_protect, sdbd, pfname, mode, callmode);
+	return sdbd;
+}
+
+static void closedb_protect(uc_dbald *dbald, uint8_t callmode)
+{
+	if(sdbd_refcounter==0){return;}
+	sdbd_refcounter--;
+	if(sdbd_refcounter==0){
+		(void)uc_dbal_save(dbald);
+		(void)simpledb_close((simpledb_data_t *)dbald);
+		sdbd_shared=NULL;
+	}
 }
 
 void uc_dbal_close(uc_dbald *dbald, uint8_t callmode)
 {
-	if(UC_CALL_THREADSLAVE(callmode)){return;}
-	(void)uc_dbal_save(dbald);
-	(void)simpledb_close((simpledb_data_t *)dbald);
+	UB_PROTECTED_FUNC_VOID(closedb_protect, dbald, callmode);
 }
 
 int uc_dbal_save(uc_dbald *dbald)

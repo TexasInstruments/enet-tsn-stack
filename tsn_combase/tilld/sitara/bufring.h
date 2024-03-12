@@ -74,6 +74,7 @@ typedef struct {
 	void *buf;
 	int size;
 	int port;
+	uint64_t rxts;
 } LLDEnetPktBuf_t;
 
 typedef struct {
@@ -86,5 +87,7 @@ void DeInitBufRing(LLDEnetBufRing_t *ring);
 bool BufRingPush(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
 bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
 bool BufRingIsEmpty(LLDEnetBufRing_t *ring);
+bool BufRingRefer(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf);
+void BufRingReferPop(LLDEnetBufRing_t *ring);
 
 #endif

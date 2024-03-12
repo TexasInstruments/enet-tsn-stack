@@ -52,12 +52,16 @@
  * @defgroup fileio File I/O
  * @{
  * @file ub_fileio.h
- * 
+ *
  * @brief Header file for file I/O functions
  */
 
 #ifndef UB_FILEIO_H_
 #define UB_FILEIO_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * @brief Function pointer type for opening a file
@@ -158,6 +162,10 @@ int ub_fiowrite(void *fio, const void *ptr, int size);
  * @return 0 on success, -1 on failure
  */
 int ub_fioseek(void *fio, int offset);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @} */

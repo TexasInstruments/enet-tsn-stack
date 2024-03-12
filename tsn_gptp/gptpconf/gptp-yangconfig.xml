@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
-	<ptp xmlns="urn:ieee:std:1588:yang:gptp-yangconfig">
+	<ptp xmlns="http://excelfore.com/ns/xl4gptp">
 		<instance-domain-map>0x0000</instance-domain-map>
 		<instances>
 			<instance>

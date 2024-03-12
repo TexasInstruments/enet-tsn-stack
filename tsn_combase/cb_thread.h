@@ -115,6 +115,7 @@ typedef struct cb_tsn_thread_attr{
 #if !defined(CB_STATIC_MUTEX_INITIALIZER) && defined(PTHREAD_MUTEX_INITIALIZER)
 #define CB_STATIC_MUTEX_INITIALIZER(x) x=PTHREAD_MUTEX_INITIALIZER
 #define CB_STATIC_MUTEX_CONSTRUCTOR(x)
+#define CB_STATIC_MUTEX_DESTRUCTOR(x)
 #endif
 #define CB_SEM_T sem_t
 #define CB_SEM_INIT sem_init

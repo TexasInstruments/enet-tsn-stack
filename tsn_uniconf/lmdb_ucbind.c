@@ -525,6 +525,7 @@ void uc_get_range_release(uc_dbald *dbald, uc_range *range)
 		UB_LOG(UBL_ERROR, "%s:txn is not available\n", __func__);
 		return;
 	}
+	if(range==NULL){return;}
 	CB_THREAD_MUTEX_LOCK(&lmubd->putlock);
 	if(krange->cursor){mdb_cursor_close(krange->cursor);}
 	if(krange->mkv1.mv_data){
@@ -603,6 +604,10 @@ int uc_get_keyvalue_in_range(uc_dbald *dbald, uc_range *range, void **kdata, uin
 	lmdb_ucbind_data_t *lmubd=(lmdb_ucbind_data_t *)dbald;
 	if(!lmubd->txn){
 		UB_LOG(UBL_ERROR, "%s:txn is not available\n", __func__);
+		return -1;
+	}
+	if(range==NULL){
+		UB_LOG(UBL_ERROR, "%s:range is NULL\n", __func__);
 		return -1;
 	}
 	CB_THREAD_MUTEX_LOCK(&lmubd->putlock);

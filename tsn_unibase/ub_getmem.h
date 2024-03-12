@@ -55,6 +55,10 @@
 #ifndef UB_GETMEM_H_
 #define UB_GETMEM_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief Concatenates two tokens
  * @param A First token
@@ -115,9 +119,10 @@ void *ub_static_regetmem(void *p, size_t nsize, void *mem, uint16_t *busysizes,
  * @param busysizes Array of busy sizes for each fragment in the memory pool
  * @param fragnum Number of fragments in the memory pool
  * @param fragsize Size of each fragment in the memory pool
+ * @param mname Name of the memory pool
  */
 void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
-		      int fragnum, uint16_t fragsize);
+		      int fragnum, uint16_t fragsize, const char *mname);
 
 /**
  * @brief Prints memory usage if the log level is enabled.
@@ -161,7 +166,7 @@ void *UB_CONCAT2(static_regetmem, NAME)(void *p, size_t nsize)		\
 void UB_CONCAT2(static_relmem, NAME)(void *p)				\
 {									\
 	return ub_static_relmem(p, UB_CONCAT2(NAME, mem), UB_CONCAT2(NAME, busysizes), \
-			    FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE)); \
+			    FRAGNUM, (uint16_t)UB_SD_ALIGN(FRAGSIZE), #NAME); \
 }															 \
 int UB_CONCAT2(static_print_usage, NAME)(ub_dbgmsg_level_t level)		\
 {																		\
@@ -241,6 +246,10 @@ extern int UB_CONCAT2(static_print_usage, NAME)(ub_dbgmsg_level_t level)
  */
 #define UB_SD_RELMEM(name, p) free(p)
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

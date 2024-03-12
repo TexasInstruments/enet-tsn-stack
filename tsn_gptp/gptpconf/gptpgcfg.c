@@ -50,21 +50,29 @@
 #include <limits.h>
 #include <stdint.h>
 #include <tsn_unibase/unibase.h>
-#include "../mind.h"
-#include "tsn_uniconf/yangs/yang_db_access.h"
-#include "tsn_uniconf/yangs/yang_modules.h"
-#include "tsn_uniconf/yangs/ietf-interfaces.h"
-#include "tsn_uniconf/yangs/ietf-interfaces_access.h"
-#include "tsn_uniconf/yangs/ieee1588-ptp.h"
-#include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
-#include "tsn_uniconf/yangs/yang_db_runtime.h"
-#include "tsn_uniconf/uc_notice.h"
-#include "tsn_uniconf/yangs/tsn_data.h"
+#include <tsn_uniconf/yangs/yang_db_access.h>
+#include <tsn_uniconf/yangs/yang_modules.h>
+#include <tsn_uniconf/yangs/ietf-interfaces.h>
+#include <tsn_uniconf/yangs/ietf-interfaces_access.h>
+#include <tsn_uniconf/yangs/ieee1588-ptp-tt.h>
+#include <tsn_uniconf/yangs/ieee1588-ptp-tt_access.h>
+#include <tsn_uniconf/yangs/yang_db_runtime.h>
+#include <tsn_uniconf/yangs/yang_node.h>
+#include <tsn_uniconf/uc_notice.h>
 #include "gptpgcfg.h"
 #include "xl4-extmod-xl4gptp_runconf.h"
+#include "../mind.h"
 #include "../gptpnet.h"
 #include "../gptpbasetypes.h"
 #include "../gptpcommon.h"
+
+extern uint8_t XL4_EXTMOD_XL4GPTP_func(uc_dbald *dbald);
+#define XL4_EXTMOD_XL4GPTP XL4_EXTMOD_XL4GPTP_func(dbald)
+#define XL4_EXTMOD_XL4GPTP_Y XL4_EXTMOD_XL4GPTP_func(ydbia->dbald)
+extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
+#define IEEE1588_PTP_TT_RW_Y IEEE1588_PTP_TT_func(ydbia->dbald)
+#define IEEE1588_PTP_TT_RW_G IEEE1588_PTP_TT_func(gycd->dbald)
+#define IEEE1588_PTP_TT_RO_Y (IEEE1588_PTP_TT_func(ydbia->dbald)|0x80u)
 
 /****************************************
  * layer independent functions
@@ -94,13 +102,13 @@ static int get_int_from_value(void *value, int vsize, int64_t *rval)
 }
 
 static uint8_t ydbi_instIndex;
-static void set_dpara_k1vk0(yang_db_access_para_t *dbpara, xl4_data_data_t *xdd,
+static void set_dpara_k1vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    uint8_t instIndex, uint8_t k1, bool status)
 {
 	ydbi_instIndex=instIndex;
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
 	dbpara->aps[0] = status?XL4_EXTMOD_RO:XL4_EXTMOD_RW;
-	dbpara->aps[1] = xl4_data_get_modid(xdd, XL4GPTP_MODULE);
+	dbpara->aps[1] = XL4_EXTMOD_XL4GPTP;
 	dbpara->aps[2] = XL4_EXTMOD_XL4GPTP_GPTP_INSTANCE;
 	dbpara->aps[3] = k1;
 	dbpara->aps[4] = 255;
@@ -113,7 +121,7 @@ int ydbi_get_item_nyptk1vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t i
 			    uint8_t k1, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, instIndex, k1, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_DEBUG);
 }
 
@@ -121,7 +129,7 @@ int ydbi_rel_item_nyptk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
 			    uint8_t k1, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, instIndex, k1, status);
 	return ydbi_rel_foot(ydbia, __func__);
 }
 
@@ -130,7 +138,7 @@ int ydbi_set_item_nyptk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
 			    bool notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, instIndex, k1, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -196,8 +204,8 @@ int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIn
 		gdi=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstanceIndex, 0);
 		if(gdi>=0){
 			YDBI_GET_ITEM_VSUBST(uint8_t*, ptk4vk1, port_state, value, gdi,
-					     IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
-					     IEEE1588_PTP_PORT_DS, IEEE1588_PTP_PORT_STATE,
+					     IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
+					     IEEE1588_PTP_TT_PORT_DS, IEEE1588_PTP_TT_PORT_STATE,
 					     &pindex, sizeof(uint16_t), YDBI_STATUS);
 			if(port_state==MasterPort||port_state==PassivePort||
 			   port_state==SlavePort){
@@ -222,7 +230,7 @@ int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIn
 int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8_t ddomain)
 {
 	int in;
-	uint8_t aps[YDBI_MAX_AP_DEPTH] = {0};
+	uint8_t aps[UC_MAX_AP_DEPTH] = {0};
 	yang_db_item_access_t *ydbia=ydbi_access_handle();
 	uint8_t sinst, dinst;
 	uint32_t sinst32, dinst32;
@@ -245,9 +253,9 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 					      NULL, aps, NULL, NULL, &md, sizeof(uint16_t)};
 		UB_LOG(UBL_INFO, "%s:no map for dest(%d,%d), add it\n",
 		       __func__, dginst, ddomain);
-		aps[0]=IEEE1588_PTP_RW;
-		aps[1]=IEEE1588_PTP_PTP;
-		aps[2]=IEEE1588_PTP_INSTANCE_DOMAIN_MAP;
+		aps[0]=IEEE1588_PTP_TT_RW_Y;
+		aps[1]=IEEE1588_PTP_TT_PTP;
+		aps[2]=IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP;
 		aps[3]=255;
 		md=dginst<<8|ddomain;
 		in=-1;
@@ -265,7 +273,7 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 	dinst32=in;
 	if(sinst==dinst){return 0;}
 	aps[0]=XL4_EXTMOD_RW;
-	aps[1]=xl4_data_get_modid(ydbia->xdd, XL4GPTP_MODULE);
+	aps[1]=XL4_EXTMOD_XL4GPTP_Y;
 	aps[2]=XL4_EXTMOD_XL4GPTP_GPTP_INSTANCE;
 	aps[3]=255;
 	if(aps[1]==0xff){
@@ -278,10 +286,10 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 	}
 	aps[0]=XL4_EXTMOD_RO;
 	(void)yang_db_listcopy(ydbia->dbald, aps, kvs, kss, nkvs, kss);
-	aps[0]=IEEE1588_PTP_RW;
-	aps[1]=IEEE1588_PTP_PTP;
-	aps[2]=IEEE1588_PTP_INSTANCES;
-	aps[3]=IEEE1588_PTP_INSTANCE;
+	aps[0]=IEEE1588_PTP_TT_RW_Y;
+	aps[1]=IEEE1588_PTP_TT_PTP;
+	aps[2]=IEEE1588_PTP_TT_INSTANCES;
+	aps[3]=IEEE1588_PTP_TT_INSTANCE;
 	aps[4]=255;
 	kvs[0]=&sinst32;
 	nkvs[0]=&dinst32;
@@ -290,7 +298,7 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 		UB_LOG(UBL_ERROR, "%s:can't copy ieee1588 data\n", __func__);
 		return -1;
 	}
-	aps[0]=IEEE1588_PTP_RO;
+	aps[0]=IEEE1588_PTP_TT_RO_Y;
 	(void)yang_db_listcopy(ydbia->dbald, aps, kvs, kss, nkvs, kss);
 	return 0;
 }
@@ -300,16 +308,15 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
  ****************************************/
 
 #ifdef UC_RUNCONF
-#define GPTP_RUNCONF_INIT(xdd,dbald,hwald) xl4_extmod_xl4gptp_runconf_config_init(xdd,dbald,hwald)
+#define GPTP_RUNCONF_INIT(dbald,hwald) xl4_extmod_xl4gptp_runconf_config_init(dbald,hwald)
 #else
-#define GPTP_RUNCONF_INIT(xdd,dbald,hwald) 0
+#define GPTP_RUNCONF_INIT(dbald,hwald) 0
 #endif
 
 #define GPTP_LINKSEMNAME "/gptplinksem"
 
 struct gptpgcfg_data{
 	uc_dbald *dbald;
-	xl4_data_data_t *xdd;
 	uint8_t max_domain;
 	uint8_t *instance_domain_map;
 	uc_notice_data_t *ucntd;
@@ -338,20 +345,20 @@ static uint8_t gycdl_num;
 /*
   "gycd" is created per "gptpinstance".
   gptpinstance-index starts from 0 and increment by crating a new gptp instance.
-  "/ieee1588-ptp/prp/intstances/instance", this instance is different from 'gptpinstance'.
+  "/ieee1588-ptp-tt/prp/intstances/instance", this instance is different from 'gptpinstance'.
   Each gptpinstance has "the number of domains" instances.
   E.G. 1st gptpinstance has 2 domains, and 2nd has 1 domain.
   "instance-domain-map" data becomes "0-0,0-1,1-0"
   the map element is "gptpinstance-index"-"domain-index".
-  "0-0"(0x0000) is the 1st "/ieee1588-ptp/prp/intstances/instance|instance-index:0|"
-  "0-1"(0x0001) is the 2nd "/ieee1588-ptp/prp/intstances/instance|instance-index:1|"
-  "1-0"(0x0100) is the 3rd "/ieee1588-ptp/prp/intstances/instance|instance-index:2|"
+  "0-0"(0x0000) is the 1st "/ieee1588-ptp-tt/prp/intstances/instance|instance-index:0|"
+  "0-1"(0x0001) is the 2nd "/ieee1588-ptp-tt/prp/intstances/instance|instance-index:1|"
+  "1-0"(0x0100) is the 3rd "/ieee1588-ptp-tt/prp/intstances/instance|instance-index:2|"
     gycd of gptpinstance-index=0, gycd->instance_domain_map={0,1}
     gycd of gptpinstance-index=1, gycd->instance_domain_map={2}
  */
 static int instance_domain_Init(gptpgcfg_data_t *gycd, uint8_t gptpInstanceIndex)
 {
-	uint8_t aps[]={IEEE1588_PTP_RW, IEEE1588_PTP_PTP, IEEE1588_PTP_INSTANCE_DOMAIN_MAP,
+	uint8_t aps[]={IEEE1588_PTP_TT_RW_G, IEEE1588_PTP_TT_PTP, IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP,
 		       255};
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ, YANG_DB_ONHW_NOACTION,
 				      NULL, aps, NULL, NULL, NULL, 0};
@@ -405,18 +412,15 @@ static int instance_domain_Init(gptpgcfg_data_t *gycd, uint8_t gptpInstanceIndex
 	return 0;
 }
 
-static int gptp_nonyang_init(xl4_data_data_t *xdd, uc_dbald *dbald)
+static int gptp_nonyang_init(uc_dbald *dbald)
 {
 	int res=0;
 
-	if(xl4_data_set_xl4ext(xdd, XL4GPTP_MODULE,
-			       xl4_extmod_xl4gptp_get_enum,
-			       xl4_extmod_xl4gptp_get_string)<0){return -1;}
-	if(xl4_extmod_xl4gptp_config_init(xdd, dbald, NULL)!=0){
+	if(xl4_extmod_xl4gptp_config_init(dbald, NULL)!=0){
 		UB_LOG(UBL_ERROR, "%s: error in xl4_extmod_xl4gptp_config_init\n", __func__);
 		res=-1;
 	}
-	if(GPTP_RUNCONF_INIT(xdd, dbald, NULL)!=0){
+	if(GPTP_RUNCONF_INIT(dbald, NULL)!=0){
 		UB_LOG(UBL_ERROR, "%s: error in GPTP_RUNCONF_INIT\n", __func__);
 		res=-1;
 	}
@@ -453,16 +457,13 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 	(void)memset(gycd, 0, sizeof(gptpgcfg_data_t));
 	// 'tsn_uniconf' must run before this, to connect to the DB
 	if(ucthread){gycd->callmode=UC_CALLMODE_THREAD;}
-	gycd->xdd=xl4_data_init(NULL);
 	gycdl[gptpInstanceIndex]=gycd;
-	if(!gycd->xdd){goto erexit;}
 	gycd->dbald=uc_dbal_open(dbname, "w", gycd->callmode);
 	if(!gycd->dbald){goto erexit;}
-	xl4_data_set_dbald(gycd->xdd, gycd->dbald);
-	if(gptp_nonyang_init(gycd->xdd, gycd->dbald)!=0){goto erexit;}
+	if(gptp_nonyang_init(gycd->dbald)!=0){goto erexit;}
 	gycd->ucntd=uc_notice_init(gycd->callmode, dbname);
 	if(!gycd->ucntd){goto erexit;}
-	ydbi_access_init(gycd->dbald, gycd->xdd, gycd->ucntd);
+	ydbi_access_init(gycd->dbald, gycd->ucntd);
 	while(confnames && *confnames){
 		if(strstr(*confnames, UC_INIT_COPY_INSTANCE_PRE)==*confnames){
 			sinst=strtol(&(*confnames)[strlen(UC_INIT_COPY_INSTANCE_PRE)],
@@ -473,7 +474,7 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 				res=0;
 			}
 		}else{
-			ydrd=UC_RUNCONF_INIT(gycd->xdd, gycd->dbald, NULL);
+			ydrd=UC_RUNCONF_INIT(gycd->dbald, NULL);
 			res=UC_RUNCONF_READFILE(ydrd, *confnames);
 			UC_RUNCONF_CLOSE(ydrd);
 		}
@@ -503,8 +504,8 @@ void gptpgcfg_close(uint8_t gptpInstanceIndex)
 	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return;}
 	gycd=gycdl[gptpInstanceIndex];
 	if(gycd->ucntd!=NULL){uc_notice_close(gycd->ucntd, gycd->callmode);}
-	if(gycd->xdd!=NULL){xl4_data_close(gycd->xdd);}
 	if(gycd->dbald!=NULL){uc_dbal_close(gycd->dbald, gycd->callmode);}
+	ydbi_access_close();
 	if(gycd->instance_domain_map!=NULL){
 		UB_SD_RELMEM(GPTP_YANCONF_MEM, gycd->instance_domain_map);
 	}
@@ -529,7 +530,7 @@ static int port_intitem_one(uint32_t dbinstanceIndex,
 	int res=-1;
 	uint16_t pirep=(uint16_t)rep_port;
 	vsize=YDBI_GET_ITEM(ptk4vk1, value, dbinstanceIndex,
-			    IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT, confitem0, confitem1,
+			    IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT, confitem0, confitem1,
 			    &pindex, sizeof(uint16_t), status);
 	if(vsize>0){
 		res=get_int_from_value(value, vsize, rval);
@@ -539,7 +540,7 @@ static int port_intitem_one(uint32_t dbinstanceIndex,
 	if((rep_port>=0) && (pindex!=(uint16_t)rep_port)){
 		// replace pindex with REPRESENT_PORT_NUMBER
 		vsize=YDBI_GET_ITEM(ptk4vk1, value, dbinstanceIndex,
-				    IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT, confitem0, confitem1,
+				    IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT, confitem0, confitem1,
 				    &pirep, sizeof(uint16_t), status);
 		if(vsize>0){
 			res=get_int_from_value(value, vsize, rval);
@@ -571,7 +572,7 @@ static int get_yang_port_intitem(uint8_t gptpInstanceIndex,
 erexit:
 	if(res!=0){
 		UB_LOG(UBL_ERROR, "%s:no data, status=%d, "
-		       "/ieee1588-ptp/ptp/instances/instance/ports/port/\n",
+		       "/ieee1588-ptp-tt/ptp/instances/instance/ports/port/\n",
 		       __func__, status);
 		UB_LOG(UBL_ERROR, "    confitem0=%d, confitem1=%d, rep_port=%d, "
 		       "pindex=%d, domainIndex=%d\n",
@@ -585,7 +586,7 @@ int gptpgcfg_get_yang_portds_intitem(uint8_t gptpInstanceIndex, uint8_t confitem
 {
 	int64_t rval;
 	if(get_yang_port_intitem(gptpInstanceIndex,
-				 IEEE1588_PTP_PORT_DS,
+				 IEEE1588_PTP_TT_PORT_DS,
 				 confitem, pindex, domainIndex, status, &rval)!=0){
 		return INT_MAX;
 	}
@@ -597,7 +598,7 @@ int64_t gptpgcfg_get_yang_portds_int64item(uint8_t gptpInstanceIndex, uint8_t co
 {
 	int64_t rval;
 	if(get_yang_port_intitem(gptpInstanceIndex,
-				 IEEE1588_PTP_PORT_DS,
+				 IEEE1588_PTP_TT_PORT_DS,
 				 confitem, pindex, domainIndex, status, &rval)!=0){
 		return LLONG_MAX;
 	}
@@ -615,7 +616,7 @@ int gptpgcfg_set_yang_port_item(uint8_t gptpInstanceIndex, uint8_t confitem1, ui
 	if(domainIndex>=gycd->max_domain){return -1;}
 	dbinstanceIndex=gycd->instance_domain_map[domainIndex];
 	return YDBI_SET_ITEM(ptk4vk1, dbinstanceIndex,
-			     IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
+			     IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
 			     confitem1, confitem2,
 			     &pindex, sizeof(uint16_t), status,
 			     value, vsize, notice);
@@ -632,7 +633,7 @@ int gptpgcfg_set_clock_state_item(uint8_t gptpInstanceIndex, uint8_t confitem,
 	if(domainIndex>=gycd->max_domain){return -1;}
 	dbinstanceIndex=gycd->instance_domain_map[domainIndex];
 	return YDBI_SET_ITEM(ptk3vk0, dbinstanceIndex,
-			     IEEE1588_PTP_CLOCK_STATE, confitem, 255,
+			     IEEE1588_PTP_TT_CLOCK_STATE, confitem, 255,
 			     status, value, vsize, notice);
 }
 
@@ -748,7 +749,7 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 
 	res=uc_dbal_get(gycd->dbald, key, ksize, &value, &vsize);
 	if(res!=0){
-		emes="can't read oper-status\n";
+		emes="can't read oper-status";
 		goto erexit;
 	}
 	(void)memset(edtnl, 0, sizeof(event_data_netlink_t));
@@ -762,7 +763,7 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	key[3]=IETF_INTERFACES_SPEED;
 	res=uc_dbal_get(gycd->dbald, key, ksize, &value, &vsize);
 	if(res!=0){
-		emes="can't read speed\n";
+		emes="can't read speed";
 		goto erexit;
 	}
 	edtnl->speed=(uint32_t)(*((uint64_t*)value)/1000000);
@@ -771,7 +772,7 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	key[3]=IETF_INTERFACES_DUPLEX;
 	res=uc_dbal_get(gycd->dbald, key, ksize, &value, &vsize);
 	if(res!=0){
-		emes="can't read duplex\n";
+		emes="can't read duplex";
 		goto erexit;
 	}
 	edtnl->duplex=*((uint32_t*)value);
@@ -782,6 +783,30 @@ erexit:
 		return 1;
 	}
 	return 0;
+}
+
+int gptpgcfg_get_ptpdev(uint8_t gptpInstanceIndex, uint8_t domainIndex,
+			   char *netdev, char *value, uint32_t vsize)
+{
+	int res;
+	uint16_t portIndex;
+	gptpgcfg_data_t *gycd;
+	if((!value) || (vsize<XL4_DATA_PATH_STR_SHORTLEN)) return -1;
+	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
+	gycd=gycdl[gptpInstanceIndex];
+	if(domainIndex>=gycd->max_domain){return -1;}
+
+	res=ydbi_port_device2index_pt(ydbi_access_handle(), gptpInstanceIndex, domainIndex,
+	                              netdev, &portIndex);
+	if(res){
+		UB_TLOG(UBL_WARN, "%s:domainIndex=%d, netdev=%s portIndex not found\n",
+		        __func__, domainIndex, netdev);
+		// ptpdev not found (return -1) when netdev is not found
+		return -1;
+	}
+	res=ydbi_port_index2ptpdev_pt(ydbi_access_handle(), gptpInstanceIndex, domainIndex,
+	                              portIndex, value);
+	return res;
 }
 
 int gptpgcfg_set_asCapable(uint8_t gptpInstanceIndex, uint8_t domainIndex,
@@ -795,8 +820,8 @@ int gptpgcfg_set_asCapable(uint8_t gptpInstanceIndex, uint8_t domainIndex,
 	gycd=gycdl[gptpInstanceIndex];
 	dbinstanceIndex=gycd->instance_domain_map[domainIndex];
 	res=YDBI_SET_ITEM(ptk4vk1, dbinstanceIndex,
-			  IEEE1588_PTP_PORTS, IEEE1588_PTP_PORT,
-			  IEEE1588_PTP_PORT_DS, IEEE1588_PTP_AS_CAPABLE,
+			  IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
+			  IEEE1588_PTP_TT_PORT_DS, IEEE1588_PTP_TT_AS_CAPABLE,
 			  &portIndex, sizeof(uint16_t),
 			  YDBI_STATUS, &asc, sizeof(uint8_t), YDBI_PUSH_NOTICE);
 	UB_TLOG(UBL_INFO, "%s:domainInde=%d, portIndex=%d, ascapable=%d\n", __func__,
@@ -820,47 +845,47 @@ int gptpgcfg_set_clock_perfmonDS(PerfMonClockDS *ds, uint8_t id, bool periodComp
 	// ClockPerformanceMonitoringDataRecord.measurementValid
 	dr->measurementValid=true;
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MEASUREMENT_VALID, &dr->measurementValid, sizeof(uint8_t));
+			IEEE1588_PTP_TT_MEASUREMENT_VALID, &dr->measurementValid, sizeof(uint8_t));
 	// ClockPerformanceMonitoringDataRecord.periodComplete
 	dr->periodComplete=periodComplete;
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_PERIOD_COMPLETE, &dr->periodComplete, sizeof(uint8_t));
+			IEEE1588_PTP_TT_PERIOD_COMPLETE, &dr->periodComplete, sizeof(uint8_t));
 	// ClockPerformanceMonitoringDataRecord.PMTime
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_PM_TIME, &ds->PMTime[id], sizeof(uint32_t));
+			IEEE1588_PTP_TT_PM_TIME, &ds->PMTime[id], sizeof(uint32_t));
 	// ClockPerformanceMonitoringDataRecord.parameter 1..16
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_AVERAGE_MASTER_SLAVE_DELAY, &dr->averageMasterSlaveDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_AVERAGE_TIME_TRANSMITTER_TIME_RECEIVER_DELAY, &dr->averageMasterSlaveDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MINIMUM_MASTER_SLAVE_DELAY, &dr->minMasterSlaveDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MINIMUM_TIME_TRANSMITTER_TIME_RECEIVER_DELAY, &dr->minMasterSlaveDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MAXIMUM_MASTER_SLAVE_DELAY, &dr->maxMasterSlaveDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MAXIMUM_TIME_TRANSMITTER_TIME_RECEIVER_DELAY, &dr->maxMasterSlaveDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_STDDEV_MASTER_SLAVE_DELAY, &dr->stdDevMasterSlaveDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_STDDEV_TIME_TRANSMITTER_TIME_RECEIVER_DELAY, &dr->stdDevMasterSlaveDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_AVERAGE_SLAVE_MASTER_DELAY, &dr->averageSlaveMasterDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_AVERAGE_TIME_RECEIVER_TIME_TRANSMITTER_DELAY, &dr->averageSlaveMasterDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MINIMUM_SLAVE_MASTER_DELAY, &dr->minSlaveMasterDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MINIMUM_TIME_RECEIVER_TIME_TRANSMITTER_DELAY, &dr->minSlaveMasterDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MAXIMUM_SLAVE_MASTER_DELAY, &dr->maxSlaveMasterDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MAXIMUM_TIME_RECEIVER_TIME_TRANSMITTER_DELAY, &dr->maxSlaveMasterDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_STDDEV_SLAVE_MASTER_DELAY, &dr->stdDevSlaveMasterDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_STDDEV_TIME_RECEIVER_TIME_TRANSMITTER_DELAY, &dr->stdDevSlaveMasterDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_AVERAGE_MEAN_PATH_DELAY, &dr->averageMeanPathDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_AVERAGE_MEAN_PATH_DELAY, &dr->averageMeanPathDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MINIMUM_MEAN_PATH_DELAY, &dr->minMeanPathDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MINIMUM_MEAN_PATH_DELAY, &dr->minMeanPathDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MAXIMUM_MEAN_PATH_DELAY, &dr->maxMeanPathDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MAXIMUM_MEAN_PATH_DELAY, &dr->maxMeanPathDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_STDDEV_MEAN_PATH_DELAY, &dr->stdDevMeanPathDelay, sizeof(uint64_t));
+			IEEE1588_PTP_TT_STDDEV_MEAN_PATH_DELAY, &dr->stdDevMeanPathDelay, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_AVERAGE_OFFSET_FROM_MASTER, &dr->averageOffsetFromMaster, sizeof(uint64_t));
+			IEEE1588_PTP_TT_AVERAGE_OFFSET_FROM_TIME_TRANSMITTER, &dr->averageOffsetFromMaster, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MINIMUM_OFFSET_FROM_MASTER, &dr->minOffsetFromMaster, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MINIMUM_OFFSET_FROM_TIME_TRANSMITTER, &dr->minOffsetFromMaster, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_MAXIMUM_OFFSET_FROM_MASTER, &dr->maxOffsetFromMaster, sizeof(uint64_t));
+			IEEE1588_PTP_TT_MAXIMUM_OFFSET_FROM_TIME_TRANSMITTER, &dr->maxOffsetFromMaster, sizeof(uint64_t));
 	res+=ydbi_set_perfmon_clock_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, ds->index[id],
-			IEEE1588_PTP_STDDEV_OFFSET_FROM_MASTER, &dr->stdDevOffsetFromMaster, sizeof(uint64_t));
+			IEEE1588_PTP_TT_STDDEV_OFFSET_FROM_TIME_TRANSMITTER, &dr->stdDevOffsetFromMaster, sizeof(uint64_t));
 
 	if(res){
 		UB_LOG(UBL_WARN, "%s:can't update the DB, %d items not updated\n", __func__, res);
@@ -905,78 +930,78 @@ int gptpgcfg_set_port_perfmonDS(PerfMonPortDS *ds, uint8_t id, bool periodComple
 
 	// PortPerformanceMonitoringPeerDelayDataRecord.PMTime
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST_PEER_DELAY, ds->index[id],
-			IEEE1588_PTP_PM_TIME, &ds->PMTime[id], sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY, ds->index[id],
+			IEEE1588_PTP_TT_PM_TIME, &ds->PMTime[id], sizeof(uint32_t));
 	// PortPerformanceMonitoringPeerDelayDataRecord.parameters 1..4
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST_PEER_DELAY, ds->index[id],
-			IEEE1588_PTP_AVERAGE_MEAN_LINK_DELAY, &pddr->averageMeanLinkDelay, sizeof(int64_t));
+			IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY, ds->index[id],
+			IEEE1588_PTP_TT_AVERAGE_MEAN_LINK_DELAY, &pddr->averageMeanLinkDelay, sizeof(int64_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST_PEER_DELAY, ds->index[id],
-			IEEE1588_PTP_MIN_MEAN_LINK_DELAY, &pddr->minMeanLinkDelay, sizeof(int64_t));
+			IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY, ds->index[id],
+			IEEE1588_PTP_TT_MIN_MEAN_LINK_DELAY, &pddr->minMeanLinkDelay, sizeof(int64_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST_PEER_DELAY, ds->index[id],
-			IEEE1588_PTP_MAX_MEAN_LINK_DELAY, &pddr->maxMeanLinkDelay, sizeof(int64_t));
+			IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY, ds->index[id],
+			IEEE1588_PTP_TT_MAX_MEAN_LINK_DELAY, &pddr->maxMeanLinkDelay, sizeof(int64_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST_PEER_DELAY, ds->index[id],
-			IEEE1588_PTP_STDDEV_MEAN_LINK_DELAY, &pddr->stdDevMeanLinkDelay, sizeof(int64_t));
+			IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY, ds->index[id],
+			IEEE1588_PTP_TT_STDDEV_MEAN_LINK_DELAY, &pddr->stdDevMeanLinkDelay, sizeof(int64_t));
 
 	// PortPerformanceMonitoringDataRecord.PMTime
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PM_TIME, &ds->PMTime[id], sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PM_TIME, &ds->PMTime[id], sizeof(uint32_t));
 	// PortPerformanceMonitoringDataRecord.parameter 1..17
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_ANNOUNCE_TX, &dr->announceTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_ANNOUNCE_TX, &dr->announceTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_ANNOUNCE_RX, &dr->announceRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_ANNOUNCE_RX, &dr->announceRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_ANNOUNCE_FOREIGN_RX, &dr->announceForeignMasterRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_ANNOUNCE_FOREIGN_RX, &dr->announceForeignMasterRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_SYNC_TX, &dr->syncTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_SYNC_TX, &dr->syncTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_SYNC_RX, &dr->syncRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_SYNC_RX, &dr->syncRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_FOLLOW_UP_TX, &dr->followUpTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_FOLLOW_UP_TX, &dr->followUpTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_FOLLOW_UP_RX, &dr->followUpRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_FOLLOW_UP_RX, &dr->followUpRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_DELAY_REQ_TX, &dr->delayReqTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_DELAY_REQ_TX, &dr->delayReqTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_DELAY_REQ_RX, &dr->delayReqRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_DELAY_REQ_RX, &dr->delayReqRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_DELAY_RESP_TX, &dr->delayRespTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_DELAY_RESP_TX, &dr->delayRespTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_DELAY_RESP_RX, &dr->delayRespRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_DELAY_RESP_RX, &dr->delayRespRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PDELAY_REQ_TX, &dr->pDelayReqTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PDELAY_REQ_TX, &dr->pDelayReqTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PDELAY_REQ_RX, &dr->pDelayReqRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PDELAY_REQ_RX, &dr->pDelayReqRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PDELAY_RESP_TX, &dr->pDelayRespTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PDELAY_RESP_TX, &dr->pDelayRespTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PDELAY_RESP_RX, &dr->pDelayRespRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PDELAY_RESP_RX, &dr->pDelayRespRx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PDELAY_RESP_FOLLOW_UP_TX, &dr->pDelayRespFollowUpTx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PDELAY_RESP_FOLLOW_UP_TX, &dr->pDelayRespFollowUpTx, sizeof(uint32_t));
 	res+=ydbi_set_perfmon_port_item(ydbi_access_handle(), gptpInstanceIndex, domainIndex, portIndex,
-			IEEE1588_PTP_RECORD_LIST, ds->index[id],
-			IEEE1588_PTP_PDELAY_RESP_FOLLOW_UP_RX, &dr->pDelayRespFollowUpRx, sizeof(uint32_t));
+			IEEE1588_PTP_TT_RECORD_LIST, ds->index[id],
+			IEEE1588_PTP_TT_PDELAY_RESP_FOLLOW_UP_RX, &dr->pDelayRespFollowUpRx, sizeof(uint32_t));
 
 	if(res){
 		UB_LOG(UBL_WARN, "%s:can't update the DB, %d items not updated\n", __func__, res);
@@ -989,9 +1014,9 @@ int gptpgcfg_deleteall_port_perfmonDS(uint8_t gptpInstanceIndex, uint8_t domainI
 	int res=-1;
 	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
 	// clear record-list-peer-delay and record-list
-	res=ydbi_clear_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_RECORD_LIST_PEER_DELAY,
+	res=ydbi_clear_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY,
 			gptpInstanceIndex, domainIndex, portIndex);
-	res+=ydbi_clear_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_RECORD_LIST,
+	res+=ydbi_clear_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_TT_RECORD_LIST,
 			gptpInstanceIndex, domainIndex, portIndex);
 	return res;
 }
@@ -1001,9 +1026,9 @@ int gptpgcfg_cascade_port_perfmonDS(uint8_t id, uint8_t gptpInstanceIndex, uint8
 	int res=-1;
 	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
 	if(id==PERFMON_SHORTINTV_DR){
-		res=ydbi_cascade_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_RECORD_LIST,
+		res=ydbi_cascade_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_TT_RECORD_LIST,
 				gptpInstanceIndex, domainIndex, portIndex);
-		res+=ydbi_cascade_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_RECORD_LIST_PEER_DELAY,
+		res+=ydbi_cascade_perfmon_port_ds(ydbi_access_handle(), IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY,
 				gptpInstanceIndex, domainIndex, portIndex);
 	}else{
 		res=0; // other record types does not need cascading

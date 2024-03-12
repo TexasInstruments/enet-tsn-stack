@@ -320,9 +320,12 @@ int gptpmasterclock_wait_until_ts64(int64_t tts, int64_t vclose, int64_t toofar)
 
 uint64_t gptpmasterclock_expand_timestamp(uint32_t timestamp)
 {
+	return gptpmasterclock_expand_timestamp_ts64(timestamp, gptpmasterclock_getts64());
+}
+
+uint64_t gptpmasterclock_expand_timestamp_ts64(uint32_t timestamp, int64_t ts64)
+{
 	int64_t dtime;
-	int64_t ts64;
-	ts64=gptpmasterclock_getts64();
 	// make dtime in a range of  -2.147 to 2.147 secconds
 	dtime=((int64_t)timestamp - (ts64 & 0xffffffffLL));
 	if(dtime>INT32_MAX){

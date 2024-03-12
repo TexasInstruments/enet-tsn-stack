@@ -133,7 +133,7 @@ void md_header_template(uint8_t gptpInstanceIndex, int portIndex, PTPMsgHeader *
 	head->majorSdoId=1; // for CMLDS, this must be changed to '2'
 	head->messageType=msgtype;
 	head->minorVersionPTP=gptpgcfg_get_yang_portds_intitem(
-		gptpInstanceIndex, IEEE1588_PTP_MINOR_VERSION_NUMBER,
+		gptpInstanceIndex, IEEE1588_PTP_TT_MINOR_VERSION_NUMBER,
 		portIndex, 0, YDBI_STATUS); // use the data of port=0,domain=0
 	head->versionPTP=2;
 	head->messageLength=len;
@@ -149,10 +149,10 @@ void md_header_template(uint8_t gptpInstanceIndex, int portIndex, PTPMsgHeader *
 			head->flags[0]=0x0;
 			break;
 	}
-	// IEEE1588_PTP_PTP_TIMESCALE
+	// IEEE1588_PTP_TT_PTP_TIMESCALE
 	head->flags[1]=0x0u|(((uint32_t)gptpgcfg_get_yang_intitem(
-				     gptpInstanceIndex, IEEE1588_PTP_DEFAULT_DS,
-				     IEEE1588_PTP_PTP_TIMESCALE, 255,
+				     gptpInstanceIndex, IEEE1588_PTP_TT_DEFAULT_DS,
+				     IEEE1588_PTP_TT_PTP_TIMESCALE, 255,
 				     0, YDBI_STATUS)&0x1u)<<3u);
 	head->correctionField=0;
 	(void)memset(head->messageTypeSpecific,0,4);
@@ -250,29 +250,29 @@ void md_entity_glb_init(uint8_t gptpInstanceIndex, MDEntityGlobal **mdeglb,
 		(*mdeglb)->forAllDomain->currentLogPdelayReqInterval =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_CURRENT_LOG_PDELAY_REQ_INTERVAL,
+				IEEE1588_PTP_TT_CURRENT_LOG_PDELAY_REQ_INTERVAL,
 				portIndex, 0, YDBI_STATUS);
 		(*mdeglb)->forAllDomain->initialLogPdelayReqInterval =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_INITIAL_LOG_PDELAY_REQ_INTERVAL,
+				IEEE1588_PTP_TT_INITIAL_LOG_PDELAY_REQ_INTERVAL,
 				portIndex, 0, YDBI_CONFIG);
 		(*mdeglb)->forAllDomain->pdelayReqInterval.nsec =
 			LOG_TO_NSEC((*mdeglb)->forAllDomain->initialLogPdelayReqInterval);
 		(*mdeglb)->forAllDomain->allowedLostResponses =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_ALLOWED_LOST_RESPONSES,
+				IEEE1588_PTP_TT_ALLOWED_LOST_RESPONSES,
 				portIndex, 0, YDBI_CONFIG);
 		(*mdeglb)->forAllDomain->allowedFaults =
 			gptpgcfg_get_yang_portds_intitem(
 				gptpInstanceIndex,
-				IEEE1588_PTP_ALLOWED_FAULTS,
+				IEEE1588_PTP_TT_ALLOWED_FAULTS,
 				portIndex, 0, YDBI_CONFIG);
 		(*mdeglb)->forAllDomain->neighborPropDelayThresh.nsec =
 			((uint64_t)gptpgcfg_get_yang_portds_int64item(
 				gptpInstanceIndex,
-				IEEE1588_PTP_MEAN_LINK_DELAY_THRESH,
+				IEEE1588_PTP_TT_MEAN_LINK_DELAY_THRESH,
 				portIndex, 0, YDBI_CONFIG)>>16u);
 		(*mdeglb)->forAllDomain->neighborPropDelayMinLimit.nsec =
 			gptpgcfg_get_intitem(

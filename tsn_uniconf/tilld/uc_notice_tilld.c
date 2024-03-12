@@ -50,6 +50,10 @@
 #include <errno.h>
 #include "uc_notice.h"
 
+UB_SD_GETMEM_DEF_EXTERN(UC_NOTICE_PUT);
+
+UB_SD_GETMEM_DEF(UC_NOTICE_SIGM, sizeof(CB_SEM_T), UC_NOTICE_SIGNUM);
+
 int uc_notice_sig_open(bool thread, UC_NOTICE_SIG_T **sigp,
 		       int *master, const char *name)
 {
@@ -59,8 +63,9 @@ int uc_notice_sig_open(bool thread, UC_NOTICE_SIG_T **sigp,
 			__func__);
 		return -1;
 	}
-	CB_SEM_T sem = NULL;
-	if(CB_SEM_INIT(&sem, 0, *master)!=0){
+
+	CB_SEM_T *sem = (CB_SEM_T *)UB_SD_GETMEM(UC_NOTICE_PUT, sizeof(CB_SEM_T));
+	if(CB_SEM_INIT(sem, 0, *master)!=0){
 		return -1;
 	}
 	*sigp=sem;
@@ -72,31 +77,28 @@ void uc_notice_sig_close(bool thread, UC_NOTICE_SIG_T *sigp,
 			 bool master, const char *name)
 {
 	if(!sigp){return;}
-	CB_SEM_T sem = (CB_SEM_T)sigp;
 	if(master){
-		CB_SEM_DESTROY(&sem);
+		CB_SEM_DESTROY(sigp);
 	}
+
 }
 
 int uc_notice_sig_getvalue(bool thread, UC_NOTICE_SIG_T *sigp, int *sval)
 {
-	CB_SEM_T sem = (CB_SEM_T)sigp;
-	return CB_SEM_GETVALUE(&sem, sval);
+	return CB_SEM_GETVALUE(sigp, sval);
 }
 
 int uc_notice_sig_post(bool thread, UC_NOTICE_SIG_T *sigp)
 {
-	CB_SEM_T sem = (CB_SEM_T)sigp;
-	return CB_SEM_POST(&sem);
+	return CB_SEM_POST(sigp);
 }
 
 int uc_notice_sig_check(bool thread, UC_NOTICE_SIG_T *sigp,
 			int tout_ms, const char *fname)
 {
-	CB_SEM_T sem = (CB_SEM_T)sigp;
 	if(!tout_ms){
-		if(CB_SEM_TRYWAIT(&sem)!=0){
-			if(cb_lld_sem_wait_status(&sem)==TILLD_TIMEDOUT){return 1;}
+		if(CB_SEM_TRYWAIT(sigp)!=0){
+			if(cb_lld_sem_wait_status(sigp)==TILLD_TIMEDOUT){return 1;}
 			goto erexit;
 		}
 	}else{
@@ -104,8 +106,8 @@ int uc_notice_sig_check(bool thread, UC_NOTICE_SIG_T *sigp,
 		struct timespec ts;
 		ts64=(int64_t)ub_rt_gettime64()+(tout_ms*UB_MSEC_NS);
 		UB_NSEC2TS(ts64, ts);
-		if(CB_SEM_TIMEDWAIT(&sem, &ts)!=0){
-			if(cb_lld_sem_wait_status(&sem)==TILLD_TIMEDOUT){return 1;}
+		if(CB_SEM_TIMEDWAIT(sigp, &ts)!=0){
+			if(cb_lld_sem_wait_status(sigp)==TILLD_TIMEDOUT){return 1;}
 			goto erexit;
 		}
 	}
@@ -117,6 +119,5 @@ erexit:
 
 int uc_notice_sig_trywait(bool thread, UC_NOTICE_SIG_T *sigp)
 {
-	CB_SEM_T sem = (CB_SEM_T)sigp;
-	return CB_SEM_TRYWAIT(&sem);
+	return CB_SEM_TRYWAIT(sigp);
 }

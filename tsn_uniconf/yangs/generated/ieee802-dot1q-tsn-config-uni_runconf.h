@@ -55,6 +55,4 @@
 
 int ieee802_dot1q_tsn_config_uni_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t ieee802_dot1q_tsn_config_uni_get_enum(char *astr);
-const char *ieee802_dot1q_tsn_config_uni_get_string(uint8_t anum);
 #endif

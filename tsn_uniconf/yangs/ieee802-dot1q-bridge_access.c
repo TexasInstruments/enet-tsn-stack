@@ -53,11 +53,15 @@
 #include "ieee802-dot1q-bridge.h"
 #include "ieee802-dot1q-bridge_access.h"
 
+extern uint8_t IEEE802_DOT1Q_BRIDGE_func(uc_dbald *dbald);
+#define IEEE802_DOT1Q_BRIDGE_RW IEEE802_DOT1Q_BRIDGE_func(dbald)
+#define IEEE802_DOT1Q_BRIDGE_RO (IEEE802_DOT1Q_BRIDGE_func(dbald)|0x80u)
+
 #define QBRIDGE_COMP_NAME "cmp00"
 #define QBRIDGE_FDB_ID 0
 static char compname[6]=QBRIDGE_COMP_NAME;
 
-static void set_dpara_k1vk0(yang_db_access_para_t *dbpara, xl4_data_data_t *xdd,
+static void set_dpara_k1vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    const char* bridgename, uint8_t instIndex,
 			    uint8_t k1, bool status)
 {
@@ -82,7 +86,7 @@ int ydbi_get_item_qbk1vk0(yang_db_item_access_t *ydbia, void **rval,
 			  uint8_t k1, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, bridgename, instIndex, k1, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
@@ -91,7 +95,7 @@ int ydbi_rel_item_qbk1vk0(yang_db_item_access_t *ydbia,
 			  uint8_t k1, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, bridgename, instIndex, k1, status);
 	return ydbi_rel_foot(ydbia, __func__);
 }
 
@@ -101,7 +105,7 @@ int ydbi_set_item_qbk1vk0(yang_db_item_access_t *ydbia,
 			  uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, bridgename, instIndex, k1, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -112,7 +116,7 @@ int ydbi_del_item_qbk1vk0(yang_db_item_access_t *ydbia,
 			  uint8_t k1, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, bridgename, instIndex, k1, status);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
@@ -120,7 +124,7 @@ static void set_dpara_vlan_reg(yang_db_item_access_t *ydbia,
 			       const char* bridgename, uint8_t instIndex,
 			       uint32_t *database_id, uint16_t *vids, const char *netdev)
 {
-	set_dpara_k1vk0(&ydbia->dbpara, ydbia->xdd, bridgename, instIndex,
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, bridgename, instIndex,
 			IEEE802_DOT1Q_BRIDGE_FILTERING_DATABASE, YDBI_CONFIG);
 	ydbia->dbpara.aps[5] = IEEE802_DOT1Q_BRIDGE_VLAN_REGISTRATION_ENTRY;
 	ydbia->dbpara.aps[6] = IEEE802_DOT1Q_BRIDGE_PORT_MAP;

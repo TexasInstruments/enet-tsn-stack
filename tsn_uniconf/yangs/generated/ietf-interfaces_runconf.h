@@ -55,6 +55,4 @@
 
 int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t ietf_interfaces_get_enum(char *astr);
-const char *ietf_interfaces_get_string(uint8_t anum);
 #endif

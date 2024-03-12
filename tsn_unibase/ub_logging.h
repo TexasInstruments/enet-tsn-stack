@@ -70,6 +70,10 @@
 #ifndef UB_LOGGING_H_
 #define UB_LOGGING_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * @brief This defines different logging levels
  * - UBL_NONE No message will print on console
@@ -275,6 +279,10 @@ int ub_log_return(int cat_index);
  * @note the function depends of the callback function
  */
 void ub_log_flush(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 /** @}*/

@@ -70,6 +70,8 @@ struct cb_lld_task {
 	void *(*func)(void*);
 	void *arg;
 	bool exit;
+	uint8_t *stack_alloc;
+	char name[CB_TSN_THREAD_NAME_SIZE];
 };
 
 #define CB_LLDSEM_MMEM cb_lldsem
@@ -85,6 +87,15 @@ UB_SD_GETMEM_DEF(CB_LLDSEM_MMEM, (int)sizeof(cb_lld_sem_t),
 #endif
 UB_SD_GETMEM_DEF(CB_LLDTASK_MMEM, (int)sizeof(cb_lld_task_t),
 		 CB_LLDTASK_INSTNUM);
+
+#define CB_LLDTASK_STACK_MMEM cb_lldtask_stack
+#ifndef CB_LLDTASK_STACK_INSTNUM
+#define CB_LLDTASK_STACK_INSTNUM 4
+#endif
+#ifndef CB_LLDTASK_STACK_SIZE
+#define CB_LLDTASK_STACK_SIZE (16*1024)
+#endif
+UB_SD_GETMEM_DEF(CB_LLDTASK_STACK_MMEM, CB_LLDTASK_STACK_SIZE, CB_LLDTASK_STACK_INSTNUM)
 
 int cb_lld_sem_init(CB_SEM_T *sem, int pshared, unsigned int value)
 {
@@ -270,6 +281,7 @@ static void task_fxn(void* a0, void* a1)
 {
 	cb_lld_task_t *cbtask = (cb_lld_task_t *) a0;
 	cbtask->func(cbtask->arg);
+	UB_LOG(UBL_INFO,"%s:task (%s) terminated.\n", __func__, cbtask->name);
 	cbtask->exit = true;
 }
 
@@ -278,6 +290,9 @@ static int cb_lld_task_destroy(cb_lld_task_t *cbtask)
 	if (cbtask->lldtask != NULL) {
 		TaskP_delete(&cbtask->lldtask);
 		cbtask->lldtask = 0;
+	}
+	if (cbtask->stack_alloc != NULL) {
+		UB_SD_RELMEM(CB_LLDTASK_STACK_MMEM, cbtask->stack_alloc);
 	}
 	UB_SD_RELMEM(CB_LLDTASK_MMEM, cbtask);
 	return 0;
@@ -289,11 +304,12 @@ int cb_lld_task_create(CB_THREAD_T *th, void *vattr, void *(*func)(void*), void 
 	cb_lld_task_t *cbtask;
 	cb_tsn_thread_attr_t *attr = (cb_tsn_thread_attr_t *) vattr;
 
-	cbtask = (cb_lld_task_t *) UB_SD_GETMEM(CB_LLDTASK_MMEM, sizeof(cb_lld_task_t));
+	cbtask = (cb_lld_task_t *)UB_SD_GETMEM(CB_LLDTASK_MMEM, sizeof(cb_lld_task_t));
 	if (cbtask == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to get mem!\n", __func__);
 		return -1;
 	}
+	memset(cbtask, 0, sizeof(cb_lld_task_t));
 
 	TaskP_Params_init(&param);
 	if (attr != NULL) {
@@ -308,16 +324,35 @@ int cb_lld_task_create(CB_THREAD_T *th, void *vattr, void *(*func)(void*), void 
 			param.stack = attr->stack_addr;
 		}
 	}
+
+	if (param.stack == NULL) {
+		cbtask->stack_alloc = (uint8_t*)
+			UB_SD_GETMEM(CB_LLDTASK_STACK_MMEM, CB_LLDTASK_STACK_SIZE);
+		if (cbtask->stack_alloc == NULL) {
+			UB_LOG(UBL_ERROR,"%s:failed to get stack mem!\n", __func__);
+			goto error;
+		}
+		param.stack = cbtask->stack_alloc;
+		param.stacksize = CB_LLDTASK_STACK_SIZE;
+	}
+
 	cbtask->func = func;
 	cbtask->arg = arg;
 	cbtask->exit = false;
 	param.arg0 = cbtask;
+	if (param.name == NULL) {
+		param.name = "default_thread";
+	}
+	snprintf(cbtask->name, CB_TSN_THREAD_NAME_SIZE, "%s", param.name);
 
 	cbtask->lldtask = TaskP_create(task_fxn, &param);
 	if (cbtask->lldtask == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to TaskP_create()!\n", __func__);
 		goto error;
 	}
+	UB_LOG(UBL_INFO,"%s: %s stack_size=%d\n", __func__,
+		   param.name, param.stacksize);
+
 	*th = cbtask;
 	return 0;
 error:
@@ -329,7 +364,7 @@ int cb_lld_task_join(CB_THREAD_T th, void **retval)
 {
 	while (th->exit == false) {
 		TaskP_sleepInMsecs(500);
-		UB_LOG(UBL_INFO,"%s:wait for task exit\n", __func__);
+		UB_LOG(UBL_INFO,"%s:wait for task (%s) exit\n", __func__, th->name);
 	}
 	return cb_lld_task_destroy(th);
 }

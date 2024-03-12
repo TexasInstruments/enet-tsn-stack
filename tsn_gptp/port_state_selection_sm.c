@@ -81,8 +81,8 @@ void updateStateDisabledTree(port_state_selection_data_t *sm)
 	int i;
 	for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 		SELECTED_STATE[i] = DisabledPort;
-		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
-					    IEEE1588_PTP_PORT_STATE, i,
+		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
+					    IEEE1588_PTP_TT_PORT_STATE, i,
 					    sm->domainIndex, YDBI_STATUS,
 					    &SELECTED_STATE[i], sizeof(uint8_t),
 					    YDBI_NO_NOTICE);
@@ -288,8 +288,8 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 			       "state %s -> %s\n",
 			       __func__, sm->domainIndex, i, PTPPortState_debug[oldState],
 			       PTPPortState_debug[SELECTED_STATE[i]]);
-			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
-						    IEEE1588_PTP_PORT_STATE, i,
+			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
+						    IEEE1588_PTP_TT_PORT_STATE, i,
 						    sm->domainIndex, YDBI_STATUS,
 						    &SELECTED_STATE[i], sizeof(uint8_t),
 						    YDBI_NO_NOTICE);
@@ -339,8 +339,8 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 		       "state %s -> %s\n",
 		       __func__, sm->domainIndex, PTPPortState_debug[oldState],
 		       PTPPortState_debug[SELECTED_STATE[0]]);
-		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
-					    IEEE1588_PTP_PORT_STATE, 0,
+		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
+					    IEEE1588_PTP_TT_PORT_STATE, 0,
 					    sm->domainIndex, YDBI_STATUS,
 					    &SELECTED_STATE[0], sizeof(uint8_t),
 					    YDBI_NO_NOTICE);
@@ -393,8 +393,8 @@ clearexit:
 	sm->init_slave_ts=0;
 	SYSTEM_PRIORITY.rootSystemIdentity.priority1=
 		gptpgcfg_get_yang_intitem(GPTPINSTNUM,
-					  IEEE1588_PTP_DEFAULT_DS,
-					  IEEE1588_PTP_PRIORITY1, 255,
+					  IEEE1588_PTP_TT_DEFAULT_DS,
+					  IEEE1588_PTP_TT_PRIORITY1, 255,
 					  sm->domainIndex, YDBI_CONFIG);
 	return updtStatesTree(sm, cts64);
 }
@@ -441,8 +441,8 @@ static void *init_bridge_proc(port_state_selection_data_t *sm, int64_t cts64)
 			}else{
 				SELECTED_STATE[i] = MasterPort;
 			}
-			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_PORT_DS,
-						    IEEE1588_PTP_PORT_STATE, i,
+			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
+						    IEEE1588_PTP_TT_PORT_STATE, i,
 						    sm->domainIndex, YDBI_STATUS,
 						    &SELECTED_STATE[i], sizeof(uint8_t),
 						    YDBI_NO_NOTICE);

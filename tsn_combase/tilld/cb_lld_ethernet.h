@@ -79,10 +79,6 @@ extern "C" {
 #define ntohl __ntohl
 #endif
 
-#ifndef ECONNREFUSED
-/* Use to fix the compiling error, no real usage */
-#define ECONNREFUSED 100
-#endif
 #define MAX_NUMBER_ENET_DEVS LLDENET_MAX_PORTS
 
 #define CB_SOCKET_VALID(x) ((x)!=NULL)
@@ -90,8 +86,10 @@ extern "C" {
 #define CB_SOCKET_T lld_socket_t*
 #define CB_ETHHDR_T struct ethhdr
 #define CB_SOCKADDR_LL_T struct sockaddr
+#define CB_SOCKADDR_T struct sockaddr
 #define CB_SOCK_SENDTO cb_lld_sendto
 #define CB_SOCK_CLOSE cb_rawsock_close
+
 #define CB_OPEN open
 #define CB_CLOSE close
 #define CB_WRITE write
@@ -154,6 +152,10 @@ struct sockaddr {
 	 * Set to -1 to use the default assigned by the implementation.
 	 */
 	int tcid;
+	/**
+	 * timestamp of rx packet which was captured by host port.
+	 */
+	uint64_t rxts;
 };
 
 /**
@@ -261,6 +263,12 @@ typedef struct {
 	uint32_t numRxChannels;
 } cb_socket_lldcfg_update_t;
 
+/* Number of elements in a statistics block */
+#define CB_TILLD_STATS_BLOCK_ELEM_NUM             (128U)
+typedef struct cb_tilld_port_stats {
+	uint64_t val[CB_TILLD_STATS_BLOCK_ELEM_NUM];
+} cb_tilld_port_stats_t;
+
 /**
  * @typedef cb_socket_lldcfg_update_cb_t
  * @brief Callback function type for cb_socket_lldcfg_update.
@@ -325,10 +333,25 @@ int cb_lld_sendto(CB_SOCKET_T sfd, void *sdata, int psize, int flags,
  * @param sfd socket fd
  * @param buf packet buffer
  * @param size buffer size
- * @param port RX port
+ * @param addr index of received port and packets info
+ * @param addrsize size of the addr structure.
  * @return <0: error; 0: No data available; 0xFFFF: Unmatched data filter; >0: data len
  */
-int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size, int *port);
+int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size,
+		CB_SOCKADDR_LL_T *addr, int addrsize);
+
+typedef void (*cb_lld_zerocopy_recv_cb_t)(void *buf, int size,
+					CB_SOCKADDR_LL_T *addr, void *cbarg);
+/**
+ * @brief Receive a RX ethernet L2 packet n the zero-copy way.
+ * This should be called after a rxnotify_cb is invoked.
+ * @param sfd socket fd
+ * @param cblld_recv_cb the receive callback
+ * @param cbarg the callback argument
+ * @return <0: error; 0: No data available; 0xFFFF: Unmatched data filter; 1: received data
+ */
+int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, cb_lld_zerocopy_recv_cb_t cblld_recv_cb,
+						void *cbarg);
 
 /**
  * @brief Set the TX notify callback that is invoked when an TX packet
@@ -399,11 +422,21 @@ int cb_lld_get_link_state(CB_SOCKET_T cfd, const char *dev, uint32_t *linkstate)
 int cb_lld_get_link_info(CB_SOCKET_T cfd, const char *dev, uint32_t *speed, uint32_t *duplex);
 
 /**
- * @brief Checks the receive packet timestamping mode.
+ * @brief Get stats info from host or mac port.
  * @param sfd socket fd
- * @return true if receive time stamp is present in the packet buffer.
+ * @param port 0xFF: host port;  less than 0xFF:  mac port.
+ * @note valid index of mac port depends on HW platform
+ * @return 0 on success, -1 on failure
  */
-bool cb_lld_is_rxts_inbuff(CB_SOCKET_T sfd);
+int cb_lld_get_port_stats(CB_SOCKET_T sfd, int port, cb_tilld_port_stats_t *stats);
+
+/**
+ * @brief reset stats info from host or mac port.
+ * @param sfd socket fd
+ * @param port 0xFF: host port;  less than:  mac port.
+ * @note valid index of mac port depends on HW platform
+ */
+void cb_lld_reset_port_stats(CB_SOCKET_T sfd, int port);
 
 #ifdef __cplusplus
 }

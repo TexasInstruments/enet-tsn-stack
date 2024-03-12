@@ -50,18 +50,15 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ieee802-dot1ab-lldp.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-monitoring.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+YANG_NODE_CACHED_MODULE_GET_ENUM_DEF(IEEE802_DOT1AB_LLDP, "ieee802-dot1ab-lldp");
+#define IEEE802_DOT1AB_LLDP_RW IEEE802_DOT1AB_LLDP_func(dbald)
+#define IEEE802_DOT1AB_LLDP_RO (IEEE802_DOT1AB_LLDP_func(dbald)|0x80u)
 
 int ieee802_dot1ab_lldp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 {
@@ -73,6 +70,7 @@ int ieee802_dot1ab_lldp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	uint8_t kss[8];
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE,YANG_DB_ONHW_ALWAYS,
 	                              NULL,aps,kvs,kss,NULL,0};
+	if(yang_node_mod_set_enum(dbald, "ieee802-dot1ab-lldp")<0){return -1;};
 	dbpara.atype=YANG_DB_ACTION_READ;
 	aps[0] = IEEE802_DOT1AB_LLDP_RO;
 	aps[1] = IEEE802_DOT1AB_LLDP_VALUEKEY;
@@ -110,3 +108,4 @@ erexit:
 	}
 	return res;
 }
+

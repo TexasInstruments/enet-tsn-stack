@@ -108,6 +108,10 @@
  * Maximum number of ports supported by the Enet LLD abstract layer
  */
 #define LLDENET_MAX_PORTS 10
+/**
+ * Maximum number of DMA rx channels per instance
+ */
+#define MAX_NUM_RX_DMA_CH_PER_INSTANCE 2
 
 #endif //LLDTYPE_H
 

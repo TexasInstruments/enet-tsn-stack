@@ -52,21 +52,20 @@
 #include <tsn_unibase/unibase_binding.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <tsn_uniconf/uc_dbal.h>
+#include <tsn_uniconf/hal/uc_hwal.h>
+#include <tsn_uniconf/uc_notice.h>
+#include <tsn_uniconf/ucman.h>
+#include <tsn_uniconf/yangs/ieee1588-ptp-tt_access.h>
+#include <tsn_uniconf/yangs/ietf-interfaces_access.h>
 #include "gptpclock.h"
 #include "gptpnet.h"
 #include "mdeth.h"
 #include "gptpman.h"
-#include "getopt.h"
+#include <getopt.h>
 #include "gptpcommon.h"
 #include "gptpconf/gptpgcfg.h"
 #include "gptpconf/xl4-extmod-xl4gptp.h"
-#include "tsn_uniconf/uc_dbal.h"
-#include "tsn_uniconf/hal/uc_hwal.h"
-#include "tsn_uniconf/uc_notice.h"
-#include "tsn_uniconf/ucman.h"
-#include "tsn_uniconf/yangs/tsn_data.h"
-#include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
-#include "tsn_uniconf/yangs/ietf-interfaces_access.h"
 
 typedef struct gptpdpd {
 	const char **netdevs;

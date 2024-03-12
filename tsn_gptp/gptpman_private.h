@@ -85,7 +85,7 @@
 #include "gptpman.h"
 #include "md_abnormal_hooks.h"
 #include "tsn_unibase/unibase_macros.h"
-#include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
+#include "tsn_uniconf/yangs/ieee1588-ptp-tt_access.h"
 #include "gptpconf/gptpgcfg.h"
 #include "gptp_perfmon.h"
 

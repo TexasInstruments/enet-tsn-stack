@@ -52,6 +52,7 @@
 #include "../combase.h"
 #include "../combase_link.h"
 #include "lld_ethernet_private.h"
+#include "lldenetext.h"
 
 struct combase_link_data {
 	CB_SOCKET_T sock;
@@ -189,21 +190,29 @@ int cbl_query_response(combase_link_data_t *cbld, int tout_ms)
 
 int cbl_tc_queue_map(combase_link_data_t *cbld, cbl_tcinit_params_t *tip)
 {
-	return -1;
+	uint8_t mac_port = cb_lld_netdev_to_macport((char*)tip->ifname);
+	int res =  LLDEnetEnableTCQueueMapping(cbld->sock->lldenet,
+					       mac_port, &tip->qmap);
+	return (res == LLDENET_E_OK? 1: -1);
 }
 
 int cbl_cbs_setup(combase_link_data_t *cbld, cbl_cbs_params_t *cbsp)
 {
-	return -1;
+	uint8_t mac_port = cb_lld_netdev_to_macport((char*)cbsp->ifname);
+	int res =  LLDEnetSetCreditBasedShaping(cbld->sock->lldenet,
+						mac_port, cbsp);
+	return (res == LLDENET_E_OK? 1: -1);
 }
 
 int cbl_tas_setup(combase_link_data_t *cbld, cbl_tas_sched_params_t *ctsp)
 {
+	int res;
+
 	if (!cbld->sock) {
 		return -1;
 	}
 	uint8_t mac_port = cb_lld_netdev_to_macport((char*)ctsp->ifname);
-	int res = LLDEnetTasSetConfig(cbld->sock->lldenet, mac_port, ctsp);
+	res = LLDEnetTasSetConfig(cbld->sock->lldenet, mac_port, ctsp);
 	return (res == LLDENET_E_OK? 1: -1);
 }
 
@@ -247,7 +256,7 @@ void *cbl_query_thread(void *ptr)
 		res=check_linkstate_change(cbld);
 		if(res<=0){continue;}
 		if(cqtd->sigp!=NULL){
-			CB_SEM_POST(cqtd->sigp);
+			CB_SEM_POST( cqtd->sigp);
 		}
 	}
 	return NULL;

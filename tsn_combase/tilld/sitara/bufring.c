@@ -160,6 +160,45 @@ bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
 	return true;
 }
 
+bool BufRingRefer(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
+{
+	uint32_t pi;
+	uint32_t ci;
+
+	pi = ring->pi;
+	ci = ring->ci;
+
+	if (RingIsEmpty(pi, ci)) {
+		UB_LOG(UBL_ERROR,"ring is empty\n");
+		return false;
+	}
+
+	pktBuf->buf = ring->pktBufs[ci].buf;
+	pktBuf->size = ring->pktBufs[ci].size;
+	pktBuf->port = ring->pktBufs[ci].port;
+
+	return true;
+}
+
+void BufRingReferPop(LLDEnetBufRing_t *ring)
+{
+	uint32_t pi;
+	uint32_t ci;
+
+	pi = ring->pi;
+	ci = ring->ci;
+
+	if (RingIsEmpty(pi, ci)) {
+		UB_LOG(UBL_ERROR,"ring is empty\n");
+		return;
+	}
+	ci++;
+	if (ci == CB_LLDENET_SUB_RX_RING_SIZE) {
+		ci = 0;
+	}
+	ring->ci = ci;
+}
+
 #else //!SOC_AM273X
 void InitBufRing(LLDEnetBufRing_t *ring)
 {}
@@ -176,6 +215,14 @@ bool BufRingPop(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
 {
 	return false;
 }
+
+bool BufRingRefer(LLDEnetBufRing_t *ring, LLDEnetPktBuf_t *pktBuf)
+{
+	return true;
+}
+
+void BufRingReferPop(LLDEnetBufRing_t *ring)
+{}
 
 bool BufRingIsEmpty(LLDEnetBufRing_t *ring)
 {

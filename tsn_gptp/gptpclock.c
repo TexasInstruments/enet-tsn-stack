@@ -51,7 +51,7 @@
 #include <tsn_unibase/unibase.h>
 #include "gptpclock.h"
 #include "gptpcommon.h"
-#include "tsn_uniconf/yangs/ieee1588-ptp_access.h"
+#include "tsn_uniconf/yangs/ieee1588-ptp-tt_access.h"
 #include "gptpconf/gptpgcfg.h"
 
 /*
@@ -476,7 +476,7 @@ int gptpclock_add_clock(uint8_t gptpInstanceIndex, int clockIndex,
 			return -1;
 		}
 	}
-	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_GMSTATE,
+	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_TT_GMSTATE,
 				      domainIndex, YDBI_STATUS,
 				      &state, sizeof(uint32_t), YDBI_NO_NOTICE);
 
@@ -785,8 +785,8 @@ int gptpclock_setadj(uint8_t gptpInstanceIndex,
 		break;
 	}
 	od->adjvppb=adjvppb;
-	if(gptpgcfg_set_yang_port_item(gptpInstanceIndex, IEEE1588_PTP_PORT_CLOCK,
-				       IEEE1588_PTP_ADJRATE,
+	if(gptpgcfg_set_yang_port_item(gptpInstanceIndex, IEEE1588_PTP_TT_PORT_CLOCK,
+				       IEEE1588_PTP_TT_ADJRATE,
 				       clockIndex, od->domainIndex, YDBI_STATUS,
 				       &adjvppb, sizeof(int32_t), YDBI_NO_NOTICE)){
 		UB_LOG(UBL_ERROR, "%s:can't update the DB, adjrate=%d ppb\n",
@@ -1079,7 +1079,7 @@ int gptpclock_set_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex, uint32_
 	       gptpInstanceIndex, domainIndex, gmstate);
 	od->pp->gmsync=gmstate;
 	(void)gptpclock_update_active_domain(gptpInstanceIndex);
-	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_GMSTATE,
+	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_TT_GMSTATE,
 				      od->domainIndex, YDBI_STATUS,
 				      &gmstate, sizeof(uint32_t), YDBI_NO_NOTICE);
 	return 0;

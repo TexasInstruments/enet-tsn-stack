@@ -59,7 +59,6 @@
 #define GPTPBASETYPES_H_
 
 #include <string.h>
-#include <tsn_uniconf/yangs/tsn_data.h>
 
 /**
  * @brief Macro to define maximum path trace.

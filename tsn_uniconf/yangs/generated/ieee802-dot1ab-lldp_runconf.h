@@ -55,6 +55,4 @@
 
 int ieee802_dot1ab_lldp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t ieee802_dot1ab_lldp_get_enum(char *astr);
-const char *ieee802_dot1ab_lldp_get_string(uint8_t anum);
 #endif

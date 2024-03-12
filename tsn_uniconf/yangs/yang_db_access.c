@@ -56,8 +56,9 @@
 #include "yang_db_access.h"
 #include "yang_db_identiyref.h"
 #include "yang_db_enumeration.h"
+#include "yang_node.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+UB_SD_GETMEM_DEF(YANGINIT_GEN_SMEM, YANGINIT_GEN_SSIZE, YANGINIT_GEN_SNUM);
 
 static char *get_two_vids(char *vstr, uint16_t *v1, uint16_t *v2)
 {
@@ -493,8 +494,8 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 		return -1;
 	}
 	if(res!=0){
-        UB_LOG(UBL_ERROR, "%s:conversion failed, vtype=%d, vstr=%s\n",
-                       __func__, vtype, vstr ? vstr : "NULL");
+		UB_LOG(UBL_ERROR, "%s:conversion failed, vtype=%d, vstr=%s\n",
+		       __func__, vtype, vstr ? vstr : "NULL");
 		return res;
 	}
 	return csize;
@@ -902,7 +903,8 @@ uint32_t yang_db_create_key(uint8_t *pap, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	}
 	if((papc+apc+kpc)==0){return 0;}
 	if((papc+apc+kpc)>UC_MAX_KEYSIZE){
-		UB_LOG(UBL_ERROR, "%s:key size=%d is too big\n", __func__, papc+apc+kpc);
+		UB_LOG(UBL_ERROR, "%s:key size=%d is too big, apc=%d, kpc=%d\n",
+		       __func__, papc+apc+kpc, apc, kpc);
 		return 0;
 	}
 	for(i=0;i<papc;i++){
@@ -991,13 +993,13 @@ void *yang_db_key_bottomp(void *key, uint32_t ksize)
 	return &((uint8_t*)key)[an+k];
 }
 
-void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
+void yang_db_keydump_log(int llevel, uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 {
 	int i, j, sp, kpc=0;
 	uint32_t apc;
 	int res;
 	char astr[128]={0};
-	const char *mname;
+	char mname[32];
 	const char *status;
 	if(!ub_clog_on(UB_LOGCAT, (ub_dbgmsg_level_t)llevel)){return;}
 	for(i=0;;i++) {
@@ -1011,8 +1013,13 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 		}
 	}
 	if(apc<2u){return;}
-	mname=yang_modules_get_string(ap[0]);
-	if(!mname){return;}
+	if(dbald!=NULL){
+		if(yang_node_extmod_get_string(dbald, ap[0], mname, sizeof(mname))!=0){
+			return;
+		}
+	}else{
+		strcpy(mname,"unknown");
+	}
 	status=(ap[0]>=0x80)?"(RO)":"(RW)";
 	(void)snprintf(astr, sizeof(astr), "nodes%s - %s", status, mname);
 	for(i=1;i<(int)apc;i++){
@@ -1040,15 +1047,15 @@ void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss)
 	UB_VLOG((ub_dbgmsg_level_t)llevel, "%s\n", astr);
 }
 
-void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
-			      void *value, uint32_t vsize)
+void yang_db_keyvaluedump_log(int llevel, uc_dbald *dbald, uint8_t *ap, kvs_t *kvs,
+			      uint8_t *kss, void *value, uint32_t vsize)
 {
 	uint8_t *uv=(uint8_t *)value;
 	char astr[128]={0};
 	int sp;
 	uint32_t i;
 	if(!ub_clog_on(UB_LOGCAT, (ub_dbgmsg_level_t)llevel)){return;}
-	yang_db_keydump_log(llevel, ap, kvs, kss);
+	yang_db_keydump_log(llevel, dbald, ap, kvs, kss);
 	(void)strcpy(astr, "value - ");
 	sp=(int)strlen(astr);
 	for(i=0;(i<vsize) && ((sp+(i*3))<((int)sizeof(astr)-1));i++){
@@ -1068,7 +1075,7 @@ static void swap_kvs(kvs_t *kvs1, uint8_t *kss1, kvs_t *kvs2, uint8_t *kss2)
 	int i;
 	void *tv;
 	uint8_t ts;
-	for(i=0;i<=YDBI_MAX_KV_DEPTH;i++){
+	for(i=0;i<=UC_MAX_KV_DEPTH;i++){
 		if((kvs1[i]==NULL) || (kvs2[i]==NULL)){break;}
 		tv=kvs1[i];
 		ts=kss1[i];
@@ -1087,18 +1094,18 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	uint32_t ksize, nksize, vsize;
 	void *nkey, *value;
 	uint8_t *aap;
-	void *akvs[YDBI_MAX_KV_DEPTH+1];
-	uint8_t akss[YDBI_MAX_KV_DEPTH];
+	void *akvs[UC_MAX_KV_DEPTH+1];
+	uint8_t akss[UC_MAX_KV_DEPTH];
 	yang_db_access_para_t dbpara;
 	int res=0;
 	bool match;
-	uint8_t cap[YDBI_MAX_AP_DEPTH];
+	uint8_t cap[UC_MAX_AP_DEPTH];
 
-	for(ksize=0;ksize<YDBI_MAX_AP_DEPTH;ksize++){
+	for(ksize=0;ksize<UC_MAX_AP_DEPTH;ksize++){
 		if(ap[ksize]==255){break;}
 		cap[ksize]=ap[ksize];
 	}
-	if(ksize==0 || ksize==YDBI_MAX_AP_DEPTH){return -1;}
+	if(ksize==0 || ksize==UC_MAX_AP_DEPTH){return -1;}
 	cap[ksize-1]+=1;
 	range=uc_get_range(dbald, ap, ksize, cap, ksize);
 	if(!range){
@@ -1112,7 +1119,7 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 
 		// check if it is copied data. Don't make 'copy of copy'.
 		match=false;
-		for(i=0;i<=YDBI_MAX_KV_DEPTH;i++){
+		for(i=0;i<=UC_MAX_KV_DEPTH;i++){
 			if(nkvs[i]==NULL){
 				// all kvs are matched to akvs
 				match=true;
@@ -1132,7 +1139,7 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 
 		// check if the value key matches
 		match=false;
-		for(i=0;i<=YDBI_MAX_KV_DEPTH;i++){
+		for(i=0;i<=UC_MAX_KV_DEPTH;i++){
 			if(kvs[i]==NULL){
 				// all kvs are matched to akvs
 				match=true;
@@ -1167,7 +1174,8 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 			res=yang_db_action(dbald, NULL, &dbpara);
 			if(!res){
 				UB_LOG(UBL_DEBUG, "%s:copy an item\n", __func__);
-				yang_db_keyvaluedump_log(UBL_DEBUGV, aap, akvs, akss, value, vsize);
+				yang_db_keyvaluedump_log(UBL_DEBUGV, dbald, aap, akvs,
+							 akss, value, vsize);
 			}
 		}
 		swap_kvs(akvs, akss, nkvs, nkss);
@@ -1180,6 +1188,239 @@ int yang_db_listcopy(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	uc_get_range_release(dbald, range);
 	return res;
 }
+
+typedef char* (*leaflist_replace_t)(char *cvalue, uint32_t cvsize,
+				    char *nvalue, uint32_t nvsize, uint32_t ovsize);
+
+static int nextwordlen(const char *data)
+{
+	char *astr;
+	int a=-1,b=-1;
+	astr=strchr(data, ',');
+	if(astr!=NULL){a=(astr-data);}
+	astr=strchr(data, '&');
+	if(astr!=NULL){b=(astr-data);}
+	if((a==-1)&&(b==-1)){return strlen(data);}
+	if(a==-1){return b;}
+	if(b==-1){return a;}
+	return UB_MIN(a,b);
+}
+
+static int one_combine(const char *items[], char *uvstr, int *uvp, int rsize)
+{
+	int i;
+	int res;
+	char pstr[64];
+	bool added=false;
+	const char *astr, *bstr;
+	for(i=0;i<2;i++){
+		astr=items[i];
+		res=0;
+		while(astr!=NULL){
+			astr=&astr[res];
+			if((astr[0]=='\0') || (astr[0]=='&')){break;}
+			if(res>0){
+				if(astr[0]!=','){
+					UB_LOG(UBL_ERROR,
+					       "%s:invalid data, %s\n", __func__, items[i]);
+					return -1;
+				}
+				astr++;
+			}
+			res=nextwordlen(astr);
+			if(res==0){break;}
+			if(res>=(int)sizeof(pstr)-1){
+				UB_LOG(UBL_ERROR, "%s:a feature string is too long\n", __func__);
+				return -1;
+			}
+			memcpy(pstr, astr, res);
+			pstr[res]=0;
+			bstr=strstr(uvstr, pstr);
+			if((bstr!=NULL) && (bstr[res]==','||bstr[res]=='\0')){
+				// the feature is already in 'uvstr'
+				continue;
+			}
+			if(added){
+				uvstr[*uvp]=',';
+				*uvp+=1;
+				uvstr[*uvp]=0;
+			}
+			if(*uvp+res+1>=rsize){
+				UB_LOG(UBL_ERROR, "%s:too long items\n", __func__);
+				return -1;
+			}
+			memcpy(&uvstr[*uvp], pstr, res);
+			*uvp+=res;
+			uvstr[*uvp]=0;
+			added=true;
+		}
+	}
+	return 0;
+}
+static char *cap_replace(char *cvalue, uint32_t cvsize,
+			 char *nvalue, uint32_t nvsize, uint32_t ovsize)
+{
+	char *uvalue;
+	char *astr, *bstr;
+	const char *features[2];
+	const char *deviations[2];
+	const char *rmark="&revision="; // 10 chars
+	const char *fmark="&features="; // 10 chars
+	const char *dmark="&deviations="; // 12 chars
+	int uvp;
+	int rsize;
+	rsize=cvsize+nvsize-ovsize+1;
+	// "&revision=2022-10-29": 20 chars
+	if(cvsize<ovsize+20){return NULL;}
+	if(nvsize<ovsize+20){return NULL;}
+	astr=strstr(cvalue+ovsize, rmark);
+	bstr=strstr(nvalue+ovsize, rmark);
+	rsize=UB_MAX(rsize, (int)ovsize+20+1);
+	if((astr==NULL)||(bstr==NULL)||(memcmp(astr, bstr, 20)!=0)){return NULL;}
+	uvalue=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, rsize);
+	if(ub_assert_fatal(uvalue!=NULL, __func__, NULL)){return NULL;}
+	uvp=ovsize+20;
+	memcpy(uvalue, cvalue, uvp);
+	uvalue[uvp]=0;
+	features[0]=strstr(cvalue+ovsize, fmark);
+	if(features[0]!=NULL){features[0]+=10;}
+	features[1]=strstr(nvalue+ovsize, fmark);
+	if(features[1]!=NULL){features[1]+=10;}
+	if((features[0]!=NULL) || (features[1]!=NULL)){
+		memcpy(&uvalue[uvp], fmark, 10);
+		uvp+=10;
+		uvalue[uvp]=0;
+		if(one_combine(features, uvalue, &uvp, rsize)!=0){
+			UB_SD_RELMEM(YANGINIT_GEN_SMEM, uvalue);
+			return NULL;
+		}
+	}
+	deviations[0]=strstr(cvalue+ovsize, dmark);
+	if(deviations[0]!=NULL){deviations[0]+=12;}
+	deviations[1]=strstr(nvalue+ovsize, dmark);
+	if(deviations[1]!=NULL){deviations[1]+=12;}
+	if((deviations[0]!=NULL) || (deviations[1]!=NULL)){
+		memcpy(&uvalue[uvp], dmark, 12);
+		uvp+=12;
+		uvalue[uvp]=0;
+		if(one_combine(deviations, uvalue, &uvp, rsize)!=0){
+			UB_SD_RELMEM(YANGINIT_GEN_SMEM, uvalue);
+			return NULL;
+		}
+	}
+	return uvalue;
+}
+
+static int leaflist_strupdate(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpara,
+			      void *nvalue, uint32_t nvsize, leaflist_replace_t replace_cb)
+{
+	void *ovalue=dbpara->value;
+	int ovsize=(int)dbpara->vsize;
+	int ip;
+	char *rdata;
+	int rsize;
+	int res=0;
+	int fvsize=0;
+
+	if(dbpara->value==NULL){
+		// no old value, update with the new value
+		dbpara->atype=YANG_DB_ACTION_APPEND;
+		dbpara->value=nvalue;
+		dbpara->vsize=nvsize;
+		return yang_db_action(dbald, hwald, dbpara);
+	}
+	dbpara->atype=YANG_DB_ACTION_READ;
+	if(yang_db_action(dbald, hwald, dbpara)!=0){
+		// data node doesn't exist, create a new data
+		dbpara->atype=YANG_DB_ACTION_CREATE;
+		dbpara->value=nvalue;
+		dbpara->vsize=nvsize;
+		return yang_db_action(dbald, hwald, dbpara);
+	}
+	ip=0;
+	rsize=(int)dbpara->vsize;
+	rdata=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, rsize);
+	if(ub_assert_fatal(rdata!=NULL, __func__, NULL)){return -1;}
+	memcpy(rdata, dbpara->value, rsize);
+	dbpara->atype=YANG_DB_ACTION_READ_RELEASE;
+	if(yang_db_action(dbald, NULL, dbpara)!=0){goto erexit;}
+
+	while((rsize-ip)>0){
+		fvsize=strnlen(&rdata[ip], rsize-ip)+1;
+		if((fvsize>=ovsize) && (memcmp(&rdata[ip], ovalue, ovsize)==0)){break;}
+		ip+=fvsize;
+	}
+	if(ip>rsize){
+		UB_LOG(UBL_WARN, "%s:data overrun\n", __func__);
+		ip=rsize;
+	}
+	if(ip==rsize){
+		// append bottom
+		if(nvalue==NULL){goto erexit;}
+		dbpara->atype=YANG_DB_ACTION_APPEND;
+		dbpara->value=nvalue;
+		dbpara->vsize=nvsize;
+		res=yang_db_action(dbald, hwald, dbpara);
+		goto erexit;
+	}
+	dbpara->atype=YANG_DB_ACTION_CREATE;
+	if(ip>0){
+		// write the data before the found item
+		dbpara->vsize=ip;
+		dbpara->value=rdata;
+		res=yang_db_action(dbald, NULL, dbpara);
+		if(res!=0){goto erexit;}
+		dbpara->atype=YANG_DB_ACTION_APPEND;
+	}
+	if(nvalue!=NULL){
+		char *uvalue=NULL;
+		// replace the found item
+		dbpara->value=NULL;
+		if(replace_cb){
+			uvalue=replace_cb(&rdata[ip], fvsize, (char*)nvalue, nvsize, ovsize);
+			dbpara->value=uvalue;
+			if(uvalue!=NULL){
+				dbpara->vsize=strlen(uvalue)+1;
+			}
+		}
+		if(dbpara->value==NULL){
+			dbpara->value=nvalue;
+			dbpara->vsize=nvsize;
+		}
+		res=yang_db_action(dbald, hwald, dbpara);
+		if(uvalue!=NULL){
+			UB_SD_RELMEM(YANGINIT_GEN_SMEM, uvalue);
+		}
+		if(res!=0){goto erexit;}
+		dbpara->atype=YANG_DB_ACTION_APPEND;
+	}
+	if(ip+fvsize<rsize){
+		// the found item is not the bottom, append data after it
+		dbpara->value=&rdata[ip+fvsize];
+		dbpara->vsize=rsize-(ip+fvsize);
+		res=yang_db_action(dbald, NULL, dbpara);
+	}else if(ip==0 && nvalue==NULL){
+		UB_LOG(UBL_DEBUG, "%s:the last data was removed\n",__func__);
+		dbpara->atype=YANG_DB_ACTION_DELETE;
+		res=yang_db_action(dbald, NULL, dbpara);
+	}
+erexit:
+	UB_SD_RELMEM(YANGINIT_GEN_SMEM, rdata);
+	return res;
+}
+
+int yang_db_leaflist_strupdate(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpara,
+			       void *nvalue, uint32_t nvsize)
+{
+	return leaflist_strupdate(dbald, hwald, dbpara, nvalue, nvsize, NULL);
+}
+
+int yang_db_leaflist_capupdate(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpara,
+			       void *nvalue, uint32_t nvsize)
+{
+	return leaflist_strupdate(dbald, hwald, dbpara, nvalue, nvsize, cap_replace);
+}
+
 
 static int listmove_keymod(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			   int keymod_rcode)
@@ -1201,7 +1442,7 @@ static int listmove_keymod(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 		res=yang_db_action(dbald, NULL, dbpara);
 		if(res!=0){
 			UB_LOG(UBL_ERROR, "%s:failed to move an item\n", __func__);
-			yang_db_keyvaluedump_log(UBL_INFO,
+			yang_db_keyvaluedump_log(UBL_INFO, dbald,
 						 dbpara->aps, dbpara->kvs, dbpara->kss,
 						 dbpara->value, dbpara->vsize);
 			return -1;
@@ -1222,21 +1463,21 @@ int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 	uc_range *range;
 	uint32_t ksize, nksize, vsize;
 	void *nkey=NULL, *value;
-	uint8_t *aap;
+	uint8_t *aap=NULL;
 	uint8_t mapsize, mkvsize;
-	void *akvs[YDBI_MAX_KV_DEPTH+1];
-	uint8_t akss[YDBI_MAX_KV_DEPTH];
+	void *akvs[UC_MAX_KV_DEPTH+1];
+	uint8_t akss[UC_MAX_KV_DEPTH];
 	yang_db_access_para_t dbpara;
 	int res=0;
-	uint8_t cap[YDBI_MAX_AP_DEPTH];
+	uint8_t cap[UC_MAX_AP_DEPTH];
 	bool moved=true;
 	int direction;
 
-	for(ksize=0;ksize<YDBI_MAX_AP_DEPTH;ksize++){
+	for(ksize=0;ksize<UC_MAX_AP_DEPTH;ksize++){
 		if(ap[ksize]==255){break;}
 		cap[ksize]=ap[ksize];
 	}
-	if(ksize==0 || ksize==YDBI_MAX_AP_DEPTH){return -1;}
+	if(ksize==0 || ksize==UC_MAX_AP_DEPTH){return -1;}
 	cap[ksize-1]+=1;
 	range=uc_get_range(dbald, ap, ksize, cap, ksize);
 	if(!range){
@@ -1268,7 +1509,7 @@ int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 		// after this point, next 'yang_db_extract_key_free' must be called.
 		// Don't break the loop. set 'res' and continue instead.
 		mapsize=0;
-		for(i=0;i<YDBI_MAX_AP_DEPTH;i++){
+		for(i=0;i<UC_MAX_AP_DEPTH;i++){
 			if(ap[i]==255){
 				mapsize=i;
 				break;
@@ -1280,7 +1521,7 @@ int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 			continue;
 		}
 		mkvsize=0;
-		for(i=0;i<YDBI_MAX_KV_DEPTH;i++){
+		for(i=0;i<UC_MAX_KV_DEPTH;i++){
 			if(kvs[i]==NULL){
 				mkvsize=i; // source value key end first, okay
 				break;
@@ -1347,7 +1588,7 @@ static int yang_db_put(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *
 	}
 	if(res!=0){
 		UB_LOG(UBL_ERROR, "%s:hardware action failed\n", __func__);
-		yang_db_keydump_log(UBL_ERROR, dbpara->aps, dbpara->kvs, dbpara->kss);
+		yang_db_keydump_log(UBL_ERROR, dbald, dbpara->aps, dbpara->kvs, dbpara->kss);
 		return res;
 	}
 	res=0;
@@ -1437,23 +1678,41 @@ int yang_db_action(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpa
  * To be thread-safe, use 'ydbimutex' in the actual accessing functions.
  * dbald, xdd, are always only 1 instance.
  */
-static uint8_t aps[YDBI_MAX_AP_DEPTH];
-static void *kvs[YDBI_MAX_KV_DEPTH+1];
-static uint8_t kss[YDBI_MAX_KV_DEPTH];
+static uint8_t aps[UC_MAX_AP_DEPTH];
+static void *kvs[UC_MAX_KV_DEPTH+1];
+static uint8_t kss[UC_MAX_KV_DEPTH];
 static CB_THREAD_MUTEX_T CB_STATIC_MUTEX_INITIALIZER(ydbimutex);
-static yang_db_item_access_t ydbi_access={.dbpara={0, YANG_DB_ONHW_NOACTION,
-						   NULL, aps, kvs, kss, NULL, 0},
-					  .mutex=&ydbimutex};
+static int ydbi_refcounter;
+static yang_db_item_access_t ydbi_access={
+	.dbald=NULL,
+	.dbpara={0, YANG_DB_ONHW_NOACTION, NULL, aps, kvs, kss, NULL, 0},
+	.mutex=&ydbimutex};
 
-void ydbi_access_init(uc_dbald *dbald, xl4_data_data_t *xdd, uc_notice_data_t *ucntd)
+void ydbi_access_init(uc_dbald *dbald, uc_notice_data_t *ucntd)
 {
 	CB_STATIC_MUTEX_CONSTRUCTOR(ydbimutex);
 	(void)CB_THREAD_MUTEX_LOCK(ydbi_access.mutex);
-	ydbi_access.dbald=dbald;
-	ydbi_access.xdd=xdd;
-	ydbi_access.ucntd=ucntd;
-	CB_SEM_INIT(&ydbi_access.readrelsem, 0, 0);
+	if(ydbi_access.dbald==NULL){
+		ydbi_access.dbald=dbald;
+		ydbi_access.ucntd=ucntd;
+		CB_SEM_INIT(&ydbi_access.readrelsem, 0, 0);
+	}
+	ydbi_refcounter++;
 	(void)CB_THREAD_MUTEX_UNLOCK(ydbi_access.mutex);
+}
+
+void ydbi_access_close(void)
+{
+	if((ydbi_access.dbald==NULL) || (ydbi_refcounter==0)){return;}
+	(void)CB_THREAD_MUTEX_LOCK(ydbi_access.mutex);
+	if(--ydbi_refcounter>0){
+		(void)CB_THREAD_MUTEX_UNLOCK(ydbi_access.mutex);
+		return;
+	}
+	CB_SEM_DESTROY(&ydbi_access.readrelsem);
+	ydbi_access.dbald=NULL;
+	(void)CB_THREAD_MUTEX_UNLOCK(ydbi_access.mutex);
+	CB_STATIC_MUTEX_DESTRUCTOR(ydbimutex);
 }
 
 yang_db_item_access_t *ydbi_access_handle(void)
@@ -1479,7 +1738,7 @@ int ydbi_get_item_release(yang_db_item_access_t *ydbia, bool keeplocking)
 	}
 erexit:
 	if(res!=0){
-		yang_db_keydump_log(UBL_DEBUG, ydbia->dbpara.aps,
+		yang_db_keydump_log(UBL_DEBUG, ydbia->dbald, ydbia->dbpara.aps,
 				    ydbia->dbpara.kvs, ydbia->dbpara.kss);
 	}
 	(void)CB_THREAD_MUTEX_UNLOCK(ydbi_access.mutex);
@@ -1518,7 +1777,7 @@ static int ydbi_action_head(yang_db_item_access_t *ydbia, const char *fname,
 	return 0;
 erexit:
 	UB_LOG(UBL_ERROR, "%s:%s, atype=%d\n", fname, emsg, atype);
-	yang_db_keydump_log(UBL_DEBUG, ydbia->dbpara.aps,
+	yang_db_keydump_log(UBL_DEBUG, ydbia->dbald, ydbia->dbpara.aps,
 			    ydbia->dbpara.kvs, ydbia->dbpara.kss);
 	return -1;
 }
@@ -1551,7 +1810,7 @@ int ydbi_get_foot(yang_db_item_access_t *ydbia, const char *fname,
 		res=ydbia->dbpara.vsize;
 	}else{
 		UB_VLOG(emlevel, "%s:no data\n", fname);
-		yang_db_keydump_log(UBL_DEBUG, ydbia->dbpara.aps,
+		yang_db_keydump_log(UBL_DEBUG, ydbia->dbald, ydbia->dbpara.aps,
 				    ydbia->dbpara.kvs, ydbia->dbpara.kss);
 		ydbia->dbpara.atype=YANG_DB_ACTION_NONE;
 	}

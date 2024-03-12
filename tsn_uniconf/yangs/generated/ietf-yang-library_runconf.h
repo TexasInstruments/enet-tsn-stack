@@ -55,6 +55,4 @@
 
 int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t ietf_yang_library_get_enum(char *astr);
-const char *ietf_yang_library_get_string(uint8_t anum);
 #endif

@@ -50,7 +50,6 @@
 #ifndef YANG_DB_RUNTIME_H_
 #define YANG_DB_RUNTIME_H_
 
-#include "tsn_data.h"
 #include "../uc_dbal.h"
 #include "../hal/uc_hwal.h"
 #include "../uc_notice.h"
@@ -59,13 +58,9 @@
 extern "C" {
 #endif
 
-#define MAX_AP_DEPTH 32
-#define MAX_KV_DEPTH 10
-
 typedef struct yang_db_runtime_data yang_db_runtime_dataq_t;
 
-yang_db_runtime_dataq_t *yang_db_runtime_init(xl4_data_data_t *xdd, uc_dbald *dbald,
-					      uc_hwald *hwald);
+yang_db_runtime_dataq_t *yang_db_runtime_init(uc_dbald *dbald, uc_hwald *hwald);
 
 void yang_db_runtime_close(yang_db_runtime_dataq_t *ydrd);
 
@@ -160,17 +155,13 @@ int yang_db_runtime_getvkvtype(uc_dbald *dbald, uint8_t *aps, uint8_t vkindex,
  * return -1: error
  * return 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
  */
-int yang_db_runtime_getvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
+int yang_db_runtime_getvkstr(uc_dbald *dbald,
 			     uint8_t *aps, uint8_t vkindex, char **rstr);
 
 /**
  * @brief wait witem,
  *	if waitv!=NULL wait unitl the value matches. if waitv==NULL wait appearance of witem.
  * @param ydrd yang_db_runtime_dataq_t
- * @param witem monitor item(s)
- * @param waitv monitored item to be matched with this waitv. 
- * @param wvsize size of monitored item(s)
- * @param tout_ms timeout value
  * @return return 0:got the waitv, 1:timed out, -1:error
  */
 int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
@@ -180,7 +171,7 @@ int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
  * @brief 'key node string' and 'value key node string' of key
  * @return -1: error, 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
  */
-int yang_db_runtime_getkeyvkstr(uc_dbald *dbald, xl4_data_data_t *xdd,
+int yang_db_runtime_getkeyvkstr(uc_dbald *dbald,
 				void *key, uint32_t ksize, char **rstr);
 
 /**

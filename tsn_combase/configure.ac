@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tsn_combase], [1.1.3], [shiro@excelfore.com])
+AC_INIT([tsn_combase], [1.1.4], [shiro@excelfore.com])
 AC_SUBST(PACKAGE_DESC,"Excelfore communication base library")
 
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])
@@ -90,6 +90,7 @@ AM_CONDITIONAL(NO_THREAD, [test x"$enable_thread" = "xno"])
 AM_CONDITIONAL(NO_IPCSHMEM, [test x"$enable_ipcshmem" = "xno"])
 AM_CONDITIONAL(NO_IPCSOCK, [test x"$enable_ipcsock" = "xno"])
 AM_CONDITIONAL(NO_EVENT, [test x"$enable_event" = "xno"])
+AM_CONDITIONAL(NO_RATEREPORTER, [test x"$enable_rate_reporter" = "xno"])
 
 # conditional build
 AM_CONDITIONAL(UNITTEST_MEMTEST, [test x"$enable_unittest_memtest" = "xyes"])

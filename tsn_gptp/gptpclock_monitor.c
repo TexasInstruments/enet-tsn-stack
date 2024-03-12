@@ -49,7 +49,7 @@
 */
 #include <unistd.h>
 #include <stdio.h>
-#include "getopt.h"
+#include <getopt.h>
 #include <tsn_unibase/unibase_binding.h>
 #include "gptpcommon.h"
 #include "gptpmasterclock.h"

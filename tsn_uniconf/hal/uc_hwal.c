@@ -58,6 +58,16 @@
 #include "uc_hwal.h"
 #include <tsn_combase/combase_link.h>
 
+extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
+#define IETF_INTERFACES_RW IETF_INTERFACES_func(dbald)
+#define IETF_INTERFACES_RO (IETF_INTERFACES_func(dbald)|0x80u)
+#define IETF_INTERFACES_RW_H IETF_INTERFACES_func(hwald->dbald)
+#define IETF_INTERFACES_RO_H (IETF_INTERFACES_func(hwald->dbald)|0x80u)
+
+extern uint8_t IEEE802_DOT1Q_BRIDGE_func(uc_dbald *dbald);
+#define IEEE802_DOT1Q_BRIDGE_RW_H IEEE802_DOT1Q_BRIDGE_func(hwald->dbald)
+#define IEEE802_DOT1Q_BRIDGE_RO_H (IEEE802_DOT1Q_BRIDGE_func(hwald->dbald)|0x80u)
+
 struct uc_hwald {
 	combase_link_data_t *hwctx;
 	uc_dbald *dbald;
@@ -238,7 +248,8 @@ static int update_cbs_idle_slope(combase_link_data_t *hwctx, const char *ifname,
 	cbsp.ifname=ifname;
 	cbsp.handle=QDISC_HANDLE_NUMBER;
 	cbsp.offload=1; // assume HW offload is supported
-	cbsp.action=(admin_idleslope==-1)?CBL_ACTION_DEL:CBL_ACTION_SET;
+	// when admin_idleslope==0, use CBL_ACTION_DEL to delete the cbs queue
+	cbsp.action=(admin_idleslope<=0)?CBL_ACTION_DEL:CBL_ACTION_SET;
 
 	if(get_tc_cbs_parameters(&cbsp, tc, admin_idleslope)){
 		UB_LOG(UBL_ERROR, "%s:tc=%d, no cbs parameters\n", __func__, tc);
@@ -262,7 +273,12 @@ static int update_cbs_idle_slope(combase_link_data_t *hwctx, const char *ifname,
 		UB_LOG(UBL_ERROR, "%s:can't find lqueue for tc=%d\n", __func__, tc);
 		return -1;
 	}
-	// search pq to match lq
+	/* scan pi=0,1,,(physical queue index), get the mapped mlq(logical queue)
+	   if mlq(mapped logical queue) matches to pi(pysical queue index):mlq==lq,
+	   pi(pysical queue index) is the queue to configure.
+	   'pysical queue index' starts from '0', lower layer may add '1' when it is indexed
+	   starting with '1'
+	*/
 	for(pi=0;pi<num_pq;pi++){
 		mlq=0xff;
 		YDBI_GET_ITEM_VSUBST(uint8_t*, ifk4vk1, mlq, value, (char*)ifname,
@@ -279,12 +295,14 @@ static int update_cbs_idle_slope(combase_link_data_t *hwctx, const char *ifname,
 		UB_LOG(UBL_ERROR, "%s:can't find pqueue for tc=%d\n", __func__, tc);
 		return -1;
 	}
+	UB_LOG(UBL_INFO, "%s:cbs setup tc=%d, lqueue=%d, pqueue=%d\n",
+	       __func__, tc, lq, cbsp.qindex);
 	return cbl_cbs_setup(hwctx, &cbsp);
 }
 
 static int set_netdev_linkstatus(uc_hwald *hwald, cbl_cb_event_t *nevent)
 {
-	uint8_t aps[5]={IETF_INTERFACES_RO, IETF_INTERFACES_INTERFACES,
+	uint8_t aps[5]={IETF_INTERFACES_RO_H, IETF_INTERFACES_INTERFACES,
 			IETF_INTERFACES_INTERFACE, IETF_INTERFACES_IF_INDEX, 255};
 	void *kvs[2]={NULL,NULL};
 	uint8_t kss[1];
@@ -547,7 +565,7 @@ static int update_admin2oper(uc_dbald *dbald, uint8_t *aps, void **kvs, uint8_t 
 static int set_tas_status(uc_hwald *hwald, cbl_cb_event_t *nevent)
 {
 	uint8_t aps[]={
-		IETF_INTERFACES_RW, IETF_INTERFACES_INTERFACES,
+		IETF_INTERFACES_RW_H, IETF_INTERFACES_INTERFACES,
 		IETF_INTERFACES_INTERFACE, IETF_INTERFACES_BRIDGE_PORT,
 		IETF_INTERFACES_GATE_PARAMETER_TABLE, IETF_INTERFACES_ADMIN_BASE_TIME,
 		IETF_INTERFACES_SECONDS, 255};
@@ -777,7 +795,6 @@ static int preempt_hw_action(uc_hwald *hwald, const char *ifname)
 	memset(&cpemp, 0, sizeof(cpemp));
 	memset(&nevent, 0, sizeof(nevent));
 	memcpy(nevent.ifname, ifname, size);
-	nevent.ifname[size] = '\0';
 	if(get_queue_map_params(&cpemp.qmap, nevent.ifname)) return 0;
 	// read all priorities
 	for(i=0;i<8;i++){
@@ -799,7 +816,7 @@ static int ietf_interfaces_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, ui
 				   void *value, uint32_t vsize)
 {
 	int res;
-	if(aps[0]!=IETF_INTERFACES_RW){return 1;}
+	if(aps[0]!=IETF_INTERFACES_RW_H){return 1;}
 	if(aps[1]!=IETF_INTERFACES_INTERFACES){return -1;}
 	if(aps[2]!=IETF_INTERFACES_INTERFACE){return -1;}
 	if(!hwald->hwctx){return 0;}
@@ -882,7 +899,7 @@ static int vlans_register(uc_hwald *hwald, const char *bridgename, const char *i
 static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 				void *value, uint32_t vsize)
 {
-	if(aps[0]!=IEEE802_DOT1Q_BRIDGE_RW){return 1;}
+	if(aps[0]!=IEEE802_DOT1Q_BRIDGE_RW_H){return 1;}
 	if(aps[1]!=IEEE802_DOT1Q_BRIDGE_BRIDGES){return -1;}
 	if(aps[2]!=IEEE802_DOT1Q_BRIDGE_BRIDGE){return -1;}
 	if(aps[3]!=IEEE802_DOT1Q_BRIDGE_COMPONENT){return -1;}
@@ -934,6 +951,7 @@ void uc_hwal_close(uc_hwald *hwald)
 		CB_THREAD_JOIN(hwald->catch_event, NULL);
 	}
 	combase_link_close(hwald->hwctx);
+	UB_SD_RELMEM(UC_HWAL_NLINST, hwald);
 }
 
 int uc_hwal_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
@@ -1023,7 +1041,7 @@ int notice_cb(void *cbdata, cbl_cb_event_t *nevent)
 		// CBL_EVENT_CHECKENABLED is a special case and it is not a notice.
 		// HW action may check this first,
 		// if it is not enabled, no actions happen.
-		uint8_t aps[5]={IETF_INTERFACES_RW, IETF_INTERFACES_INTERFACES,
+		uint8_t aps[5]={IETF_INTERFACES_RW_H, IETF_INTERFACES_INTERFACES,
 				IETF_INTERFACES_INTERFACE, IETF_INTERFACES_ENABLED, 255};
 		void *kvs[2]={NULL,NULL};
 		uint8_t kss[1];
@@ -1071,13 +1089,13 @@ int notice_cb(void *cbdata, cbl_cb_event_t *nevent)
 					     IETF_INTERFACES_ADMIN_IDLESLOPE, 255,
 					     &hwald->operating_tc, 1, YDBI_CONFIG);
 		}
-		YDBI_SET_ITEM(ifk4vk1, nevent->ifname,
-			      IETF_INTERFACES_TRAFFIC_CLASS,
-			      IETF_INTERFACES_TC_DATA,
-			      IETF_INTERFACES_OPER_IDLESLOPE,
-			      255, &hwald->operating_tc, 1, YDBI_STATUS,
-			      &idleslope, sizeof(int64_t), YDBI_PUSH_NOTICE_IN_UNICONF,
-			      YANG_DB_ONHW_NOACTION);
+		res=YDBI_SET_ITEM(ifk4vk1, nevent->ifname,
+				  IETF_INTERFACES_TRAFFIC_CLASS,
+				  IETF_INTERFACES_TC_DATA,
+				  IETF_INTERFACES_OPER_IDLESLOPE,
+				  255, &hwald->operating_tc, 1, YDBI_STATUS,
+				  &idleslope, sizeof(int64_t), YDBI_PUSH_NOTICE_IN_UNICONF,
+				  YANG_DB_ONHW_NOACTION);
 
 		UB_TLOG(UBL_INFO, "%s:%s, CBS setup completed, tc=%d, "
 			"idleslope=%"PRIi64"\n",

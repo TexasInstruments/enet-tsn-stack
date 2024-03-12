@@ -50,77 +50,87 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ieee802-dot1q-bridge.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1ab-lldp.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-monitoring.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t IEEE802_DOT1Q_BRIDGE_func(uc_dbald *dbald);
+#define IEEE802_DOT1Q_BRIDGE_RW IEEE802_DOT1Q_BRIDGE_func(dbald)
+#define IEEE802_DOT1Q_BRIDGE_RO (IEEE802_DOT1Q_BRIDGE_func(dbald)|0x80u)
 
 const char *ieee802_dot1q_bridge_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"bridges", 		// 2(0x2)
-	"bridge", 		// 3(0x3)
-	"name", 		// 4(0x4)
-	"address", 		// 5(0x5)
-	"ports", 		// 6(0x6)
-	"up-time", 		// 7(0x7)
-	"components", 		// 8(0x8)
-	"component", 		// 9(0x9)
-	"id", 		// 10(0xa)
-	"traffic-class-enabled", 		// 11(0xb)
-	"bridge-port", 		// 12(0xc)
-	"filtering-database", 		// 13(0xd)
-	"size", 		// 14(0xe)
-	"static-entries", 		// 15(0xf)
-	"dynamic-entries", 		// 16(0x10)
-	"static-vlan-registration-entries", 		// 17(0x11)
-	"dynamic-vlan-registration-entries", 		// 18(0x12)
-	"mac-address-registration-entries", 		// 19(0x13)
-	"filtering-entry", 		// 20(0x14)
-	"database-id", 		// 21(0x15)
-	"vids", 		// 22(0x16)
-	"entry-type", 		// 23(0x17)
-	"port-map", 		// 24(0x18)
-	"port-ref", 		// 25(0x19)
-	"static-filtering-entries", 		// 26(0x1a)
-	"control-element", 		// 27(0x1b)
-	"connection-identifier", 		// 28(0x1c)
-	"registrar-admin-control", 		// 29(0x1d)
-	"vlan-transmitted", 		// 30(0x1e)
-	"dynamic-reservation-entries", 		// 31(0x1f)
-	"dynamic-filtering-entries", 		// 32(0x20)
-	"status", 		// 33(0x21)
-	"vlan-registration-entry", 		// 34(0x22)
-	"permanent-database", 		// 35(0x23)
-	"bridge-vlan", 		// 36(0x24)
-	"max-vids", 		// 37(0x25)
-	"vlan", 		// 38(0x26)
-	"vid", 		// 39(0x27)
-	"untagged-ports", 		// 40(0x28)
-	"egress-ports", 		// 41(0x29)
+	"nsasc", 		// 2(0x2)
+	"bridges", 		// 3(0x3)
+	"bridge", 		// 4(0x4)
+	"name", 		// 5(0x5)
+	"address", 		// 6(0x6)
+	"ports", 		// 7(0x7)
+	"up-time", 		// 8(0x8)
+	"components", 		// 9(0x9)
+	"component", 		// 10(0xa)
+	"id", 		// 11(0xb)
+	"traffic-class-enabled", 		// 12(0xc)
+	"bridge-port", 		// 13(0xd)
+	"filtering-database", 		// 14(0xe)
+	"size", 		// 15(0xf)
+	"static-entries", 		// 16(0x10)
+	"dynamic-entries", 		// 17(0x11)
+	"static-vlan-registration-entries", 		// 18(0x12)
+	"dynamic-vlan-registration-entries", 		// 19(0x13)
+	"mac-address-registration-entries", 		// 20(0x14)
+	"filtering-entry", 		// 21(0x15)
+	"database-id", 		// 22(0x16)
+	"vids", 		// 23(0x17)
+	"entry-type", 		// 24(0x18)
+	"port-map", 		// 25(0x19)
+	"port-ref", 		// 26(0x1a)
+	"static-filtering-entries", 		// 27(0x1b)
+	"control-element", 		// 28(0x1c)
+	"connection-identifier", 		// 29(0x1d)
+	"registrar-admin-control", 		// 30(0x1e)
+	"vlan-transmitted", 		// 31(0x1f)
+	"dynamic-reservation-entries", 		// 32(0x20)
+	"dynamic-filtering-entries", 		// 33(0x21)
+	"status", 		// 34(0x22)
+	"vlan-registration-entry", 		// 35(0x23)
+	"permanent-database", 		// 36(0x24)
+	"bridge-vlan", 		// 37(0x25)
+	"max-vids", 		// 38(0x26)
+	"vlan", 		// 39(0x27)
+	"vid", 		// 40(0x28)
+	"untagged-ports", 		// 41(0x29)
+	"egress-ports", 		// 42(0x2a)
 };
+const uint8_t ieee802_dot1q_bridge_enum_max=43;
 
-uint8_t ieee802_dot1q_bridge_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)IEEE802_DOT1Q_BRIDGE_ENUM_END;i++){
-		if(!strcmp(astr, ieee802_dot1q_bridge_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "dot1q",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
+		return -1;
 	}
-        return 0xffu;
+	return 0;
 }
 
-const char *ieee802_dot1q_bridge_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)IEEE802_DOT1Q_BRIDGE_ENUM_END){return NULL;}
-	return ieee802_dot1q_bridge_enum_strings[anum];
+	uint8_t apsd[11];
+	apsd[0]=IEEE802_DOT1Q_BRIDGE_RW;
+	apsd[1]=IEEE802_DOT1Q_BRIDGE_BRIDGES;
+	apsd[2]=IEEE802_DOT1Q_BRIDGE_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"dot1q", 6)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -129,6 +139,9 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_ieee802-dot1q-bridge/bridges/bridge/component/filtering-database/filtering-entry/port-map/static-filtering-entries
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RW;
 	aps[1] = IEEE802_DOT1Q_BRIDGE_BRIDGES;
@@ -369,3 +382,4 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 erexit:
 	return res;
 }
+

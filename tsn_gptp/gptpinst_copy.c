@@ -49,7 +49,7 @@
 */
 #include <tsn_unibase/unibase.h>
 #include <tsn_unibase/unibase_binding.h>
-#include "getopt.h"
+#include <getopt.h>
 #include "gptpconf/gptpgcfg.h"
 #define MAX_CONF_FILES 5
 int main(int argc, char* argv[])

@@ -419,7 +419,7 @@ void *md_sync_receive_sm_recv_sync(md_sync_receive_data_t *sm, event_data_recv_t
 	RCVD_SYNC=true;
 	size=GET_TWO_STEP_BYTE_FLAG(edrecv->recbptr)?
 		sizeof(MDPTPMsgSync):sizeof(MDPTPMsgSyncOneStep);
-	if(ub_assert_fatal(size <= (sizeof(sm->u.recSync)/sizeof(uint8_t)), __func__, NULL)){return NULL;}
+	if(ub_assert_fatal(size <= (int)(sizeof(sm->u.recSync)/sizeof(uint8_t)), __func__, NULL)){return NULL;}
 	memcpy(&sm->u.recSync, edrecv->recbptr, size);
 	RCVD_SYNC_PTR = &sm->u.recSync;
 	sm->syncEventIngressTimestamp = edrecv->ts64;

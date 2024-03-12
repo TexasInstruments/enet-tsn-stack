@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([xl4gptp], [1.2.3], [shiro@excelfore.com])
+AC_INIT([xl4gptp], [1.2.4], [shiro@excelfore.com])
 AC_SUBST(PACKAGE_DESC,"Excelfore gptp daemon and libary")
 
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])

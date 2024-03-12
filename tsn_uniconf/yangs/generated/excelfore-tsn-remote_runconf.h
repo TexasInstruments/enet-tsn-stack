@@ -55,6 +55,4 @@
 
 int excelfore_tsn_remote_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald);
 
-uint8_t excelfore_tsn_remote_get_enum(char *astr);
-const char *excelfore_tsn_remote_get_string(uint8_t anum);
 #endif

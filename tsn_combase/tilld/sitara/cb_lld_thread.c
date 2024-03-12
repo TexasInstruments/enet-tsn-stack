@@ -72,6 +72,7 @@ struct cb_lld_task {
 	void *arg;
 	bool exit;
 	uint8_t *stack_alloc;
+	char name[CB_TSN_THREAD_NAME_SIZE];
 };
 
 #define CB_LLDSEM_MMEM cb_lldsem
@@ -90,11 +91,14 @@ UB_SD_GETMEM_DEF(CB_LLDTASK_MMEM, (int)sizeof(cb_lld_task_t),
 
 #define CB_LLDTASK_STACK_MMEM cb_lldtask_stack
 #ifndef CB_LLDTASK_STACK_INSTNUM
-#define CB_LLDTASK_STACK_INSTNUM 1
+#define CB_LLDTASK_STACK_INSTNUM 4
 #endif
-#ifndef CB_LLDTASK_STACK_SIZE
+#if _DEBUG_ == 1
 #define CB_LLDTASK_STACK_SIZE (16*1024)
+#else
+#define CB_LLDTASK_STACK_SIZE (8*1024)
 #endif
+
 UB_SD_GETMEM_DEF(CB_LLDTASK_STACK_MMEM, CB_LLDTASK_STACK_SIZE,
 		CB_LLDTASK_STACK_INSTNUM)
 
@@ -119,11 +123,11 @@ error:
 	return -1;
 }
 
-int lld_sem_trywait(cb_lld_sem_t *cbsem, uint32_t timeout_msec)
+static int lld_sem_trywait(cb_lld_sem_t *cbsem, uint32_t timeout_tick)
 {
 	int32_t status;
 
-	status = SemaphoreP_pend(&cbsem->lldsem, timeout_msec);
+	status = SemaphoreP_pend(&cbsem->lldsem, timeout_tick);
 	if (status != SystemP_SUCCESS) {
 		cbsem->wait_status = (status == SystemP_TIMEOUT)?
 			TILLD_TIMEDOUT: TILLD_FAILURE;
@@ -151,29 +155,28 @@ int cb_lld_sem_wait(CB_SEM_T *sem)
 
 int cb_lld_sem_trywait(CB_SEM_T *sem)
 {
-	return lld_sem_trywait(*sem, 0);
+	return lld_sem_trywait(*sem, SystemP_NO_WAIT);
 }
 
-static uint32_t abs_realtime_to_msec(struct timespec *abstime)
+static uint32_t abs_realtime_to_tick(struct timespec *abstime)
 {
-	uint32_t timeout_msec;
+	uint32_t timeout_usec;
 	uint64_t ts64;
 	uint64_t now;
 
 	now = ub_rt_gettime64();
 	ts64 = abstime->tv_sec * UB_SEC_NS + abstime->tv_nsec;
 	if (ts64 <= now) {
-		timeout_msec = 0;
-	} else {
-		timeout_msec = (ts64 - now) / UB_MSEC_NS;
+		return 0;
 	}
-	return timeout_msec;
+	timeout_usec = (ts64 - now) / UB_USEC_NS;
+	return ClockP_usecToTicks(timeout_usec);
 }
 
 int cb_lld_sem_timedwait(CB_SEM_T *sem, struct timespec *abstime)
 {
-	uint32_t timeout_msec = abs_realtime_to_msec(abstime);
-	return lld_sem_trywait(*sem, timeout_msec);
+	uint32_t timeout_tick= abs_realtime_to_tick(abstime);
+	return lld_sem_trywait(*sem, timeout_tick);
 }
 
 int cb_lld_sem_getvalue(CB_SEM_T* sem, int* sval)
@@ -223,10 +226,10 @@ int cb_lld_mutex_destroy(CB_THREAD_MUTEX_T *cbmutex)
 	return 0;
 }
 
-static int lld_mutex_trylock(CB_THREAD_MUTEX_T *mutex, uint32_t timeout_msec)
+static int lld_mutex_trylock(CB_THREAD_MUTEX_T *mutex, uint32_t timeout_tick)
 {
 	int32_t status = SystemP_FAILURE;
-	status = SemaphoreP_pend(mutex->lldmutex, timeout_msec);
+	status = SemaphoreP_pend(mutex->lldmutex, timeout_tick);
 
 	if (status != SystemP_SUCCESS) {
 		if (status != SystemP_TIMEOUT) {
@@ -255,8 +258,8 @@ int cb_lld_mutex_trylock(CB_THREAD_MUTEX_T *mutex)
 
 int cb_lld_mutex_timedlock(CB_THREAD_MUTEX_T *mutex, struct timespec *abstime)
 {
-	uint32_t timeout_msec = abs_realtime_to_msec(abstime);
-	return lld_mutex_trylock(mutex, timeout_msec);
+	uint32_t timeout_tick = abs_realtime_to_tick(abstime);
+	return lld_mutex_trylock(mutex, timeout_tick);
 }
 
 static void task_fxn(void* a0)
@@ -264,6 +267,7 @@ static void task_fxn(void* a0)
 	cb_lld_task_t *cbtask = (cb_lld_task_t*)a0;
 	cbtask->func(cbtask->arg);
 	cbtask->exit = true;
+	TaskP_exit(); /* This function is required, otherwise an assertion is raised  */
 }
 
 static int cb_lld_task_destroy(cb_lld_task_t *cbtask)
@@ -312,19 +316,25 @@ int cb_lld_task_create(CB_THREAD_T *th, void *vattr, void *(*func)(void*), void 
 		}
 		param.stack = cbtask->stack_alloc;
 		param.stackSize = CB_LLDTASK_STACK_SIZE;
-		UB_LOG(UBL_INFO,"%s:alloc stack size=%d\n", __func__, param.stackSize);
 	}
 	cbtask->func = func;
 	param.taskMain = &task_fxn;
 	cbtask->arg = arg;
 	cbtask->exit = false;
 	param.args = cbtask;
+	if (param.name == NULL) {
+		param.name = "default_thread";
+	}
+	snprintf(cbtask->name, CB_TSN_THREAD_NAME_SIZE, "%s", param.name);
 
 	status = TaskP_construct(&cbtask->lldtask, &param);
 	if (status != SystemP_SUCCESS) {
 		UB_LOG(UBL_ERROR,"%s:failed to TaskP_construct()!\n", __func__);
+		cbtask->exit = true;
 		goto error;
 	}
+	UB_LOG(UBL_INFO,"%s: %s stack_size=%d\n", __func__,
+		   param.name, param.stackSize);
 	*th = cbtask;
 	return 0;
 error:
@@ -336,7 +346,8 @@ int cb_lld_task_join(CB_THREAD_T th, void **retval)
 {
 	while (th->exit == false) {
 		ClockP_usleep(500000);
-		UB_LOG(UBL_INFO,"%s:wait for task exit\n", __func__);
+		UB_LOG(UBL_INFO,"%s:wait for task (%s) exit\n",
+			   __func__, th->name);
 	}
 	return cb_lld_task_destroy(th);
 }

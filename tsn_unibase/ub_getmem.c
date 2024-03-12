@@ -79,7 +79,7 @@
  */
 
 void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
-		      int fragnum, uint16_t fragsize);
+		      int fragnum, uint16_t fragsize, const char *mname);
 
 void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
 		      int fragnum, uint16_t fragsize, const char *mname, bool nolock)
@@ -87,6 +87,7 @@ void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
 	int i;
 	int pi=-1;
 	int np=0;
+	int max_np=0;
 	void *res=NULL;
 	if(size==0u){return NULL;}
 	if(!nolock){
@@ -98,6 +99,7 @@ void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
 		if(!busysizes[i]) {
 			if(pi==-1) {pi=i;}
 			np++;
+			if(np>max_np){max_np=np;}
 			i++;
 		}else{
 			i+=(int)busysizes[i];
@@ -116,8 +118,8 @@ void *ub_static_getmem(size_t size, void *mem, uint16_t* busysizes,
 		}
 	}
 	if(res==NULL){
-		UB_LOG(UBL_ERROR, "%s:%s, can't find any fragment which has enough size=%d\n",
-		       __func__, mname, (int)size);
+		UB_LOG(UBL_ERROR, "%s:%s memory shortage: %d requested, %d max available\n",
+			   __func__, mname, (int)size, max_np*(int)fragsize);
 	}
 	return res;
 }
@@ -135,7 +137,7 @@ void *ub_static_regetmem(void *p, size_t nsize, void *mem, uint16_t *busysizes,
 		return ub_static_getmem(nsize, mem, busysizes, fragnum, fragsize, mname, false);
 	}
 	if(nsize==0u){
-		ub_static_relmem(p, mem, busysizes, fragnum, fragsize);
+		ub_static_relmem(p, mem, busysizes, fragnum, fragsize, mname);
 		return NULL;
 	}
 	// the next operation is checked to be in the same array, no violation of Misra-C Rule 18.2
@@ -179,7 +181,7 @@ erexit:
 }
 
 void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
-			int fragnum, uint16_t fragsize)
+			int fragnum, uint16_t fragsize, const char *mname)
 {
 	int dp;
 	int cpi;
@@ -188,11 +190,11 @@ void ub_static_relmem(void *p, void *mem, uint16_t *busysizes,
 	dp=(uint8_t*)p-(uint8_t*)mem;
 	cpi=dp/(int)fragsize;
 	if((dp<0) || (cpi>=fragnum) || ((int)cpi*(int)fragsize)!=dp) {
-		UB_LOG(UBL_ERROR, "%s:invalid pointer=%p", __func__, p);
+		UB_LOG(UBL_ERROR, "%s:%s:invalid pointer=%p\n", __func__, mname, p);
 		return;
 	}
 	if(busysizes[cpi]==0u){
-		UB_LOG(UBL_ERROR, "%s:double relmem, pointer=%p\n", __func__, p);
+		UB_LOG(UBL_ERROR, "%s:%s: double relmem, pointer=%p\n", __func__, mname, p);
 		return;
 	}
 	busysizes[cpi]=0u;

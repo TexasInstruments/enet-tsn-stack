@@ -52,13 +52,19 @@
 #include "ieee802-dot1ab-lldp.h"
 #include "ieee802-dot1ab-lldp_access.h"
 
+extern uint8_t IEEE802_DOT1AB_LLDP_func(uc_dbald *dbald);
+#define IEEE802_DOT1AB_LLDP_RW IEEE802_DOT1AB_LLDP_func(dbald)
+#define IEEE802_DOT1AB_LLDP_RO (IEEE802_DOT1AB_LLDP_func(dbald)|0x80u)
+
 /*functions prototype*/
-static void set_dpara_k1vk0(yang_db_access_para_t *dbpara,  uint8_t k1, bool status);
-static void set_dpara_k2vk0(yang_db_access_para_t *dbpara, uint8_t k1, uint8_t k2, bool status);
+static void set_dpara_k1vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
+			    uint8_t k1, bool status);
+static void set_dpara_k2vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
+			    uint8_t k1, uint8_t k2, bool status);
 
 /*Functions definition*/
-static void set_dpara_k1vk0(yang_db_access_para_t *dbpara,
-			                uint8_t k1, bool status)
+static void set_dpara_k1vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
+			    uint8_t k1, bool status)
 {
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
 	dbpara->aps[0] = status?IEEE802_DOT1AB_LLDP_RO:IEEE802_DOT1AB_LLDP_RW;
@@ -68,8 +74,8 @@ static void set_dpara_k1vk0(yang_db_access_para_t *dbpara,
 	dbpara->kvs[0]=NULL;
 }
 
-static void set_dpara_k2vk0(yang_db_access_para_t *dbpara,
-			                uint8_t k1, uint8_t k2, bool status)
+static void set_dpara_k2vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
+			    uint8_t k1, uint8_t k2, bool status)
 {
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
 	dbpara->aps[0] = status?IEEE802_DOT1AB_LLDP_RO:IEEE802_DOT1AB_LLDP_RW;
@@ -80,52 +86,52 @@ static void set_dpara_k2vk0(yang_db_access_para_t *dbpara,
 	dbpara->kvs[0]=NULL;
 }
 
-static void set_dpara_knvkn(yang_db_access_para_t *dbpara,
-			                uint8_t kn[],
+static void set_dpara_knvkn(uc_dbald *dbald, yang_db_access_para_t *dbpara,
+			    uint8_t kn[],
                             uint8_t kn_sz,
                             attribute_pair_t attrs[],
                             uint8_t kvs_sz,
                             bool status)
 {
-    dbpara->onhw=YANG_DB_ONHW_NOACTION;
+	dbpara->onhw=YANG_DB_ONHW_NOACTION;
 	dbpara->aps[0] = status?IEEE802_DOT1AB_LLDP_RO:IEEE802_DOT1AB_LLDP_RW;
 	dbpara->aps[1] = IEEE802_DOT1AB_LLDP_LLDP;
-    for (uint8_t i=0; i<kn_sz; i++)
-    {
-        dbpara->aps[i+2] = kn[i];
-        // UB_LOG(UBL_DEBUG, "%s: key[%s] \n", __func__, ieee802_dot1ab_lldp_get_string(kn[i]));
-    }
+	for (uint8_t i=0; i<kn_sz; i++)
+	{
+		dbpara->aps[i+2] = kn[i];
+		// UB_LOG(UBL_DEBUG, "%s: key[%s] \n", __func__, ieee802_dot1ab_lldp_get_string(kn[i]));
+	}
 	dbpara->aps[2 + kn_sz] = 255u; // kn should <=6
 	dbpara->kvs[0]=NULL;
 
-    for (uint8_t i=0; i<kvs_sz; i++)
-    {
-        ADJUST_ENDIAN(&attrs[i].vk, sizeof(uint32_t)-attrs[i].vk_sz, attrs[i].vk_sz);
-        dbpara->kvs[i] = attrs[i].vk;
-        dbpara->kss[i] = attrs[i].vk_sz;
-        dbpara->kvs[i+1] = NULL;
-        // UB_LOG(UBL_DEBUG, "%s: vkey size[%d] \n", __func__, attrs[i].vk_sz);
-    }
+	for (uint8_t i=0; i<kvs_sz; i++)
+	{
+		ADJUST_ENDIAN(&attrs[i].vk, sizeof(uint32_t)-attrs[i].vk_sz, attrs[i].vk_sz);
+		dbpara->kvs[i] = attrs[i].vk;
+		dbpara->kss[i] = attrs[i].vk_sz;
+		dbpara->kvs[i+1] = NULL;
+		// UB_LOG(UBL_DEBUG, "%s: vkey size[%d] \n", __func__, attrs[i].vk_sz);
+	}
 }
 
 int ydbi_get_item_abk1vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t k1,  bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k1vk0(&ydbia->dbpara, k1, status);
+	set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, k1, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
 int ydbi_get_item_abk2vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t k1, uint8_t k2, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k2vk0(&ydbia->dbpara, k1, k2, status);
+	set_dpara_k2vk0(ydbia->dbald, &ydbia->dbpara, k1, k2, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
 int ydbi_set_item_abk1vk0(yang_db_item_access_t *ydbia, void *rval, uint32_t vsize, uint8_t k1,  bool status, uint8_t notice)
 {
     if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-    set_dpara_k1vk0(&ydbia->dbpara, k1, status);
+    set_dpara_k1vk0(ydbia->dbald, &ydbia->dbpara, k1, status);
     ydbia->dbpara.value=rval;
 	ydbia->dbpara.vsize=vsize;
 	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -135,7 +141,7 @@ int ydbi_set_item_abk1vk0(yang_db_item_access_t *ydbia, void *rval, uint32_t vsi
 int ydbi_set_item_abk2vk0(yang_db_item_access_t *ydbia, void *rval, uint32_t vsize, uint8_t k1, uint8_t k2, bool status, uint8_t notice)
 {
     if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-    set_dpara_k2vk0(&ydbia->dbpara, k1, k2, status);
+    set_dpara_k2vk0(ydbia->dbald, &ydbia->dbpara, k1, k2, status);
     ydbia->dbpara.value=rval;
 	ydbia->dbpara.vsize=vsize;
 	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -156,7 +162,7 @@ int ydbi_get_item_abknvkn(yang_db_item_access_t *ydbia,
                             bool status)
 {
     if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvkn(&ydbia->dbpara, kn, kn_sz, attrs, kvs_sz, status);
+	set_dpara_knvkn(ydbia->dbald, &ydbia->dbpara, kn, kn_sz, attrs, kvs_sz, status);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
@@ -172,7 +178,7 @@ int ydbi_set_item_abknvkn(yang_db_item_access_t *ydbia,
                             uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvkn(&ydbia->dbpara, kn, kn_sz, attrs, kvs_sz, status);
+	set_dpara_knvkn(ydbia->dbald, &ydbia->dbpara, kn, kn_sz, attrs, kvs_sz, status);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	int err=ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -188,6 +194,6 @@ int ydbi_del_item_abknvkn(yang_db_item_access_t *ydbia,
                             uint8_t notice)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_knvkn(&ydbia->dbpara, kn, kn_sz, attrs, kvs_sz, status);
+	set_dpara_knvkn(ydbia->dbald, &ydbia->dbpara, kn, kn_sz, attrs, kvs_sz, status);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
 }

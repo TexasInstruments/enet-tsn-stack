@@ -50,74 +50,84 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "ietf-netconf-monitoring.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee802-dot1ab-lldp.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
-#include "excelfore-netconf-server.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t IETF_NETCONF_MONITORING_func(uc_dbald *dbald);
+#define IETF_NETCONF_MONITORING_RW IETF_NETCONF_MONITORING_func(dbald)
+#define IETF_NETCONF_MONITORING_RO (IETF_NETCONF_MONITORING_func(dbald)|0x80u)
 
 const char *ietf_netconf_monitoring_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"netconf-state", 		// 2(0x2)
-	"capabilities", 		// 3(0x3)
-	"capability", 		// 4(0x4)
-	"datastores", 		// 5(0x5)
-	"datastore", 		// 6(0x6)
-	"name", 		// 7(0x7)
-	"locks", 		// 8(0x8)
-	"global-lock", 		// 9(0x9)
-	"locked-by-session", 		// 10(0xa)
-	"locked-time", 		// 11(0xb)
-	"partial-lock", 		// 12(0xc)
-	"lock-id", 		// 13(0xd)
-	"select", 		// 14(0xe)
-	"locked-node", 		// 15(0xf)
-	"schemas", 		// 16(0x10)
-	"schema", 		// 17(0x11)
-	"identifier", 		// 18(0x12)
-	"version", 		// 19(0x13)
-	"format", 		// 20(0x14)
-	"namespace", 		// 21(0x15)
-	"location", 		// 22(0x16)
-	"sessions", 		// 23(0x17)
-	"session", 		// 24(0x18)
-	"session-id", 		// 25(0x19)
-	"transport", 		// 26(0x1a)
-	"username", 		// 27(0x1b)
-	"source-host", 		// 28(0x1c)
-	"login-time", 		// 29(0x1d)
-	"in-rpcs", 		// 30(0x1e)
-	"in-bad-rpcs", 		// 31(0x1f)
-	"out-rpc-errors", 		// 32(0x20)
-	"out-notifications", 		// 33(0x21)
-	"statistics", 		// 34(0x22)
-	"netconf-start-time", 		// 35(0x23)
-	"in-bad-hellos", 		// 36(0x24)
-	"in-sessions", 		// 37(0x25)
-	"dropped-sessions", 		// 38(0x26)
+	"nsasc", 		// 2(0x2)
+	"netconf-state", 		// 3(0x3)
+	"capabilities", 		// 4(0x4)
+	"capability", 		// 5(0x5)
+	"datastores", 		// 6(0x6)
+	"datastore", 		// 7(0x7)
+	"name", 		// 8(0x8)
+	"locks", 		// 9(0x9)
+	"global-lock", 		// 10(0xa)
+	"locked-by-session", 		// 11(0xb)
+	"locked-time", 		// 12(0xc)
+	"partial-lock", 		// 13(0xd)
+	"lock-id", 		// 14(0xe)
+	"select", 		// 15(0xf)
+	"locked-node", 		// 16(0x10)
+	"schemas", 		// 17(0x11)
+	"schema", 		// 18(0x12)
+	"identifier", 		// 19(0x13)
+	"version", 		// 20(0x14)
+	"format", 		// 21(0x15)
+	"namespace", 		// 22(0x16)
+	"location", 		// 23(0x17)
+	"sessions", 		// 24(0x18)
+	"session", 		// 25(0x19)
+	"session-id", 		// 26(0x1a)
+	"transport", 		// 27(0x1b)
+	"username", 		// 28(0x1c)
+	"source-host", 		// 29(0x1d)
+	"login-time", 		// 30(0x1e)
+	"in-rpcs", 		// 31(0x1f)
+	"in-bad-rpcs", 		// 32(0x20)
+	"out-rpc-errors", 		// 33(0x21)
+	"out-notifications", 		// 34(0x22)
+	"statistics", 		// 35(0x23)
+	"netconf-start-time", 		// 36(0x24)
+	"in-bad-hellos", 		// 37(0x25)
+	"in-sessions", 		// 38(0x26)
+	"dropped-sessions", 		// 39(0x27)
 };
+const uint8_t ietf_netconf_monitoring_enum_max=40;
 
-uint8_t ietf_netconf_monitoring_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)IETF_NETCONF_MONITORING_ENUM_END;i++){
-		if(!strcmp(astr, ietf_netconf_monitoring_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "ncm",
+		"urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring")!=0){
+		return -1;
 	}
-        return 0xffu;
+	return 0;
 }
 
-const char *ietf_netconf_monitoring_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)IETF_NETCONF_MONITORING_ENUM_END){return NULL;}
-	return ietf_netconf_monitoring_enum_strings[anum];
+	uint8_t apsd[9];
+	apsd[0]=IETF_NETCONF_MONITORING_RW;
+	apsd[1]=IETF_NETCONF_MONITORING_NETCONF_STATE;
+	apsd[2]=IETF_NETCONF_MONITORING_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"ncm", 4)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -126,6 +136,9 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_ietf-netconf-monitoring/netconf-state/capabilities
 	aps[0] = IETF_NETCONF_MONITORING_RO;
 	aps[1] = IETF_NETCONF_MONITORING_NETCONF_STATE;
@@ -255,3 +268,4 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 erexit:
 	return res;
 }
+

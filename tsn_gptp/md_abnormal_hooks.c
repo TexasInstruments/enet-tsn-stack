@@ -49,10 +49,10 @@
 */
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "gptpnet.h"
 #include "mdeth.h"
 #include "md_abnormal_hooks.h"
 #include "gptpcommon.h"
+#include "gptpnet.h"
 
 extern char *PTPMsgType_debug[16];
 

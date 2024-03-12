@@ -56,72 +56,72 @@
  *----------------------------------------------------------------------------*/
 
 const yang_identity_map_t network_protocol[] = {
-    { "ptp", "udp-ipv4"  , 0x0001 }, /**< UDP on IPv4 */
-    { "ptp", "udp-ipv6"  , 0x0002 }, /**< UDP on IPv6 */
-    { "ptp", "ieee802-3" , 0x0003 }, /**< IEEE Std 802.3 (Ethernet). */
-    { "ptp", "devicenet" , 0x0004 }, /**< DeviceNet */
-    { "ptp", "controlnet", 0x0005 }, /**< ControlNet */
-    { "ptp", "profinet"  , 0x0006 }, /**< PROFINET */
-    { "ptp", "otn"       , 0x0007 }, /**< Optical Transport Network (OTN) */
-    { "ptp", "unknown"   , 0xFFFE }  /**< Unknown */
+    { "ptp-tt", "udp-ipv4"  , 0x0001 }, /**< UDP on IPv4 */
+    { "ptp-tt", "udp-ipv6"  , 0x0002 }, /**< UDP on IPv6 */
+    { "ptp-tt", "ieee802-3" , 0x0003 }, /**< IEEE Std 802.3 (Ethernet). */
+    { "ptp-tt", "devicenet" , 0x0004 }, /**< DeviceNet */
+    { "ptp-tt", "controlnet", 0x0005 }, /**< ControlNet */
+    { "ptp-tt", "profinet"  , 0x0006 }, /**< PROFINET */
+    { "ptp-tt", "otn"       , 0x0007 }, /**< Optical Transport Network (OTN) */
+    { "ptp-tt", "unknown"   , 0xFFFE }  /**< Unknown */
 };
 const uint32_t network_protocol_num = sizeof(network_protocol)/sizeof(network_protocol[0]);
 
 const yang_identity_map_t clock_class[] = {
-    { "ptp", "cc-primary-sync"                      , 6U   },
-    { "ptp", "cc-primary-sync-lost"                 , 7U   },
-    { "ptp", "cc-application-specific-sync"         , 13U  },
-    { "ptp", "cc-application-specific-sync-lost"    , 14U  },
-    { "ptp", "cc-primary-sync-alternative-a"        , 52U  },
-    { "ptp", "cc-application-specific-alternative-a", 58U  },
-    { "ptp", "cc-primary-sync-alternative-b"        , 187U },
-    { "ptp", "cc-application-specific-alternative-b", 193U },
-    { "ptp", "cc-default"                           , 248U },
-    { "ptp", "cc-slave-only"                        , 255U }
+    { "ptp-tt", "cc-primary-sync"                      , 6U   },
+    { "ptp-tt", "cc-primary-sync-lost"                 , 7U   },
+    { "ptp-tt", "cc-application-specific-sync"         , 13U  },
+    { "ptp-tt", "cc-application-specific-sync-lost"    , 14U  },
+    { "ptp-tt", "cc-primary-sync-alternative-a"        , 52U  },
+    { "ptp-tt", "cc-application-specific-alternative-a", 58U  },
+    { "ptp-tt", "cc-primary-sync-alternative-b"        , 187U },
+    { "ptp-tt", "cc-application-specific-alternative-b", 193U },
+    { "ptp-tt", "cc-default"                           , 248U },
+    { "ptp-tt", "cc-slave-only"                        , 255U }
 };
 const uint32_t clock_class_num = sizeof(clock_class)/sizeof(clock_class[0]);
 
 const yang_identity_map_t clock_accuracy[] = {
-    { "ptp", "ca-time-accurate-to-1000-fs", 0x17 },
-    { "ptp", "ca-time-accurate-to-2500-fs", 0x18 },
-    { "ptp", "ca-time-accurate-to-10-ps"  , 0x19 },
-    { "ptp", "ca-time-accurate-to-25ps"   , 0x1A },
-    { "ptp", "ca-time-accurate-to-100-ps" , 0x1B },
-    { "ptp", "ca-time-accurate-to-250-ps" , 0x1C },
-    { "ptp", "ca-time-accurate-to-1000-ps", 0x1D },
-    { "ptp", "ca-time-accurate-to-2500-ps", 0x1E },
-    { "ptp", "ca-time-accurate-to-10-ns"  , 0x1F },
-    { "ptp", "ca-time-accurate-to-25-ns"  , 0x20 },
-    { "ptp", "ca-time-accurate-to-100-ns" , 0x21 },
-    { "ptp", "ca-time-accurate-to-250-ns" , 0x22 },
-    { "ptp", "ca-time-accurate-to-1000-ns", 0x23 },
-    { "ptp", "ca-time-accurate-to-2500-ns", 0x24 },
-    { "ptp", "ca-time-accurate-to-10-us"  , 0x25 },
-    { "ptp", "ca-time-accurate-to-25-us"  , 0x26 },
-    { "ptp", "ca-time-accurate-to-100-us" , 0x27 },
-    { "ptp", "ca-time-accurate-to-250-us" , 0x28 },
-    { "ptp", "ca-time-accurate-to-1000-us", 0x29 },
-    { "ptp", "ca-time-accurate-to-2500-us", 0x2A },
-    { "ptp", "ca-time-accurate-to-10-ms"  , 0x2B },
-    { "ptp", "ca-time-accurate-to-25-ms"  , 0x2C },
-    { "ptp", "ca-time-accurate-to-100-ms" , 0x2D },
-    { "ptp", "ca-time-accurate-to-250-ms" , 0x2E },
-    { "ptp", "ca-time-accurate-to-1-s"    , 0x2F },
-    { "ptp", "ca-time-accurate-to-10-s"   , 0x30 },
-    { "ptp", "ca-time-accurate-to-gt-10-s", 0x31 }
+    { "ptp-tt", "ca-time-accurate-to-1000-fs", 0x17 },
+    { "ptp-tt", "ca-time-accurate-to-2500-fs", 0x18 },
+    { "ptp-tt", "ca-time-accurate-to-10-ps"  , 0x19 },
+    { "ptp-tt", "ca-time-accurate-to-25ps"   , 0x1A },
+    { "ptp-tt", "ca-time-accurate-to-100-ps" , 0x1B },
+    { "ptp-tt", "ca-time-accurate-to-250-ps" , 0x1C },
+    { "ptp-tt", "ca-time-accurate-to-1000-ps", 0x1D },
+    { "ptp-tt", "ca-time-accurate-to-2500-ps", 0x1E },
+    { "ptp-tt", "ca-time-accurate-to-10-ns"  , 0x1F },
+    { "ptp-tt", "ca-time-accurate-to-25-ns"  , 0x20 },
+    { "ptp-tt", "ca-time-accurate-to-100-ns" , 0x21 },
+    { "ptp-tt", "ca-time-accurate-to-250-ns" , 0x22 },
+    { "ptp-tt", "ca-time-accurate-to-1000-ns", 0x23 },
+    { "ptp-tt", "ca-time-accurate-to-2500-ns", 0x24 },
+    { "ptp-tt", "ca-time-accurate-to-10-us"  , 0x25 },
+    { "ptp-tt", "ca-time-accurate-to-25-us"  , 0x26 },
+    { "ptp-tt", "ca-time-accurate-to-100-us" , 0x27 },
+    { "ptp-tt", "ca-time-accurate-to-250-us" , 0x28 },
+    { "ptp-tt", "ca-time-accurate-to-1000-us", 0x29 },
+    { "ptp-tt", "ca-time-accurate-to-2500-us", 0x2A },
+    { "ptp-tt", "ca-time-accurate-to-10-ms"  , 0x2B },
+    { "ptp-tt", "ca-time-accurate-to-25-ms"  , 0x2C },
+    { "ptp-tt", "ca-time-accurate-to-100-ms" , 0x2D },
+    { "ptp-tt", "ca-time-accurate-to-250-ms" , 0x2E },
+    { "ptp-tt", "ca-time-accurate-to-1-s"    , 0x2F },
+    { "ptp-tt", "ca-time-accurate-to-10-s"   , 0x30 },
+    { "ptp-tt", "ca-time-accurate-to-gt-10-s", 0x31 }
 };
 const uint32_t clock_accuracy_num = sizeof(clock_accuracy)/sizeof(clock_accuracy[0]);
 
 const yang_identity_map_t time_source[] = {
-    { "ptp", "atomic-clock"       , 0x10 },
-    { "ptp", "gnss"               , 0x20 },
-    { "ptp", "terrestrial-radio"  , 0x30 },
-    { "ptp", "serial-time-code"   , 0x39 },
-    { "ptp", "ptp"                , 0x40 },
-    { "ptp", "ntp"                , 0x50 },
-    { "ptp", "hand-set"           , 0x60 },
-    { "ptp", "other"              , 0x90 },
-    { "ptp", "internal-oscillator", 0xA0 }
+    { "ptp-tt", "atomic-clock"       , 0x10 },
+    { "ptp-tt", "gnss"               , 0x20 },
+    { "ptp-tt", "terrestrial-radio"  , 0x30 },
+    { "ptp-tt", "serial-time-code"   , 0x39 },
+    { "ptp-tt", "ptp"                , 0x40 },
+    { "ptp-tt", "ntp"                , 0x50 },
+    { "ptp-tt", "hand-set"           , 0x60 },
+    { "ptp-tt", "other"              , 0x90 },
+    { "ptp-tt", "internal-oscillator", 0xA0 }
 };
 const uint32_t time_source_num = sizeof(time_source)/sizeof(time_source[0]);
 

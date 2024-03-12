@@ -51,7 +51,6 @@
 #include <tsn_combase/cb_thread.h>
 #include "uc_dbal.h"
 #include "simpledb.h"
-#include "uc_static_memory.h"
 
 typedef struct dbdata{
 	uint8_t refcounter; // when this locked(>0), it becomes read only
@@ -92,9 +91,11 @@ UB_SD_GETMEM_DEF(SIMPLEDB_INSTMEM, (int)sizeof(simpledb_data_t),
 		 SIMPLEDB_INSTNUM);
 
 #define SIMPLEDB_DBDATAINST simpledb_dbdatainst
-#ifndef SIMPLEDB_DBDATANUM
 // this number must be the number of configuration data items
-#define	SIMPLEDB_DBDATANUM 500u
+// 1250 data items must be enough for most of applications.
+// to save memory, the number can be smaller.
+#ifndef SIMPLEDB_DBDATANUM
+#define	SIMPLEDB_DBDATANUM 1250u
 #endif
 #define SIMPLEDB_LISTNODE simpledb_listnode
 UB_SD_GETMEM_DEF(SIMPLEDB_DBDATAINST, sizeof(dbdata_t),
@@ -103,16 +104,19 @@ UB_SD_GETMEM_DEF(SIMPLEDB_LISTNODE, sizeof(struct ub_list_node),
 		 SIMPLEDB_DBDATANUM);
 
 #define SIMPLEDB_RANGEINST simpledb_rangeinst
+// the number of handling data ranges should be small, 4 must be enough.
 #ifndef SIMPLEDB_RANGENUM
-// the number of keeping ranges is not big
 #define SIMPLEDB_RANGENUM 4
 #endif
 UB_SD_GETMEM_DEF(SIMPLEDB_RANGEINST, sizeof(simpledb_range_t),
 		 SIMPLEDB_RANGENUM);
 
 #define SIMPLEDB_KDATAINST simpledb_kdatainst
+// keydata size fragment
+// in 'simpledb', keydata area is SIMPLEDB_KDATASIZE*(SIMPLEDB_DBDATANUM*2)
+// 2 fragments are taken as average, which is a guess
 #ifndef SIMPLEDB_KDATASIZE
-#define SIMPLEDB_KDATASIZE 8
+#define SIMPLEDB_KDATASIZE 16
 #endif
 // mostly less than 8, '*2' must be appropriate
 #define SIMPLEDB_KDATANUM (SIMPLEDB_DBDATANUM*2u)
@@ -120,6 +124,9 @@ UB_SD_GETMEM_DEF(SIMPLEDB_KDATAINST, SIMPLEDB_KDATASIZE,
 		 SIMPLEDB_KDATANUM);
 
 #define SIMPLEDB_VDATAINST simpledb_vdatainst
+// value data size fragment
+// in 'simpledb', keydata area is SIMPLEDB_VDATASIZE*(SIMPLEDB_DBDATANUM*2)
+// 2 fragments are taken as average, which is a guess
 #ifndef SIMPLEDB_VDATASIZE
 #define SIMPLEDB_VDATASIZE 8
 #endif
@@ -427,8 +434,7 @@ static int onedb_put(struct ub_list *dblist, simpledb_keydata_t *kd,
 			dbd->vsize=vlen;
 		}
 	}
-	if(ub_assert_fatal(dbd->vdata != NULL, __func__, NULL)){return -1;}
-	if(value && vlen){memcpy(dbd->vdata, value, vlen);}
+	if(dbd->vdata != NULL && value && vlen){memcpy(dbd->vdata, value, vlen);}
 	return 0;
 }
 
@@ -570,7 +576,9 @@ erexit:
 
 void simpledb_get_range_release(simpledb_data_t *sdbd, simpledb_range_t *rangedp)
 {
-	UB_SD_RELMEM(SIMPLEDB_RANGEINST, rangedp);
+	if(rangedp!=NULL){
+		UB_SD_RELMEM(SIMPLEDB_RANGEINST, rangedp);
+	}
 	return;
 }
 

@@ -52,12 +52,12 @@
  * @{
  * @file gptpgcfg.h
  * @brief gPTP configuration related functions
- * 
+ *
  */
 #ifndef GPTPGCFG_H_
 #define GPTPGCFG_H_
 
-#include <tsn_uniconf/yangs/ieee1588-ptp.h>
+#include <tsn_uniconf/yangs/ieee1588-ptp-tt.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -66,7 +66,7 @@ extern "C" {
 
 /**
  * @brief gPTP configuration data
- * 
+ *
  */
 typedef struct gptpgcfg_data gptpgcfg_data_t;
 
@@ -79,7 +79,7 @@ typedef struct gptpgcfg_data gptpgcfg_data_t;
 
 /**
  * @brief Gets the non-yang 1588-ptp item from the database
- * 
+ *
  * @param ydbia Yang db item access pointer
  * @param rval Pointer to the value to be retrieved
  * @param instIndex Instance index of the database to access
@@ -92,7 +92,7 @@ int ydbi_get_item_nyptk1vk0(yang_db_item_access_t *ydbia, void **rval, uint8_t i
 
 /**
  * @brief Releases the blocking of the non-yang 1588-ptp item in the database
- * 
+ *
  * @param ydbia Yang db item access pointer
  * @param instIndex Instance index of the database to access
  * @param k1 Enum key 1 of the item to be released
@@ -104,7 +104,7 @@ int ydbi_rel_item_nyptk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
 
 /**
  * @brief Sets the non-yang 1588-ptp item in the database
- * 
+ *
  * @param ydbia Yang db item access pointer
  * @param instIndex Instance index of the database to access
  * @param k1 Enum key 1 of the item to be set
@@ -112,7 +112,7 @@ int ydbi_rel_item_nyptk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
  * @param value Value to be set
  * @param vsize Size of the value to be set
  * @param notice YDBI_PUSH_NOTICE: push notification, YDBI_NO_NOTICE: no notification
- * @return int 
+ * @return int
  */
 int ydbi_set_item_nyptk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
 			    uint8_t k1, bool status, void *value, uint32_t vsize,
@@ -120,7 +120,7 @@ int ydbi_set_item_nyptk1vk0(yang_db_item_access_t *ydbia, uint8_t instIndex,
 
 /**
  * @brief Gets the non-yang 1588-ptp item from the database
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem Configuration item to be retrieved
  * @param status YDBI_CONFIG:access a rw node, YDBI_STATUS: access a readonly node
@@ -130,7 +130,7 @@ void* gptpgcfg_get_item(uint8_t gptpInstanceIndex, uint8_t confitem, bool status
 
 /**
  * @brief Only for NON-YANG Data. Releases the blocking of the non-yang 1588-ptp item in the database
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @return int 0 on success, !0 on failure
  */
@@ -138,7 +138,7 @@ int gptpgcfg_get_item_release(uint8_t gptpInstanceIndex);
 
 /**
  * @brief Only for NON-YANG Data. Gets the integer value of the non-yang 1588-ptp item from the database.
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem Configuration item to be retrieved
  * @param status YDBI_CONFIG:access a rw node, YDBI_STATUS: access a readonly node
@@ -148,7 +148,7 @@ int gptpgcfg_get_intitem(uint8_t gptpInstanceIndex, uint8_t confitem, bool statu
 
 /**
  * @brief Only for NON-YANG Data. Sets the non-yang 1588-ptp item in the database
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem Configuration item to be set
  * @param status YDBI_CONFIG:access a rw node, YDBI_STATUS: access a readonly node
@@ -186,11 +186,11 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 
 /**
  * @brief Initialize gptp configuration
- * 
+ *
  * @param dbname Database name to be used for gptp configuration
  * @param confnames Configuration file names to be used for gptp configuration
  * @param gptpInstanceIndex Index of the gptp instance to be configured
- * @param ucthread true: uniconf is in thread mode, false: uniconf is in process mode 
+ * @param ucthread true: uniconf is in thread mode, false: uniconf is in process mode
  * @return int 0 on success, -1 on failure
  */
 int gptpgcfg_init(const char *dbname, const char **confnames,
@@ -199,7 +199,7 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 
 /**
  * @brief Close gptp configuration
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp to be configured
  */
 void gptpgcfg_close(uint8_t gptpInstanceIndex);
@@ -207,7 +207,7 @@ void gptpgcfg_close(uint8_t gptpInstanceIndex);
 
 /**
  * @brief Gets a yang integer item from gptp configuration
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem0 Index 0 of Enum key of the yang item to be retrieved
  * @param confitem1 Index 1 of Enum key of the yang item to be retrieved
@@ -222,7 +222,7 @@ int gptpgcfg_get_yang_intitem(uint8_t gptpInstanceIndex,
 
 /**
  * @brief Get yang item within the port data set with int data type
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem Configuration item to be retrieved
  * @param pindex Port index to be configured within the gptp instance
@@ -235,7 +235,7 @@ int gptpgcfg_get_yang_portds_intitem(uint8_t gptpInstanceIndex, uint8_t confitem
 
 /**
  * @brief Get yang item within the port data set with int64 data type
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem Configuration item to be retrieved
  * @param pindex Port index to be configured within the gptp instance
@@ -247,8 +247,8 @@ int64_t gptpgcfg_get_yang_portds_int64item(uint8_t gptpInstanceIndex, uint8_t co
 					   uint16_t pindex, uint8_t domainIndex, bool status);
 
 /**
- * @brief Sets port specific Yang item 
- * 
+ * @brief Sets port specific Yang item
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem1 Index 1 of Enum key of the yang item to be set
  * @param confitem2 Index 2 of Enum key of the yang item to be set
@@ -266,7 +266,7 @@ int gptpgcfg_set_yang_port_item(uint8_t gptpInstanceIndex, uint8_t confitem1, ui
 
 /**
  * @brief Sets clock state specific Yang item
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param confitem Configuration item to be set
  * @param domainIndex Domain index to be configured within the gptp instance
@@ -282,14 +282,14 @@ int gptpgcfg_set_clock_state_item(uint8_t gptpInstanceIndex, uint8_t confitem,
 
 /**
  * @brief Releases database from gptp configuration
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  */
 void gptpgcfg_releasedb(uint8_t gptpInstanceIndex);
 
 /**
  * @brief Sets the network devices to be used in gptp configuration
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param netdevs String array of network devices to be used in gptp configuration
  * @param numdevs Number of network devices to be used in gptp configuration
@@ -299,14 +299,14 @@ int gptpgcfg_set_netdevs(uint8_t gptpInstanceIndex, const char *netdevs[], int n
 
 /**
  * @brief Removes network devices item from the gptp configuration
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  */
 void gptpgcfg_remove_netdevs(uint8_t gptpInstanceIndex);
 
 /**
  * @brief Sets the current asCapable value of the gptp instance
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param domainIndex Domain index to be configured within the gptp instance
  * @param portIndex Port index to be configured within the gptp instance
@@ -318,7 +318,7 @@ int gptpgcfg_set_asCapable(uint8_t gptpInstanceIndex, uint8_t domainIndex,
 
 /**
  * @brief Deletes all clock related values in the performance monitoring data set of the gptp instance
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param domainIndex Domain index to be configured within the gptp instance
  * @return int 0 on success, -1 on failure
@@ -327,7 +327,7 @@ int gptpgcfg_deleteall_clock_perfmonDS(uint8_t gptpInstanceIndex, uint8_t domain
 
 /**
  * @brief Cascades the clock related performance monitoring records of the gptp instance
- * 
+ *
  * @param id 0: Short interval, 1: Long interval
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param domainIndex Domain index to be configured within the gptp instance
@@ -337,7 +337,7 @@ int gptpgcfg_cascade_clock_perfmonDS(uint8_t id, uint8_t gptpInstanceIndex, uint
 
 /**
  * @brief Deletes all port related values in the performance monitoring data set of the gptp instance
- * 
+ *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param domainIndex Domain index to be configured within the gptp instance
  * @param portIndex Port index to be configured within the gptp instance
@@ -348,7 +348,7 @@ int gptpgcfg_deleteall_port_perfmonDS(uint8_t gptpInstanceIndex, uint8_t domainI
 
 /**
  * @brief Cascades the specific port related performance monitoring records of the gptp instance
- * 
+ *
  * @param id 0: Short interval, 1: Long interval
  * @param gptpInstanceIndex Index of the gptp instance to be configured
  * @param domainIndex Domain index to be configured within the gptp instance

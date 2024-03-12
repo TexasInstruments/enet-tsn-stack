@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.65])
-AC_INIT([tsn_unibase], [1.1.4], [shiro@excelfore.com])
+AC_INIT([tsn_unibase], [1.1.5], [shiro@excelfore.com])
 AC_SUBST(PACKAGE_DESC,"Excelfore universal base library")
 
 AM_INIT_AUTOMAKE([-Wall -Werror subdir-objects])

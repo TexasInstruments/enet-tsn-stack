@@ -233,6 +233,13 @@ static int rx_process_frame(hw_interface* interface)
 		uint16_t protocol = get_eth_proto((const char*)buf_ptr, &read_idx);
 		// ub_hexdump(true, true, dst_mac, 6, 0);
 		// ub_hexdump(true, true, src_mac, 6, 0);
+		// UB_LOG(UBL_INFO, "%s: protocol %x \n", __func__, protocol);
+
+		if (protocol == ETH_P_8021Q)
+		{
+			read_idx += 2;  // skip 4 bytes of VLAN Tagging (includes ETH_P_8021Q) and confirm again the protocol
+			protocol = get_eth_proto((const char*)buf_ptr, &read_idx);
+		}
 
 		if (protocol == LLDP_PROTO)
 		{
@@ -248,6 +255,7 @@ static int rx_process_frame(hw_interface* interface)
 					break;
 				case RX_NORMAL:
 					{
+						UB_LOG(UBL_INFO, "%s: rx normal \n", __func__);
 						potential_remote_data.original_rxttl = potential_remote_data.rx_ttl;
 						PUSH_RX_EVENT(RX_TYPE_NORMAL, interface);
 					}
@@ -259,6 +267,11 @@ static int rx_process_frame(hw_interface* interface)
 			// Reset this for next receive. The recv buffer is reflected to potential_remote_data
 			interface->lldpsock->recv_len = 0;
 			memset(interface->lldpsock->recv_buf, 0, sizeof(interface->lldpsock->recv_buf));
+		}
+		else
+		{
+			UB_LOG(UBL_INFO, "%s: Protocol %x is not handled in LLDP\n", __func__, protocol);
+			PUSH_RX_EVENT(RX_BAD_FRAME, interface);
 		}
 	}
 
@@ -343,7 +356,7 @@ static void rxsm_on_receive_data(hw_interface* interface, RXState pre_state)
 	{
 		interface->agent_info.rxFrame = false;
 	}
-	UB_LOG(UBL_DEBUG, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
+	UB_LOG(UBL_INFO, "%s:%s %s->%s\n", __func__, interface->if_name, get_state_name(pre_state), get_state_name(interface->curr_rx_state));
 	increase_rx_total_frame(interface->cfg_port);
 	rx_process_frame(interface);
 }
@@ -358,6 +371,7 @@ static void rxsm_on_receive_normal(struct _hw_interface* interface, RXState pre_
 			&& ub_list_count(&interface->cfg_port->remote_systems_data) < MAX_REMOTE_SYSTEM_DATA_LEN)
 		{
 			// Create new remote system data + write it to DB
+			UB_LOG(UBL_INFO, "%s: creating new neighbor [TTL=%d]:\n", interface->if_name, potential_remote_data.original_rxttl);
 			remote_systems_data_t* rs_data = create_new_remote_system_data(interface->cfg_port, &potential_remote_data);
 			UB_LOG(UBL_INFO, "%s: Got new neighbor [TTL=%d]:\n", interface->if_name, potential_remote_data.original_rxttl);
 			dump_rs_data(rs_data);

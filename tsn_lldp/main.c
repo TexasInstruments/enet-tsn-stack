@@ -53,7 +53,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include "getopt.h"
+#include <getopt.h>
 #include <tsn_combase/cb_thread.h>
 #include <tsn_combase/cb_ethernet.h>
 #include <tsn_unibase/unibase.h>

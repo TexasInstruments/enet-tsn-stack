@@ -52,10 +52,22 @@
 
 #include <tsn_unibase/unibase.h>
 #include <tsn_combase/cb_thread.h>
-#include "tsn_data.h"
 #include "../uc_dbal.h"
 #include "../hal/uc_hwal.h"
 #include "../uc_notice.h"
+
+/* number of network devices never go beyond this number */
+#define XL4_DATA_ABS_MAX_NETDEVS 16
+#define XL4_DATA_PATH_STR_SHORTLEN 64
+
+#define YANGINIT_GEN_SMEM yanginit_gen_smem
+#ifndef YANGINIT_GEN_SNUM
+#define YANGINIT_GEN_SNUM 500
+#endif //YANGINIT_GEN_SNUM
+
+#ifndef YANGINIT_GEN_SSIZE
+#define YANGINIT_GEN_SSIZE 8
+#endif //YANGINIT_GEN_SSIZE
 
 // gcc can detect big endian by the next.
 // the other big endian compiler needs to define __BID_ENDIAN__
@@ -75,12 +87,12 @@
 
 #ifdef UC_RUNCONF
 #define UC_RUNCONF_DATA yang_db_runtime_dataq_t
-#define UC_RUNCONF_INIT(xdd,dbald,hwald) yang_db_runtime_init(xdd,dbald,hwald)
+#define UC_RUNCONF_INIT(dbald,hwald) yang_db_runtime_init(dbald,hwald)
 #define UC_RUNCONF_CLOSE(ydrd) yang_db_runtime_close(ydrd)
 #define UC_RUNCONF_READFILE(ydrd,fname) yang_db_runtime_readfile(ydrd, fname, NULL)
 #else
 #define UC_RUNCONF_DATA void
-#define UC_RUNCONF_INIT(xdd,dbald,hwald) NULL
+#define UC_RUNCONF_INIT(dbald,hwald) NULL
 #define UC_RUNCONF_CLOSE(ydrd)
 #define UC_RUNCONF_READFILE(ydrd,fname) 0
 #endif // UC_RUNCONF
@@ -136,15 +148,8 @@ typedef struct yang_db_access_para{
 	uint32_t vsize;
 } yang_db_access_para_t;
 
-#ifndef YDBI_MAX_AP_DEPTH
-#define YDBI_MAX_AP_DEPTH 16
-#endif
-#ifndef YDBI_MAX_KV_DEPTH
-#define YDBI_MAX_KV_DEPTH 10
-#endif
 typedef struct yang_db_item_access {
 	uc_dbald *dbald;
-	xl4_data_data_t *xdd;
 	uc_notice_data_t *ucntd;
 	yang_db_access_para_t dbpara;
 	CB_THREAD_MUTEX_T *mutex;
@@ -157,7 +162,7 @@ typedef struct yang_db_item_access {
  *
  * optional 2 prefix character 'ny' is used for non-yong type data
  * 2 character abbreviations
- *  if: ietf-interfaces, qb: ieee802-dot1q-bridge, pt: ieee1588-ptp,
+ *  if: ietf-interfaces, qb: ieee802-dot1q-bridge, pt: ieee1588-ptp-tt,
  *  mr: xmrpd, tu: ieee802-dot1q-tsn-config-uni, tr: excelfore-tsn-remote,
  *  nc: excelfore-netconf-server, yl: ietf-yang-library
  *  nm: ietf-netconf-monitoring
@@ -248,14 +253,17 @@ typedef struct yang_db_item_access {
 /**
  * @brief Initialization to use ydbi_* functions.
  * @param dbald	General DB access pointer, this is always needed.
- * @param xdd	DB access pointer for Excelfore Extended part,
- * 	        can be NULL not to access the section.
  * @param ucntd	notice data pointer, can be NULL not to use the notice.
  * @note
  *  ydbi_access uses internal static variables with mutex.
  *  No guarantee to keep the internal static values between calls.
  */
-void ydbi_access_init(uc_dbald *dbald, xl4_data_data_t *xdd, uc_notice_data_t *ucntd);
+void ydbi_access_init(uc_dbald *dbald, uc_notice_data_t *ucntd);
+
+/**
+ * @brief close ydbi_access
+ */
+void ydbi_access_close(void);
 
 /**
  * @brief return ydbi access pointer in the internal static variable.
@@ -294,13 +302,13 @@ uint32_t yang_db_create_key(uint8_t *pap, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
 /**
  * @brief dump the key data in 'ap' and 'kvs'.  This is for debugging.
  */
-void yang_db_keydump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss);
+void yang_db_keydump_log(int llevel, uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss);
 
 /**
  * @brief dump the key data in 'ap' and 'kvs', and value data.  This is for debugging.
  */
-void yang_db_keyvaluedump_log(int llevel, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
-			      void *value, uint32_t vsize);
+void yang_db_keyvaluedump_log(int llevel, uc_dbald *dbald, uint8_t *ap, kvs_t *kvs,
+			      uint8_t *kss, void *value, uint32_t vsize);
 
 /**
  * @brief copy all items under (ap, kvs) to under (ap, nkvs)
@@ -407,6 +415,27 @@ bool yang_isenum_vtype(uint8_t vtype);
  * @param dbpara	parameters of the action
  */
 int yang_db_action(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpara);
+
+/**
+ * @brief update leaf-list string data
+ * @param dbald	DB access pointer
+ * @param hwald	HW access pointer, can be NULL not to access HW
+ * @param dbpara	parameters of the action
+ *			dbpara->value and dbpara->vsize have the old data
+ *			if dbpara->value is NULL or not found, simply append 'nvalue'
+ * @param nvalue	new data
+ *			if nvalue==NULL, delete dbpara->value
+ * @param nvsize	new data size
+ */
+int yang_db_leaflist_strupdate(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpara,
+			       void *nvalue, uint32_t nvsize);
+
+/**
+ * @brief update capability leaf-list string data
+ *		'features' and 'deviations' are convined with old and new data
+ */
+int yang_db_leaflist_capupdate(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_para_t *dbpara,
+			       void *nvalue, uint32_t nvsize);
 
 /**
  * @brief Extract a binary key data into 'ap' and 'kvs'

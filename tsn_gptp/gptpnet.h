@@ -49,7 +49,6 @@
 */
 #ifndef GPTPNET_H_
 #define GPTPNET_H_
-#include <tsn_uniconf/yangs/tsn_data.h>
 #include "gptpbasetypes.h"
 
 // 10.4.3 Addresses
@@ -122,7 +121,7 @@ typedef struct gptpnet_data_netlink {
 	ClockIdentity portid;
 	uint8_t up;
 	char devname[XL4_DATA_ABS_MAX_NETDEVS];
-	char ptpdev[XL4_DATA_ABS_MAX_NETDEVS];
+	char ptpdev[XL4_DATA_PATH_STR_SHORTLEN];
 	uint64_t downts;
 } gptpnet_data_netlink_t;
 

@@ -50,53 +50,63 @@
 /* Automatically generated file.  Don't edit this file.*/
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
-#include "../yang_modules.h"
+#include "yang_modules.h"
+#include "../yang_db_access.h"
+#include "../yang_node.h"
 #include "excelfore-netconf-server.h"
-#include "ietf-interfaces.h"
-#include "ieee802-dot1q-bridge.h"
-#include "ieee802-dot1ab-lldp.h"
-#include "ieee1588-ptp.h"
-#include "ieee802-dot1q-tsn-config-uni.h"
-#include "ietf-netconf-monitoring.h"
-#include "ietf-yang-library.h"
-#include "excelfore-tsn-remote.h"
 
-UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+extern uint8_t EXCELFORE_NETCONF_SERVER_func(uc_dbald *dbald);
+#define EXCELFORE_NETCONF_SERVER_RW EXCELFORE_NETCONF_SERVER_func(dbald)
+#define EXCELFORE_NETCONF_SERVER_RO (EXCELFORE_NETCONF_SERVER_func(dbald)|0x80u)
 
 const char *excelfore_netconf_server_enum_strings[]={
 	"valuekey", 		// 0(0x0)
 	"dummy", 		// 1(0x1)
-	"x4nconf-server", 		// 2(0x2)
-	"transport", 		// 3(0x3)
-	"tls", 		// 4(0x4)
-	"port", 		// 5(0x5)
-	"server-cert", 		// 6(0x6)
-	"server-key", 		// 7(0x7)
-	"capath", 		// 8(0x8)
-	"cert-to-name", 		// 9(0x9)
-	"id", 		// 10(0xa)
-	"fingerprint", 		// 11(0xb)
-	"map-type", 		// 12(0xc)
-	"name", 		// 13(0xd)
-	"ssh", 		// 14(0xe)
-	"use-unix-domain-socket", 		// 15(0xf)
-	"sub-ipc-port", 		// 16(0x10)
-	"sub-socket-name", 		// 17(0x11)
+	"nsasc", 		// 2(0x2)
+	"x4nconf-server", 		// 3(0x3)
+	"transport", 		// 4(0x4)
+	"tls", 		// 5(0x5)
+	"port", 		// 6(0x6)
+	"server-cert", 		// 7(0x7)
+	"server-key", 		// 8(0x8)
+	"capath", 		// 9(0x9)
+	"cert-to-name", 		// 10(0xa)
+	"id", 		// 11(0xb)
+	"fingerprint", 		// 12(0xc)
+	"map-type", 		// 13(0xd)
+	"name", 		// 14(0xe)
+	"ssh", 		// 15(0xf)
+	"use-unix-domain-socket", 		// 16(0x10)
+	"sub-ipc-port", 		// 17(0x11)
+	"sub-socket-name", 		// 18(0x12)
 };
+const uint8_t excelfore_netconf_server_enum_max=19;
 
-uint8_t excelfore_netconf_server_get_enum(char *astr)
+static int prefix_namespace_init(uc_dbald *dbald)
 {
-	int i;
-	for(i=0;i<(int)EXCELFORE_NETCONF_SERVER_ENUM_END;i++){
-		if(!strcmp(astr, excelfore_netconf_server_enum_strings[i])){return i;}
+	if(yang_node_set_prefix_namespace(dbald, "xl4nconf",
+		"http://excelfore.com/ns/excelfore-netconf-server")!=0){
+		return -1;
 	}
-        return 0xffu;
+	return 0;
 }
 
-const char *excelfore_netconf_server_get_string(uint8_t anum)
+static int node_namespace_init(uc_dbald *dbald)
 {
-        if(anum>=(uint8_t)EXCELFORE_NETCONF_SERVER_ENUM_END){return NULL;}
-	return excelfore_netconf_server_enum_strings[anum];
+	uint8_t apsd[8];
+	apsd[0]=EXCELFORE_NETCONF_SERVER_RW;
+	apsd[1]=EXCELFORE_NETCONF_SERVER_X4NCONF_SERVER;
+	apsd[2]=EXCELFORE_NETCONF_SERVER_NSASC;
+	apsd[3]=255u;
+	if(uc_dbal_create(dbald, apsd, 4, (void*)"xl4nconf", 9)!=0){
+		return -1;
+	}
+	return 0;
+}
+
+static int enumstring_init(uc_dbald *dbald, uint8_t modid)
+{
+	return 0;
 }
 
 int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
@@ -105,6 +115,9 @@ int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwal
 	uint8_t *aps=&apsd[2];
 	int res=-1;
 	uint8_t vtype;
+	if(enumstring_init(dbald, 0)!=0){return -1;}
+	if(prefix_namespace_init(dbald)!=0){return -1;}
+	if(node_namespace_init(dbald)!=0){return -1;}
 	//0000_excelfore-netconf-server/x4nconf-server/transport/tls/cert-to-name
 	aps[0] = EXCELFORE_NETCONF_SERVER_RW;
 	aps[1] = EXCELFORE_NETCONF_SERVER_X4NCONF_SERVER;
@@ -159,3 +172,4 @@ int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwal
 erexit:
 	return res;
 }
+
