@@ -412,6 +412,10 @@ int yang_node_get_node_string(uc_dbald *dbald, char **rstr, uint8_t *anums)
 				bstr="xl4-data";
 			}else{
 				bstr=xl4data_get_string(anums[i]);
+				if(bstr==NULL){
+					res=1;
+					break;
+				}
 			}
 			bsize=strlen(bstr)+1;
 			break;

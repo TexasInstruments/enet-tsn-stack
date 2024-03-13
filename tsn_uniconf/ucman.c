@@ -96,6 +96,7 @@ void *uniconf_main(void *ptr)
 	if(yang_config_init(ucd.dbald, ucd.hwald)!=0){goto erexit;}
 	if(yang_nconf_config_init(ucd.dbald)!=0){goto erexit;}
 	ydrd=UC_RUNCONF_INIT(ucd.dbald, ucd.hwald);
+	if(!ydrd){goto erexit;}
 	for(i=0;i<ucmd->numconfigfile;i++){
 		if(UC_RUNCONF_READFILE(ydrd, ucmd->configfiles[i])!=0){
 			UB_LOG(UBL_ERROR, "%s:can't read run-time cofnig file=%s\n",

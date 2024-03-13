@@ -559,20 +559,17 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
 			char* rstr=yang_enumeration_getstr(*((uint32_t*)value), "datastore");
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else if (YANG_VTYPE_PORT_STATE == vtype) {
 			char* rstr=yang_enumeration_getstr(*((uint8_t*)value), "port-state");
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else if (NULL != hints) {
 			char* rstr=yang_enumeration_getstr(*((uint32_t*)value), hints);
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else {
 			(void)sprintf(vstr, "%"PRIu32, *((uint32_t*)value));
@@ -650,8 +647,7 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 		if(NULL != hints) {
 			char* rstr=yang_identityref_getstr(*((uint32_t*)value), hints);
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else {
 			UB_LOG(UBL_ERROR, "%s:cannot convert identityref without hints\n", __func__);
@@ -683,20 +679,17 @@ char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, char *hint
 		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
 			char* rstr=yang_enumeration_getns(*((uint32_t*)value), "datastore");
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else if (YANG_VTYPE_PORT_STATE == vtype) {
 			char* rstr=yang_enumeration_getns(*((uint8_t*)value), "datastore");
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else if (NULL != hints) {
 			char* rstr=yang_enumeration_getns(*((uint32_t*)value), hints);
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else {
 			UB_LOG(UBL_ERROR, "%s:cannot get enum ns without hints\n", __func__);
@@ -706,8 +699,7 @@ char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, char *hint
 		if(NULL != hints) {
 			char* rstr=yang_identityref_getns(*((uint32_t*)value), hints);
 			if (NULL != rstr) {
-				memset(vstr, 0, sizeof(vstr));
-				(void)strcpy(vstr, rstr);
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
 		} else {
 			UB_LOG(UBL_ERROR, "%s:cannot get identityref ns without hints\n", __func__);

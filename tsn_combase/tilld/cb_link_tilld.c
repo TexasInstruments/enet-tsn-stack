@@ -160,7 +160,7 @@ int cbl_query_response(combase_link_data_t *cbld, int tout_ms)
 			return -1;
 		}
 		if (cbld->netdev_opersts[i] == link_state){continue;}
-		strncpy(nevent.ifname, cbld->netdevs[i], strlen(cbld->netdevs[i]));
+		(void)ub_strncpy(nevent.ifname, cbld->netdevs[i], sizeof(nevent.ifname));
 		nevent.eventflags=CBL_EVENT_CHECKENABLED;
 		if(cbld->event_cb(cbld->cb_arg, &nevent)){
 			return 0; //ifname is not enabled, ignore it.

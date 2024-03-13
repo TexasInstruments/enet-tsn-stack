@@ -475,6 +475,7 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 			}
 		}else{
 			ydrd=UC_RUNCONF_INIT(gycd->dbald, NULL);
+			if(!ydrd){goto erexit;}
 			res=UC_RUNCONF_READFILE(ydrd, *confnames);
 			UC_RUNCONF_CLOSE(ydrd);
 		}

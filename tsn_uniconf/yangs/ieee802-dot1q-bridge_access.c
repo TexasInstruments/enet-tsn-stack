@@ -129,7 +129,8 @@ static void set_dpara_vlan_reg(yang_db_item_access_t *ydbia,
 	ydbia->dbpara.aps[5] = IEEE802_DOT1Q_BRIDGE_VLAN_REGISTRATION_ENTRY;
 	ydbia->dbpara.aps[6] = IEEE802_DOT1Q_BRIDGE_PORT_MAP;
 	ydbia->dbpara.aps[7] = IEEE802_DOT1Q_BRIDGE_DYNAMIC_VLAN_REGISTRATION_ENTRIES;
-	ydbia->dbpara.aps[8] = 255;
+	ydbia->dbpara.aps[8] = IEEE802_DOT1Q_BRIDGE_CONTROL_ELEMENT;
+	ydbia->dbpara.aps[9] = 255;
 	ydbia->dbpara.kvs[2] = database_id;
 	ydbia->dbpara.kss[2] = sizeof(uint32_t);
 	ydbia->dbpara.kvs[3] = vids;
@@ -145,7 +146,7 @@ int ydbi_vlan_regis_qb(yang_db_item_access_t *ydbia,
 {
 	uint32_t database_id=QBRIDGE_FDB_ID;
 	uint16_t vids[4]={vid1, vid2, 0, 0};
-	uint32_t vi=0;
+	uint32_t vi=0; // control-element, enum registered=0
 	if(reg){
 		if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
 	}else{

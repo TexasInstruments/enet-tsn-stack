@@ -702,6 +702,7 @@ int initialize_cfg(const char* dbfile, yang_lldp_t* yang_lldp, bool notice)
 		// Init
 		dbald=uc_dbal_open(dbfile, "w", g_uniconf_access_mode);
 		ucntd=uc_notice_init(g_uniconf_access_mode, dbfile);
+		if (!ucntd) { return -1; }
 
 		ydbi_access_init(dbald, ucntd);
 
@@ -2214,7 +2215,10 @@ static void fill_remote_unknown_tlv(uint8_t* k, uint32_t tlv_type, lldp_cfg_para
 	switch(k[5])
 	{
 	case IEEE802_DOT1AB_LLDP_TLV_INFO:
-		memcpy(remote_unknow_tlv->tlv_info, (uint8_t*)prm->value, prm->vsize);
+		if (remote_unknow_tlv)
+	        {
+			memcpy(remote_unknow_tlv->tlv_info, (uint8_t*)prm->value, prm->vsize);
+		}
 		break;
 	}
 }
@@ -2244,7 +2248,10 @@ static void fill_remote_org_info(uint8_t* k, uint32_t info_id, uint32_t info_sub
 	case IEEE802_DOT1AB_LLDP_REMOTE_INFO:
 		// UB_LOG(UBL_INFO, "copy oui info [%d] \n",  prm->vsize);
 		// ub_hexdump(true, true,  (uint8_t*)prm->value, prm->vsize, 0);
-		memcpy(remote_org_info->remote_info, (uint8_t*)prm->value, prm->vsize);
+		if (remote_org_info)
+		{
+			memcpy(remote_org_info->remote_info, (uint8_t*)prm->value, prm->vsize);
+		}
 		// UB_LOG(UBL_INFO, "copy oui info [%d] done\n",  prm->vsize);
 		break;
 	}

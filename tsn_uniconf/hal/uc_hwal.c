@@ -908,7 +908,8 @@ static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8
 	if(aps[4]==IEEE802_DOT1Q_BRIDGE_FILTERING_DATABASE &&
 	   aps[5]==IEEE802_DOT1Q_BRIDGE_VLAN_REGISTRATION_ENTRY &&
 	   aps[6]==IEEE802_DOT1Q_BRIDGE_PORT_MAP &&
-	   aps[7]==IEEE802_DOT1Q_BRIDGE_DYNAMIC_VLAN_REGISTRATION_ENTRIES){
+	   aps[7]==IEEE802_DOT1Q_BRIDGE_DYNAMIC_VLAN_REGISTRATION_ENTRIES &&
+	   aps[8]==IEEE802_DOT1Q_BRIDGE_CONTROL_ELEMENT){
 		uint16_t *vids;
 		// dynamic VLAN registration
 		// kvs[0]:bridgename, kvs[1]:component name, kvs[2]:dtabase_id,
