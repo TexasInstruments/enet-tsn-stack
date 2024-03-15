@@ -67,13 +67,13 @@ static struct avtp_tilld s_tilld;
 
 static void rx_notify_cb(void *arg)
 {
-	struct avtp_tilld *tilld = arg;
+	struct avtp_tilld *tilld = (struct avtp_tilld *)arg;
 	CB_SEM_POST(&tilld->semaphore);
 }
 
 static int tilld_init(void *arg)
 {
-	struct avtp_tilld *tilld = arg;
+	struct avtp_tilld *tilld = (struct avtp_tilld *)arg;
 	if (tilld->init) {return -1;}
 	if (CB_SEM_INIT(&tilld->semaphore, 0, 0) < 0) {
 		UB_LOG(UBL_ERROR,"%s:failed to open sem!\n", __func__);
@@ -135,7 +135,7 @@ static void consume_avtp_packet(avtp_ethernet_handle_t reh,
 static void zerocopy_recv_cb(void *buf, int size,
 				CB_SOCKADDR_LL_T *addr, void *cbarg)
 {
-	consume_avtp_packet(cbarg, (ether_frame_t *)buf, size);
+	consume_avtp_packet((avtp_ethernet_handle_t)cbarg, (ether_frame_t *)buf, size);
 }
 
 static void poll_data_until_empty(avtp_ethernet_handle_t reh)

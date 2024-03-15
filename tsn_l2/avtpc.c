@@ -311,7 +311,7 @@ avtpc_data_t *avtpc_init(char *shsuf)
 	memset(avtpc, 0, sizeof(avtpc_data_t));
 	if(shsuf){snprintf(avtpc->shsuf, sizeof(avtpc->shsuf), "%s", shsuf);}
 	snprintf(shmname, 32, "%s%s", AVBTP_MCD_SHMEM_NAME, avtpc->shsuf);
-	avtpc->mcd=cb_get_shared_mem(&avtpc->mcd_shmem, shmname,
+	avtpc->mcd=(master_connection_data_t *)cb_get_shared_mem(&avtpc->mcd_shmem, shmname,
 				     sizeof(master_connection_data_t), O_RDWR);
 	if(!avtpc->mcd){goto erexit;}
 	return avtpc;
@@ -395,7 +395,7 @@ int avtpc_connection_request(avtpc_data_t *avtpc, client_connect_request_t *ccr)
 		break;
 	}
 
-	avtpc->ccds=cb_get_shared_mem(&avtpc->ccd_shmem, shmname,
+	avtpc->ccds=(client_connection_data_t *)cb_get_shared_mem(&avtpc->ccd_shmem, shmname,
 				      get_ccd_size(ccr, NULL), O_RDWR);
 	if(!avtpc->ccds){goto erexit;}
 

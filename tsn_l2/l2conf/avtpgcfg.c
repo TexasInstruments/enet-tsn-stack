@@ -106,7 +106,7 @@ avtpgcfgd_t *avtpgcfg_init(uint8_t instanceIndex, const char *dbname,
 	avtpgcfgd_t *avtpgcd;
 	uint8_t sinst;
 
-	avtpgcd=UB_SD_GETMEM(AVTPD_CONFIG_INST, sizeof(avtpgcfgd_t));
+	avtpgcd=(avtpgcfgd_t *)UB_SD_GETMEM(AVTPD_CONFIG_INST, sizeof(avtpgcfgd_t));
 	if(ub_assert_fatal(avtpgcd!=NULL, __func__, NULL)){return NULL;}
 	memset(avtpgcd, 0, sizeof(avtpgcfgd_t));
 	avtpgcd->instanceIndex=instanceIndex;

@@ -154,7 +154,7 @@ static void avtp_tcshaper_init(avtpd_data_t *avtpd,
 #define TCSHPER_ADD false
 #define TCSHPER_DELETE true
 static int avtp_tcshaper_update(avtpd_data_t *avtpd,
-				client_connection_data_t *ccd, bool delete)
+				client_connection_data_t *ccd, bool isdelete)
 {
 	uint8_t numtc=0;
 	void *value;
@@ -190,13 +190,13 @@ static int avtp_tcshaper_update(avtpd_data_t *avtpd,
 	int fsize=UB_MAX(ccd->ccr.max_frame_size, 46);// 46 is the minimum payload size
 	int32_t add_slope=((int64_t)ccd->ccr.max_intv_frames*(fsize+42)*1000*8 /
 			   ccd->ccr.time_intv);
-	if(delete) {
+	if(isdelete) {
 		if(!ccd->tcs_reserved) return 0;
 		add_slope*=-1;
 	}
 	res=avtp_update_traffic(ccd->raweth, tc, add_slope);
 	if(!res){
-		if(delete)
+		if(isdelete)
 			ccd->tcs_reserved=false;
 		else
 			ccd->tcs_reserved=true;
@@ -329,7 +329,7 @@ static int avtpd_init(avtpd_data_t *avtpd)
 	CB_THREAD_MUTEXATTR_SETPSHARED(&mattr, CB_THREAD_PROCESS_SHARED);
 
 	snprintf(shmname, 32, "%s%s", AVBTP_MCD_SHMEM_NAME, avtpd->shsuf);
-	avtpd->mcd=cb_get_shared_mem(&avtpd->mcd_shmem, shmname,
+	avtpd->mcd=(master_connection_data_t*)cb_get_shared_mem(&avtpd->mcd_shmem, shmname,
 				     sizeof(master_connection_data_t), O_CREAT | O_RDWR);
 	if(!avtpd->mcd){
 		UB_LOG(UBL_ERROR,"%s:avtpd->mcd is null\n", __func__);
@@ -1043,7 +1043,7 @@ static int create_connection(avtpd_data_t *avtpd, int ccdl[],
 		return -1;
 	}
 	snprintf(shmname, 32, AVBTP_CCD_SHMEM_PREFIX"%s%d-%d", avtpd->shsuf, shmsuffix, ci);
-	ccds[ci]=cb_get_shared_mem(&ccdl_ci, shmname, ccdsize, O_CREAT | O_RDWR);
+	ccds[ci]=(client_connection_data_t *)cb_get_shared_mem(&ccdl_ci, shmname, ccdsize, O_CREAT | O_RDWR);
 	if(!ccds[ci]){return -1;}
 	memset(ccds[ci], 0, ccdsize);
 	IF_GOTO_EREXIT(CB_SEM_INIT(&ccds[ci]->tsem_set, 1, 0));

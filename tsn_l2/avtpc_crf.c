@@ -58,13 +58,15 @@
 
 #define VLAN_ID_MAX 4095
 
+typedef enum {
+	MR_STABLE_STATE,
+	MR_WAITING_STATE //waiting to toggle 'mr' bit
+} mr_state_t;
+
 typedef struct mr_state_machine {
 	uint16_t pdus_toggle;
 	uint16_t pdus_count;
-	enum {
-		MR_STABLE_STATE,
-		MR_WAITING_STATE //waiting to toggle 'mr' bit
-	} state;
+	mr_state_t state;
 } mr_state_machine_t;
 
 struct avtpc_crf_data {
@@ -113,7 +115,7 @@ avtpc_crf_data_t *avtpc_crf_init(char *shsuf)
 {
 	avtpc_crf_data_t *avtpc_crf;
 
-	avtpc_crf = malloc(sizeof(avtpc_crf_data_t));
+	avtpc_crf = (avtpc_crf_data_t *)malloc(sizeof(avtpc_crf_data_t));
 	if(ub_assert_fatal(avtpc_crf!=NULL, __func__, NULL)) return NULL;
 	memset(avtpc_crf, 0, sizeof(avtpc_crf_data_t));
 

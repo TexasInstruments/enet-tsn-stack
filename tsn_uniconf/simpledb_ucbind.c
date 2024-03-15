@@ -82,7 +82,7 @@ static uc_dbald *opendb_protect(const char *pfname, const char *mode, uint8_t ca
 
 uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
 {
-	simpledb_data_t *sdbd;
+	uc_dbald *sdbd;
 	UB_PROTECTED_FUNC(opendb_protect, sdbd, pfname, mode, callmode);
 	return sdbd;
 }

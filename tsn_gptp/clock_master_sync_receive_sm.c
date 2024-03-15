@@ -137,7 +137,14 @@ static int set_phase_offsetGM(clock_master_sync_receive_data_t *sm, int64_t dts,
 		sm->offsetGM_stable=OFFSET_START_ADJ;
 	}
 
-	if((dlts < gptpgcfg_get_intitem(
+	/*
+	 * When XL4_EXTMOD_XL4GPTP_USE_HW_PHASE_ADJUSTMENT is enabled, negative
+	 * dlts may occur if the master clock counter is less than that of the slave clock.
+	 * Consequently, this can lead to extended waiting periods for the slave side
+	 * to transition to the clock adjustment state.
+	 * By checking (dlts > 0), we can avoid this issue.
+	 */
+	if((dlts > 0) && (dlts < gptpgcfg_get_intitem(
 		    GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_CLOCK_COMPUTE_INTERVAL_MSEC,
 		    YDBI_CONFIG)*UB_MSEC_NS)
 	   && (sm->offsetGM_stable > OFFSET_START_ADJ)) {

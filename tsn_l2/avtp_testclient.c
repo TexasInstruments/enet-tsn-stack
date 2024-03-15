@@ -457,16 +457,17 @@ static void avtp_brater_period_print(avtptc_data_t *avtptcd, bool talker, int pk
 		cb_rate_reporter_calc(&avtptcd->rate_reporter, &rate, &prate, &latency_avg);
 
 		if(talker){
-			UB_CONSOLE_PRINT("[TX] Rp#%d Mbps(period=%f, total=%f)\n",
-							 ++avtptcd->report_counter, prate, rate);
+			UB_CONSOLE_PRINT("[TX %s] Rp#%d Mbps(period=%f, total=%f)\n",
+							 avtptcd->sid, ++avtptcd->report_counter, prate, rate);
 		}else{
 			if(avtptcd->report_counter==0){
 				UB_CONSOLE_PRINT("[RX] ReportNumber# Mbps(period, total) "
 								 "DelayUsec(min, average, max) "
 								 "Packets(Received, Error, Lost)---------\n");
 			}
-			UB_CONSOLE_PRINT("[RX] Rp#%d Mbps(%f, %f) Delay(%d, %d, %d) "
+			UB_CONSOLE_PRINT("[RX %s] Rp#%d Mbps(%f, %f) Delay(%d, %d, %d) "
 							 "Pkt(%"PRIu64", %"PRIu64", %"PRIu64")\n",
+							 avtptcd->sid,
 							 ++avtptcd->report_counter,
 							 prate, rate,
 							 (int)(avtptcd->rate_reporter.latency_min/1000),

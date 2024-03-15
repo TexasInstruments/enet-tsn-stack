@@ -460,7 +460,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 					     (avtpc_acf_message_type_t)msgfl->msg_type))/4);
 	switch(msgfl->msg_type){
 	case AVTPC_ACF_FLEXRAY:
-		acfmsg->u.flexray.payload0=msgfl->payload;
+		acfmsg->u.flexray.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.flexray.mtv_busid=
 			flexray_mtv_set_bit_field(acfmsg->u.flexray.mtv_busid,
 						  msgfl->u.flexray.mtv);
@@ -489,7 +489,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 			acfmsg->u.flexray.cycle, msgfl->u.flexray.cycle);
 		break;
 	case AVTPC_ACF_CAN:
-		acfmsg->u.can.payload0=msgfl->payload;
+		acfmsg->u.can.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.can.mtv_rtr_eff_brs_fdf_esi=
 			can_mtv_set_bit_field(acfmsg->u.can.mtv_rtr_eff_brs_fdf_esi,
 					      msgfl->u.can.mtv);
@@ -515,7 +515,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 			can_canid_set_bit_field(acfmsg->u.can.canid, msgfl->u.can.canid);
 		break;
 	case AVTPC_ACF_ABCAN:
-		acfmsg->u.abcan.payload0=msgfl->payload;
+		acfmsg->u.abcan.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.abcan.mtv_rtr_eff_brs_fdf_esi=
 			abcan_mtv_set_bit_field(acfmsg->u.abcan.mtv_rtr_eff_brs_fdf_esi,
 						msgfl->u.abcan.mtv);
@@ -540,7 +540,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 			abcan_canid_set_bit_field(acfmsg->u.abcan.canid, msgfl->u.abcan.canid);
 		break;
 	case AVTPC_ACF_LIN:
-		acfmsg->u.lin.payload0=msgfl->payload;
+		acfmsg->u.lin.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.lin.mtv_busid=
 			lin_mtv_set_bit_field(acfmsg->u.lin.mtv_busid, msgfl->u.lin.mtv);
 		acfmsg->u.lin.mtv_busid=
@@ -549,7 +549,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 		memcpy(acfmsg->u.lin.msg_ts, msgfl->u.lin.msg_ts, 8);
 		break;
 	case AVTPC_ACF_MOST:
-		acfmsg->u.most.payload0=msgfl->payload;
+		acfmsg->u.most.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.most.mtv_mostid=
 			most_mtv_set_bit_field(acfmsg->u.most.mtv_mostid, msgfl->u.most.mtv);
 		acfmsg->u.most.mtv_mostid=
@@ -566,11 +566,11 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 						  msgfl->u.most.optype);
 		break;
 	case AVTPC_ACF_GPC:
-		acfmsg->u.gpc.payload0=msgfl->payload;
+		acfmsg->u.gpc.payload0=(uint8_t*)msgfl->payload;
 		memcpy(acfmsg->u.gpc.msg_id, msgfl->u.gpc.msg_id, 6);
 		break;
 	case AVTPC_ACF_SERIAL:
-		acfmsg->u.serial.payload0=msgfl->payload;
+		acfmsg->u.serial.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.serial.dcd_dtr_dsr_rts_cts_ri=
 			serial_dcd_set_bit_field(acfmsg->u.serial.dcd_dtr_dsr_rts_cts_ri,
 						 msgfl->u.serial.dcd);
@@ -591,11 +591,11 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 						msgfl->u.serial.ri);
 		break;
 	case AVTPC_ACF_PARALLEL:
-		acfmsg->u.parallel.payload0=msgfl->payload;
+		acfmsg->u.parallel.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.parallel.bwidth=msgfl->u.parallel.bwidth;
 		break;
 	case AVTPC_ACF_SENSOR:
-		acfmsg->u.sensor.payload0=msgfl->payload;
+		acfmsg->u.sensor.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.sensor.mtv_nums=
 			sensor_mtv_set_bit_field(acfmsg->u.sensor.mtv_nums, msgfl->u.sensor.mtv);
 		acfmsg->u.sensor.mtv_nums=
@@ -608,7 +608,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 		memcpy(acfmsg->u.sensor.msg_ts, msgfl->u.sensor.msg_ts, 8);
 		break;
 	case AVTPC_ACF_ABSENSOR:
-		acfmsg->u.absensor.payload0=msgfl->payload;
+		acfmsg->u.absensor.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.absensor.nums=
 			absensor_nums_set_bit_field(acfmsg->u.absensor.nums,
 						    msgfl->u.absensor.nums);
@@ -620,10 +620,10 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 						      msgfl->u.absensor.sgroup);
 		break;
 	case AVTPC_ACF_AECP:
-		acfmsg->u.aecp.payload0=msgfl->payload;
+		acfmsg->u.aecp.payload0=(uint8_t*)msgfl->payload;
 		break;
 	case AVTPC_ACF_ANCILLARY:
-		acfmsg->u.ancillary.payload0=msgfl->payload;
+		acfmsg->u.ancillary.payload0=(uint8_t*)msgfl->payload;
 		acfmsg->u.ancillary.mode_fp_lp=
 			ancillary_mode_set_bit_field(acfmsg->u.ancillary.mode_fp_lp,
 						     msgfl->u.ancillary.mode);
@@ -645,7 +645,7 @@ static int acf_compose_one_field(avtpc_acf_msg_field_t *msgfl, acf_msg_field_t *
 	case AVTPC_ACF_USER5:
 	case AVTPC_ACF_USER6:
 	case AVTPC_ACF_USER7:
-		acfmsg->u.user.payload0=msgfl->payload;
+		acfmsg->u.user.payload0=(uint8_t*)msgfl->payload;
 		break;
 	default:
 		UB_LOG(UBL_ERROR, "%s:unknown msg_type=%d\n", __func__, msgfl->msg_type);

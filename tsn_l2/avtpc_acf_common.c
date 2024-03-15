@@ -149,7 +149,7 @@ void avtpc_acf_print_msg_field(avtpc_acf_msg_field_t *msgf)
 	case AVTPC_ACF_USER6:
 	case AVTPC_ACF_USER7:
 		UB_CONSOLE_PRINT("pl_length=%d\n", msgf->pl_length);
-		ub_hexdump(true, true, msgf->payload, msgf->pl_length, 0);
+		ub_hexdump(true, true, (unsigned char *)msgf->payload, msgf->pl_length, 0);
 		break;
 	default:
 		break;

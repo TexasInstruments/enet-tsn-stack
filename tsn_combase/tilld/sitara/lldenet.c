@@ -55,7 +55,7 @@
 #include "combase_private.h"
 #include "lldenetext.h"
 
-extern int32_t EnetApp_filterPritorityPacketsCfg(Enet_Handle hEnet, uint32_t coreId);
+extern int32_t EnetApp_filterPriorityPacketsCfg(Enet_Handle hEnet, uint32_t coreId);
 extern int32_t EnetApp_applyClassifier(Enet_Handle hEnet, uint32_t coreId, uint8_t *dstMacAddr, uint32_t vlanId,
 										uint32_t ethType, uint32_t rxFlowIdx);
 
@@ -380,7 +380,7 @@ int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
 	}
 	else
 	{
-		status = EnetApp_filterPritorityPacketsCfg(hLLDEnet->hEnet, hLLDEnet->coreId);
+		status = EnetApp_filterPriorityPacketsCfg(hLLDEnet->hEnet, hLLDEnet->coreId);
 	}
 
 	if (status != ENET_SOK) {
@@ -752,7 +752,7 @@ static int LLDEnetRecvSubRxGen(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame,
 		}
 		tmpFrame.rxts = pktBuf.rxts;
 		tmpFrame.size = pktBuf.size;
-		tmpFrame.buf = pktBuf.buf;
+		tmpFrame.buf = (uint8_t*)pktBuf.buf;
 		tmpFrame.port = pktBuf.port;
 
 		LLDEnetRecvCb(&tmpFrame, cbArg);
@@ -1017,6 +1017,7 @@ int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
 void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[],
                                         int nPorts, uint8_t priority)
 {
+#if (ENET_ENABLE_PER_ICSSG == 1)
 #if ENET_CFG_IS_ON(CPSW_EST)
 
 	Enet_IoctlPrms prms;
@@ -1059,7 +1060,7 @@ void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[]
 	memset(&prioMap, 0, sizeof(EnetPort_PriorityMap));
 	memset(&inArgs, 0, sizeof(EnetMacPort_GenericInArgs));
 	for (i = 0; i < nPorts; i++) {
-		inArgs.macPort = macPorts[i];
+		inArgs.macPort = (Enet_MacPort)macPorts[i];
 		ENET_IOCTL_SET_INOUT_ARGS(&prms, &inArgs, &prioMap);
 		ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
 			   ENET_MACPORT_IOCTL_GET_EGRESS_QOS_PRI_MAP, &prms, status);
@@ -1073,7 +1074,7 @@ void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[]
 			macPortPrioMap.priorityMap.priorityMap[j] = prioMap.priorityMap[j];
 		}
 		macPortPrioMap.priorityMap.priorityMap[priority] = priority;
-		macPortPrioMap.macPort = macPorts[i];
+		macPortPrioMap.macPort = (Enet_MacPort)macPorts[i];
 		ENET_IOCTL_SET_IN_ARGS(&prms, &macPortPrioMap);
 		ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
 			   ENET_MACPORT_IOCTL_SET_EGRESS_QOS_PRI_MAP, &prms, status);
@@ -1084,14 +1085,14 @@ void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[]
 		}
 	}
 #endif // ENET_CFG_IS_ON(CPSW_EST)
-
+#endif // (ENET_ENABLE_PER_ICSSG == 1)
 }
 
 int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 				 cbl_cbs_params_t *cbsprm)
 {
 	int32_t status = LLDENET_E_UNSUPPORT;
-
+#if (ENET_ENABLE_PER_ICSSG == 1)
 #if ENET_CFG_IS_ON(CPSW_MACPORT_TRAFFIC_SHAPING)
 
 	Enet_IoctlPrms prms;
@@ -1133,6 +1134,6 @@ int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 	}
 
 #endif // CPSW_MACPORT_TRAFFIC_SHAPING
-
+#endif // #if (ENET_ENABLE_PER_ICSSG == 1)
 	return status;
 }

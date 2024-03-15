@@ -1186,7 +1186,7 @@ typedef char* (*leaflist_replace_t)(char *cvalue, uint32_t cvsize,
 
 static int nextwordlen(const char *data)
 {
-	char *astr;
+	const char *astr;
 	int a=-1,b=-1;
 	astr=strchr(data, ',');
 	if(astr!=NULL){a=(astr-data);}

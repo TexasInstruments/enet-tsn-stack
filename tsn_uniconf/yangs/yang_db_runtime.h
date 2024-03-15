@@ -161,7 +161,6 @@ int yang_db_runtime_getvkstr(uc_dbald *dbald,
 /**
  * @brief wait witem,
  *	if waitv!=NULL wait unitl the value matches. if waitv==NULL wait appearance of witem.
- * @param ydrd yang_db_runtime_dataq_t
  * @return return 0:got the waitv, 1:timed out, -1:error
  */
 int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
