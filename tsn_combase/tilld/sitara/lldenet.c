@@ -1017,9 +1017,8 @@ int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
 void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[],
                                         int nPorts, uint8_t priority)
 {
-#if (ENET_ENABLE_PER_ICSSG == 1)
+#if ENET_ENABLE_PER_CPSW
 #if ENET_CFG_IS_ON(CPSW_EST)
-
 	Enet_IoctlPrms prms;
 	EnetMacPort_GenericInArgs inArgs;
 	EnetMacPort_SetEgressPriorityMapInArgs macPortPrioMap;
@@ -1085,14 +1084,15 @@ void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[]
 		}
 	}
 #endif // ENET_CFG_IS_ON(CPSW_EST)
-#endif // (ENET_ENABLE_PER_ICSSG == 1)
+#endif // #if ENET_ENABLE_PER_CPSW
 }
 
 int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 				 cbl_cbs_params_t *cbsprm)
 {
+
 	int32_t status = LLDENET_E_UNSUPPORT;
-#if (ENET_ENABLE_PER_ICSSG == 1)
+#if ENET_ENABLE_PER_CPSW
 #if ENET_CFG_IS_ON(CPSW_MACPORT_TRAFFIC_SHAPING)
 
 	Enet_IoctlPrms prms;
@@ -1134,6 +1134,6 @@ int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 	}
 
 #endif // CPSW_MACPORT_TRAFFIC_SHAPING
-#endif // #if (ENET_ENABLE_PER_ICSSG == 1)
+#endif // #if ENET_ENABLE_PER_CPSW
 	return status;
 }

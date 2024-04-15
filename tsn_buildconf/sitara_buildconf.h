@@ -58,11 +58,6 @@
 #define UB_ESARRAY_DFNUM 256
 
 #define CB_NOIPCSHMEM_DFSIZE 32
-#define ENABLE_EST_DEMO 0
-#if (ENABLE_EST_DEMO == 1)
-#define CB_NOIPCSHMEM_DFNUM 200 /* To support avtp RX 40Mbps */
-#define CB_NOIPCSHMEM_DFSIZE 1024
-#endif
 
 #define SIMPLEDB_DBDATANUM 1600
 
