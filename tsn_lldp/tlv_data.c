@@ -623,7 +623,14 @@ static LLDP_RX_TYPE collect_other_tlv_infos(uint8_t* buf, int read_index, remote
 						remote_unknown_tlv_t* unknown_tlv = init_rm_unknown_tlv();
 						memset(unknown_tlv, 0, sizeof(remote_unknown_tlv_t));
 						unknown_tlv->tlv_type = tlv_type;
-						memcpy(unknown_tlv->tlv_info, &buf[read_index+2], tlv_length);
+						if (tlv_length <= MAX_RM_UNKNOWN_TLV_INFO_LEN)
+						{
+							memcpy(unknown_tlv->tlv_info, &buf[read_index+2], tlv_length);
+						}
+						else
+						{
+							UB_LOG(UBL_WARN, "%s: Unknown TLV (%d) Length too big (%d > max %d byte), ignored content!\n", __func__, tlv_type, tlv_length, MAX_RM_UNKNOWN_TLV_INFO_LEN);
+						}
 
 						if(ub_list_count(&neighbor_info->remote_unknown_tlv) == 0) ub_list_init(&neighbor_info->remote_unknown_tlv);
 						ub_list_append(&neighbor_info->remote_unknown_tlv,  (struct ub_list_node*)unknown_tlv);

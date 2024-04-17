@@ -266,14 +266,14 @@ int LLDEnetTasSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort,
 	noe = (ctsp->entries != NULL)? ub_esarray_ele_nums(ctsp->entries) : 0;
 	adminListInArgs.adminList.listLength = noe;
 	for (i = 0; i < noe; i++) {
+		if (i == ENET_TAS_MAX_CMD_LISTS) {
+			adminListInArgs.adminList.listLength = ENET_TAS_MAX_CMD_LISTS;
+			break;
+		}
 		entry = (cbl_tas_gate_cmd_entry_t *)ub_esarray_get_ele(ctsp->entries, i);
 		if (entry) {
 			adminListInArgs.adminList.gateCmdList[i].timeInterval = entry->interval;
 			adminListInArgs.adminList.gateCmdList[i].gateStateMask = entry->gate;
-		}
-		if (i == ENET_TAS_MAX_CMD_LISTS) {
-			adminListInArgs.adminList.listLength = ENET_TAS_MAX_CMD_LISTS;
-			break;
 		}
 	}
 	if (ctsp->extp) {
