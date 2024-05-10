@@ -1096,8 +1096,7 @@ int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 #if ENET_CFG_IS_ON(CPSW_MACPORT_TRAFFIC_SHAPING)
 
 	Enet_IoctlPrms prms;
-	EnetPort_CreditBasedShapingCfg cbsCfg;
-	EnetMacPort_CreditBasedShaperInArgs cbsArgs;
+	EnetMacPort_SetCreditBasedShaperInArgs cbsArgs;
 
 	/* There are only `ENET_PRI_MAX` HW queues in TI platform */
 	if (cbsprm->qindex > ENET_PRI_MAX) {
@@ -1105,24 +1104,11 @@ int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 		       __func__, cbsprm->qindex);
 		return LLDENET_E_PARAM;
 	}
-	if (port == 0xFF) {
-		memset(&cbsCfg, 0, sizeof(cbsCfg));
-		cbsCfg.idleSlope[cbsprm->qindex] = cbsprm->idleslope;
-		ENET_IOCTL_SET_IN_ARGS(&prms, &cbsCfg);
-		ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
-			   ENET_HOSTPORT_IOCTL_SET_CREDIT_BASED_SHAPING,
-			   &prms, status);
-		if (status != ENET_SOK) {
-			UB_LOG(UBL_ERROR, "%s, Failed to set CBS for host port, queue: %d \n",
-			       __func__, cbsprm->qindex);
-			return LLDENET_E_FAILURE;
-		}
-		return LLDENET_E_OK;
-	}
 
 	memset(&cbsArgs, 0, sizeof(cbsArgs));
 	cbsArgs.macPort = (Enet_MacPort)port;
-	cbsArgs.cbsCfg.idleSlope[cbsprm->qindex] = cbsprm->idleslope;
+	cbsArgs.cbsCfg.idleSlope = cbsprm->idleslope;
+	cbsArgs.cbsCfg.queueNum = cbsprm->qindex;
 	ENET_IOCTL_SET_IN_ARGS(&prms, &cbsArgs);
 	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
 		   ENET_MACPORT_IOCTL_SET_CREDIT_BASED_SHAPING,
