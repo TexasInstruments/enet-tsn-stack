@@ -58,14 +58,14 @@
 #define CB_LLD_ETHERNET_H
 
 #include <sys/types.h>
-#include <errno.h>
 #include "lldenet.h"
 #include "lldtsync.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// To prevent dupplicated declaration of below APIs
+#define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS
 #ifndef htons
 #define htons __htons
 #endif
@@ -84,9 +84,9 @@ extern "C" {
 #define CB_SOCKET_VALID(x) ((x)!=NULL)
 #define CB_SOCKET_INVALID_VALUE NULL
 #define CB_SOCKET_T lld_socket_t*
-#define CB_ETHHDR_T struct ethhdr
-#define CB_SOCKADDR_LL_T struct sockaddr
-#define CB_SOCKADDR_T struct sockaddr
+#define CB_ETHHDR_T struct lld_ethhdr
+#define CB_SOCKADDR_LL_T struct lld_sockaddr
+#define CB_SOCKADDR_T struct lld_sockaddr
 #define CB_SOCK_SENDTO cb_lld_sendto
 #define CB_SOCK_CLOSE cb_rawsock_close
 
@@ -96,10 +96,6 @@ extern "C" {
 
 /* does not support */
 #define CB_IN_ADDR_T void*
-
-#ifndef IFNAMSIZ
-#define IFNAMSIZ		16
-#endif
 
 #define ETH_ALEN		6		/* Octets in one ethernet addr	 */
 #define ETH_HLEN		14		/* Total octets in header.	 */
@@ -111,7 +107,7 @@ extern "C" {
 #define ETH_P_TSN		0x22F0	/* TSN (IEEE 1722) packet	*/
 #define ETH_P_NETLINK		0x22F1  /* A virtual prototol for netlink rawsockt on TI platforms */
 
-#define CB_MAX_NETDEVNAME IFNAMSIZ
+#define CB_MAX_NETDEVNAME 16
 
 #define MKPIPE(x)		(-1)
 
@@ -120,7 +116,7 @@ extern "C" {
 /**
  * @brief Ethernet header structure.
  */
-struct ethhdr {
+struct lld_ethhdr {
 	/**
 	 * Destination Ethernet address.
 	 */
@@ -138,7 +134,7 @@ struct ethhdr {
 /**
  * @brief Structure representing the lld_sockaddr instance.
  */
-struct sockaddr {
+struct lld_sockaddr {
 	/**
 	 * Source MAC address of the socket.
 	 */

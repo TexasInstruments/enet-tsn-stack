@@ -417,14 +417,14 @@ static int provide_rxframe(gptpnet_data_t *gpnet, uint8_t *buf,
 	int res;
 	int ndev_index;
 
-	if (size <= sizeof(struct ethhdr)) {
+	if (size <= sizeof(struct lld_ethhdr)) {
 		UB_LOG(UBL_ERROR,"%s:macport=%d, pkt size too small\n",
 			   __func__, macport);
 		return -1;
 	}
 	/* The VLAN tag will be stripped if it is presented */
 	if(ntohs(*(uint16_t *)(buf + 12))==ETH_P_8021Q){
-		struct ethhdr ehdr;
+		struct lld_ethhdr ehdr;
 		memcpy((void *)&ehdr, (void *)buf, ETH_ALEN*2);
 		buf += 4;
 		size -= 4;

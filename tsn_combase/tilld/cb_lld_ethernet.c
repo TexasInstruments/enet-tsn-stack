@@ -300,7 +300,7 @@ int cb_rawsock_open(cb_rawsock_paras_t *llrawp, CB_SOCKET_T *fd, CB_SOCKADDR_LL_
 			   __func__);
 		goto error;
 	}
-	strncpy(sock->devname, llrawp->dev, IFNAMSIZ-1);
+	strncpy(sock->devname, llrawp->dev, CB_MAX_NETDEVNAME-1);
 	if (addr != NULL) {
 		memcpy(addr->sll_addr, bmac, ETH_ALEN);
 		addr->macport = cb_lld_netdev_to_macport((char *)llrawp->dev);
@@ -508,7 +508,7 @@ static int lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 		if ((ethdevs[i].netdev == NULL) || (ethdevs[i].netdev[0] == 0)) {
 			continue;
 		}
-		strncpy(s_ndevmap_table[i].netdev, ethdevs[i].netdev, IFNAMSIZ-1);
+		strncpy(s_ndevmap_table[i].netdev, ethdevs[i].netdev, CB_MAX_NETDEVNAME-1);
 		s_ndevmap_table[i].macport = ethdevs[i].macport;
 		memcpy(s_ndevmap_table[i].srcmac, ethdevs[i].srcmac, ETH_ALEN);
 		UB_LOG(UBL_INFO,"%s: has mac: "UB_PRIhexB6"\n",
