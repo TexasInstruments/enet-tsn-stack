@@ -1,5 +1,4 @@
 internal_docs/
-tools/
 tsn_combase/cb_crc.c
 tsn_combase/cb_crc.h
 tsn_combase/cb_ethernet.c
@@ -19,3 +18,4 @@ tsn_uniconf/lmdb_ucbind.c
 tsn_uniconf/ucman_posix.c
 tsn_uniconf/uc_notice_posix.c
 tsn_uniconf/uniconf.c
+eval_src/
