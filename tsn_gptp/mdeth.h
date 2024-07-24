@@ -197,14 +197,30 @@ typedef struct MDPTPMsgAnnounce {
 	ClockIdentity pathSequence[MAX_PATH_TRACE_N];
 } __attribute__((packed)) MDPTPMsgAnnounce;
 
-// 10.6.4.3 Message interval request TLV definition, reformat to MD
-typedef struct MDPTPMsgIntervalRequestTLV {
-	MDPTPMsgHeader head;
-	MDPortIdentity targetPortIdentity;
+
+// 10.6.4 Message interval request TLV, gPTP-capable TLV and gPTP-capable interval 
+// request has same tlvType, lengthField, organizationId and organizationSubType_nb
+typedef enum
+{
+	SINALING_MSG_INTERVAL_REQ=0,
+	SINALING_GPTP_CAPABLE,
+	SINALING_GPTP_CAPABLE_INTERVAL_REQ,
+	SIGNALING_GPTP_NOT_SUPPORTED
+} gPTPSignalingMsgType;
+
+typedef struct PTPSignalingMsgCommonHeader
+{
 	uint16_t tlvType_ns;
 	uint16_t lengthField_ns;
 	uint8_t organizationId[3];
 	uint8_t organizationSubType_nb[3];
+} __attribute__((packed)) PTPSignalingMsgCommonHeader;
+
+// 10.6.4.3 Message interval request TLV definition, reformat to MD
+typedef struct MDPTPMsgIntervalRequestTLV {
+	MDPTPMsgHeader head;
+	MDPortIdentity targetPortIdentity;
+	PTPSignalingMsgCommonHeader signalingMsgHdr;
 	int8_t linkDelayInterval;
 	int8_t timeSyncInterval;
 	int8_t announceInterval;
@@ -216,15 +232,20 @@ typedef struct MDPTPMsgIntervalRequestTLV {
 typedef struct MDPTPMsgGPTPCapableTLV {
 	MDPTPMsgHeader head;
 	MDPortIdentity targetPortIdentity;
-	uint16_t tlvType_ns;
-	uint16_t lengthField_ns;
-	uint8_t organizationId[3];
-	uint8_t organizationSubType_nb[3];
+	PTPSignalingMsgCommonHeader signalingMsgHdr;
 	uint8_t logGptpCapableMessageInterval;
 	uint8_t flags;
 	uint8_t reserved[4];
 } __attribute__((packed)) MDPTPMsgGPTPCapableTLV;
 
+// 10.6.4.5 gPTP-capable message interval request TLV definition
+typedef struct MDPTPMsgGPTPCapableIntervalRequestTLV {
+	MDPTPMsgHeader head;
+	MDPortIdentity targetPortIdentity;
+	PTPSignalingMsgCommonHeader signalingMsgHdr;
+	uint8_t logGptpCapableMessageInterval;
+	uint8_t reserved[3];
+} __attribute__((packed)) MDPTPMsgGPTPCapableIntervalRequestTLV;
 
 /************************************************
   data types from the 802.1AS-Rev

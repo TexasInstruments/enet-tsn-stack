@@ -127,20 +127,25 @@ static void *set_interval_proc(link_delay_interval_setting_data_t *sm)
 	UB_LOG(UBL_DEBUGV, "link_delay_interval_setting:%s:portIndex=%d\n",
 	       __func__, sm->portIndex);
 
-	switch (RCVD_SIGNALING_PTR->linkDelayInterval) {
-	case (-128): /* don't change the interval */
-		break;
-	case 126: /* set interval to initial value */
-		CURRENT_LOG_PDELAY_REQ_INTERVAL = INITIAL_LOG_PDELAY_REQ_INTERVAL;
-		sm->mdeg->forAllDomain->pdelayReqInterval.nsec =
-			LOG_TO_NSEC(INITIAL_LOG_PDELAY_REQ_INTERVAL);
-		break;
-	default: /* use indicated value; note that the value of 127 instructs the Pdelay
-		  * requester to stop sending, in accordance with Table 10-12. */
-		sm->mdeg->forAllDomain->pdelayReqInterval.nsec =
-			LOG_TO_NSEC(RCVD_SIGNALING_PTR->linkDelayInterval);
-		CURRENT_LOG_PDELAY_REQ_INTERVAL = RCVD_SIGNALING_PTR ->linkDelayInterval;
-		break;
+	// Table 10-15 Interpretation of special values of logLinkDelayInterval
+	// All values in the ranges [-127, -25] and [25, 125] are reserved.
+	if (!LOG_INTERVAL_IN_RESERVED_RANGE(RCVD_SIGNALING_PTR->linkDelayInterval))
+	{
+		switch (RCVD_SIGNALING_PTR->linkDelayInterval) {
+		case (-128): /* don't change the interval */
+			break;
+		case 126: /* set interval to initial value */
+			CURRENT_LOG_PDELAY_REQ_INTERVAL = INITIAL_LOG_PDELAY_REQ_INTERVAL;
+			sm->mdeg->forAllDomain->pdelayReqInterval.nsec =
+				LOG_TO_NSEC(INITIAL_LOG_PDELAY_REQ_INTERVAL);
+			break;
+		default: /* use indicated value; note that the value of 127 instructs the Pdelay
+			* requester to stop sending, in accordance with Table 10-12. */
+			sm->mdeg->forAllDomain->pdelayReqInterval.nsec =
+				LOG_TO_NSEC(RCVD_SIGNALING_PTR->linkDelayInterval);
+			CURRENT_LOG_PDELAY_REQ_INTERVAL = RCVD_SIGNALING_PTR ->linkDelayInterval;
+			break;
+		}
 	}
 	sm->ppg->forAllDomain->computeNeighborRateRatio=
 		GET_FLAG_BIT(RCVD_SIGNALING_PTR->flags,

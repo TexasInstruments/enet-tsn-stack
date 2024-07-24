@@ -70,7 +70,7 @@
 
 #define ALIGN_TIME(x, a) ((((x)+((a)/2))/(a))*(a))
 #define GPTP_ALIGN_TIME(x) ALIGN_TIME(x, GPTPNET_INTERVAL_GRANULARITY_NSEC)
-
+#define LOG_INTERVAL_IN_RESERVED_RANGE(v) ( (v>=-127 && v<=-25) || (v>=25 && v<=125))
 /*==============Static memory configuration==============*/
 /* The memory size increase when number of instances/ports/domains are increased.
  * Since the memory for small and medium are hard to estimate exactly,

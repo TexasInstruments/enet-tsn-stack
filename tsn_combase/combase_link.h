@@ -108,6 +108,9 @@ typedef struct cbl_cb_event{
 #define CBL_EVENT_TAS_ENABLED (1<<7)
 #define CBL_EVENT_TAS_DISABLED (1<<8)
 #define CBL_EVENT_PREEMPT_STATUS (1<<9)
+#define CBL_EVENT_BRIDGE_SUCCESS (1<<10)
+#define CBL_EVENT_BRIDGE_FAIL (1<<11)
+#define CBL_EVENT_MASTER (1<<12)
 
 enum {
 	CBL_CAPABILITY_ETHSTATUS=0,
@@ -308,5 +311,53 @@ int cbl_tas_setup(combase_link_data_t *cbld, cbl_tas_sched_params_t *ctsp);
  */
 int cbl_preempt_setup(combase_link_data_t *cbld, cbl_preempt_params_t *cpemp,
 		      cbl_cb_event_t *nevent);
+
+
+/**
+ * @brief create and initialize a bridge. If it already exists use the existing one
+ * @param cbld combase_link_data
+ * @param bridgename	bridge name
+ * @param ports	number of ports on the bridge
+ * @param port_names	port interface name, 'ports' number of null terminated strings
+ * @return -1:error, 0:success, 1:completed
+ */
+int cbl_bridge_open(combase_link_data_t *cbld, const char *bridgename,
+		    uint16_t ports, const char *port_names);
+
+/**
+ * @brief set up a bridge
+ * @param cbld combase_link_data
+ * @param bridgename	bridge name
+ * @return -1:error, 0:success, 1:completed
+ */
+int cbl_bridge_close(combase_link_data_t *cbld, const char *bridgename);
+
+/**
+ * @brief set up a bridge
+ * @param cbld combase_link_data
+ * @param bridgename	bridge name
+ * @param port_ref	index(start with '1') of 'port_names' in 'cbl_bridge_open'
+ * @param vid1	VLAN ID to start
+ * @param vid2	VLAN ID to end
+ * @param reg	true:register, false:deregister
+ * @return -1:error, 0:success
+ */
+int cbl_bridge_set_vlan(combase_link_data_t *cbld, const char *bridgename,
+			int port_ref, uint16_t vid1, uint16_t vid2, bool reg);
+
+/**
+ * @brief set up forwarding from ingress port to egress port
+ * @param cbld combase_link_data
+ * @param bridgename	bridge name
+ * @param iport_ref	ingress port index(start with '1')
+ * @param eport_ref	egress prot index(start with '1')
+ * @param destmac	detination mac address
+ * @param priority	priority(0 to 7)
+ * @param reg	true:register, false:deregister
+ * @return -1:error, 0:success
+ */
+int cbl_bridge_set_forwarding(combase_link_data_t *cbld, const char *bridgename,
+			      int iport_ref, int eport_ref, ub_macaddr_t destmac,
+			      uint8_t priority, bool reg);
 
 #endif

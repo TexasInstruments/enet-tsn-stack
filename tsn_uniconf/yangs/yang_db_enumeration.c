@@ -259,6 +259,18 @@ const yang_enumeration_map_t gmstate[] = {
 };
 const uint32_t gmstate_num = sizeof(gmstate)/sizeof(gmstate[0]);
 
+const yang_enumeration_map_t transport_status[] = {
+    { "xl4nconf", "offline" },
+    { "xl4nconf", "online"  }
+};
+const uint32_t transport_status_num = sizeof(transport_status)/sizeof(transport_status[0]);
+
+const yang_enumeration_map_t ipc_type[] = {
+    { "xl4nconf", "local-tcp"           },
+    { "xl4nconf", "unix-domain-socket"  }
+};
+const uint32_t ipc_type_num = sizeof(ipc_type)/sizeof(ipc_type[0]);
+
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
  *----------------------------------------------------------------------------*/
@@ -284,6 +296,8 @@ const yang_enumeration_str_map_t yang_enumeration_str_map_list[] = {
     { conformance_type,         conformance_type_num,        "conformance-type"   },
     { netconf_datastore_type,   netconf_datastore_type_num,  "datastore"          },
     { gmstate,                  gmstate_num,                 "gmstate"            },
+    { transport_status,         transport_status_num,        "transport-status"   },
+    { ipc_type,                 ipc_type_num,                "ipc-type"           },
     { NULL,                     0,                           NULL                 }
 };
 

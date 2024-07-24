@@ -55,9 +55,19 @@
 #include "yangs/yang_modules.h"
 #include "uniconfmon_thread.h"
 #include "yangs/yang_node.h"
+#ifndef NO_YANG_CORES
+#include "yangs/ieee802-dot1q-bridge_access.h"
+#endif
 
 extern int yang_config_init(uc_dbald *dbald, uc_hwald *hwald);
 extern int yang_nconf_config_init(uc_dbald *dbald);
+
+static void ucman_builtin_close(uc_dbald *dbald, uc_hwald *hwald)
+{
+#ifndef NO_YANG_CORES
+	qb_builtin_close(dbald, hwald);
+#endif
+}
 
 void *uniconf_main(void *ptr)
 {
@@ -95,6 +105,11 @@ void *uniconf_main(void *ptr)
 
 	if(yang_config_init(ucd.dbald, ucd.hwald)!=0){goto erexit;}
 	if(yang_nconf_config_init(ucd.dbald)!=0){goto erexit;}
+
+	ucd.ucntd=uc_notice_init(ucmd->ucmode, ucmd->dbname);
+	if(!ucd.ucntd){goto erexit;}
+	ydbi_access_init(ucd.dbald, ucd.ucntd);
+
 	ydrd=UC_RUNCONF_INIT(ucd.dbald, ucd.hwald);
 	if(!ydrd){goto erexit;}
 	for(i=0;i<ucmd->numconfigfile;i++){
@@ -106,10 +121,6 @@ void *uniconf_main(void *ptr)
 	}
 	if(ydrd!=NULL){UC_RUNCONF_CLOSE(ydrd);}
 
-	ucd.ucntd=uc_notice_init(ucmd->ucmode, ucmd->dbname);
-	if(!ucd.ucntd){goto erexit;}
-	if(uc_notice_start_events_thread(ucd.ucntd, ucd.hwald)!=0){goto erexit;}
-	ydbi_access_init(ucd.dbald, ucd.ucntd);
 	uc_dbal_releasedb(ucd.dbald);
 	if(ucmd->ucmanstart!=NULL){
 		(void)uc_notice_sig_post(UC_CALL_THREAD(ucmd->ucmode), ucmd->ucmanstart);
@@ -120,6 +131,7 @@ void *uniconf_main(void *ptr)
 	if(ucmd->ucmon_thread_port && (UC_CALL_THREAD(ucmd->ucmode)!=0)){
 		if(uniconfmon_thread_start(ucmd->ucmon_thread_port)!=0){goto erexit;}
 	}
+	if(uc_notice_start_events_thread(ucd.ucntd, ucd.hwald)!=0){goto erexit;}
 	while(!*ucmd->stoprun){
 		// 'uc_hwal_detect_notice' is called inside 'uc_nu_proc_asked_actions'
 		// this returns '2', when the DB should be saved
@@ -141,14 +153,17 @@ erexit:
 	if(ucmd->ucmon_thread_port && uniconfmon_thread_running()){
 		(void)uniconfmon_thread_stop();
 	}
-	if(ucd.dbald!=NULL){uc_dbal_del(ucd.dbald, uc_rap, 3);}
+	if(ucd.dbald!=NULL){
+		ucman_builtin_close(ucd.dbald, ucd.hwald);
+		uc_dbal_del(ucd.dbald, uc_rap, 3);
+	}
 	UB_TLOG(UBL_INFO, "%s:closing\n", __func__);
 	*ucmd->stoprun=true;
 	if(ucmd->ucmanstart!=NULL){
 		(void)uc_notice_sig_post(UC_CALL_THREAD(ucmd->ucmode), ucmd->ucmanstart);
 	}
-	if(ucd.ucntd!=NULL){uc_notice_close(ucd.ucntd, ucmd->ucmode);}
 	if(ucd.hwald!=NULL){uc_hwal_close(ucd.hwald);}
+	if(ucd.ucntd!=NULL){uc_notice_close(ucd.ucntd, ucmd->ucmode);}
 	if(ucd.dbald!=NULL){uc_dbal_close(ucd.dbald, ucmd->ucmode);}
 	ydbi_access_close();
 	return NULL;

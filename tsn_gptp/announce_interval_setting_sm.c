@@ -123,6 +123,10 @@ static void *set_intervals_proc(announce_interval_setting_data_t *sm)
 {
 	UB_LOG(UBL_DEBUGV, "announce_interval_setting:%s:domainIndex=%d, portIndex=%d\n",
 		__func__, sm->domainIndex, sm->portIndex);
+    // Table 10-17 Interpretation of special values of logAnnounceInterval
+    // All values in the ranges [-127, -25] and [25, 125] are reserved.
+    if (!LOG_INTERVAL_IN_RESERVED_RANGE(sm->thisSM->rcvdSignalingPtr->announceInterval))
+    {
         switch(sm->thisSM->rcvdSignalingPtr->announceInterval){
         case (-128): /* don't change the interval */
                 break;
@@ -135,12 +139,13 @@ static void *set_intervals_proc(announce_interval_setting_data_t *sm)
                 sm->bppg->currentLogAnnounceInterval = sm->thisSM->rcvdSignalingPtr->announceInterval;
                 break;
         }
-        sm->thisSM->rcvdSignalingMsg2 = false;
-        if(sm->bppg->announceInterval.nsec < sm->bppg->oldAnnounceInterval.nsec){
-                sm->bppg->announceSlowdown = true;
-        }else{
-                sm->bppg->announceSlowdown = false;
-        }
+    }
+    sm->thisSM->rcvdSignalingMsg2 = false;
+    if(sm->bppg->announceInterval.nsec < sm->bppg->oldAnnounceInterval.nsec){
+            sm->bppg->announceSlowdown = true;
+    }else{
+            sm->bppg->announceSlowdown = false;
+	}
 	return NULL;
 }
 

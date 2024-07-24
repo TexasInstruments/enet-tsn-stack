@@ -1,0 +1,116 @@
+module: ietf-interfaces
+  +--rw interfaces
+     +--rw interface* [name]
+        +--rw name                            string
+        +--rw enabled?                        boolean
+        +--ro oper-status                     enumeration
+        +--ro if-index                        int32 {if-mib}?
+        +--ro phys-address?                   yang:phys-address
+        +--ro speed?                          yang:gauge64
+        +--rw dot1q:bridge-port
+        |  +--rw dot1q:bridge-name?                              -> /bridges/bridge/name
+        |  +--rw dot1q:component-name?                           -> /bridges/bridge[dot1q:name=current()/../bridge-name]/component/name
+        |  +--rw dot1q:pvid?                                     dot1qtypes:vlan-index-type
+        |  +--rw dot1q:default-priority?                         dot1qtypes:priority-type
+        |  +--rw dot1q:priority-regeneration
+        |  |  +--rw dot1q:priority0?   priority-type
+        |  |  +--rw dot1q:priority1?   priority-type
+        |  |  +--rw dot1q:priority2?   priority-type
+        |  |  +--rw dot1q:priority3?   priority-type
+        |  |  +--rw dot1q:priority4?   priority-type
+        |  |  +--rw dot1q:priority5?   priority-type
+        |  |  +--rw dot1q:priority6?   priority-type
+        |  |  +--rw dot1q:priority7?   priority-type
+        |  +--rw dot1q:traffic-class
+        |  |  +--rw dot1q:traffic-class-table
+        |  |  |  +--rw dot1q:number-of-traffic-classes?   uint8
+        |  |  |  +--rw dot1q:priority0?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority1?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority2?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority3?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority4?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority5?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority6?                   traffic-class-type
+        |  |  |  +--rw dot1q:priority7?                   traffic-class-type
+        |  |  +--rw xl4if:tc-data* [tc]
+        |  |  |  +--rw xl4if:tc                       dot1qtypes:traffic-class-type
+        |  |  |  +--ro xl4if:lqueue?                  uint8
+        |  |  |  +--rw xl4if:admin-idleslope?         int64
+        |  |  |  +--ro xl4if:oper-idleslope?          int64
+        |  |  |  +--ro xl4if:max-interference-size?   uint32
+        |  |  |  +--ro xl4if:max-frame-size?          uint32
+        |  |  +--rw xl4if:cbs-enabled?           uint8
+        |  |  +--ro xl4if:number-of-pqueues?     uint8
+        |  |  +--ro xl4if:pqueue-map* [pqueue]
+        |  |     +--ro xl4if:pqueue    uint8
+        |  |     +--ro xl4if:lqueue?   int8
+        |  +--rw dot1q:transmission-selection-algorithm-table
+        |  |  +--rw dot1q:transmission-selection-algorithm-map* [traffic-class]
+        |  |     +--rw dot1q:traffic-class                       traffic-class-type
+        |  |     +--rw dot1q:transmission-selection-algorithm?   identityref
+        |  +--ro dot1q:address?                                  ieee:mac-address
+        |  +--rw sched-bridge:gate-parameter-table
+        |  |  +--rw sched-bridge:queue-max-sdu-table* [traffic-class]
+        |  |  |  +--rw sched-bridge:traffic-class           dot1q-types:traffic-class-type
+        |  |  |  +--rw sched-bridge:queue-max-sdu?          uint32
+        |  |  |  +--ro sched-bridge:transmission-overrun?   yang:counter64
+        |  |  +--rw sched-bridge:gate-enabled?                 boolean
+        |  |  +--rw sched-bridge:admin-gate-states?            uint8
+        |  |  +--ro sched-bridge:oper-gate-states?             uint8
+        |  |  +--rw sched-bridge:admin-control-list
+        |  |  |  +--rw sched-bridge:gate-control-entry* [index]
+        |  |  |     +--rw sched-bridge:index                  uint32
+        |  |  |     +--rw sched-bridge:operation-name         identityref
+        |  |  |     +--rw sched-bridge:time-interval-value?   uint32
+        |  |  |     +--rw sched-bridge:gate-states-value      uint8
+        |  |  +--ro sched-bridge:oper-control-list
+        |  |  |  +--ro sched-bridge:gate-control-entry* [index]
+        |  |  |     +--ro sched-bridge:index                  uint32
+        |  |  |     +--ro sched-bridge:operation-name         identityref
+        |  |  |     +--ro sched-bridge:time-interval-value?   uint32
+        |  |  |     +--ro sched-bridge:gate-states-value      uint8
+        |  |  +--rw sched-bridge:admin-cycle-time
+        |  |  |  +--rw sched-bridge:numerator?     uint32
+        |  |  |  +--rw sched-bridge:denominator?   uint32
+        |  |  +--ro sched-bridge:oper-cycle-time
+        |  |  |  +--ro sched-bridge:numerator?     uint32
+        |  |  |  +--ro sched-bridge:denominator?   uint32
+        |  |  +--rw sched-bridge:admin-cycle-time-extension?   uint32
+        |  |  +--ro sched-bridge:oper-cycle-time-extension?    uint32
+        |  |  +--rw sched-bridge:admin-base-time
+        |  |  |  +--rw sched-bridge:seconds?       uint64
+        |  |  |  +--rw sched-bridge:nanoseconds?   uint32
+        |  |  +--ro sched-bridge:oper-base-time
+        |  |  |  +--ro sched-bridge:seconds?       uint64
+        |  |  |  +--ro sched-bridge:nanoseconds?   uint32
+        |  |  +--rw sched-bridge:config-change?                boolean
+        |  |  +--ro sched-bridge:config-change-time
+        |  |  |  +--ro sched-bridge:seconds?       uint64
+        |  |  |  +--ro sched-bridge:nanoseconds?   uint32
+        |  |  +--ro sched-bridge:tick-granularity?             uint32
+        |  |  +--ro sched-bridge:current-time
+        |  |  |  +--ro sched-bridge:seconds?       uint64
+        |  |  |  +--ro sched-bridge:nanoseconds?   uint32
+        |  |  +--ro sched-bridge:config-pending?               boolean
+        |  |  +--ro sched-bridge:config-change-error?          yang:counter64
+        |  |  +--rw sched-bridge:supported-list-max?           uint32
+        |  |  +--rw sched-bridge:supported-cycle-max
+        |  |  |  +--rw sched-bridge:numerator?     uint32
+        |  |  |  +--rw sched-bridge:denominator?   uint32
+        |  |  +--rw sched-bridge:supported-interval-max?       uint32
+        |  +--rw preempt-bridge:frame-preemption-parameters {frame-preemption}?
+        |     +--rw preempt-bridge:frame-preemption-status-table
+        |     |  +--rw preempt-bridge:priority0?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority1?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority2?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority3?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority4?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority5?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority6?   frame-preemption-status-enum
+        |     |  +--rw preempt-bridge:priority7?   frame-preemption-status-enum
+        |     +--ro preempt-bridge:hold-advance?                    uint32
+        |     +--ro preempt-bridge:release-advance?                 uint32
+        |     +--ro preempt-bridge:preemption-active?               boolean
+        |     +--ro preempt-bridge:hold-request?                    enumeration
+        +--ro xl4if:duplex?                   enumeration
+        +--rw xl4if:discon-workaround-time?   uint32

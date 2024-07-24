@@ -441,7 +441,7 @@ int yang_db_leaflist_capupdate(uc_dbald *dbald, uc_hwald *hwald, yang_db_access_
  * @brief Extract a binary key data into 'ap' and 'kvs'
  * @param key	binary key data
  * @param kzie	size of the binary key data
- * @param ap	node key return pointer, allocated inside the function
+ * @param ap	node key return pointer, allocated inside the function. always terminated with 255.
  * @param kvs	value key return pointer array, each pointer is allocated inside the function.
 		the array area must be allocated by the caller
  * @param kss	value key size array.

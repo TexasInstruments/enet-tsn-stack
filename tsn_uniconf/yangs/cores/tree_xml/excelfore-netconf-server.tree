@@ -1,0 +1,25 @@
+module: excelfore-netconf-server
+  +--rw nconf-server
+     +--rw underlying-interface?   if:interface-ref
+     +--ro address?                inet:host
+     +--rw ssh
+     |  +--rw port?        inet:port-number
+     |  +--rw subsystem
+     |  |  +--rw ipc-type?      enumeration
+     |  |  +--rw tcp-port?      inet:port-number
+     |  |  +--rw socket-name?   string
+     |  +--ro status?      transport-status
+     +--rw tls
+     |  +--rw port?           inet:port-number
+     |  +--ro server-cert     string
+     |  +--ro server-key      string
+     |  +--ro ca-cert         string
+     |  +--rw cert-to-name* [id]
+     |  |  +--rw id             uint32
+     |  |  +--rw fingerprint    x509c2n:tls-fingerprint
+     |  |  +--rw map-type       identityref
+     |  |  +--rw name           string
+     |  +--ro status?         transport-status
+     +--ro admin-users* [id]
+        +--ro id      uint8
+        +--ro name    string

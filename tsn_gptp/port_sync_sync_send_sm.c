@@ -104,6 +104,12 @@ static port_sync_sync_send_state_t allstate_condition(port_sync_sync_send_data_t
 		sm->last_state=REACTION;
 		return TRANSMIT_INIT;
 	}
+
+	// Table 10-16—Interpretation of special values of logTimeSyncInterval (value 127)
+	if (sm->ppg->currentLogSyncInterval == 127) {
+		return TRANSMIT_INIT;
+	}
+
 	return (port_sync_sync_send_state_t)sm->state;
 }
 
@@ -119,6 +125,11 @@ static void *transmit_init_proc(port_sync_sync_send_data_t *sm)
 
 static port_sync_sync_send_state_t transmit_init_condition(port_sync_sync_send_data_t *sm)
 {
+	// Table 10-16—Interpretation of special values of logTimeSyncInterval (value 127)
+	if (sm->ppg->currentLogSyncInterval == 127) {
+		return TRANSMIT_INIT;
+	}
+
 	if(RCVD_PSSYNC &&
 	   ((uint16_t)RCVD_PSSYNC_PTR->localPortIndex != THIS_PORT) &&
 	   PORT_OPER && PTP_PORT_ENABLED &&

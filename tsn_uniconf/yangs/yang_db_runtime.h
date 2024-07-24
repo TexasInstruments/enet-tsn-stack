@@ -161,11 +161,21 @@ int yang_db_runtime_getvkstr(uc_dbald *dbald,
 /**
  * @brief wait witem,
  *	if waitv!=NULL wait unitl the value matches. if waitv==NULL wait appearance of witem.
+ * @param ydrd yang_db_runtime_dataq_t
  * @return return 0:got the waitv, 1:timed out, -1:error
  */
 int yang_db_runtime_waititem(yang_db_runtime_dataq_t *ydrd, const char* witem,
 			     void *waitv, uint32_t wvsize, int tout_ms);
 
+/**
+ * @brief 'key node string' and 'value key node string' of (aps,kvs,kss)
+ * @param aps	node keys, must be terminated with 255
+ * @param kvs	value keys
+ * @param kss	size of value keys
+ * @return -1: error, 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.
+ */
+int yang_db_runtime_apkv2keyvkstr(uc_dbald *dbald, uint8_t *aps,
+				  kvs_t *kvs, uint8_t *kss, char **rstr);
 /**
  * @brief 'key node string' and 'value key node string' of key
  * @return -1: error, 0: the result str in '*rst', the caller must call UB_SD_RELMEM to release.

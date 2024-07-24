@@ -53,30 +53,69 @@
 #include "yang_db_access.h"
 #include "excelfore-netconf-server.h"
 
-int ydbi_get_item_nck4vk1(yang_db_item_access_t *ydbia, void **rval,
-			  uint8_t k1, uint8_t k2, uint8_t k3, uint8_t k4, uint32_t id);
+int ydbi_get_item_nck3vk1(yang_db_item_access_t *ydbia, void **rval,
+			  uint8_t k1, uint8_t k2, uint8_t k3, uint32_t id, bool status);
 
-int ydbi_set_item_nck4vk1(yang_db_item_access_t *ydbia,
-			  uint8_t k1, uint8_t k2, uint8_t k3, uint8_t k4, uint32_t id,
-			  void *value, uint32_t vsize, uint8_t notice);
+int ydbi_set_item_nck3vk1(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, uint8_t k3, uint32_t id,
+			  void *value, uint32_t vsize, bool status, uint8_t notice);
 
-int ydbi_del_item_nck4vk1(yang_db_item_access_t *ydbia,
-			  uint8_t k1, uint8_t k2, uint8_t k3, uint8_t k4, uint32_t id);
+int ydbi_del_item_nck3vk1(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, uint8_t k3, uint32_t id, bool status);
 
-int ydbi_rel_item_nck4vk1(yang_db_item_access_t *ydbia,
-			  uint8_t k1, uint8_t k2, uint8_t k3, uint8_t k4, uint32_t id);
+int ydbi_rel_item_nck3vk1(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, uint8_t k3, uint32_t id, bool status);
 
 int ydbi_get_item_nck3vk0(yang_db_item_access_t *ydbia, void **rval,
-			  uint8_t k1, uint8_t k2, uint8_t k3);
+			  uint8_t k1, uint8_t k2, uint8_t k3, bool status);
 
 int ydbi_set_item_nck3vk0(yang_db_item_access_t *ydbia,
 			  uint8_t k1, uint8_t k2, uint8_t k3, void *value, uint32_t vsize,
-			  uint8_t notice);
+			  bool status, uint8_t notice);
 
 int ydbi_del_item_nck3vk0(yang_db_item_access_t *ydbia,
-			  uint8_t k1, uint8_t k2, uint8_t k3);
+			  uint8_t k1, uint8_t k2, uint8_t k3, bool status);
 
 int ydbi_rel_item_nck3vk0(yang_db_item_access_t *ydbia,
-			  uint8_t k1, uint8_t k2, uint8_t k3);
+			  uint8_t k1, uint8_t k2, uint8_t k3, bool status);
+
+int ydbi_get_item_nck2vk1(yang_db_item_access_t *ydbia, void **rval,
+			  uint8_t k1, uint8_t k2, uint8_t id, bool status);
+
+int ydbi_set_item_nck2vk1(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, uint8_t id, void *value, uint32_t vsize,
+			  bool status, uint8_t notice);
+
+int ydbi_del_item_nck2vk1(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, uint8_t id, bool status);
+
+int ydbi_rel_item_nck2vk1(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, uint8_t id, bool status);
+
+int ydbi_get_item_nck2vk0(yang_db_item_access_t *ydbia, void **rval,
+			  uint8_t k1, uint8_t k2, bool status);
+
+int ydbi_set_item_nck2vk0(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, void *value, uint32_t vsize,
+			  bool status, uint8_t notice);
+
+int ydbi_del_item_nck2vk0(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, bool status);
+
+int ydbi_rel_item_nck2vk0(yang_db_item_access_t *ydbia,
+			  uint8_t k1, uint8_t k2, bool status);
+
+int ydbi_get_item_nck1vk0(yang_db_item_access_t *ydbia, void **rval,
+			  uint8_t k1, bool status);
+
+int ydbi_set_item_nck1vk0(yang_db_item_access_t *ydbia,
+			  uint8_t k1, void *value, uint32_t vsize,
+			  bool status, uint8_t notice);
+
+int ydbi_del_item_nck1vk0(yang_db_item_access_t *ydbia,
+			  uint8_t k1, bool status);
+
+int ydbi_rel_item_nck1vk0(yang_db_item_access_t *ydbia,
+			  uint8_t k1, bool status);
 
 #endif

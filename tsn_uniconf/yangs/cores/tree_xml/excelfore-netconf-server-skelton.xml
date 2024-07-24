@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<nconf-server xmlns="http://excelfore.com/ns/excelfore-netconf-server">
+		<underlying-interface/>
+		<address/>
+		<ssh>
+			<port></port>
+			<subsystem>
+				<ipc-type></ipc-type>
+				<tcp-port></tcp-port>
+				<socket-name/>
+			</subsystem>
+			<status/>
+		</ssh>
+		<tls>
+			<port></port>
+			<server-cert/>
+			<server-key/>
+			<ca-cert/>
+			<cert-to-name>
+				<id/>
+				<fingerprint/>
+				<map-type/>
+				<name/>
+			</cert-to-name>
+			<status/>
+		</tls>
+		<admin-users>
+			<id/>
+			<name/>
+		</admin-users>
+	</nconf-server>
+</data>

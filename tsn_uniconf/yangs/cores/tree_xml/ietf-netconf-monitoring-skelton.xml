@@ -1,0 +1,66 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<netconf-state xmlns="urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring">
+		<capabilities>
+			<capability>
+				<!-- # entries: 0.. -->
+			</capability>
+		</capabilities>
+		<datastores>
+			<datastore>
+				<name/>
+				<locks>
+					<global-lock>
+						<locked-by-session/>
+						<locked-time/>
+					</global-lock>
+					<partial-lock>
+						<lock-id/>
+						<locked-by-session/>
+						<locked-time/>
+						<select>
+							<!-- # entries: 1.. -->
+						</select>
+						<locked-node>
+							<!-- # entries: 0.. -->
+						</locked-node>
+					</partial-lock>
+				</locks>
+			</datastore>
+		</datastores>
+		<schemas>
+			<schema>
+				<identifier/>
+				<version/>
+				<format/>
+				<namespace/>
+				<location>
+					<!-- # entries: 0.. -->
+				</location>
+			</schema>
+		</schemas>
+		<sessions>
+			<session>
+				<session-id/>
+				<transport/>
+				<username/>
+				<source-host/>
+				<login-time/>
+				<in-rpcs></in-rpcs>
+				<in-bad-rpcs></in-bad-rpcs>
+				<out-rpc-errors></out-rpc-errors>
+				<out-notifications></out-notifications>
+			</session>
+		</sessions>
+		<statistics>
+			<netconf-start-time/>
+			<in-bad-hellos></in-bad-hellos>
+			<in-sessions></in-sessions>
+			<dropped-sessions></dropped-sessions>
+			<in-rpcs></in-rpcs>
+			<in-bad-rpcs></in-bad-rpcs>
+			<out-rpc-errors></out-rpc-errors>
+			<out-notifications></out-notifications>
+		</statistics>
+	</netconf-state>
+</data>

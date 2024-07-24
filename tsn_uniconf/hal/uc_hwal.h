@@ -70,6 +70,7 @@ enum {
 	UC_HWAL_CBS_ENABLE_COMPLETE,
 };
 
+#ifndef NO_YANG_CORES
 uc_hwald *uc_hwal_open(uc_dbald *dbald);
 
 void uc_hwal_close(uc_hwald *hwald);
@@ -102,5 +103,18 @@ int uc_hwal_catch_events_thread(uc_hwald *hwald, CB_SEM_T *sigp);
  * and call 'uc_nu_putnotice_push' to notice the update to uc_client side.
  */
 int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd);
+
+#else
+static inline uc_hwald *uc_hwal_open(uc_dbald *dbald){return NULL;}
+static inline void uc_hwal_close(uc_hwald *hwald){return;}
+static inline int uc_hwal_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
+				void *value, uint32_t vsize){return -1;}
+static inline int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss)
+{return -1;}
+static inline int uc_hwal_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
+				  void *value, uint32_t vsize){return -1;}
+static inline int uc_hwal_catch_events_thread(uc_hwald *hwald, CB_SEM_T *sigp){return -1;}
+static inline int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd){return -1;}
+#endif
 
 #endif

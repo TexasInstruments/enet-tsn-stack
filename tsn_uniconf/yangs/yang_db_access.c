@@ -220,6 +220,7 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_TRANSPORT_STATUS:
 	case YANG_VTYPE_PORT_STATE:
 	{
 		char *endptr = NULL;
@@ -234,6 +235,8 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **destd, uint32_t *size, cha
 			data[0]=(uint32_t)value;
 		} else if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
 			data[0]=yang_enumeration_getval(vstr, "datastore");
+		} else if (YANG_VTYPE_TRANSPORT_STATUS == vtype) {
+			data[0]=yang_enumeration_getval(vstr, "transport-status");
 		} else if (NULL != hints) {
 			data[0]=yang_enumeration_getval(vstr, hints);
 		} else {
@@ -555,9 +558,15 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
 	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_TRANSPORT_STATUS:
 	case YANG_VTYPE_PORT_STATE:
 		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
 			char* rstr=yang_enumeration_getstr(*((uint32_t*)value), "datastore");
+			if (NULL != rstr) {
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
+			}
+		} else if (YANG_VTYPE_TRANSPORT_STATUS == vtype) {
+			char* rstr=yang_enumeration_getstr(*((uint8_t*)value), "transport-status");
 			if (NULL != rstr) {
 				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
@@ -675,9 +684,15 @@ char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, char *hint
 	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_TRANSPORT_STATUS:
 	case YANG_VTYPE_PORT_STATE:
 		if (YANG_VTYPE_NETCONF_DATASTORE_TYPE == vtype) {
 			char* rstr=yang_enumeration_getns(*((uint32_t*)value), "datastore");
+			if (NULL != rstr) {
+				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
+			}
+		} else if (YANG_VTYPE_TRANSPORT_STATUS == vtype) {
+			char* rstr=yang_enumeration_getns(*((uint8_t*)value), "transport-status");
 			if (NULL != rstr) {
 				(void)ub_strncpy(vstr, rstr, sizeof(vstr));
 			}
@@ -746,6 +761,7 @@ int yang_sizeof_vtype(uint8_t vtype)
 	case YANG_VTYPE_ENUMERATION:
 	case YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_TRANSPORT_STATUS:
 		csize=4;
 		break;
 	case YANG_VTYPE_INT64:
@@ -854,6 +870,7 @@ bool yang_isenum_vtype(uint8_t vtype)
 	case YANG_VTYPE_IEEE_PORT_ID_SUBTYPE_TYPE:
 	case YANG_VTYPE_LLDP_TYPES_MAN_ADDR_IF_SUBTYPE:
 	case YANG_VTYPE_NETCONF_DATASTORE_TYPE:
+	case YANG_VTYPE_TRANSPORT_STATUS:
 	case YANG_VTYPE_PORT_STATE:
 		isenum=true;
 		break;
@@ -929,7 +946,12 @@ int yang_db_extract_key(void *key, uint32_t ksize, uint8_t **ap, kvs_t *kvs, uin
 	*ap=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, an);
 	if(ub_assert_fatal(*ap!=NULL, __func__, NULL)){return -1;}
 	for(i=0;i<an;i++){
-		(*ap)[i]=((uint8_t*)key)[i];
+		if(i==ksize){
+			// when ap is the all, it may not be terminated with 255
+			(*ap)[i]=255u;
+		}else{
+			(*ap)[i]=((uint8_t*)key)[i];
+		}
 	}
 	j=0u;
 	while((an+j)<ksize){
@@ -941,6 +963,8 @@ int yang_db_extract_key(void *key, uint32_t ksize, uint8_t **ap, kvs_t *kvs, uin
 	}
 	if(vn>(uint32_t)UC_MAX_VALUEKEYS){
 		UB_LOG(UBL_ERROR, "%s:too many value keys, vn=%d\n", __func__, vn);
+		UB_SD_RELMEM(YANGINIT_GEN_SMEM, *ap);
+		*ap=NULL;
 		return -1;
 	}
 	j=0;

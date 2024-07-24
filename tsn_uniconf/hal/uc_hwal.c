@@ -152,7 +152,7 @@ static int get_tc_cbs_parameters(cbl_cbs_params_t *cbsp, uint8_t tc,
 	cbsp->locredit=maxfsize*cbsp->sendslope/(double)speed;
 	cbsp->hicredit=maxifsize*cbsp->idleslope/(double)speed;
 	lc_maxifsize=ceil(maxifsize-speed*(cbsp->hicredit-cbsp->locredit)/
-			       (double)cbsp->sendslope);
+			  (double)cbsp->sendslope);
 	UB_LOG(UBL_DEBUG, "%s:%s, tc=%d, idleslope=%"PRIi64", sendslope=%"PRIi64
 	       ", hic=%"PRIi64", loc=%"PRIi64", maxifsize=%d(tc=%d), maxfsize=%d\n",
 	       __func__, cbsp->ifname, tc, cbsp->idleslope, cbsp->sendslope,
@@ -303,11 +303,11 @@ static int update_cbs_idle_slope(combase_link_data_t *hwctx, const char *ifname,
 static int set_netdev_linkstatus(uc_hwald *hwald, cbl_cb_event_t *nevent)
 {
 	uint8_t aps[5]={IETF_INTERFACES_RO_H, IETF_INTERFACES_INTERFACES,
-			IETF_INTERFACES_INTERFACE, IETF_INTERFACES_IF_INDEX, 255};
+		IETF_INTERFACES_INTERFACE, IETF_INTERFACES_IF_INDEX, 255};
 	void *kvs[2]={NULL,NULL};
 	uint8_t kss[1];
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_CREATE, YANG_DB_ONHW_NOACTION,
-				      NULL, aps, kvs, kss, NULL, 0};
+		NULL, aps, kvs, kss, NULL, 0};
 	uint8_t value[8];
 	int32_t res, oper_status;
 	char *emes="";
@@ -870,36 +870,120 @@ static int ietf_interfaces_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, ui
 	return 1;
 }
 
-static int vlan_register(uc_hwald *hwald, const char *bridgename, const char *ifname,
-			 uint16_t vid, bool reg)
+static int vlans_register(uc_hwald *hwald, const char *bridgename, const char *compname,
+			  uint32_t port_ref, uint16_t vid1, uint16_t vid2, bool reg)
 {
+	const char *msg;
+	uint8_t compindex;
+	int ports;
+	if(strlen(compname)<5){return -1;}
+	compindex=atoi(&compname[3]);
+	ports=ydbi_bridge_ports_qb(ydbi_access_handle(), bridgename, compindex);
+	if(ports<0){return -1;}
 	if(reg){
 		// register vlan
-		UB_LOG(UBL_INFO, "%s:bridgename=%s, netdev=%s, register vid=%d\n",
-		       __func__, bridgename, ifname, vid);
+		msg="register";
 	}else{
 		// deregister vlan
-		UB_LOG(UBL_INFO, "%s:bridgename=%s, netdev=%s, deregister vid=%d\n",
-		       __func__, bridgename, ifname, vid);
+		msg="deregister";
+	}
+	UB_LOG(UBL_INFO, "%s:%s, bridgename=%s, compname=%s, ports=%d, port_ref=%d, "
+	       "vid1=%d, vid2=%d\n", __func__, msg, bridgename, compname, ports,
+	       port_ref, vid1, vid2);
+	if(ports==1){
+		// no configuration for the end station mode
+		return 0;
+	}
+	return cbl_bridge_set_vlan(hwald->hwctx, bridgename, port_ref, vid1, vid2, reg);
+}
+
+static int bridge_port_config(uc_hwald *hwald, const char *bridgename, const char *compname,
+			      ub_macaddr_t destmac, uint32_t port_ref,
+			      uint16_t vid, void *value)
+{
+	uint16_t ports=1;
+	uint8_t compindex;
+	int32_t inport_ref;
+	bool reg;
+	uint8_t priority=0;
+	const char *regmes;
+	if(value!=NULL){
+		reg=true;
+		regmes="add";
+		priority=*((uint32_t*)value)>>5;
+	}else{
+		reg=false;
+		regmes="remove";
+	}
+	if(strlen(compname)<5){return -1;}
+	compindex=atoi(&compname[3]);
+	YDBI_GET_ITEM_VSUBST(uint16_t*, qbk1vk0, ports, value, bridgename, compindex,
+			     IEEE802_DOT1Q_BRIDGE_PORTS, YDBI_STATUS);
+	UB_LOG(UBL_INFO, "%s:%s bridgename=%s, compname=%s, port_ref=%d, "
+	       "egress port vid=%d destmac="UB_PRIhexB6"\n",
+	       __func__, regmes, bridgename, compname, port_ref, vid,
+	       UB_ARRAY_B6(destmac));
+	if(ports==1){
+		// end station mode
+		UB_LOG(UBL_INFO, "end station mode\n");
+		return 0;
+	}else{
+		inport_ref=qb_get_talker_port(hwald->dbald,
+					      bridgename, compname, destmac, vid);
+		if(inport_ref<=0){
+			UB_LOG(UBL_WARN, "bridge mode, no talker port\n");
+			return 0;
+		}
+		UB_LOG(UBL_INFO, "bridge mode vid=%d, inport=%d, outport=%d\n",
+		       vid, inport_ref, port_ref);
+		cbl_bridge_set_forwarding(hwald->hwctx, bridgename,
+					  inport_ref, port_ref, destmac, priority, reg);
+
+		return 0;
+	}
+}
+
+// 'port_names' has 'ports' number of null terminated strings
+static int bridge_initialize(uc_hwald *hwald, const char *bridgename, const char *compname,
+			     uint16_t ports, const char *port_names)
+{
+	if(ports==1){
+		UB_LOG(UBL_INFO, "%s:end station mode, bridgename=%s, compname=%s\n",
+		       __func__, bridgename, compname);
+	}else if(ports>1){
+		UB_LOG(UBL_INFO, "%s:bridge mode, bridgename=%s, compname=%s, ports=%d\n",
+		       __func__, bridgename, compname, ports);
+		cbl_bridge_open(hwald->hwctx, bridgename, ports, port_names);
 	}
 	return 0;
 }
 
-static int vlans_register(uc_hwald *hwald, const char *bridgename, const char *ifname,
-			  uint16_t vid1, uint16_t vid2, bool reg)
+static int bridge_close(uc_hwald *hwald, const char *bridgename, const char *compname)
 {
-	int res=0;
-	uint16_t vid;
-	for(vid=vid1;vid<=vid2;vid++){
-		res|=vlan_register(hwald, bridgename, ifname, vid, reg);
+	uint16_t ports=1;
+	void *value;
+	uint8_t compindex;
+	if(strlen(compname)<5){return -1;}
+	compindex=atoi(&compname[3]);
+	YDBI_GET_ITEM_VSUBST(uint16_t*, qbk1vk0, ports, value, bridgename, compindex,
+			     IEEE802_DOT1Q_BRIDGE_PORTS, YDBI_STATUS);
+	if(ports==1){
+		UB_LOG(UBL_INFO, "%s:end station mode, bridgename=%s, compname=%s\n",
+		       __func__, bridgename, compname);
+	}else if(ports>1){
+		UB_LOG(UBL_INFO, "%s:bridge mode, bridgename=%s, compname=%s, ports=%d\n",
+		       __func__, bridgename, compname, ports);
+		cbl_bridge_close(hwald->hwctx, bridgename);
 	}
-	return res;
+	return 0;
 }
 
 static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 				void *value, uint32_t vsize)
 {
-	if(aps[0]!=IEEE802_DOT1Q_BRIDGE_RW_H){return 1;}
+	if((aps[0]!=IEEE802_DOT1Q_BRIDGE_RW_H) &&
+	   (aps[0]!=IEEE802_DOT1Q_BRIDGE_RO_H)){return 1;}
+	if(aps[1]==IEEE802_DOT1Q_BRIDGE_VALUEKEY){return 1;}
 	if(aps[1]!=IEEE802_DOT1Q_BRIDGE_BRIDGES){return -1;}
 	if(aps[2]!=IEEE802_DOT1Q_BRIDGE_BRIDGE){return -1;}
 	if(aps[3]!=IEEE802_DOT1Q_BRIDGE_COMPONENT){return -1;}
@@ -913,15 +997,76 @@ static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8
 		uint16_t *vids;
 		// dynamic VLAN registration
 		// kvs[0]:bridgename, kvs[1]:component name, kvs[2]:dtabase_id,
-		// kvs[3]:vids(start, end, 0, 0), kvs[4]:netdev
+		// kvs[3]:vids(start, end, 0, 0), kvs[4]:port-ref
 		if((kvs[3]==NULL) || (kvs[4]==NULL)){return -1;}
 		vids=(uint16_t*)kvs[3];
-		return vlans_register(hwald, (const char*)kvs[0], (const char*)kvs[4],
-				      vids[0], vids[1], value!=NULL);
+		return vlans_register(hwald, (const char*)kvs[0], (const char*)kvs[1],
+				      *((uint32_t *)kvs[4]), vids[0], vids[1], value!=NULL);
+	}
+	if(aps[4]==IEEE802_DOT1Q_BRIDGE_FILTERING_DATABASE &&
+	   aps[5]==IEEE802_DOT1Q_BRIDGE_FILTERING_ENTRY &&
+	   aps[6]==IEEE802_DOT1Q_BRIDGE_PORT_MAP &&
+	   aps[7]==IEEE802_DOT1Q_BRIDGE_DYNAMIC_FILTERING_ENTRIES &&
+	   aps[8]==IEEE802_DOT1Q_BRIDGE_CONTROL_ELEMENT){
+		uint16_t *vids;
+		// bridge port configuration
+		// kvs[0]:bridgename, kvs[1]:component name, kvs[2]:dtabase_id,
+		// kvs[3]:vids(start, end, 0, 0), kvs[4]:destmac, kvs[5]:port-ref
+		// value is 'NULL' or 'proirity_rank_reserved'
+		if((kvs[3]==NULL) || (kvs[4]==NULL || (kvs[5]==NULL))){return -1;}
+		vids=(uint16_t*)kvs[3];
+		return bridge_port_config(hwald, (const char*)kvs[0], (const char*)kvs[1],
+					  (uint8_t *)kvs[4], *((uint32_t*)kvs[5]), vids[0],
+					  value);
 	}
 	return 1;
 }
 
+static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
+			      void *value, uint32_t vsize)
+{
+	uint8_t compindex;
+	int res;
+	void *rvalue;
+	int rvsize;
+	// do all the static initialization, they are 'RO' items
+	if(aps[0]!=IEEE802_DOT1Q_BRIDGE_RO_H){return 1;}
+	if(aps[1]==IEEE802_DOT1Q_BRIDGE_VALUEKEY){return 1;}
+	if(aps[1]!=IEEE802_DOT1Q_BRIDGE_BRIDGES){return -1;}
+	if(aps[2]!=IEEE802_DOT1Q_BRIDGE_BRIDGE){return -1;}
+	if(aps[3]!=IEEE802_DOT1Q_BRIDGE_COMPONENT){return -1;}
+	if(!hwald->hwctx){return 0;}
+	UB_LOG(UBL_DEBUG, "%s:\n", __func__);
+	if((kvs[1]==NULL) || (strlen(kvs[1])<5)){return -1;}
+	compindex=atoi(kvs[1]);
+	// IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT must be already set
+	if(aps[4]==IEEE802_DOT1Q_BRIDGE_PORTS){
+		const char *port_names=NULL;
+		int i,pn;
+		if(value==NULL){
+			return bridge_close(hwald, kvs[0], kvs[1]);
+		}
+		YDBI_GET_ITEM_PSUBST(qbk1vk0, port_names, rvsize, rvalue, kvs[0], compindex,
+				     IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT,
+				     YDBI_STATUS);
+		if(rvsize<=0){
+			UB_LOG(UBL_ERROR, "%s:'bridge-port' must be set first\n", __func__);
+			return -1;
+		}
+		for(i=0,pn=0;i<rvsize;i++){if(port_names[i]==0){pn++;}}
+		if(pn==*((uint16_t *)value)){
+			res=bridge_initialize(hwald, kvs[0], kvs[1], pn, port_names);
+		}else{
+			UB_LOG(UBL_ERROR, "%s:ports=%d, %d in 'bridge-port', mismatched\n",
+			       __func__, *((uint16_t *)value), pn);
+			res=-1;
+		}
+		YDBI_REL_ITEM(qbk1vk0, kvs[0], compindex,
+			      IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT, YDBI_STATUS);
+		return res;
+	}
+	return 1;
+}
 
 /* the instance must be only 1 */
 #define UC_HWAL_NLINST uc_hwal_nlinst
@@ -959,7 +1104,7 @@ int uc_hwal_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 		  void *value, uint32_t vsize)
 {
 	int res;
-	const char *emes="";
+	const char *emes="ietf_interfaces";
 	if(!hwald){return 0;}
 
 	/* Do it here for the initialization at the first time access.
@@ -967,6 +1112,12 @@ int uc_hwal_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 	 */
 
 	res=ietf_interfaces_writehw(hwald, aps, kvs, kss, value, vsize);
+	if(res<0){goto erexit;}
+	emes="dot1q_bridge";
+	res=dot1q_bridge_reghw(hwald, aps, kvs, kss, value, vsize);
+	if(res<0){goto erexit;}
+	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, value, vsize);
+erexit:
 	if(res<0){
 		UB_LOG(UBL_ERROR, "%s:error in %s\n", __func__, emes);
 		return res;
@@ -984,6 +1135,9 @@ int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss)
 	if(!hwald){return 0;}
 	emes="dot1q_bridge";
 	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, NULL, 0);
+	if(res<0){goto erexit;}
+	res=dot1q_bridge_reghw(hwald, aps, kvs, kss, NULL, 0);
+erexit:
 	if(res<0){
 		UB_LOG(UBL_ERROR, "%s:error in %s\n", __func__, emes);
 		return res;
@@ -992,7 +1146,7 @@ int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss)
 }
 
 int uc_hwal_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
-		     void *value, uint32_t vsize)
+		    void *value, uint32_t vsize)
 {
 	int res;
 	if(!hwald){return 0;}
@@ -1038,16 +1192,16 @@ int notice_cb(void *cbdata, cbl_cb_event_t *nevent)
 	int res=-1;
 	uint8_t pi;
 	uc_hwald *hwald=(uc_hwald *)cbdata;
-	if(nevent->eventflags==CBL_EVENT_CHECKENABLED){
+	if(nevent->eventflags&CBL_EVENT_CHECKENABLED){
 		// CBL_EVENT_CHECKENABLED is a special case and it is not a notice.
 		// HW action may check this first,
 		// if it is not enabled, no actions happen.
 		uint8_t aps[5]={IETF_INTERFACES_RW_H, IETF_INTERFACES_INTERFACES,
-				IETF_INTERFACES_INTERFACE, IETF_INTERFACES_ENABLED, 255};
+			IETF_INTERFACES_INTERFACE, IETF_INTERFACES_ENABLED, 255};
 		void *kvs[2]={NULL,NULL};
 		uint8_t kss[1];
 		yang_db_access_para_t dbpara={YANG_DB_ACTION_READ, YANG_DB_ONHW_NOACTION,
-					      NULL, aps, kvs, kss, NULL, 0};
+			NULL, aps, kvs, kss, NULL, 0};
 		kvs[0]=nevent->ifname;
 		kss[0]=strlen(nevent->ifname)+1;
 		res=yang_db_action(hwald->dbald, NULL, &dbpara);
@@ -1079,7 +1233,7 @@ int notice_cb(void *cbdata, cbl_cb_event_t *nevent)
 	}
 	if(((nevent->eventflags&CBL_EVENT_CBS_ENABLED)||
 	    (nevent->eventflags&CBL_EVENT_CBS_DISABLED)) &&
-		hwald->operating_tc>0){
+	   hwald->operating_tc>0){
 		int64_t idleslope=0;
 		void *value;
 		if(nevent->eventflags&CBL_EVENT_CBS_ENABLED){
@@ -1115,9 +1269,19 @@ int notice_cb(void *cbdata, cbl_cb_event_t *nevent)
 		res=set_preempt_status(hwald, nevent);
 		if(res<0){return -1;}
 	}
+	if(nevent->eventflags&CBL_EVENT_BRIDGE_SUCCESS){
+		UB_TLOG(UBL_INFO, "%s:bridge=%s ready\n",
+			__func__, nevent->ifname);
+		res=0;
+	}
+	if(nevent->eventflags&CBL_EVENT_BRIDGE_FAIL){
+		UB_TLOG(UBL_INFO, "%s:bridge=%s failed\n",
+			__func__, nevent->ifname);
+		res=0;
+	}
 	if(res<0){
 		UB_TLOG(UBL_ERROR, "%s:unkown eventflags=0x%x\n",
-		       __func__, nevent->eventflags);
+			__func__, nevent->eventflags);
 		return -1;
 	}
 	return 0;

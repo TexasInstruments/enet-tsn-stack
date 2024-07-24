@@ -51,14 +51,16 @@
 #include "yang_modules.h"
 #include "yang_db_access.h"
 #include "yang_db_runtime.h"
-#include "ieee1588-ptp-tt.h"
 #include <tsn_combase/cb_tmevent.h>
 #include "yang_node.h"
-
-extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
-#define IEEE1588_PTP_TT_RW IEEE1588_PTP_TT_func(ydrd->dbald)
-#define IEEE1588_PTP_TT_RO (IEEE1588_PTP_TT_func(ydrd->dbald)|0x80)
-
+#ifndef NO_YANG_CORES
+#include "ieee1588-ptp-tt_access.h"
+#else
+static int ydbi_get_1588ptp_instance(uc_dbald *dbald, uint8_t ap0, const char *ginst_di)
+{
+	return -1;
+}
+#endif
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
@@ -83,49 +85,6 @@ static int total_kpi(yang_db_runtime_dataq_t *ydrd)
 	// the last node:ydrd->api must be 'leaf' and has no keys
 	for(i=0;i<ydrd->api;i++){res+=(int)ydrd->kpi[i];}
 	return res;
-}
-
-// ieee1588 instance is converted from the domainmap
-static int get_1588ptp_instance(yang_db_runtime_dataq_t *ydrd, char *kp)
-{
-	uint32_t g,d;
-	char *astr;
-	uint8_t aps[]={IEEE1588_PTP_TT_RW, IEEE1588_PTP_TT_PTP,
-		       IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP,
-		       255};
-	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ,
-				      YANG_DB_ONHW_NOACTION,
-				      NULL, aps, NULL, NULL, NULL, 0};
-	uint16_t *mapv;
-	int i, n, x=-1;
-
-	g=strtol(kp, NULL, 0);
-	astr=strchr(kp, ',');
-	if(!astr){
-		UB_LOG(UBL_DEBUG, "%s:%d -> %d\n", __func__, g, g);
-		return 0;
-	}
-
-	d=strtol(&astr[1], NULL, 0);
-	if(yang_db_action(ydrd->dbald, NULL, &dbpara)!=0){goto erexit;}
-	mapv=(uint16_t *)dbpara.value;
-	n=dbpara.vsize/sizeof(uint16_t);
-	for(i=0;i<n;i++){
-		if((g==(mapv[i]>>8u)) && (d==(mapv[i]&0xffu))){
-			x=i;
-			break;
-		}
-	}
-	dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
-	(void)yang_db_action(ydrd->dbald, NULL, &dbpara);
-	if(x>=0 && x<100){
-		UB_LOG(UBL_DEBUG, "%s:%d,%d -> %d\n", __func__, g, d, x);
-		sprintf(kp,"%d",x);
-		return 0;
-	}
-erexit:
-	UB_LOG(UBL_ERROR, "%s:invalid key value string:%s\n", __func__, kp);
-	return -1;
 }
 
 // retrun 0:get all key values, 1:no key values, -1:error
@@ -219,9 +178,11 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv, char *vstr, bo
 		ydrd->kss[tkpi]=1;
 		res=1;
 	}else{
-		if(((ydrd->apsd[2]==(uint8_t)IEEE1588_PTP_TT_RW) ||
-		    (ydrd->apsd[2]==(uint8_t)IEEE1588_PTP_TT_RO)) && tkpi==0){
-			if(get_1588ptp_instance(ydrd, kp)){return -1;}
+		if(tkpi==0){
+			res=ydbi_get_1588ptp_instance(ydrd->dbald, ydrd->apsd[2], kp);
+			if(res>=0){
+				sprintf(kp, "%d", res);
+			}
 		}
 		res=yang_value_conv(kvtype, kp, &ydrd->kvs[tkpi], &vsize, kn);
 		if(res<0){
@@ -1088,28 +1049,27 @@ erexit:
 	return rstr;
 }
 
-int yang_db_runtime_getkeyvkstr(uc_dbald *dbald,
-				void *key, uint32_t ksize, char **rstr)
+int yang_db_runtime_apkv2keyvkstr(uc_dbald *dbald, uint8_t *aps,
+				  kvs_t *kvs, uint8_t *kss, char **rstr)
 {
-	uint8_t *caps;
 	uint8_t raps[3]={255,255,255};
-	uint8_t ckss[UC_MAX_VALUEKEYS];
-	kvs_t ckvs[UC_MAX_VALUEKEYS+1]={NULL}; // +1 for NULL termination
 	uint8_t ki, kvi;
 	char erstr[10];
 	int rlen=1;
 	char *nstr=NULL, *vkstr, *pstr;
-	if(yang_db_extract_key(key, ksize, &caps, ckvs, ckss)!=0){return -1;}
-	raps[0]=caps[0];
+	if(aps[0]==255){return -1;} // no aps
+	raps[0]=aps[0];
 	kvi=0;
 	*rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 8);
 	if(!rstr){return -1;}
 	(*rstr)[0]=0;
-	for(ki=0;ki<ksize;ki++){
-		raps[1]=caps[ki+1];
-		if(raps[1]==255){break;}
+	for(ki=0;ki<255u;ki++){
+		raps[1]=aps[ki+1];
+		if(raps[1]==255){
+			break;
+		}
 		if(ki>0){
-			vkstr=vkey_on_node(dbald, caps, ki, ckvs, ckss, &kvi);
+			vkstr=vkey_on_node(dbald, aps, ki, kvs, kss, &kvi);
 			if(vkstr){
 				rlen+=strlen(vkstr);
 				*rstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *rstr, rlen);
@@ -1141,9 +1101,24 @@ int yang_db_runtime_getkeyvkstr(uc_dbald *dbald,
 			UB_SD_RELMEM(YANGINIT_GEN_SMEM, nstr);
 		}
 	}
-	yang_db_extract_key_free(caps, ckvs, ckss);
-	if(*rstr){return 0;}
+	if(*rstr){
+		return 0;
+	}
 	return -1;
+}
+
+int yang_db_runtime_getkeyvkstr(uc_dbald *dbald,
+				void *key, uint32_t ksize, char **rstr)
+{
+	uint8_t *caps;
+	uint8_t ckss[UC_MAX_VALUEKEYS];
+	kvs_t ckvs[UC_MAX_VALUEKEYS+1]={NULL}; // +1 for NULL termination
+	int res;
+
+	if(yang_db_extract_key(key, ksize, &caps, ckvs, ckss)!=0){return -1;}
+	res=yang_db_runtime_apkv2keyvkstr(dbald, caps, ckvs, ckss, rstr);
+	yang_db_extract_key_free(caps, ckvs, ckss);
+	return res;
 }
 
 // return N>=0:set node and need N value keys, -1:set one value key, -2:pass leaf,  -3:error
@@ -1179,5 +1154,11 @@ int yang_db_runtime_proc_nodestring(yang_db_runtime_dataq_t *ydrd, bool reset,
 
 int yang_db_runtime_state_keyvkstr(yang_db_runtime_dataq_t *ydrd, char **rstr)
 {
-	return yang_db_runtime_getkeyvkstr(ydrd->dbald, ydrd->aps, ydrd->api, rstr);
+	uint8_t aps[UC_MAX_AP_DEPTH+2];
+	memcpy(aps, ydrd->aps, ydrd->api);
+	// appending '0' here is a strange action
+	// it is workaround to fix the issue in convxml2conf.c:convxml2conf_getconf
+	aps[ydrd->api]=0;
+	aps[ydrd->api+1]=255u;
+	return yang_db_runtime_getkeyvkstr(ydrd->dbald, aps, ydrd->api+2, rstr);
 }

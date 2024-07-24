@@ -55,11 +55,13 @@
 #define COMBASE_NO_IPCSOCK
 #define UB_SD_STATIC
 #define UC_RUNCONF
-#define UB_ESARRAY_DFNUM 256
+#define UB_ESARRAY_DFNUM 512
 
-#define CB_NOIPCSHMEM_DFSIZE 32
+// #define CB_NOIPCSHMEM_DFNUM 200 /* To support avtp RX 40Mbps */
+#define CB_NOIPCSHMEM_DFNUM 200
+#define CB_NOIPCSHMEM_DFSIZE 1024
 
-#define SIMPLEDB_DBDATANUM 1600
+#define SIMPLEDB_DBDATANUM 1800
 
 // Default values in case of unuse avtp
 //#define CB_LLDTASK_INSTNUM 10
@@ -87,7 +89,15 @@
 //      +1 avtpd connection handle if the stream is the talker
 // => To enable 1 avtp app: we need 4 + 1 + 2 = 7 tasks
 // => To enable 2 avtp app: we need 4 + 1 + 2*2 = 9 tasks
-#define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
+// => To enable 7 avtp app: we need 4 + 1 + 2*7 = 19 tasks
+// MRP App: 
+//      +1 mrpd
+//      +1 mrp app
+// => To enable mrp app + 1 avtp app: we need 7 tasks + 2 = 9 tasks
+// => To enable mrp app + 2 avtp app: we need 9 tasks + 2 = 11 tasks
+// => To enable mrp app + 7 avtp app: we need 19 tasks + 2 = 21 tasks
+// #define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
+#define CB_LLDTASK_INSTNUM 21
 
 // To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
 // inside the combase.
@@ -98,7 +108,8 @@
 //      +1 avtpd connection handle if the stream is the talker
 // => To enable 1 avtp app: we need 1 + 1 + 1 = 3 stacks
 // => To enable 2 avtp app: we need 1 + 1 + 1*2 = 4 stacks
-#define CB_LLDTASK_STACK_INSTNUM 4
+// => To enable 7 avtp app: we need 1 + 1 + 1*7 = 9 stacks
+#define CB_LLDTASK_STACK_INSTNUM 9
 
 // To configure CB_LLDSEM_INSTNUM (CB_SEM_INIT)
 // Per system:
@@ -121,7 +132,14 @@
 //      avtpd (+4 per stream tsem_set/tsem_rel/rsem_set/rsem_rel)
 // => To enable 1 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*1 = 16 SEMs
 // => To enable 2 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*2 = 20 SEMs
-#define CB_LLDSEM_INSTNUM 20
+// => To enable 7 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*7 = 40 SEMs
+
+// MRP App (total 3):
+//      ydbi_access_init
+//      tilld_mrpnet.c rx_sem
+//      mrp_extcontrol
+// => To enable mrp app + 7 avtp app in tilld0: we need 40 + 3 = 43 SEMs
+#define CB_LLDSEM_INSTNUM 43
 
 #define AVTP_ETHPKT_NUM 1
 #define DISABLE_FAT_FS
@@ -181,5 +199,9 @@
 #define MAX_RM_ORG_INFO_LEN  64
 
 /* LLDP Definition End */
+
+// MRP defininition
+#define UB_ESARRAY_INSTNUM 40
+#define XMRPD_MAX_PORT_NUM 2
 
 #endif /* __TSN_TILLD_INCLUDE_H_ */

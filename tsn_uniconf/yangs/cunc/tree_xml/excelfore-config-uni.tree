@@ -1,0 +1,8 @@
+module: excelfore-config-uni
+  +--rw xl4-uni
+     +--rw domain* [domain-id]
+        +--rw domain-id        string
+        +--rw nconf-servers* [name]
+           +--rw name         string
+           +--rw address?     inet:host
+           +--rw transport?   identityref

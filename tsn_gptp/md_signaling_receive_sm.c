@@ -70,13 +70,13 @@ static void *recv_gptp_capable(md_signaling_receive_data_t *sm)
 	MDPTPMsgGPTPCapableTLV *gcmsg=(MDPTPMsgGPTPCapableTLV *)sm->rcvd_rxmsg;
 	//PTPMsgHeader header;
 	//md_decompose_head((MDPTPMsgHeader *)sm->rcvd_rxmsg, &header);
-	sm->gctlm.tlvType = ntohs(gcmsg->tlvType_ns);
-	sm->gctlm.lengthField = ntohs(gcmsg->lengthField_ns);
-	memcpy(&sm->gctlm.organizationId, gcmsg->organizationId, 3);
+	sm->gctlm.tlvType = ntohs(gcmsg->signalingMsgHdr.tlvType_ns);
+	sm->gctlm.lengthField = ntohs(gcmsg->signalingMsgHdr.lengthField_ns);
+	memcpy(&sm->gctlm.organizationId, gcmsg->signalingMsgHdr.organizationId, 3);
 	sm->gctlm.organizationSubType =
-		(gcmsg->organizationSubType_nb[0] << 16) |
-		(gcmsg->organizationSubType_nb[1] << 8) |
-		gcmsg->organizationSubType_nb[2];
+		(gcmsg->signalingMsgHdr.organizationSubType_nb[0] << 16) |
+		(gcmsg->signalingMsgHdr.organizationSubType_nb[1] << 8) |
+		gcmsg->signalingMsgHdr.organizationSubType_nb[2];
 	sm->gctlm.logGptpCapableMessageInterval=gcmsg->logGptpCapableMessageInterval;
 	sm->gctlm.flags = gcmsg->flags;
 	return &sm->gctlm;
@@ -87,13 +87,13 @@ static void *recv_msg_interval_req(md_signaling_receive_data_t *sm)
 	MDPTPMsgIntervalRequestTLV *mrmsg=(MDPTPMsgIntervalRequestTLV *)sm->rcvd_rxmsg;
 	//PTPMsgHeader header;
 	//md_decompose_head((MDPTPMsgHeader *)sm->rcvd_rxmsg, &header);
-	sm->mrtlm.tlvType = ntohs(mrmsg->tlvType_ns);
-	sm->mrtlm.lengthField = ntohs(mrmsg->lengthField_ns);
-	memcpy(&sm->mrtlm.organizationId, mrmsg->organizationId, 3);
+	sm->mrtlm.tlvType = ntohs(mrmsg->signalingMsgHdr.tlvType_ns);
+	sm->mrtlm.lengthField = ntohs(mrmsg->signalingMsgHdr.lengthField_ns);
+	memcpy(&sm->mrtlm.organizationId, mrmsg->signalingMsgHdr.organizationId, 3);
 	sm->mrtlm.organizationSubType =
-		(mrmsg->organizationSubType_nb[0] << 16) |
-		(mrmsg->organizationSubType_nb[1] << 8) |
-		mrmsg->organizationSubType_nb[2];
+		(mrmsg->signalingMsgHdr.organizationSubType_nb[0] << 16) |
+		(mrmsg->signalingMsgHdr.organizationSubType_nb[1] << 8) |
+		mrmsg->signalingMsgHdr.organizationSubType_nb[2];
 	sm->mrtlm.linkDelayInterval = mrmsg->linkDelayInterval;
 	sm->mrtlm.timeSyncInterval = mrmsg->timeSyncInterval;
 	sm->mrtlm.announceInterval = mrmsg->announceInterval;
@@ -124,22 +124,66 @@ static md_signaling_receive_state_t initialize_condition(md_signaling_receive_da
 	return INITIALIZE;
 }
 
+static gPTPSignalingMsgType classify_rx_signaling_type(PTPSignalingMsgCommonHeader* signalingCommonHdr)
+{
+	uint16_t tlvtype;
+	uint16_t tlvlen;
+	uint8_t stype;
+
+	// simple validate subtype and organization
+	if (signalingCommonHdr->organizationId[0] != 0x00 || signalingCommonHdr->organizationId[1] != 0x80 || signalingCommonHdr->organizationId[2] != 0xC2)
+	{
+		UB_LOG(UBL_WARN, "%s:Invalid organizationId = %02x-%02x-%02x\n", __func__,
+						 signalingCommonHdr->organizationId[0], 
+						 signalingCommonHdr->organizationId[1], 
+						 signalingCommonHdr->organizationId[2]);
+		return SIGNALING_GPTP_NOT_SUPPORTED;
+	}
+
+	if (signalingCommonHdr->organizationSubType_nb[0] != 0x00 || signalingCommonHdr->organizationSubType_nb[1] != 0x00)
+	{
+		UB_LOG(UBL_WARN, "%s:Not support organizationSubType = %02x-%02x-%02x\n", __func__,
+					signalingCommonHdr->organizationSubType_nb[0], 
+					signalingCommonHdr->organizationSubType_nb[1], 
+					signalingCommonHdr->organizationSubType_nb[2]);
+		return SIGNALING_GPTP_NOT_SUPPORTED;
+	}
+
+	tlvtype=ntohs(signalingCommonHdr->tlvType_ns);
+	tlvlen=ntohs(signalingCommonHdr->lengthField_ns);
+	stype=signalingCommonHdr->organizationSubType_nb[2];
+	if (tlvtype == 0x0003 && tlvlen == 12 && stype==2) {return SINALING_MSG_INTERVAL_REQ;}
+	else if (tlvtype == 0x8000 && tlvlen == 12 && stype==4) {return SINALING_GPTP_CAPABLE;}
+	else if (tlvtype == 0x8000 && tlvlen == 10 && stype==5) {return SINALING_GPTP_CAPABLE_INTERVAL_REQ;}
+	else 
+	{
+		UB_LOG(UBL_WARN, "%s:Not support signaling msg tlvtype=%04x, len=%d, organizationSubType=%d\n", __func__,
+					tlvtype, tlvlen, stype);
+		return SIGNALING_GPTP_NOT_SUPPORTED;
+	}
+}
+
 static void *recv_signaling_proc(md_signaling_receive_data_t *sm)
 {
-	uint8_t stype;
+	gPTPSignalingMsgType stype; 
 	UB_LOG(UBL_DEBUGV, "md_signaling_receive:%s:domainIndex=%d, portIndex=%d\n",
 		__func__, sm->domainIndex, sm->portIndex);
+
 	sm->recv=false;
-	stype=((MDPTPMsgGPTPCapableTLV*)(sm->rcvd_rxmsg))->organizationSubType_nb[2];
-	if(stype==2u){
+	// gPtpCapableTLV or IntervalReqTLV or gPtpCapableTLV msg interval request has the same header.
+	stype=classify_rx_signaling_type(&((MDPTPMsgGPTPCapableTLV*)(sm->rcvd_rxmsg))->signalingMsgHdr);
+	if(stype==SINALING_MSG_INTERVAL_REQ){
 		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, msgIntervalRx);
 		return recv_msg_interval_req(sm);
 	}
-	else if(stype==4u){
+	else if(stype==SINALING_GPTP_CAPABLE){
 		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, asCapableRx);
 		return recv_gptp_capable(sm);
-	}else{}
-	UB_LOG(UBL_WARN, "%s:unknown tlv type = %d\n", __func__, stype);
+	}else if (stype==SINALING_GPTP_CAPABLE_INTERVAL_REQ)
+	{
+		UB_LOG(UBL_INFO, "%s:tlv type SINALING_GPTP_CAPABLE_INTERVAL_REQ will be supported soon\n", __func__);
+		return NULL;
+	}
 	return NULL;
 }
 

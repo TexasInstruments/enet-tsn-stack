@@ -1,0 +1,264 @@
+module: ieee802-dot1ab-lldp
+  +--rw lldp
+     +--rw message-fast-tx?              uint32
+     +--rw message-tx-hold-multiplier?   uint32
+     +--rw message-tx-interval?          uint32
+     +--rw reinit-delay?                 uint32
+     +--rw tx-credit-max?                uint32
+     +--rw tx-fast-init?                 uint32
+     +--ro remote-statistics
+     |  +--ro last-change-time?   yang:timestamp
+     |  +--ro remote-inserts?     yang:zero-based-counter32
+     |  +--ro remote-deletes?     yang:zero-based-counter32
+     |  +--ro remote-drops?       yang:zero-based-counter32
+     |  +--ro remote-ageouts?     yang:zero-based-counter32
+     +--ro local-system-data
+     |  +--ro chassis-id-subtype?              ieee:chassis-id-subtype-type
+     |  +--ro chassis-id?                      ieee:chassis-id-type
+     |  +--ro system-name?                     string
+     |  +--ro system-description?              string
+     |  +--ro system-capabilities-supported?   lldp-types:system-capabilities-map
+     |  +--ro system-capabilities-enabled?     lldp-types:system-capabilities-map
+     +--rw port* [name dest-mac-address]
+        +--rw name                          if:interface-ref
+        +--rw dest-mac-address              ieee:mac-address
+        +--rw admin-status?                 enumeration
+        +--rw tlvs-tx-enable?               bits
+        +--rw message-fast-tx?              uint32
+        +--rw message-tx-hold-multiplier?   uint32
+        +--rw message-tx-interval?          uint32
+        +--rw reinit-delay?                 uint32
+        +--rw tx-credit-max?                uint32
+        +--rw tx-fast-init?                 uint32
+        +--rw management-address-tx-port* [address-subtype man-address]
+        |  +--rw address-subtype    identityref
+        |  +--rw man-address        lldp-types:man-addr-type
+        |  +--rw tx-enable?         boolean
+        |  +--ro addr-len?          uint32
+        |  +--ro if-subtype?        lldp-types:man-addr-if-subtype
+        |  +--ro if-id?             uint32
+        +--ro port-id-subtype?              ieee:port-id-subtype-type
+        +--ro port-id?                      ieee:port-id-type
+        +--ro port-desc?                    string
+        +--ro tx-statistics
+        |  +--ro total-frames?          yang:counter32
+        |  +--ro total-length-errors?   yang:counter32
+        +--ro rx-statistics
+        |  +--ro total-ageouts?             yang:zero-based-counter32
+        |  +--ro total-discarded-frames?    yang:counter32
+        |  +--ro error-frames?              yang:counter32
+        |  +--ro total-frames?              yang:counter32
+        |  +--ro total-discarded-tlvs?      yang:counter32
+        |  +--ro total-unrecognized-tlvs?   yang:counter32
+        +--ro remote-systems-data* [time-mark remote-index]
+           +--ro time-mark                        yang:timeticks
+           +--ro remote-index                     uint32
+           +--ro remote-too-many-neighbors?       boolean
+           +--ro remote-changes?                  boolean
+           +--ro chassis-id-subtype?              ieee:chassis-id-subtype-type
+           +--ro chassis-id?                      ieee:chassis-id-type
+           +--ro port-id-subtype?                 ieee:port-id-subtype-type
+           +--ro port-id?                         ieee:port-id-type
+           +--ro port-desc?                       string
+           +--ro system-name?                     string
+           +--ro system-description?              string
+           +--ro system-capabilities-supported?   lldp-types:system-capabilities-map
+           +--ro system-capabilities-enabled?     lldp-types:system-capabilities-map
+           +--ro management-address* [address-subtype address]
+           |  +--ro address-subtype    identityref
+           |  +--ro address            lldp-types:man-addr-type
+           |  +--ro if-subtype?        lldp-types:man-addr-if-subtype
+           |  +--ro if-id?             uint32
+           +--ro remote-unknown-tlv* [tlv-type]
+           |  +--ro tlv-type    uint32
+           |  +--ro tlv-info?   binary
+           +--ro remote-org-defined-info* [info-identifier info-subtype info-index]
+              +--ro info-identifier    uint32
+              +--ro info-subtype       uint32
+              +--ro info-index         uint32
+              +--ro remote-info?       binary
+
+  notifications:
+    +---n remote-table-change
+
+module: ieee802-dot1q-tsn-config-uni
+  +--rw tsn-uni
+     +--rw domain* [domain-id]
+        +--rw domain-id      string
+        +--rw cnc-enabled?   boolean
+        +--rw cuc* [cuc-id]
+           +--rw cuc-id            string
+           +--rw stream* [stream-id]
+           |  +--rw stream-id            tsn:stream-id-type
+           |  +--ro stream-status?       enumeration
+           |  +--rw talker
+           |  |  +--rw stream-rank
+           |  |  |  +--rw rank?   uint8
+           |  |  +--rw end-station-interfaces* [mac-address interface-name]
+           |  |  |  +--rw mac-address       string
+           |  |  |  +--rw interface-name    string
+           |  |  +--rw data-frame-specification* [index]
+           |  |  |  +--rw index                          uint8
+           |  |  |  +--rw (field)?
+           |  |  |     +--:(ieee802-mac-addresses)
+           |  |  |     |  +--rw ieee802-mac-addresses
+           |  |  |     |     +--rw destination-mac-address?   string
+           |  |  |     |     +--rw source-mac-address?        string
+           |  |  |     +--:(ieee802-vlan-tag)
+           |  |  |        +--rw ieee802-vlan-tag
+           |  |  |           +--rw priority-code-point?   uint8
+           |  |  |           +--rw vlan-id?               uint16
+           |  |  +--rw traffic-specification
+           |  |  |  +--rw interval
+           |  |  |  |  +--rw numerator?     uint32
+           |  |  |  |  +--rw denominator?   uint32
+           |  |  |  +--rw max-frames-per-interval?   uint16
+           |  |  |  +--rw max-frame-size?            uint16
+           |  |  |  +--rw transmission-selection?    uint8
+           |  |  |  +--rw time-aware!
+           |  |  |     +--rw earliest-transmit-offset?   uint32
+           |  |  |     +--rw latest-transmit-offset?     uint32
+           |  |  |     +--rw jitter?                     uint32
+           |  |  +--rw user-to-network-requirements
+           |  |  |  +--rw num-seamless-trees?   uint8
+           |  |  |  +--rw max-latency?          uint32
+           |  |  +--rw interface-capabilities
+           |  |  |  +--rw vlan-tag-capable?           boolean
+           |  |  |  +--rw cb-stream-iden-type-list*   uint32
+           |  |  |  +--rw cb-sequence-type-list*      uint32
+           |  |  +--ro accumulated-latency?            uint32
+           |  |  +--ro interface-configuration
+           |  |     +--ro interface-list* [mac-address interface-name]
+           |  |        +--ro mac-address       string
+           |  |        +--ro interface-name    string
+           |  |        +--ro config-list* [index]
+           |  |           +--ro index                          uint8
+           |  |           +--ro (config-value)?
+           |  |              +--:(ieee802-mac-addresses)
+           |  |              |  +--ro ieee802-mac-addresses
+           |  |              |     +--ro destination-mac-address?   string
+           |  |              |     +--ro source-mac-address?        string
+           |  |              +--:(ieee802-vlan-tag)
+           |  |              |  +--ro ieee802-vlan-tag
+           |  |              |     +--ro priority-code-point?   uint8
+           |  |              |     +--ro vlan-id?               uint16
+           |  |              +--:(time-aware-offset)
+           |  |                 +--ro time-aware-offset?       uint32
+           |  +--rw listener* [index]
+           |  |  +--rw index                           uint32
+           |  |  +--rw end-station-interfaces* [mac-address interface-name]
+           |  |  |  +--rw mac-address       string
+           |  |  |  +--rw interface-name    string
+           |  |  +--rw user-to-network-requirements
+           |  |  |  +--rw num-seamless-trees?   uint8
+           |  |  |  +--rw max-latency?          uint32
+           |  |  +--rw interface-capabilities
+           |  |  |  +--rw vlan-tag-capable?           boolean
+           |  |  |  +--rw cb-stream-iden-type-list*   uint32
+           |  |  |  +--rw cb-sequence-type-list*      uint32
+           |  |  +--ro accumulated-latency?            uint32
+           |  |  +--ro interface-configuration
+           |  |     +--ro interface-list* [mac-address interface-name]
+           |  |        +--ro mac-address       string
+           |  |        +--ro interface-name    string
+           |  |        +--ro config-list* [index]
+           |  |           +--ro index                          uint8
+           |  |           +--ro (config-value)?
+           |  |              +--:(ieee802-mac-addresses)
+           |  |              |  +--ro ieee802-mac-addresses
+           |  |              |     +--ro destination-mac-address?   string
+           |  |              |     +--ro source-mac-address?        string
+           |  |              +--:(ieee802-vlan-tag)
+           |  |              |  +--ro ieee802-vlan-tag
+           |  |              |     +--ro priority-code-point?   uint8
+           |  |              |     +--ro vlan-id?               uint16
+           |  |              +--:(time-aware-offset)
+           |  |                 +--ro time-aware-offset?       uint32
+           |  +--ro status-info
+           |  |  +--ro talker-status?     enumeration
+           |  |  +--ro listener-status?   enumeration
+           |  |  +--ro failure-code?      uint8
+           |  +--ro failed-interfaces* [mac-address interface-name]
+           |     +--ro mac-address       string
+           |     +--ro interface-name    string
+           +---x remove_streams
+              +---w input
+              |  +---w stream-list* [stream-id]
+              |     +---w stream-id    tsn:stream-id-type
+              +--ro output
+                 +--ro result?   string
+
+  rpcs:
+    +---x compute_streams
+    |  +---w input
+    |  |  +---w domain* [domain-id]
+    |  |     +---w domain-id    -> /tsn-uni/domain/domain-id
+    |  |     +---w cuc* [cuc-id]
+    |  |        +---w cuc-id         -> /tsn-uni/domain/cuc/cuc-id
+    |  |        +---w stream-list* [stream-id]
+    |  |           +---w stream-id    -> /tsn-uni/domain/cuc/stream/stream-id
+    |  +--ro output
+    |     +--ro result?   string
+    +---x compute_planned_and_modified_streams
+    |  +---w input
+    |  |  +---w domain* [domain-id]
+    |  |     +---w domain-id    string
+    |  |     +---w cuc* [cuc-id]
+    |  |        +---w cuc-id    string
+    |  +--ro output
+    |     +--ro result?   string
+    +---x compute_all_streams
+    |  +---w input
+    |  |  +---w domain* [domain-id]
+    |  |     +---w domain-id    string
+    |  |     +---w cuc* [cuc-id]
+    |  |        +---w cuc-id    string
+    |  +--ro output
+    |     +--ro result?   string
+    +---x request_domain_id
+    |  +---w input
+    |  |  +---w cuc-id?   string
+    |  +--ro output
+    |     +--ro result?   string
+    +---x request_free_stream_id
+       +---w input
+       |  +---w domain-id?   string
+       |  +---w cuc-id?      string
+       +--ro output
+          +--ro result?   string
+
+  notifications:
+    +---n compute_streams_completed
+    |  +--ro domain* [domain-id]
+    |     +--ro domain-id    string
+    |     +--ro cuc* [cuc-id]
+    |        +--ro cuc-id    string
+    |        +--ro stream* [stream-id]
+    |           +--ro stream-id       tsn:stream-id-type
+    |           +--ro failure-code?   uint8
+    +---n configure_streams_completed
+    |  +--ro domain* [domain-id]
+    |     +--ro domain-id    string
+    |     +--ro cuc* [cuc-id]
+    |        +--ro cuc-id    string
+    |        +--ro stream* [stream-id]
+    |           +--ro stream-id       tsn:stream-id-type
+    |           +--ro failure-code?   uint8
+    +---n remove_streams_completed
+       +--ro domain* [domain-id]
+          +--ro domain-id    string
+          +--ro cuc* [cuc-id]
+             +--ro cuc-id    string
+             +--ro stream* [stream-id]
+                +--ro stream-id       tsn:stream-id-type
+                +--ro failure-code?   uint8
+
+module: excelfore-config-uni
+  +--rw xl4-uni
+     +--rw domain* [domain-id]
+        +--rw domain-id        string
+        +--rw nconf-servers* [name]
+           +--rw name         string
+           +--rw address?     inet:host
+           +--rw transport?   identityref
+

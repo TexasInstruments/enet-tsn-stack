@@ -77,12 +77,12 @@ static void setup_gptp_capable_tlv(md_signaling_send_data_t *sm, void *sdata)
 {
 	MDPTPMsgGPTPCapableTLV *gcmsg=(MDPTPMsgGPTPCapableTLV *)sdata;
 	PTPMsgGPTPCapableTLV *gctlm=(PTPMsgGPTPCapableTLV *)sm->rcvd_txmsg;
-	gcmsg->tlvType_ns = htons(gctlm->tlvType);
-	gcmsg->lengthField_ns = htons(gctlm->lengthField);
-	memcpy(gcmsg->organizationId, gctlm->organizationId, 3);
-	gcmsg->organizationSubType_nb[0] = (gctlm->organizationSubType >> 16u) & 0xffu;
-	gcmsg->organizationSubType_nb[1] = (gctlm->organizationSubType >> 8u) & 0xffu;
-	gcmsg->organizationSubType_nb[2] = gctlm->organizationSubType & 0xffu;
+	gcmsg->signalingMsgHdr.tlvType_ns = htons(gctlm->tlvType);
+	gcmsg->signalingMsgHdr.lengthField_ns = htons(gctlm->lengthField);
+	memcpy(gcmsg->signalingMsgHdr.organizationId, gctlm->organizationId, 3);
+	gcmsg->signalingMsgHdr.organizationSubType_nb[0] = (gctlm->organizationSubType >> 16u) & 0xffu;
+	gcmsg->signalingMsgHdr.organizationSubType_nb[1] = (gctlm->organizationSubType >> 8u) & 0xffu;
+	gcmsg->signalingMsgHdr.organizationSubType_nb[2] = gctlm->organizationSubType & 0xffu;
 	gcmsg->logGptpCapableMessageInterval = gctlm->logGptpCapableMessageInterval;
 	gcmsg->flags = gctlm->flags;
 }
@@ -91,12 +91,12 @@ static void setup_msg_interval_req_tlv(md_signaling_send_data_t *sm, void *sdata
 {
 	MDPTPMsgIntervalRequestTLV *mrmsg=(MDPTPMsgIntervalRequestTLV *)sdata;
 	PTPMsgIntervalRequestTLV *mrtlm=(PTPMsgIntervalRequestTLV *)sm->rcvd_txmsg;
-	mrmsg->tlvType_ns = htons(mrtlm->tlvType);
-	mrmsg->lengthField_ns = htons(mrtlm->lengthField);
-	memcpy(mrmsg->organizationId, mrtlm->organizationId, 3);
-	mrmsg->organizationSubType_nb[0] = (mrtlm->organizationSubType >> 16u) & 0xffu;
-	mrmsg->organizationSubType_nb[1] = (mrtlm->organizationSubType >> 8u) & 0xffu;
-	mrmsg->organizationSubType_nb[2] = mrtlm->organizationSubType & 0xffu;
+	mrmsg->signalingMsgHdr.tlvType_ns = htons(mrtlm->tlvType);
+	mrmsg->signalingMsgHdr.lengthField_ns = htons(mrtlm->lengthField);
+	memcpy(mrmsg->signalingMsgHdr.organizationId, mrtlm->organizationId, 3);
+	mrmsg->signalingMsgHdr.organizationSubType_nb[0] = (mrtlm->organizationSubType >> 16u) & 0xffu;
+	mrmsg->signalingMsgHdr.organizationSubType_nb[1] = (mrtlm->organizationSubType >> 8u) & 0xffu;
+	mrmsg->signalingMsgHdr.organizationSubType_nb[2] = mrtlm->organizationSubType & 0xffu;
 	mrmsg->linkDelayInterval = mrtlm->linkDelayInterval;
 	mrmsg->timeSyncInterval = mrtlm->timeSyncInterval;
 	mrmsg->announceInterval = mrtlm->announceInterval;

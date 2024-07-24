@@ -1,0 +1,21 @@
+module: ietf-yang-library
+  +--ro modules-state
+     +--ro module-set-id    string
+     +--ro module* [name revision]
+        +--ro name                yang:yang-identifier
+        +--ro revision            union
+        +--ro schema?             inet:uri
+        +--ro namespace           inet:uri
+        +--ro feature*            yang:yang-identifier
+        +--ro deviation* [name revision]
+        |  +--ro name        yang:yang-identifier
+        |  +--ro revision    union
+        +--ro conformance-type    enumeration
+        +--ro submodule* [name revision]
+           +--ro name        yang:yang-identifier
+           +--ro revision    union
+           +--ro schema?     inet:uri
+
+  notifications:
+    +---n yang-library-change
+       +--ro module-set-id    -> /modules-state/module-set-id

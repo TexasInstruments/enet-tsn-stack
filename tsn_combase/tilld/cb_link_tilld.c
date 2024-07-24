@@ -261,3 +261,31 @@ void *cbl_query_thread(void *ptr)
 	}
 	return NULL;
 }
+
+int cbl_bridge_open(combase_link_data_t *cbld, const char *bridgename,
+		    uint16_t ports, const char *port_names)
+{
+	UB_LOG(UBL_DEBUG, "%s: Not supported yet\n", __func__);
+	return 0;
+}
+
+int cbl_bridge_close(combase_link_data_t *cbld, const char *bridgename)
+{
+	UB_LOG(UBL_DEBUG, "%s: Not supported yet\n", __func__);
+	return 0;
+}
+
+int cbl_bridge_set_vlan(combase_link_data_t *cbld, const char *bridgename,
+			int port_ref, uint16_t vid1, uint16_t vid2, bool reg)
+{
+	UB_LOG(UBL_DEBUG, "%s: Not supported yet\n", __func__);
+	return 0;
+}
+
+int cbl_bridge_set_forwarding(combase_link_data_t *cbld, const char *bridgename,
+			      int iport_ref, int eport_ref, ub_macaddr_t destmac,
+			      uint8_t priority, bool reg)
+{
+	UB_LOG(UBL_DEBUG, "%s: Not supported yet\n", __func__);
+	return 0;
+}

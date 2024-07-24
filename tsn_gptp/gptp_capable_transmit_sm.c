@@ -71,7 +71,8 @@ typedef enum {
 
 static void *setGptpCapableTlv(gptp_capable_transmit_data_t *sm)
 {
-	sm->signalingMsg.tlvType=0x03;
+	// 10.6.4.4 gPTP-capable TLV definition
+	sm->signalingMsg.tlvType=0x8000;
 	sm->signalingMsg.lengthField=12;
 	sm->signalingMsg.organizationId[0]=0x00;
 	sm->signalingMsg.organizationId[1]=0x80;

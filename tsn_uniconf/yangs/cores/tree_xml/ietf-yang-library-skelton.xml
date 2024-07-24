@@ -1,0 +1,25 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<modules-state xmlns="urn:ietf:params:xml:ns:yang:ietf-yang-library">
+		<module-set-id/>
+		<module>
+			<name/>
+			<revision/>
+			<schema/>
+			<namespace/>
+			<feature>
+				<!-- # entries: 0.. -->
+			</feature>
+			<deviation>
+				<name/>
+				<revision/>
+			</deviation>
+			<conformance-type/>
+			<submodule>
+				<name/>
+				<revision/>
+				<schema/>
+			</submodule>
+		</module>
+	</modules-state>
+</data>

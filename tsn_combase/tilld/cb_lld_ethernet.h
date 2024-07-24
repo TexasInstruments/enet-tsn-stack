@@ -421,7 +421,6 @@ int cb_lld_get_link_info(CB_SOCKET_T cfd, const char *dev, uint32_t *speed, uint
  * @brief Get stats info from host or mac port.
  * @param sfd socket fd
  * @param port 0xFF: host port;  less than 0xFF:  mac port.
- * @param stats stats info of the port.
  * @note valid index of mac port depends on HW platform
  * @return 0 on success, -1 on failure
  */

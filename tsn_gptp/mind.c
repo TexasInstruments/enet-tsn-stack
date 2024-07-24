@@ -227,21 +227,28 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 			gptpInstanceIndex,
 			IEEE1588_PTP_TT_USE_MGT_ONE_STEP_TX_OPER,
 			portIndex, domainIndex, YDBI_STATUS)==1);
-	(*ppglb)->mgtSettableOneStepTxOper =
-		(gptpgcfg_get_yang_portds_intitem(
-			gptpInstanceIndex,
-			IEEE1588_PTP_TT_MGT_ONE_STEP_TX_OPER,
-			portIndex, domainIndex, YDBI_STATUS)==1);
 	(*ppglb)->initialOneStepTxOper =
 		(gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
 			IEEE1588_PTP_TT_INITIAL_ONE_STEP_TX_OPER,
 			portIndex, domainIndex, YDBI_STATUS)==1);
-	(*ppglb)->currentOneStepTxOper =
-		(gptpgcfg_get_yang_portds_intitem(
-			gptpInstanceIndex,
-			IEEE1588_PTP_TT_CURRENT_ONE_STEP_TX_OPER,
-			portIndex, domainIndex, YDBI_STATUS)==1);
+	if((*ppglb)->useMgtSettableOneStepTxOper){
+		// use-mgt-one-step-tx-oper is true
+		(*ppglb)->mgtSettableOneStepTxOper =
+			(gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_TT_MGT_ONE_STEP_TX_OPER,
+				portIndex, domainIndex, YDBI_STATUS)==1);
+		(*ppglb)->currentOneStepTxOper = (*ppglb)->mgtSettableOneStepTxOper;
+	}else{
+		// use-mgt-one-step-tx-oper is false
+		(*ppglb)->currentOneStepTxOper = (*ppglb)->initialOneStepTxOper;
+	}
+	gptpgcfg_set_yang_port_item(gptpInstanceIndex, IEEE1588_PTP_TT_PORT_DS,
+				    IEEE1588_PTP_TT_CURRENT_ONE_STEP_TX_OPER,
+				    portIndex, domainIndex, YDBI_STATUS,
+				    &(*ppglb)->currentOneStepTxOper, sizeof(int8_t),
+				    YDBI_NO_NOTICE);
 
 	if(tasglb->perfmonEnable){
 		(*ppglb)->perfmonDS=

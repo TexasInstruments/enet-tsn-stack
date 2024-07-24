@@ -80,6 +80,10 @@
 #define CB_SOCKET_T int
 #define CB_SOCKET_VALID(x) ((x)>=0)
 #define CB_SOCKET_INVALID_VALUE -1
+#define CB_STDIN_FILENO STDIN_FILENO
+#define CB_STDOUT_FILENO STDOUT_FILENO
+#define CB_STDERR_FILENO STDERR_FILENO
+#define CB_SOCKET_INC(x) ((x)+1)
 #define CB_ETHHDR_T struct ethhdr
 #define CB_SOCKLEN_T socklen_t
 #define CB_SOCKADDR_T struct sockaddr

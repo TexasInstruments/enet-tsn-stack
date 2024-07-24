@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<xl4-uni xmlns="http://excelfore.com/ns/excelfore-config-uni">
+		<domain>
+			<domain-id/>
+			<nconf-servers>
+				<name/>
+				<address/>
+				<transport/>
+			</nconf-servers>
+		</domain>
+	</xl4-uni>
+</data>
