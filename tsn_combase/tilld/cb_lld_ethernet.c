@@ -106,11 +106,26 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 	for (i = 0U; i < MAX_NUM_RX_DMA_CH_PER_INSTANCE; i++) {
 		update_cfg->dmaRxChId[i] = -1;
 	}
-	update_cfg->unusedDmaRx = -1;
-	update_cfg->unusedDmaTx = -1;
+	update_cfg->dmaTxShared = -1;
 	update_cfg->dmaRxShared = -1;
 	update_cfg->dmaRxOwner = -1;
-	update_cfg->numRxChannels = 0;
+	update_cfg->numRxChannels = -1;
+	if(llrawp->rw_type == CB_RAWSOCK_RDONLY){
+		ecfg->unusedDmaTx = true;
+		ecfg->unusedDmaRx = false;
+	} else if(llrawp->rw_type == CB_RAWSOCK_WRONLY){
+		ecfg->unusedDmaTx = false;
+		ecfg->unusedDmaRx = true;
+	} else {
+		/* Allow both read and write permission */
+		ecfg->unusedDmaTx = false;
+		ecfg->unusedDmaRx = false;
+	}
+	if (llrawp->proto == ETH_P_NETLINK) {
+		ecfg->unusedDmaRx = true; /* always not use DMA */
+		ecfg->unusedDmaTx = true; /* always not use DMA */
+	}
+
 	if (s_socket_lldcfg_update_cb != NULL) {
 		UB_PROTECTED_FUNC(s_socket_lldcfg_update_cb, res, update_cfg);
 		if (res != 0) {
@@ -135,25 +150,17 @@ static int update_enet_cfg(cb_rawsock_paras_t *llrawp, LLDEnetCfg_t *ecfg,
 	if (update_cfg->dmaTxChId >= 0) {
 		ecfg->dmaTxChId = update_cfg->dmaTxChId;
 	}
-	if (update_cfg->numRxChannels >= 0) {
+	if (update_cfg->numRxChannels > 0) {
 		ecfg->numRxChannels = update_cfg->numRxChannels;
 	}
-	if (llrawp->proto == ETH_P_NETLINK) {
-		ecfg->unusedDmaRx = true; /* always not use DMA */
-		ecfg->unusedDmaTx = true; /* always not use DMA */
-	} else {
-		if (update_cfg->unusedDmaRx >= 0) {
-			ecfg->unusedDmaRx = (update_cfg->unusedDmaRx > 0) ? true : false;
-		}
-		if (update_cfg->unusedDmaTx >= 0) {
-			ecfg->unusedDmaTx = (update_cfg->unusedDmaTx > 0) ? true : false;
-		}
-		if (update_cfg->dmaRxShared >= 0) {
-			ecfg->dmaRxShared = (update_cfg->dmaRxShared > 0) ? true : false;
-		}
-		if (update_cfg->dmaRxOwner >= 0) {
-			ecfg->dmaRxOwner = (update_cfg->dmaRxOwner > 0) ? true : false;
-		}
+	if (update_cfg->dmaRxShared >= 0) {
+		ecfg->dmaRxShared = (update_cfg->dmaRxShared > 0) ? true : false;
+	}
+	if (update_cfg->dmaRxOwner >= 0) {
+		ecfg->dmaRxOwner = (update_cfg->dmaRxOwner > 0) ? true : false;
+	}
+	if (update_cfg->dmaTxShared >= 0) {
+		ecfg->dmaTxShared = (update_cfg->dmaTxShared > 0) ? true : false;
 	}
 
 	return 0;
@@ -620,6 +627,29 @@ int cb_lld_sendto(CB_SOCKET_T sfd, void *data, int size, int flags,
 	return size;
 }
 
+int cb_lld_sendto_scatter(CB_SOCKET_T sfd, LLDEnetFrameScatter_t *frame,
+						  const CB_SOCKADDR_LL_T *addr)
+{
+	int i;
+	int size=0;
+	int result;
+
+	if ((frame == NULL) || (addr == NULL) || (addr->macport < 0)) {
+		UB_LOG(UBL_ERROR,"%s:invalid param\n", __func__);
+		return -1;
+	}
+	for(i=0; i<frame->nBufs; i++){
+		size+=frame->size[i];
+	}
+
+	result = LLDEnetSendScatter(sfd->lldenet, frame);
+	if (result != LLDENET_E_OK) {
+		UB_LOG(UBL_ERROR,"%s:sent failed %d\n", __func__, result);
+		return -1;
+	}
+	return size;
+}
+
 int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size,
 		CB_SOCKADDR_LL_T *addr, int addrsize)
 {
@@ -651,27 +681,8 @@ int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size,
 	return frame.size;
 }
 
-typedef struct {
-	cb_lld_zerocopy_recv_cb_t cblld_recv_cb;
-	void *cblld_cbarg;
-} LLDEnetRecvCbArg_t;
-
-static void LLDEnetRecvCb(LLDEnetFrame_t *frame, void *cbarg)
+int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, LLDEnetRecvCb_t cblld_recv_cb, void *cbarg)
 {
-	CB_SOCKADDR_LL_T addr;
-	LLDEnetRecvCbArg_t *lldEnetCbArg = (LLDEnetRecvCbArg_t *)cbarg;
-
-	memset(&addr, 0, sizeof(addr));
-	addr.macport = frame->port;
-	addr.rxts = frame->rxts;
-	lldEnetCbArg->cblld_recv_cb(frame->buf, frame->size, &addr,
-								lldEnetCbArg->cblld_cbarg);
-}
-
-int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, cb_lld_zerocopy_recv_cb_t cblld_recv_cb,
-						 void *cbarg)
-{
-	LLDEnetRecvCbArg_t lldEnetCbArg;
 	int res;
 
 	if (sfd == NULL) {
@@ -679,10 +690,7 @@ int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, cb_lld_zerocopy_recv_cb_t cblld_recv_c
 		return -1;
 	}
 
-	memset(&lldEnetCbArg, 0, sizeof(lldEnetCbArg));
-	lldEnetCbArg.cblld_recv_cb = cblld_recv_cb;
-	lldEnetCbArg.cblld_cbarg = cbarg;
-	res = LLDEnetRecvZeroCopy(sfd->lldenet, LLDEnetRecvCb, &lldEnetCbArg);
+	res = LLDEnetRecvZeroCopy(sfd->lldenet, cblld_recv_cb, cbarg);
 	if (res != LLDENET_E_OK) {
 		if (res == LLDENET_E_NOAVAIL) {
 			return 0;

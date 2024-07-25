@@ -60,7 +60,7 @@
 #include <stdio.h>
 #include <tsn_combase/combase.h>
 
-#ifdef POSIX_PLATFORM
+#ifndef MKPIPE
 #include <unistd.h>
 #define MKPIPE pipe
 #endif
@@ -71,7 +71,9 @@
 #endif
 
 /* the most of platforms use un-tagged packets as received data */
+#ifndef VLAN_REC_TAGGED
 #define VLAN_REC_TAGGED false
+#endif
 
 #if defined(GHINTEGRITY)
 #define THREAD_HIGH_PRI 190

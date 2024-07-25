@@ -605,6 +605,17 @@ int LLDEnetSend(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 	return LLDEnetSendMulti(hLLDEnet, frame, 1);
 }
 
+int LLDEnetSendMultiScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frames,
+							uint32_t nFrames)
+{
+	return LLDENET_E_NOTSUPPORTED;
+}
+
+int LLDEnetSendScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frame)
+{
+	return LLDEnetSendMultiScatter(hLLDEnet, frame, 1);
+}
+
 int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 {
 	EnetDma_Pkt *pktInfo;
@@ -776,6 +787,12 @@ bool LLDEnetIsRxTsInPkt(LLDEnet_t *hLLDEnet)
 void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[],
 					 int nPorts, uint8_t priority)
 {
+}
+
+int LLDEnetEnablePriority2QueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
+				       cbl_qmap_params_t *cqp)
+{
+	return LLDENET_E_UNSUPPORT;
 }
 
 int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,

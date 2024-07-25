@@ -73,8 +73,8 @@ typedef struct cb_rate_reporter {
 	uint64_t period_size;  //!< Total size sent for period time
 	uint64_t send_byte;    //!< Byte need to be sent to guarantee the rate
 	uint64_t period_ns;    //!< Period in nanosecond
-	uint64_t latency_min;  //!< MIN latency recorded
-	uint64_t latency_max;  //!< MAX latency recorded
+	int64_t latency_min;  //!< MIN latency recorded
+	int64_t latency_max;  //!< MAX latency recorded
 	uint64_t latency_accum;//!< Total latency recorded
 	uint64_t latency_count;//!< Number of latency. Work as a pair with latency_accum to calc average latency
 } cb_rate_reporter_t;
@@ -137,7 +137,7 @@ void cb_rate_reporter_period_reset(struct cb_rate_reporter *brater);
  * @param brater Bitrate reporter
  * @param latency ts diff between current and previous received packet
  */
-void cb_rate_reporter_update_latency(struct cb_rate_reporter *brater, uint64_t latency);
+void cb_rate_reporter_update_latency(struct cb_rate_reporter *brater, int64_t latency);
 
 /**
  * @brief Call this function at the end of each loop.

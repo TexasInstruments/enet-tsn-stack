@@ -54,6 +54,7 @@
 #include <enet_apputils.h>
 #include <enet_mcm.h>
 #include "bufring.h"
+#include "combase.h"
 
 #ifndef ENET_MEM_NUM_TX_PKTS
 #define ENET_MEM_NUM_TX_PKTS 16
@@ -95,7 +96,9 @@ typedef struct {
 	void *txCbArg;
 	uint32_t nTxPkts;
 	uint32_t pktSize;
-	bool hasOwner;
+	bool dmaTxShared;
+	int refCount;
+	CB_THREAD_MUTEX_T txMutex;
 } LLDEnetTxDma_t;
 
 typedef struct {
@@ -162,6 +165,14 @@ struct LLDEnet {
 	int subRxIndex;
 	/* true when Rx timestamp is in the dmaPktInfo, should be set as true for ICSSG */
 	bool isRxTsInPkt;
+	/*
+	 * If the TX DMA channel is shared, the first app will own the TX DMA channel
+	 * and the other apps will share the TX DMA channel.
+	 * If the TX DMA channel is not shared, each app will have its own TX DMA channel.
+	 * The last app used TX DMA channle will close the channel even if it
+	 * is not an owner.
+	 */
+	bool dmaTxOwner;
 };
 
 #endif //LLDENET_PRIV_H_

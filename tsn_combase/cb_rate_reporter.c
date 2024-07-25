@@ -76,7 +76,7 @@ uint64_t cb_rate_reporter_gen(struct cb_rate_reporter *brater, int mbps)
 	brater->end_ts = ts;
 	if(dts == 0){return 0;}
 
-	size_i = mbps * 1048576 * dts;
+	size_i = mbps * 1e6 * dts;
 	size_i /= ( (uint64_t)8 * (uint64_t)1e9 );
 	size = (double)size_i;
 
@@ -92,12 +92,12 @@ void cb_rate_reporter_calc(struct cb_rate_reporter *brater, double *rate, double
 	//total rate
 	dts = brater->end_ts - brater->start_ts;
 	*rate = ((double)brater->total_size * 8.0)/((double)dts/1.0e9);
-	*rate = *rate/1048576.0;
+	*rate = *rate/(1.0e6);
 
 	//period rate
 	dts = brater->end_ts - brater->last_ts;
 	*prate = ((double)brater->period_size * 8.0)/((double)dts/1.0e9);
-	*prate = *prate/1048576.0;
+	*prate = *prate/1.0e6;
 
     if (brater->latency_count != 0) // Apply for listener only
     {
@@ -138,7 +138,7 @@ void cb_rate_reporter_period_reset(struct cb_rate_reporter *brater)
 	}
 }
 
-void cb_rate_reporter_update_latency(struct cb_rate_reporter *brater, uint64_t latency)
+void cb_rate_reporter_update_latency(struct cb_rate_reporter *brater, int64_t latency)
 {
 	if(brater->latency_max == 0){ //first time
 		brater->latency_min = latency;

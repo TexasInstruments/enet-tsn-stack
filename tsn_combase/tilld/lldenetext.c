@@ -423,17 +423,6 @@ int LLDEnetIETSetConfig(LLDEnet_t *hLLDEnet, uint8_t macPort,
 	return status;
 }
 
-int LLDEnetEnableTCQueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
-				cbl_qmap_params_t *cqp)
-{
-	/**
-	* In MCU platform, since priority to queue mapping is configured
-	* in the application when it opens CPSW driver, no need to invoke 
-	* any driver api here.
-	* */
-	return LLDENET_E_OK;
-}
-
 int LLDEnetGetPortStats(LLDEnet_t *hLLDEnet, uint8_t port, void *prm, int prmSize)
 {
 	Enet_IoctlPrms prms;

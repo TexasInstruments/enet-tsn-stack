@@ -584,11 +584,13 @@ typedef struct avtpc_payload_profile {
  */
 typedef struct avbtp_cd_info {
 	/* information in the received header */
+	avbtp_subtype_def_t subtype;
 	bool stream_id_valid;
 	uint8_t version;
 	uint32_t fsd0; // seqnum for NTSCF
 	ub_streamid_t stream_id;
 	ub_macaddr_t s_addr;
+	uint8_t seqn_diff; // supported only for NTSCF at this time
 } avbtp_cd_info_t;
 
 /**

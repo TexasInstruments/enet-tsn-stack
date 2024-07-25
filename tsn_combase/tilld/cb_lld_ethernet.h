@@ -222,15 +222,11 @@ typedef struct {
 	 */
 	int dmaRxChId[MAX_NUM_RX_DMA_CH_PER_INSTANCE];
 	/**
-	 * >0: won't use DMA RX; 0: will use DMA RX
+	 * Only Sitara support this param.
+	 * >0: the dmaTxChId is shared between apps; 0: not shared
 	 * 0 or positive value will be updated to LLDEnetCfg_t
 	 */
-	int unusedDmaRx;
-	/**
-	 * >0: won't use DMA TX; 0: will use DMA TX
-	 * 0 or positive value will be updated to LLDEnetCfg_t
-	 */
-	int unusedDmaTx;
+	int dmaTxShared;
 	/**
 	 * Only Sitara AM273x support this param.
 	 * >0: the dmaRxChId is shared between apps; 0: not shared
@@ -256,7 +252,7 @@ typedef struct {
 	/**
 	 * Number of Rx DMA channels, only ICSSG peripheral has more than 1 Rx DMA channels.
 	 */
-	uint32_t numRxChannels;
+	int numRxChannels;
 } cb_socket_lldcfg_update_t;
 
 /* Number of elements in a statistics block */
@@ -318,10 +314,20 @@ int cb_lld_netdev_to_macport(const char *netdev);
  * @param flags it is unused now, keep it to make it compatible with POSIX sendto
  * @param addr destination address info
  * @param addrsize address size
- * @return 0: OK, <0: error, detailed error will be printed out.
+ * @return number of sent bytes if OK, <0: error, detailed error will be printed out.
  */
 int cb_lld_sendto(CB_SOCKET_T sfd, void *sdata, int psize, int flags,
 				 const CB_SOCKADDR_LL_T *addr, int addrsize);
+
+/**
+ * @brief Send a TX ethernet L2 packet in the scatter way.
+ * @param sfd socket fd
+ * @param frame ethernet L2 packet in the scatter way
+ * @param addr destination address info
+ * @return number of sent bytes if OK, <0: error, detailed error will be printed out.
+ */
+int cb_lld_sendto_scatter(CB_SOCKET_T sfd, LLDEnetFrameScatter_t *frame,
+						  const CB_SOCKADDR_LL_T *addr);
 
 /**
  * @brief Receive a RX ethernet L2 packet.
@@ -336,8 +342,6 @@ int cb_lld_sendto(CB_SOCKET_T sfd, void *sdata, int psize, int flags,
 int cb_lld_recv(CB_SOCKET_T sfd, void *buf, int size,
 		CB_SOCKADDR_LL_T *addr, int addrsize);
 
-typedef void (*cb_lld_zerocopy_recv_cb_t)(void *buf, int size,
-					CB_SOCKADDR_LL_T *addr, void *cbarg);
 /**
  * @brief Receive a RX ethernet L2 packet n the zero-copy way.
  * This should be called after a rxnotify_cb is invoked.
@@ -346,8 +350,7 @@ typedef void (*cb_lld_zerocopy_recv_cb_t)(void *buf, int size,
  * @param cbarg the callback argument
  * @return <0: error; 0: No data available; 0xFFFF: Unmatched data filter; 1: received data
  */
-int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, cb_lld_zerocopy_recv_cb_t cblld_recv_cb,
-						void *cbarg);
+int cb_lld_recv_zerocopy(CB_SOCKET_T sfd, LLDEnetRecvCb_t cblld_recv_cb, void *cbarg);
 
 /**
  * @brief Set the TX notify callback that is invoked when an TX packet

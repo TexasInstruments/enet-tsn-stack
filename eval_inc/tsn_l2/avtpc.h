@@ -76,7 +76,80 @@ typedef struct avtpc_data avtpc_data_t;
 avtpc_data_t *avtpc_init(char *shsuf);
 
 /**
+ * @brief set the direct mode of the transmitter.
+ * The talker sends packets directly to the network instead of through avtpd.
+ * This mode is used in case need to improve the performance and latency of the talker.
+ * In this mode, the software traffic shaper is disabled.
+ * To run multiple talkers in the direct mode, each talker must instantiate multiple
+ * separated avtpc instances by calling @ref avtpc_init().
+ * This mode can coexist with the avtpd.
+ * @param avtpc	the data handle of avtpc
+ * @return 0:success, -1:error
+ * @note This function must be called before avtpc_connection_request().
+ */
+int avtpc_set_txdirect(avtpc_data_t *avtpc);
+
+/**
+ * @brief Set the the rxdirect mode of the receiver.
+ *
+ * This mode is used in case we need to improve the performance and
+ * latency of the listener.
+ *
+ * The listener receives packets directly from the network, bypassing avtpd.
+ * Once this mode is set for a listener connection, the avtpd cannot be used
+ * for interfaces handled by this avtpc instance.
+ * Note that a single 'avtpc' will receive all packets from the interface,
+ * and it is the user's responsibility to select the expected stream ID based on
+ * avbtp_rcv_cb_t from the receive callback. The avtpc will not filter packets
+ * based on the stream ID.
+ * Setting multiple listener connection instances to the direct mode or mixing up
+ * with running 'avtpd' for the same interface will result the undefined behavior.
+ *
+ * @param avtpc Pointer to avtpc_data_t structure.
+ * @return 0:success, -1:error
+ * @note This function must be called before @ref avtpc_connection_request().
+ * Only one 'avtpc' or 'avtpc_crf' or 'avtpc_acf' instance can be set to direct mode
+ * for a listener connection.
+ */
+int avtpc_set_rxdirect(avtpc_data_t *avtpc);
+
+/**
+ * @brief set the list of join multicast address beyond the join_mcast
+ * specified in the ccr. This function is used only in the rxdirect mode to support
+ * receiving multiple streams from multiple multicast addresses.
+ * @param avtpc	the data handle of avtpc
+ * @param join_mcasts	list of join multicast addresses
+ * @param num_mcasts	number of join multicast addresses
+ * @return 0: success, -1: error
+ * @note This function must be called before avtpc_connection_request().
+ * @note Only one avtpc or avtpc_crf or avtpc_acf instance can be set to rxdirect mode.
+ */
+int avtpc_set_join_mcasts(avtpc_data_t *avtpc, ub_macaddr_t join_mcasts[],
+						   int num_mcasts);
+
+/**
+ * @brief set the stream data to be sent and received through the UDP test port
+ * @param avtpc	the data handle of avtpc
+ * @param tsport	source port number for the test mode
+ * @param tdport	destination port number for the test mode
+ * @return 0: success, -1: error
+ * @note This function must be called before avtpc_connection_request() and
+ * used only in the direct mode.
+ */
+int avtpc_set_testport(avtpc_data_t *avtpc, uint16_t tsport, uint16_t tdport);
+
+/**
  * @brief set receiver callback function
+ *
+ * In the rxdirect mode, to receive mixing data type of 'avtpc', 'avtpc_crf' and
+ * 'avtpc_acf', the user should create a single 'avtpc' direct instance, then the
+ * 'rcv_cb' callback will be called with avbtp_rcv_cb_info_t data type to
+ * identify the data type. This callback prototype is same as the CRF rx callback,
+ * so the CRF rx processing is the same as in the CRF non-direct mode:
+ * the user calls @ref avbtp_deserialize_stdtype_crf_data() to get the CRF data.
+ * For the ACF data, the user call the @ref avtpc_acf_process_payload() function
+ * to process the ACF data.
+ *
  * @param avtpc	the data handle of avtpc
  * @param rcv_cb	callback function
  * @param rcv_cbdata	the callback function uses this data pointer
@@ -89,6 +162,7 @@ void avtpc_set_rcv_cb(avtpc_data_t *avtpc,
  * @param avtpc	the data handle of avtpc
  * @param rcvtimeout_cb	callback function
  * @param timeout_cbdata	the callback function uses this data pointer
+ * @note This function is not supported in the direct mode.
  */
 void avtpc_set_rcvtimeout_cb(avtpc_data_t *avtpc,
 			avbtp_rcvtimeout_cb_t rcvtimeout_cb, void *timeout_cbdata);
@@ -100,7 +174,9 @@ void avtpc_set_rcvtimeout_cb(avtpc_data_t *avtpc,
 int avtpc_close(avtpc_data_t *avtpc);
 
 /**
- * @brief request connection to avtpd
+ * @brief request connection to avtpd or setup the network connection
+ * in the direct mode
+ *
  * @return 0:success, -1:error
  * @param avtpc	the data handle of avtpc
  * @param ccr	CCR data pointer
@@ -108,7 +184,9 @@ int avtpc_close(avtpc_data_t *avtpc);
 int avtpc_connection_request(avtpc_data_t *avtpc, client_connect_request_t *ccr);
 
 /**
- * @brief request disconnection to avtpd
+ * @brief request disconnection to avtpd or close the network connection in
+ * the direct mode.
+ *
  * @return 0:success, -1:error
  * @param avtpc	the data handle of avtpc
  */
@@ -148,6 +226,7 @@ int avtpc_write_control_packet(avtpc_data_t *avtpc, int cd_size, uint8_t *cd_pay
  * @brief get preset of common stream header
  * @return preset of common stream header
  * @param avtpc	the data handle of avtpc
+ * @note This function is not applied for direct mode.
  */
 avbtp_cm_stream_header_t *avtpc_cmsh_in_ccd(avtpc_data_t *avtpc);
 
@@ -155,6 +234,7 @@ avbtp_cm_stream_header_t *avtpc_cmsh_in_ccd(avtpc_data_t *avtpc);
  * @brief get preset of common control header
  * @return preset of common control header
  * @param avtpc	the data handle of avtpc
+ * @note This function is not applied for direct mode.
  */
 avbtp_cm_control_header_t *avtpc_cmch_in_ccd(avtpc_data_t *avtpc);
 
@@ -166,6 +246,7 @@ avbtp_cm_control_header_t *avtpc_cmch_in_ccd(avtpc_data_t *avtpc);
  * @param newaddr	new multicast address
  * @param wait_prev_done	wait if true and previously sent packets
  * are still in the shared memory
+ * @note This function is not applied for direct mode.
  */
 int avtpc_update_mcast_addr(avtpc_data_t *avtpc, ub_macaddr_t newaddr, bool wait_prev_done);
 
@@ -185,6 +266,7 @@ int avtpc_rec_ts_check(avtpc_data_t *avtpc, avbtp_sd_info_t *rsdinfo);
  * @param tshape_rate	assingn bit rate for this stream, bytes per mili second unit,
  			0 to disable the shaper
  * @param tshape_minsleep	minimum unit of sleep time(in nsec) when the stream is overflowing
+ * @note This function is not applied for direct mode.
  */
 int avtpc_set_tshaper(client_connect_request_t *ccr, uint32_t tshape_rate, int tshape_minsleep);
 
@@ -192,6 +274,7 @@ int avtpc_set_tshaper(client_connect_request_t *ccr, uint32_t tshape_rate, int t
  * @brief get number of communication buffer between avtpd and avtpc
  * @return number of buffer
  * @param avtpc	the data handle of avtpc
+ * @note This function is not applied for direct mode.
  */
 int avtpc_get_bufnum(avtpc_data_t *avtpc);
 
@@ -199,6 +282,7 @@ int avtpc_get_bufnum(avtpc_data_t *avtpc);
  * @brief get number of used communication buffer between avtpd and avtpc
  * @return number of used buffer
  * @param avtpc	the data handle of avtpc
+ * @note This function is not applied for direct mode.
  */
 int avtpc_get_bufused(avtpc_data_t *avtpc);
 
@@ -206,6 +290,7 @@ int avtpc_get_bufused(avtpc_data_t *avtpc);
  * @brief check if the avtpc receive thread is running or not
  * @return true if running
  * @param avtpc	the data handle of avtpc
+ * @note This function is not applied for direct mode.
  */
 bool avtpc_rcv_thread_is_running(avtpc_data_t *avtpc);
 

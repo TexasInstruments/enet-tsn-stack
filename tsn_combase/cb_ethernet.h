@@ -206,8 +206,9 @@ typedef struct cb_rawsock_ovip_para {
 } cb_rawsock_ovip_para_t;
 
 typedef enum {
-	CB_SOCK_MODE_OVIP = -1,
-	CB_SOCK_MODE_NORMAL,
+	CB_SOCK_MODE_OVIP = -1, //!< L2 packets over IP socket for testing
+	CB_SOCK_MODE_NORMAL, //!< Normal L2 raw socket
+	CB_SOCK_MODE_LSM, //!< L2 raw socket for QNX LSM mode
 } cb_sock_mode_t;
 
 /**

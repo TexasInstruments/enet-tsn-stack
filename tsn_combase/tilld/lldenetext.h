@@ -118,14 +118,14 @@ int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 				 cbl_cbs_params_t *cbsprm);
 
 /**
- * @brief Enable mapping between traffic class and HW queue.
+ * @brief Enable mapping between frame priority and HW queue.
  * @param hLLDEnet Pointer to the LLDEnet instance.
  * @param macPort index of a mac port to be set.
  * @param cqp TC to queue mapping parameters to be configured.
  * @return LLDENET_E_OK: on success, an error code otherwise.
  **/
-int LLDEnetEnableTCQueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
-				cbl_qmap_params_t *cqp);
+int LLDEnetEnablePriority2QueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
+				       cbl_qmap_params_t *cqp);
 
 /**
  * @brief Get stats info from host or mac port.

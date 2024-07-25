@@ -141,6 +141,11 @@ typedef struct {
 	 */
 	bool unusedDmaTx;
 	/**
+	 * Only the Sitara supports this param.
+	 * true: the dmaTxChId is shared between apps; false: not shared
+	 */
+	bool dmaTxShared;
+	/**
 	 * Only the Sitara AM273x supports this param.
 	 * true: the dmaRxChId is shared between apps; false: not shared
 	 */
@@ -152,7 +157,6 @@ typedef struct {
 	 * This is used when there are multiple LLDEnet_t shares the same DMA RX channel.
 	 * User has to make sure only one LLDEnet_t has dmaRxOwner is set to true if the
 	 * DMA channel share function is used.
-	 * Currently TX DMA channel share is not supported.
 	 */
 	bool dmaRxOwner;
 	/**
@@ -187,6 +191,42 @@ typedef struct {
 	 */
 	uint64_t rxts;
 } LLDEnetFrame_t;
+
+/**
+ * @brief Maximum number of buffers in a scatter frame.
+ */
+#define MAX_BUF_IN_SCATTER_FRAME 32
+
+/**
+ * @brief Structure representing an Ethernet frame.
+ */
+typedef struct {
+	/**
+	 * Array pointer to the buffer containing the frame data.
+	 */
+	uint8_t *buf[MAX_BUF_IN_SCATTER_FRAME];
+	/**
+	 * Array size of the frame.
+	 */
+	uint16_t size[MAX_BUF_IN_SCATTER_FRAME];
+	/**
+	 * Number of buffers in the frame.
+	 */
+	uint8_t nBufs;
+	/**
+	 * Port number associated with the frame.
+	 */
+	int8_t port;
+	/**
+	 * Traffic class associated with the frame.
+	 * Set to -1 to not assign a traffic class.
+	 */
+	int8_t tc;
+	/**
+	 * timestamp of rx packet which was captured by host port.
+	 */
+	uint64_t rxts;
+} LLDEnetFrameScatter_t;
 
 /**
  * @brief Initializes the LLDEnetCfg_t structure.
@@ -259,6 +299,24 @@ int LLDEnetSend(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame);
 int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFrames);
 
 /**
+ * @brief Sends an ethernet frame of scatter buffers
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @param frame Scatter frame
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDEnetSendScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frame);
+
+/**
+ * @brief Sends multiples ethernet frames of scatter buffers
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @param frames Array of Scatter frames
+ * @param nFrames Number of frames in the array.
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDEnetSendMultiScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frames,
+							uint32_t nFrames);
+
+/**
  * @brief Receives an Ethernet frame using LLDEnet.
  *
  * @param hLLDEnet Pointer to the LLDEnet instance.
@@ -271,6 +329,14 @@ int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFram
 int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame);
 
 /**
+ * @brief Receives callback an Ethernet frame using LLDEnet in the Zero-Copy way.
+ *
+ * @param frame Pointer to the LLDEnetFrame_t structure to store the received frame.
+ * @param cbArg Callback argument
+ */
+typedef void (*LLDEnetRecvCb_t)(LLDEnetFrame_t *frame, void *cbArg);
+
+/**
  * @brief Receives an Ethernet frame using LLDEnet in the Zero-Copy way.
  *
  * @param hLLDEnet Pointer to the LLDEnet instance.
@@ -278,8 +344,7 @@ int LLDEnetRecv(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame);
  * @param cbArg Callback argument
  * @return LLDENET_E_OK if successful, an error code otherwise.
  */
-int LLDEnetRecvZeroCopy(LLDEnet_t *hLLDEnet,
-		void (*LLDEnetRecvCb)(LLDEnetFrame_t *frame, void *cbArg),  void *cbArg);
+int LLDEnetRecvZeroCopy(LLDEnet_t *hLLDEnet, LLDEnetRecvCb_t LLDEnetRecvCb, void *cbArg);
 
 /**
  * @brief Checks if the specified port is up.

@@ -57,8 +57,13 @@
 #define UC_RUNCONF
 #define UB_ESARRAY_DFNUM 512
 
+#ifdef SOC_AM62AX
 // #define CB_NOIPCSHMEM_DFNUM 200 /* To support avtp RX 40Mbps */
 #define CB_NOIPCSHMEM_DFNUM 200
+#else
+// The memory might not be sufficient in another platform (eg: 243x-lp)
+#define CB_NOIPCSHMEM_DFNUM 32
+#endif
 #define CB_NOIPCSHMEM_DFSIZE 1024
 
 #define SIMPLEDB_DBDATANUM 1800

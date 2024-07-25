@@ -191,8 +191,8 @@ int cbl_query_response(combase_link_data_t *cbld, int tout_ms)
 int cbl_tc_queue_map(combase_link_data_t *cbld, cbl_tcinit_params_t *tip)
 {
 	uint8_t mac_port = cb_lld_netdev_to_macport((char*)tip->ifname);
-	int res =  LLDEnetEnableTCQueueMapping(cbld->sock->lldenet,
-					       mac_port, &tip->qmap);
+	int res =  LLDEnetEnablePriority2QueueMapping(cbld->sock->lldenet,
+						      mac_port, &tip->qmap);
 	return (res == LLDENET_E_OK? 1: -1);
 }
 
