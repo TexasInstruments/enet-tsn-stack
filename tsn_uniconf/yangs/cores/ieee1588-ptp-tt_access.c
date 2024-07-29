@@ -634,7 +634,7 @@ int ydbi_cascade_perfmon_port_ds(yang_db_item_access_t *ydbia, uint8_t list,
 int ydbi_get_1588ptp_instance(uc_dbald *dbald, uint8_t ap0, const char *ginst_di)
 {
 	uint32_t g,d;
-	char *astr;
+	const char *astr;
 	uint8_t aps[]={IEEE1588_PTP_TT_RW, IEEE1588_PTP_TT_PTP,
 		       IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP,
 		       255};

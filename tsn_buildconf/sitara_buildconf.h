@@ -55,18 +55,26 @@
 #define COMBASE_NO_IPCSOCK
 #define UB_SD_STATIC
 #define UC_RUNCONF
+#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
 #define UB_ESARRAY_DFNUM 512
+#else
+#define UB_ESARRAY_DFNUM 256
+#endif
 
-#ifdef SOC_AM62AX
+#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
 // #define CB_NOIPCSHMEM_DFNUM 200 /* To support avtp RX 40Mbps */
 #define CB_NOIPCSHMEM_DFNUM 200
+#define CB_NOIPCSHMEM_DFSIZE 1024
 #else
 // The memory might not be sufficient in another platform (eg: 243x-lp)
 #define CB_NOIPCSHMEM_DFNUM 32
 #endif
-#define CB_NOIPCSHMEM_DFSIZE 1024
 
+#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
 #define SIMPLEDB_DBDATANUM 1800
+#else
+#define SIMPLEDB_DBDATANUM 1600
+#endif
 
 // Default values in case of unuse avtp
 //#define CB_LLDTASK_INSTNUM 10
@@ -101,8 +109,11 @@
 // => To enable mrp app + 1 avtp app: we need 7 tasks + 2 = 9 tasks
 // => To enable mrp app + 2 avtp app: we need 9 tasks + 2 = 11 tasks
 // => To enable mrp app + 7 avtp app: we need 19 tasks + 2 = 21 tasks
-// #define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
+#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
 #define CB_LLDTASK_INSTNUM 21
+#else
+#define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
+#endif
 
 // To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
 // inside the combase.
@@ -114,7 +125,12 @@
 // => To enable 1 avtp app: we need 1 + 1 + 1 = 3 stacks
 // => To enable 2 avtp app: we need 1 + 1 + 1*2 = 4 stacks
 // => To enable 7 avtp app: we need 1 + 1 + 1*7 = 9 stacks
+#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
 #define CB_LLDTASK_STACK_INSTNUM 9
+#else
+#define CB_LLDTASK_STACK_INSTNUM 4
+#endif
+
 
 // To configure CB_LLDSEM_INSTNUM (CB_SEM_INIT)
 // Per system:

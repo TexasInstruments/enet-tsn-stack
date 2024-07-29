@@ -313,8 +313,8 @@ int qb_get_talker_port(uc_dbald *dbald,
 		if(uc_get_key_in_range(dbald, range, &kdata, &ksize,
 				       UC_DBAL_FORWARD) != 0){break;}
 		if(yang_db_extract_key(kdata, ksize, &aap, akvs, akss)){break;}
-		if(strncmp(bridgename, akvs[0], akss[0])){continue;}
-		if(strncmp(compname, akvs[1], akss[1])){continue;}
+		if(strncmp(bridgename, (const char *)akvs[0], akss[0])){continue;}
+		if(strncmp(compname, (const char *)akvs[1], akss[1])){continue;}
 		if(database_id!=*((uint32_t *)akvs[2])){continue;}
 		if(memcmp(destmac, akvs[4], 6)){continue;}
 		vids=(uint16_t*)akvs[3];

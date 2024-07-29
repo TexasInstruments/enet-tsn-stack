@@ -82,7 +82,7 @@ char	*optarg;		/* argument associated with option */
 int getopt(int nargc, char *const nargv[], const char *ostr)
 {
 	static char *place = EMSG;		/* option letter processing */
-	char *oli;				/* option letter list index */
+	const char *oli;				/* option letter list index */
 
 	if (!optind)
 		optind = 1;

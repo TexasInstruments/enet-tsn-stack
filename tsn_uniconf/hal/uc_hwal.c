@@ -1022,7 +1022,7 @@ static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8
 	return 1;
 }
 
-static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
+static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, const char **kvs, uint8_t *kss,
 			      void *value, uint32_t vsize)
 {
 	uint8_t compindex;
@@ -1114,7 +1114,7 @@ int uc_hwal_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 	res=ietf_interfaces_writehw(hwald, aps, kvs, kss, value, vsize);
 	if(res<0){goto erexit;}
 	emes="dot1q_bridge";
-	res=dot1q_bridge_reghw(hwald, aps, kvs, kss, value, vsize);
+	res=dot1q_bridge_reghw(hwald, aps, (const char **)kvs, kss, value, vsize);
 	if(res<0){goto erexit;}
 	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, value, vsize);
 erexit:
@@ -1136,7 +1136,7 @@ int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss)
 	emes="dot1q_bridge";
 	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, NULL, 0);
 	if(res<0){goto erexit;}
-	res=dot1q_bridge_reghw(hwald, aps, kvs, kss, NULL, 0);
+	res=dot1q_bridge_reghw(hwald, aps, (const char **)kvs, kss, NULL, 0);
 erexit:
 	if(res<0){
 		UB_LOG(UBL_ERROR, "%s:error in %s\n", __func__, emes);

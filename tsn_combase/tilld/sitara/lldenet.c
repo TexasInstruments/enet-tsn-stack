@@ -1202,7 +1202,9 @@ void LLDEnetEnableQueueDMAChannelMapping(LLDEnet_t *hLLDEnet, uint8_t macPorts[]
 int LLDEnetEnablePriority2QueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
 				       cbl_qmap_params_t *cqp)
 {
-	int32_t status, i;
+	int32_t status = LLDENET_E_UNSUPPORT;
+#if ENET_ENABLE_PER_CPSW
+	int32_t i;
 	int maxSuppotedPriorities;
 	Enet_IoctlPrms prms;
 	EnetMacPort_GenericInArgs inArgs;
@@ -1237,8 +1239,9 @@ int LLDEnetEnablePriority2QueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
 		UB_LOG(UBL_ERROR,"Failed to set IOCTL_SET_EGRESS_QOS_PRI_MAP:%d, port: %d\n",
 		       status, macPort);
 	}
-
+#endif // #if ENET_ENABLE_PER_CPSW
 	return (status == ENET_SOK? 0: -1);
+
 }
 
 int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
