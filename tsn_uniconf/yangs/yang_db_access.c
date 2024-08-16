@@ -1770,11 +1770,11 @@ static int ydbi_action_head(yang_db_item_access_t *ydbia, const char *fname,
 	uint64_t ts64;
 	char *emsg="";
 	(void)CB_THREAD_MUTEX_LOCK(ydbia->mutex);
+	while(true){
+		// clean up 'ydbia->readrelsem' inside 'ydbia->mutex'
+		if(CB_SEM_TRYWAIT(&ydbia->readrelsem)!=0){break;}
+	}
 	if(ydbia->dbpara.atype==YANG_DB_ACTION_READ){
-		while(true){
-			// clean up 'ydbia->readrelsem' inside 'ydbia->mutex'
-			if(CB_SEM_TRYWAIT(&ydbia->readrelsem)!=0){break;}
-		}
 		(void)CB_THREAD_MUTEX_UNLOCK(ydbia->mutex);
 		ts64=ub_rt_gettime64()+READREL_TIMEOUT_MS*UB_MSEC_NS;
 		UB_NSEC2TS(ts64, ts);

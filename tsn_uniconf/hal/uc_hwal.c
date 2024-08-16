@@ -1022,7 +1022,7 @@ static int dot1q_bridge_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8
 	return 1;
 }
 
-static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, const char **kvs, uint8_t *kss,
+static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 			      void *value, uint32_t vsize)
 {
 	uint8_t compindex;
@@ -1037,16 +1037,16 @@ static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, const char **kvs, u
 	if(aps[3]!=IEEE802_DOT1Q_BRIDGE_COMPONENT){return -1;}
 	if(!hwald->hwctx){return 0;}
 	UB_LOG(UBL_DEBUG, "%s:\n", __func__);
-	if((kvs[1]==NULL) || (strlen(kvs[1])<5)){return -1;}
-	compindex=atoi(kvs[1]);
+	if((kvs[1]==NULL) || (strlen((const char*)kvs[1])<5)){return -1;}
+	compindex=atoi((const char*)kvs[1]);
 	// IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT must be already set
 	if(aps[4]==IEEE802_DOT1Q_BRIDGE_PORTS){
 		const char *port_names=NULL;
 		int i,pn;
 		if(value==NULL){
-			return bridge_close(hwald, kvs[0], kvs[1]);
+			return bridge_close(hwald, (const char*)kvs[0], (const char*)kvs[1]);
 		}
-		YDBI_GET_ITEM_PSUBST(qbk1vk0, port_names, rvsize, rvalue, kvs[0], compindex,
+		YDBI_GET_ITEM_PSUBST(qbk1vk0, port_names, rvsize, rvalue, (const char*)kvs[0], compindex,
 				     IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT,
 				     YDBI_STATUS);
 		if(rvsize<=0){
@@ -1055,13 +1055,13 @@ static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, const char **kvs, u
 		}
 		for(i=0,pn=0;i<rvsize;i++){if(port_names[i]==0){pn++;}}
 		if(pn==*((uint16_t *)value)){
-			res=bridge_initialize(hwald, kvs[0], kvs[1], pn, port_names);
+			res=bridge_initialize(hwald, (const char*)kvs[0], (const char*)kvs[1], pn, port_names);
 		}else{
 			UB_LOG(UBL_ERROR, "%s:ports=%d, %d in 'bridge-port', mismatched\n",
 			       __func__, *((uint16_t *)value), pn);
 			res=-1;
 		}
-		YDBI_REL_ITEM(qbk1vk0, kvs[0], compindex,
+		YDBI_REL_ITEM(qbk1vk0, (const char*)kvs[0], compindex,
 			      IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT, YDBI_STATUS);
 		return res;
 	}
@@ -1114,7 +1114,7 @@ int uc_hwal_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss,
 	res=ietf_interfaces_writehw(hwald, aps, kvs, kss, value, vsize);
 	if(res<0){goto erexit;}
 	emes="dot1q_bridge";
-	res=dot1q_bridge_reghw(hwald, aps, (const char **)kvs, kss, value, vsize);
+	res=dot1q_bridge_reghw(hwald, aps, kvs, kss, value, vsize);
 	if(res<0){goto erexit;}
 	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, value, vsize);
 erexit:
@@ -1136,7 +1136,7 @@ int uc_hwal_dereghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t *kss)
 	emes="dot1q_bridge";
 	res=dot1q_bridge_writehw(hwald, aps, kvs, kss, NULL, 0);
 	if(res<0){goto erexit;}
-	res=dot1q_bridge_reghw(hwald, aps, (const char **)kvs, kss, NULL, 0);
+	res=dot1q_bridge_reghw(hwald, aps, kvs, kss, NULL, 0);
 erexit:
 	if(res<0){
 		UB_LOG(UBL_ERROR, "%s:error in %s\n", __func__, emes);

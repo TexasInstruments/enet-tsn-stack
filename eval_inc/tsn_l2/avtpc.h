@@ -226,7 +226,6 @@ int avtpc_write_control_packet(avtpc_data_t *avtpc, int cd_size, uint8_t *cd_pay
  * @brief get preset of common stream header
  * @return preset of common stream header
  * @param avtpc	the data handle of avtpc
- * @note This function is not applied for direct mode.
  */
 avbtp_cm_stream_header_t *avtpc_cmsh_in_ccd(avtpc_data_t *avtpc);
 
@@ -234,7 +233,6 @@ avbtp_cm_stream_header_t *avtpc_cmsh_in_ccd(avtpc_data_t *avtpc);
  * @brief get preset of common control header
  * @return preset of common control header
  * @param avtpc	the data handle of avtpc
- * @note This function is not applied for direct mode.
  */
 avbtp_cm_control_header_t *avtpc_cmch_in_ccd(avtpc_data_t *avtpc);
 

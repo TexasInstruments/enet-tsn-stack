@@ -55,33 +55,18 @@
 #define COMBASE_NO_IPCSOCK
 #define UB_SD_STATIC
 #define UC_RUNCONF
-#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
-#define UB_ESARRAY_DFNUM 512
-#else
 #define UB_ESARRAY_DFNUM 256
-#endif
+#define CB_NOIPCSHMEM_DFNUM 4
+#define CB_NOIPCSHMEM_DFSIZE 64
 
-#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
-// #define CB_NOIPCSHMEM_DFNUM 200 /* To support avtp RX 40Mbps */
-#define CB_NOIPCSHMEM_DFNUM 200
-#define CB_NOIPCSHMEM_DFSIZE 1024
-#else
-// The memory might not be sufficient in another platform (eg: 243x-lp)
-#define CB_NOIPCSHMEM_DFNUM 32
-#endif
-
-#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
 #define SIMPLEDB_DBDATANUM 1800
-#else
-#define SIMPLEDB_DBDATANUM 1600
-#endif
 
 // Default values in case of unuse avtp
 //#define CB_LLDTASK_INSTNUM 10
 //#define CB_LLDSEM_INSTNUM 12
 //#define CB_LLDTASK_STACK_INSTNUM 1
 
-#define TSN_USE_LOG_BUFFER 0
+#define TSN_USE_LOG_BUFFER 1
 
 #if TSN_USE_LOG_BUFFER == 1
 #define LOG_TASK_NUM 1
@@ -103,17 +88,16 @@
 // => To enable 1 avtp app: we need 4 + 1 + 2 = 7 tasks
 // => To enable 2 avtp app: we need 4 + 1 + 2*2 = 9 tasks
 // => To enable 7 avtp app: we need 4 + 1 + 2*7 = 19 tasks
-// MRP App: 
+// MRP App:
 //      +1 mrpd
 //      +1 mrp app
 // => To enable mrp app + 1 avtp app: we need 7 tasks + 2 = 9 tasks
 // => To enable mrp app + 2 avtp app: we need 9 tasks + 2 = 11 tasks
 // => To enable mrp app + 7 avtp app: we need 19 tasks + 2 = 21 tasks
-#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
-#define CB_LLDTASK_INSTNUM 21
-#else
-#define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
-#endif
+// #define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
+// If ignore avtpd and using direct mode, we can remove one threads per stream
+// -> Total 7 avtps + mrp (4 + 1 + 7 + 2) = 14
+#define CB_LLDTASK_INSTNUM 14
 
 // To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
 // inside the combase.
@@ -125,12 +109,9 @@
 // => To enable 1 avtp app: we need 1 + 1 + 1 = 3 stacks
 // => To enable 2 avtp app: we need 1 + 1 + 1*2 = 4 stacks
 // => To enable 7 avtp app: we need 1 + 1 + 1*7 = 9 stacks
-#if defined(SOC_AM62AX) || defined(SOC_AM62DX)
-#define CB_LLDTASK_STACK_INSTNUM 9
-#else
-#define CB_LLDTASK_STACK_INSTNUM 4
-#endif
-
+// If ignore avtpd and using direct mode, we can remove one threads per stream
+// -> Total 7 avtps only use 2
+#define CB_LLDTASK_STACK_INSTNUM 2
 
 // To configure CB_LLDSEM_INSTNUM (CB_SEM_INIT)
 // Per system:
@@ -155,14 +136,23 @@
 // => To enable 2 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*2 = 20 SEMs
 // => To enable 7 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*7 = 40 SEMs
 
-// MRP App (total 3):
+// MRP App (total 5):
 //      ydbi_access_init
 //      tilld_mrpnet.c rx_sem
 //      mrp_extcontrol
+//      link up/down + 1
+//      cbs register finish + 1
 // => To enable mrp app + 7 avtp app in tilld0: we need 40 + 3 = 43 SEMs
-#define CB_LLDSEM_INSTNUM 43
+// If ignore avtpd and using direct mode, we can remove 4 per streams, also 4 for avtpd
+// -> Total 7 avtps + mrp only use 13 (talker case)
+// -> Total 7 avtps + mrp only use 14 (listener case direct mode using 1 SEM to receive data)
+#define CB_LLDSEM_INSTNUM 14
 
-#define AVTP_ETHPKT_NUM 1
+/* When RX zero copy is used, clear this flag to reduce the lib size */
+#define AVTP_USE_TILLD_RX_ZERO_COPY 1
+#define AVTP_ETHPKT_NUM 0
+#define AVTPC_RXDIRECT_ETHPKT_NUM 0
+
 #define DISABLE_FAT_FS
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
 #define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
