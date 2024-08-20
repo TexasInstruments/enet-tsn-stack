@@ -103,7 +103,7 @@ typedef struct conl2_basic_conparas{
 	uint32_t avtpd_bufftime_us;
 	int send_ahead_ts;
 	bool is_direct;
-	int tsport; // Use for test mode
+	int tport; // Use for ovip mode (only use when is_direct is true)
 }conl2_basic_conparas_t;
 
 /**

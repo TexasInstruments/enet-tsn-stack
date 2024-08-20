@@ -1241,7 +1241,6 @@ int LLDEnetEnablePriority2QueueMapping(LLDEnet_t *hLLDEnet, uint8_t macPort,
 	}
 #endif // #if ENET_ENABLE_PER_CPSW
 	return (status == ENET_SOK? 0: -1);
-
 }
 
 int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,

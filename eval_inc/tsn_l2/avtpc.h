@@ -130,8 +130,8 @@ int avtpc_set_join_mcasts(avtpc_data_t *avtpc, ub_macaddr_t join_mcasts[],
 /**
  * @brief set the stream data to be sent and received through the UDP test port
  * @param avtpc	the data handle of avtpc
- * @param tsport	source port number for the test mode
- * @param tdport	destination port number for the test mode
+ * @param tsport	source port number for the test mode, set to 0 if not used
+ * @param tdport	destination port number for the test mode, set to 0 if not used
  * @return 0: success, -1: error
  * @note This function must be called before avtpc_connection_request() and
  * used only in the direct mode.

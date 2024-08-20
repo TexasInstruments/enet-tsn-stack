@@ -56,6 +56,8 @@
 #include "gptpconf/gptpgcfg.h"
 #include "gptpcommon.h"
 
+CB_SEM_T g_gptpd_ready_semaphore = NULL;
+
 extern char *PTPMsgType_debug[];
 
 extern int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl);
@@ -267,6 +269,11 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 		goto error;
 	}
 
+	if(CB_SEM_INIT(&g_gptpd_ready_semaphore, 0, 0) < 0){
+		UB_LOG(UBL_ERROR,"%s:failed to init gptp ready sem!\n", __func__);
+		goto error;
+	}
+
 	if (CB_SEM_INIT(&gpnet->semaphore, 0, 0) < 0) {
 		UB_LOG(UBL_ERROR,"%s:failed to init sem!\n", __func__);
 		goto error;
@@ -311,6 +318,10 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 	if (gpnet->semaphore) {
 		CB_SEM_DESTROY(&gpnet->semaphore);
 		gpnet->semaphore = NULL;
+	}
+	if (g_gptpd_ready_semaphore) {
+		CB_SEM_DESTROY(&g_gptpd_ready_semaphore);
+		g_gptpd_ready_semaphore = NULL;
 	}
 	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, gpnet->netdevices);
 	UB_SD_RELMEM(GPTP_MEDIUM_ALLOC, gpnet);

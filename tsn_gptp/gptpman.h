@@ -61,8 +61,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#ifdef GHINTEGRITY
-extern Semaphore g_gptpd_ready_semaphore;
+#ifdef HAVE_GPTP_READY_NOTICE
+extern CB_SEM_T g_gptpd_ready_semaphore;
 #define GPTP_READY_NOTICE CB_SEM_POST(&g_gptpd_ready_semaphore);
 #else
 #define GPTP_READY_NOTICE
