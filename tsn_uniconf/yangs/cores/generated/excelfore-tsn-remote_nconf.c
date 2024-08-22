@@ -134,7 +134,7 @@ int excelfore_tsn_remote_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"93dc694a32069af5636ae83f306d84fb5b2e3e96";
+	dbpara.value=(void*)"6a14aa6a03315a28072a3a67121ab69a3de3ce4d";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 

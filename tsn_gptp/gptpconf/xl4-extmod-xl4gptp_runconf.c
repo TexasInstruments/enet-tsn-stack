@@ -95,29 +95,31 @@ const char *xl4_extmod_xl4gptp_enum_strings[]={
 	"FREQ_OFFSET_UPDATE_MRATE_PPB", 		// 33(0x21)
 	"FREQ_OFFSET_STABLE_PPB", 		// 34(0x22)
 	"FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB", 		// 35(0x23)
-	"ACTIVE_DOMAIN_AUTO_SWITCH", 		// 36(0x24)
-	"TSN_SCHEDULE_ON", 		// 37(0x25)
-	"TSN_SCHEDULE_ALIGNTIME", 		// 38(0x26)
-	"TSN_SCHEDULE_CYCLETIME", 		// 39(0x27)
-	"DEBUGLOG_MEMORY_FILE", 		// 40(0x28)
-	"DEBUGLOG_MEMORY_SIZE", 		// 41(0x29)
-	"OVIP_MODE_STRT_PORTNO", 		// 42(0x2a)
-	"MASTER_CLOCK_SHARED_MEM", 		// 43(0x2b)
-	"PTPVFD_CLOCK_RATE", 		// 44(0x2c)
-	"MAX_CONSEC_TS_DIFF", 		// 45(0x2d)
-	"TS2DIFF_CACHE_FACTOR", 		// 46(0x2e)
-	"USE_HW_PHASE_ADJUSTMENT", 		// 47(0x2f)
-	"PHASE_ADJUSTMENT_BY_FREQ", 		// 48(0x30)
-	"ACTIVATE_ABNORMAL_HOOKS", 		// 49(0x31)
-	"RESET_FREQADJ_BECOMEGM", 		// 50(0x32)
-	"REPRESENT_PORT_NUMBER", 		// 51(0x33)
-	"PERFMON_SHORT_PERIOD", 		// 52(0x34)
-	"PERFMON_LONG_PERIOD", 		// 53(0x35)
-	"PERFMON_CURRENT_PERIOD", 		// 54(0x36)
-	"CONF_TILLD_PPS_REFCLK_HZ", 		// 55(0x37)
-	"CONF_TILLD_PPS_OUTIDX", 		// 56(0x38)
+	"PHASE_OFFSET_ADJUST_BY_FREQ", 		// 36(0x24)
+	"QUICK_SYNC_ALGO", 		// 37(0x25)
+	"ACTIVE_DOMAIN_AUTO_SWITCH", 		// 38(0x26)
+	"TSN_SCHEDULE_ON", 		// 39(0x27)
+	"TSN_SCHEDULE_ALIGNTIME", 		// 40(0x28)
+	"TSN_SCHEDULE_CYCLETIME", 		// 41(0x29)
+	"DEBUGLOG_MEMORY_FILE", 		// 42(0x2a)
+	"DEBUGLOG_MEMORY_SIZE", 		// 43(0x2b)
+	"OVIP_MODE_STRT_PORTNO", 		// 44(0x2c)
+	"MASTER_CLOCK_SHARED_MEM", 		// 45(0x2d)
+	"PTPVFD_CLOCK_RATE", 		// 46(0x2e)
+	"MAX_CONSEC_TS_DIFF", 		// 47(0x2f)
+	"TS2DIFF_CACHE_FACTOR", 		// 48(0x30)
+	"USE_HW_PHASE_ADJUSTMENT", 		// 49(0x31)
+	"PHASE_ADJUSTMENT_BY_FREQ", 		// 50(0x32)
+	"ACTIVATE_ABNORMAL_HOOKS", 		// 51(0x33)
+	"RESET_FREQADJ_BECOMEGM", 		// 52(0x34)
+	"REPRESENT_PORT_NUMBER", 		// 53(0x35)
+	"PERFMON_SHORT_PERIOD", 		// 54(0x36)
+	"PERFMON_LONG_PERIOD", 		// 55(0x37)
+	"PERFMON_CURRENT_PERIOD", 		// 56(0x38)
+	"CONF_TILLD_PPS_REFCLK_HZ", 		// 57(0x39)
+	"CONF_TILLD_PPS_OUTIDX", 		// 58(0x3a)
 };
-const uint8_t xl4_extmod_xl4gptp_enum_max=57;
+const uint8_t xl4_extmod_xl4gptp_enum_max=59;
 
 static int enumstring_init(uc_dbald *dbald, uint8_t modid)
 {
@@ -237,6 +239,12 @@ int xl4_extmod_xl4gptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB;
 	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ;
+	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_ACTIVE_DOMAIN_AUTO_SWITCH;
 	vtype=YANG_VTYPE_UINT8;

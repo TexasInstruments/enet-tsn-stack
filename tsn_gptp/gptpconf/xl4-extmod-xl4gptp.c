@@ -271,6 +271,18 @@ int xl4_extmod_xl4gptp_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ;
+	res=yang_value_conv(YANG_VTYPE_UINT32, "100000",
+		&dbpara.value, &vsize, NULL);
+	if(res<0){goto erexit;}
+	dbpara.vsize=res;
+	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO;
+	res=yang_value_conv(YANG_VTYPE_UINT8, "0",
+		&dbpara.value, &vsize, NULL);
+	if(res<0){goto erexit;}
+	dbpara.vsize=res;
+	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_ACTIVE_DOMAIN_AUTO_SWITCH;
 	res=yang_value_conv(YANG_VTYPE_UINT8, "2",
 		&dbpara.value, &vsize, NULL);

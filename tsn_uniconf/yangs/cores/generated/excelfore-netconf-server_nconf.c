@@ -134,7 +134,7 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"b5182af6d1b48d64f6f47e2e327a8ce234599a48";
+	dbpara.value=(void*)"0e09ccccbc4e7bb2a8a70d68267d1103b543de4a";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 

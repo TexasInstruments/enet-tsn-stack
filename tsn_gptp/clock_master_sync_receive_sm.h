@@ -61,11 +61,13 @@ struct clock_master_sync_receive_data{
 	uint64_t last_mts;
 	int gmadjppb;
 	double alpha;
-	int rate_stable;
+	int rate_stable_count;
+	bool rate_is_stable;
 	int64_t offsetGM;
+	int offsetGM_stable_count;
 	int offsetGM_stable;
 	int gmchange_ind;
-	uint64_t unstable_ts64;
+	int skip_freqadj;
 };
 
 typedef struct clock_master_sync_receive_data clock_master_sync_receive_data_t;

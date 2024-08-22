@@ -261,6 +261,10 @@ static int gptpnet_cb_devup(gptpman_data_t *gpmand, int portIndex,
 		for(di=0;di<gpmand->max_domains;di++){
 			if(!DOMAIN_DATA_EXIST(di)){continue;}
 			if((di!=0) && !gpmand->tasds[di].tasglb->domainIndex){continue;}
+			/* Allow to set the ppglb->asCapable when the NEIGHBOR_PROP_DELAY
+			 * is configured. Without calling @ref update_asCapable_for_all()
+			 * the announce will not be sent out when link go from down to up. */
+			update_asCapable_for_all(gpmand, di, portIndex);
 			(void)sm_bmcs_domain_port_update(gpmand, di, portIndex, cts64);
 		}
 

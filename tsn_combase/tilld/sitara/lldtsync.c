@@ -261,3 +261,46 @@ int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPort
 
 	return LLDENET_E_OK;
 }
+
+#define MAX_TS_NUDGE_VAL 1000000
+
+int LLDTSyncShiftTime(LLDTSync_t *hTSync, int64_t offset)
+{
+#if ENET_ENABLE_PER_CPSW
+	int32_t status = ENET_SOK;
+	Enet_IoctlPrms prms;
+	int32_t adjValInNsecs;
+
+	if (hTSync==NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	/* Limit the offset to avoid long time loop */
+	if(llabs(offset) > MAX_TS_NUDGE_VAL) {
+		if(offset>0){
+			offset = MAX_TS_NUDGE_VAL;
+		}else{
+			offset = -MAX_TS_NUDGE_VAL;
+		}
+	}
+
+	while(offset != 0){
+		if(offset >= CPSW_CPTS_NUDGE_MAX_VAL) {
+			adjValInNsecs = CPSW_CPTS_NUDGE_MAX_VAL;
+		} else if (offset <= CPSW_CPTS_NUDGE_MIN_VAL) {
+			adjValInNsecs = CPSW_CPTS_NUDGE_MIN_VAL;
+		} else {
+			adjValInNsecs = (int32_t)offset;
+		}
+		ENET_IOCTL_SET_IN_ARGS(&prms, &adjValInNsecs);
+		ENET_IOCTL(hTSync->hEnet, hTSync->coreId,
+				   CPSW_CPTS_IOCTL_SET_TS_NUDGE, &prms, status);
+		if (status != ENET_SOK) {
+			UB_LOG(UBL_ERROR,"Enet_ioctl SET_TS_NUDGE failed %d\n", status);
+			return LLDENET_E_IOCTL;
+		}
+		offset -= (int64_t)adjValInNsecs;
+	}
+#endif // #if ENET_ENABLE_PER_CPSW
+	return LLDENET_E_OK;
+}

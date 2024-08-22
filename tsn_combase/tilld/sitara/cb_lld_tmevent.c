@@ -57,7 +57,11 @@
 
 int cb_nanosleep64(int64_t ts64, int64_t *rts64)
 {
-	return cb_lld_usleep(ts64/1000U);
+	int64_t ts64_usec;
+
+	// round up to 1 usec
+	ts64_usec = (ts64+UB_USEC_NS-1)/UB_USEC_NS;
+	return cb_lld_usleep(ts64_usec);
 }
 
 int cb_lld_sleep(uint32_t sec)
@@ -68,7 +72,11 @@ int cb_lld_sleep(uint32_t sec)
 
 int cb_lld_usleep(uint32_t usec)
 {
-	ClockP_usleep(usec);
+	// make sure we sleep at least usec
+	uint32_t tickToUsec = ClockP_ticksToUsec(1);
+	uint32_t usecRoundUp = ((usec + tickToUsec -1)/tickToUsec)*tickToUsec;
+
+	ClockP_usleep(usecRoundUp);
 	return 0;
 }
 

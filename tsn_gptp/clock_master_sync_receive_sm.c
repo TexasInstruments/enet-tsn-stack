@@ -75,6 +75,8 @@ typedef enum {
 #define	RCVD_LOCAL_CLOCK_TICK sm->thisSM->rcvdLocalClockTick
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
+#define SKIP_FREQADJ_COUNT_MAX 2
+
 //if passing time between GM and thisClock, no way to calculate the freq offset
 #define CMSR_TOO_BIG_PASSTIME_GAP (UB_SEC_NS/10)
 
@@ -85,6 +87,9 @@ typedef enum {
 
 // move to stable condition if the FREQ_OFFSET_STABLE_PPB passed this time consecutively
 #define FREQ_OFFSET_STABLE_TRNS 3
+
+// move to stable condition if the PHASE_STABLE_CRITERION passed this time consecutively
+#define PHASE_OFFSET_STABLE_TRNS 3
 
 #define PHASE_NEWGM_CRITERION 1000000 // 1msec
 #define PHASE_STABLE_CRITERION 10000 // 10usec
@@ -156,6 +161,7 @@ static int set_phase_offsetGM(clock_master_sync_receive_data_t *sm, int64_t dts,
 	case OFFSET_START_ADJ:
 		offsetGM = dts;
 		sm->offsetGM_stable=OFFSET_UNSTABLE_ADJ;
+		sm->offsetGM_stable_count=0;
 		UB_LOG(UBL_INFO, "%s:domainIndex=%d, New adjustment(New GM?)\n",
 		       __func__, sm->ptasg->domainIndex);
 		break;
@@ -165,13 +171,19 @@ static int set_phase_offsetGM(clock_master_sync_receive_data_t *sm, int64_t dts,
 			YDBI_CONFIG);
 		offsetGM = (dts/alpha) + (alpha-1) * (sm->offsetGM / alpha);
 		if(dofg<(unsigned int)PHASE_STABLE_CRITERION){
+			sm->offsetGM_stable_count++;
+			if(sm->offsetGM_stable_count>=PHASE_OFFSET_STABLE_TRNS){
 			UB_LOG(UBL_INFO, "%s:domainIndex=%d, stable\n",
 			       __func__, sm->ptasg->domainIndex);
 			sm->offsetGM_stable=OFFSET_STABLE_ADJ;
 			sm->gmchange_ind=gptpclock_get_gmchange_ind(GPTPINSTNUM,
 								    sm->ptasg->domainIndex);
+				sm->offsetGM_stable_count=0;
 			UB_LOG(UBL_DEBUG, "%s:gmchange_ind=%d\n",
 			       __func__, sm->gmchange_ind);
+		}
+		}else{
+			sm->offsetGM_stable_count=0;
 		}
 		break;
 	case OFFSET_STABLE_ADJ:
@@ -200,29 +212,28 @@ static int set_phase_offsetGM(clock_master_sync_receive_data_t *sm, int64_t dts,
 	if(gptpgcfg_get_intitem(
 		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_USE_HW_PHASE_ADJUSTMENT,
 		   YDBI_CONFIG) && (sm->ptasg->domainIndex==0u)){
-		// the range to be adjusted by freq must be wider than normal,
-		// then gptpclock_setoffset64 is called less frequently
-		poabf=PHASE_OFFSET_ADJUST_BY_FREQ*10;
 		padj_clockindex=sm->ptasg->thisClockIndex;
 	}else{
-		poabf=PHASE_OFFSET_ADJUST_BY_FREQ;
 		padj_clockindex=0;
 	}
+	poabf=gptpgcfg_get_intitem(GPTPINSTNUM,
+			XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ, YDBI_CONFIG);
 	if((llabs(od)<poabf) && gptpgcfg_get_intitem(
 		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_PHASE_ADJUSTMENT_BY_FREQ,
 		   YDBI_CONFIG)){
 		if(llabs(od)<PHASE_OFFSET_ADJUST_TARGET){return od;}
-		UB_LOG(UBL_INFO, "%s:domainIndex=%d, offset adjustment by Freq., diff=%d\n",
-		       __func__, sm->ptasg->domainIndex, (int)(od));
+		UB_LOG(UBL_INFO, "%s:domainIndex=%d, offset adjustment by Freq., diff=%"PRIi64"\n",
+		       __func__, sm->ptasg->domainIndex, od);
 		return od;
 	}
-	UB_LOG(UBL_INFO, "%s:domainIndex=%d, offset adjustment, diff=%d\n",
-	       __func__, sm->ptasg->domainIndex, (int)od);
+	UB_LOG(UBL_INFO, "%s:domainIndex=%d, offset adjustment, diff=%"PRIi64"\n",
+	       __func__, sm->ptasg->domainIndex, od);
 	(void)gptpclock_setoffset64(GPTPINSTNUM, offsetGM, padj_clockindex, sm->ptasg->domainIndex);
 	if(gptpgcfg_get_intitem(
 		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_USE_HW_PHASE_ADJUSTMENT,
 		   YDBI_CONFIG) && (sm->ptasg->domainIndex==0u)){
 		sm->offsetGM=0;
+		sm->skip_freqadj=SKIP_FREQADJ_COUNT_MAX;
 	}else{
 		sm->offsetGM=offsetGM;
 	}
@@ -236,63 +247,93 @@ static int computeGmRateRatio(clock_master_sync_receive_data_t *sm,
 	int64_t	dts;
 	double nrate;
 	int ppb;
-	int offset_comp;
-	if(sm->unstable_ts64==0){
-		sm->unstable_ts64=ub_mt_gettime64();
-	}
+	int offset_comp=0;
+
 	dlts = lts - sm->last_lts;
+	dmts = mts - sm->last_mts;
+
+	/* The state machine is called even without rx sync message, we need to reset
+	 * the sate variables and wait for the comming sync message */
+	if(!dmts || !dlts || !mts || !lts){
+		sm->rate_stable_count = 0;
+		sm->rate_is_stable = false;
+		sm->offsetGM_stable = OFFSET_START_ADJ;
+		sm->offsetGM_stable_count = 0;
+		sm->skip_freqadj = 1; // to skip the freq. adj when receive first SYNC
+		return -1;
+	}
+
 	dts=mts-lts;
-	offset_comp=set_phase_offsetGM(sm, dts, dlts);
-	if(offset_comp==SET_PHASE_OFFSETGM_NOOP_RETURN){return -1;}
+
+	/* QUICK_SYNC_ALGO: Apply the phase offset by freq. only after the freq. has
+	 * stabilized to prevent interference between phase and freq. adjustments.
+	 * This approach accelerates the achievement of accurate clock sync. */
+	if(!gptpgcfg_get_intitem(GPTPINSTNUM,XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO,YDBI_CONFIG)
+	   || sm->rate_is_stable){
+		offset_comp=set_phase_offsetGM(sm, dts, dlts);
+		if(offset_comp==SET_PHASE_OFFSETGM_NOOP_RETURN){return -1;}
+	}
 	//debug_show_diff_to_GM(sm, lts, mts);
 
-	dmts = mts - sm->last_mts;
 	sm->last_lts = lts;
 	sm->last_mts = mts;
 	if(llabs(dmts-dlts) > CMSR_TOO_BIG_PASSTIME_GAP){return -1;}
+
+	/* The reason to skip freq. adjustment:
+	 * 1. Setting the phase offset in the hardware will shift the clock time,
+	 * causing frequency adjustments to result in an unexpected rate change.
+	 * 2. Skip the first SYNC, we need 2 SYNCs to calculate the rate. */
+	if(sm->skip_freqadj > 0){
+		sm->skip_freqadj--;
+		UB_LOG(UBL_INFO, "domainIndex=%d, clock_master_sync_receive:"
+			   "the master clock rate skip update, GMdiff=%"PRIi64"nsec\n",
+			   sm->ptasg->domainIndex, dts-sm->offsetGM);
+		return -1;
+	}
+
 	// IIR filter, M(n) = a*R(n) + (1-a)*M(n-1), a=CMSR_IIR_COEFF
 	nrate = sm->alpha * ((double)dmts/(double)dlts) +
 		(1-sm->alpha)*sm->mrate;
-	ppb = ((nrate-1.0)*1.0E9);
-	if((sm->rate_stable < FREQ_OFFSET_STABLE_TRNS) &&
-	   (abs(ppb) <
-	    gptpgcfg_get_intitem(
-		    GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_STABLE_PPB,
-		    YDBI_CONFIG))){
-		sm->rate_stable++;
-		if(sm->rate_stable >= FREQ_OFFSET_STABLE_TRNS){
-			sm->alpha = 1.0/gptpgcfg_get_intitem(
-				GPTPINSTNUM,
-				XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE,
-				YDBI_CONFIG);
-			UB_LOG(UBL_INFO, "domainIndex=%d, clock_master_sync_receive:stable rate, %"PRIu64"msec from unstable\n",
-				sm->ptasg->domainIndex, (ub_mt_gettime64()-sm->unstable_ts64)/UB_MSEC_NS);
-		}
-	}
+	ppb = (int)((nrate-1.0)*1.0E9);
 
-	// Check against a configurable threshold in determining unstable delta rate.
-	// Note that this threshold value does not restrict the actual adjustment -
-	// refer to XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_UPDATE_MRATE_PPB - instead it performs the following:
-	//  a) toggles the unstable status
-	//  b) notifies timeleap event (TIMELEAP_FUTURE or TIMELEAP_PAST)
-	if(abs(ppb) > gptpgcfg_get_intitem(
-		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB,
-		   YDBI_CONFIG)) {
-		// Notify only when previous rate passed stable criteria
-		if(sm->rate_stable!=0){
-			UB_LOG(UBL_INFO,
-			       "clock_master_sync_receive:%s:domainIndex=%d unstable rate=%dppb (%s)\n",
+	/* Move to the rate stable state */
+	if(!sm->rate_is_stable){
+		if(abs(ppb) < gptpgcfg_get_intitem(
+			   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_STABLE_PPB,
+			   YDBI_CONFIG)){
+			sm->rate_stable_count++;
+			if(sm->rate_stable_count >= FREQ_OFFSET_STABLE_TRNS){
+				sm->rate_is_stable = true;
+				sm->alpha = 1.0/gptpgcfg_get_intitem(
+					GPTPINSTNUM,
+					XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE,
+					YDBI_CONFIG);
+				UB_LOG(UBL_INFO, "domainIndex=%d, clock_master_sync_receive:stable rate\n",
+					   sm->ptasg->domainIndex);
+			}
+		}else{
+			sm->rate_stable_count=0;
+		}
+	}else{
+		// Check against a configurable threshold in determining unstable delta rate.
+		// Note that this threshold value does not restrict the actual adjustment -
+		// refer to XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_UPDATE_MRATE_PPB - instead it
+		// toggles the unstable status
+		if(abs(ppb) > gptpgcfg_get_intitem(
+			   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB,
+			   YDBI_CONFIG)) {
+
+			// Notify only when previous rate passed stable criteria
+			UB_LOG(UBL_INFO, "clock_master_sync_receive:%s:domainIndex=%d unstable rate=%dppb (%s)\n",
 			       __func__, sm->ptasg->domainIndex, ppb,
 			       (ppb>0)?"timeleap_future":"timeleap_past");
+			sm->rate_stable_count = 0;
+			sm->rate_is_stable = false;
+			sm->alpha = 1.0/gptpgcfg_get_intitem(
+				GPTPINSTNUM,
+				XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_START_VALUE,
+				YDBI_CONFIG);
 		}
-		if(sm->rate_stable >= FREQ_OFFSET_STABLE_TRNS){
-			sm->unstable_ts64=ub_mt_gettime64();
-		}
-		sm->rate_stable=0;
-		sm->alpha = 1.0/gptpgcfg_get_intitem(
-			GPTPINSTNUM,
-			XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_START_VALUE,
-			YDBI_CONFIG);
 	}
 
 	UB_LOG(UBL_DEBUG, "clock_master_sync_receive:%s:domainIndex=%d rate=%dppb\n",
@@ -344,8 +385,10 @@ static void *initializing_proc(clock_master_sync_receive_data_t *sm)
 	sm->last_lts = 0;
 	sm->last_mts = 0;
 	sm->offsetGM = 0;
-	sm->rate_stable = 0;
-	sm->unstable_ts64 = 0;
+	sm->rate_stable_count = 0;
+	sm->rate_is_stable = false;
+	sm->offsetGM_stable_count = 0;
+	sm->skip_freqadj = 0;
 	RCVD_CLOCK_SOURCE_REQ = false;
 	RCVD_LOCAL_CLOCK_TICK = false;
 	return NULL;

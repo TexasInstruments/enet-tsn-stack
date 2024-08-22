@@ -599,7 +599,7 @@ int ietf_interfaces_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"01e1c422928e21b8681c03e16216cd1bf8b6a872";
+	dbpara.value=(void*)"ae1ed707c5db95d342224173fd1a24ccc34a3dfa";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 

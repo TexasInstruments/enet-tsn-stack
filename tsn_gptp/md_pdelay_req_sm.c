@@ -218,6 +218,9 @@ static md_pdelay_req_state_t not_enabled_condition(md_pdelay_req_data_t *sm)
 	if(gptpgcfg_get_intitem(
 		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_NEIGHBOR_PROP_DELAY,
 		   YDBI_CONFIG)!=0){
+		if(!sm->mdeg->forAllDomain->asCapableAcrossDomains){
+			return REACTION;
+		}
 		return NOT_ENABLED;
 	}
 	if(sm->ppg->forAllDomain->portOper && sm->thisSM->portEnabled0){

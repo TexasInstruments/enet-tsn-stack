@@ -155,6 +155,14 @@ int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts);
  */
 int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPorts);
 
+/**
+ * @brief Shift the time of the PTP clock by offset nsec.
+ * @param hTSync Pointer to the LLDTSync instance.
+ * @param offset Offset in nanoseconds, the value can be negative.
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDTSyncShiftTime(LLDTSync_t *hTSync, int64_t offset);
+
 #endif //LLDTSYNC_H_
 
 /** @}*/

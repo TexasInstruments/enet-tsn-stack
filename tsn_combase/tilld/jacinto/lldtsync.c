@@ -267,3 +267,8 @@ int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPort
 
 	return LLDENET_E_OK;
 }
+
+int LLDTSyncShiftTime(LLDTSync_t *hTSync, int64_t offset)
+{
+	return LLDENET_E_UNSUPPORT;
+}

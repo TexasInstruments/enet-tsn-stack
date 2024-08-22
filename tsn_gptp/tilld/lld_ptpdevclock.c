@@ -52,6 +52,8 @@
  */
 #include "ll_gptpsupport.h"
 
+#define LLD_MAX_TIME_SHIFT 1000000
+
 PTPFD_TYPE ptpdev_clock_open(char *ptpdev, int permission)
 {
 	LLDTSyncCfg_t tsyncfg;
@@ -103,13 +105,48 @@ int ptpdev_clock_adjtime(PTPFD_TYPE fd, int adjppb)
 	return 0;
 }
 
-int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset)
+static int ptpdev_clock_setoffset_big(PTPFD_TYPE fd, int64_t offset)
 {
 	int64_t ts;
+	int res;
+	uint64_t sys_ts;
+	uint64_t get_delay, set_delay;
 
+	/* calculate delay to make the set more accurate.
+	 * This will help to reduce the overal time to sync of the system */
+	sys_ts = ub_mt_gettime64();
 	if (ptpdev_clock_gettime(fd, &ts) < 0) {
 		return -1;
 	}
-	ts += offset;
+	get_delay = (ub_mt_gettime64() - sys_ts)/2;
+
+	ts += offset + get_delay;
+
+	sys_ts = ub_mt_gettime64();
+	res = ptpdev_clock_settime(fd, &ts);
+	set_delay = ub_mt_gettime64() - sys_ts;
+
+	if (res < 0) {
+		return -1;
+	}
+
+	ts += set_delay*2;
 	return ptpdev_clock_settime(fd, &ts);
+}
+
+int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset)
+{
+	int res;
+
+	/* The LLDTSyncShiftTime is more accurate than ptpdev_clock_setoffset_big
+	 * but it can not support for setting the big offset */
+	if(llabs(offset) > LLD_MAX_TIME_SHIFT){
+		return ptpdev_clock_setoffset_big(fd, offset);
+	}
+	res = LLDTSyncShiftTime(fd, offset);
+	if (res != LLDENET_E_OK) {
+		UB_LOG(UBL_ERROR, "%s: failed %d\n", __func__, res);
+		return -1;
+	}
+	return 0;
 }

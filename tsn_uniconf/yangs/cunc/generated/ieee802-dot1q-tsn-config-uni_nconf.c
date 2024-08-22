@@ -145,7 +145,7 @@ int ieee802_dot1q_tsn_config_uni_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"93d7c1591c606ed834a41f2fe5778aeed1287ddd";
+	dbpara.value=(void*)"3c7b2acf3ccc8b5b3f824c8265bce3b6e3ad9275";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 

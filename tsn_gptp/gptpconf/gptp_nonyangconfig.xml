@@ -136,10 +136,28 @@
 					 less then this threshold -->
 			<FREQ_OFFSET_STABLE_PPB type="uint32">100</FREQ_OFFSET_STABLE_PPB>
 
-			<!-- freq. adjustment transition to unstable if delta of adj rate exceeds this threshold
-					 in addition, either TIMELEAP_FUTURE or TIMELEAP_PAST status event is set to notify
-					 the transition to unstable state -->
+			<!-- freq. adjustment transition to unstable if delta of adj rate exceeds this threshold -->
 			<FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB type="uint32">800</FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB>
+
+			<!-- If the phase offset between the GM and the local clock exceeds the threshold, phase offset
+					 will be applied; otherwise, the clock rate is adjusted to match the phase. -->
+			<PHASE_OFFSET_ADJUST_BY_FREQ type="uint32">100000</PHASE_OFFSET_ADJUST_BY_FREQ>
+
+			<!-- 1: use the quick sync algorithm, 0: no use
+           - By default the quick sync algorithm is disabled for backward compatible,
+           the phase offset and frequency adjustments are applied simultaneously.
+           However, the interaction between these adjustments can extend the time required to
+           achieve optimal synchronization.
+           - When the quick sync algorithm is enabled, frequency adjustment is applied first.
+           Once frequency adjustment stabilizes, the phase offset is then applied.
+           Stability is achieved when the PPB difference between two adjustment intervals remains
+           within the @ref FREQ_OFFSET_STABLE_PPB range for three consecutive intervals.
+           Phase offset is applied only when frequency adjustment is stable.
+           If the PPB difference exceeds @ref FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB,
+           the frequency adjustment enters an unstable state, delaying the phase offset
+           application until stability is restored. This approach minimizes the interaction
+           between frequency and phase adjustments, leading to faster synchronization. -->
+			<QUICK_SYNC_ALGO type="uint8">0</QUICK_SYNC_ALGO>
 
 			<!-- switch active domain automatically to stable domain
 					 2: even the current active domain is stable, if any lower number of domain is stable

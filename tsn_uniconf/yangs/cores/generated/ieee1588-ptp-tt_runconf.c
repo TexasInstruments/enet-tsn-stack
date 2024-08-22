@@ -236,12 +236,12 @@ const uint8_t ieee1588_ptp_tt_enum_max=169;
 
 static int prefix_namespace_init(uc_dbald *dbald)
 {
-	if(yang_node_set_prefix_namespace(dbald, "xl4gptp",
-		"http://excelfore.com/ns/xl4gptp")!=0){
-		return -1;
-	}
 	if(yang_node_set_prefix_namespace(dbald, "ptp-tt",
 		"urn:ieee:std:1588:yang:ieee1588-ptp-tt")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "xl4gptp",
+		"http://excelfore.com/ns/xl4gptp")!=0){
 		return -1;
 	}
 	if(yang_node_set_prefix_namespace(dbald, "dot1as-ptp",
