@@ -113,10 +113,14 @@ static void *send_sync_indication_proc(clock_slave_sync_data_t *sm)
 		      RCVD_PSSYNC_PTR->preciseOriginTimestamp.nanoseconds) +
 			(uint64_t)RCVD_PSSYNC_PTR->followUpCorrectionField.nsec;
 		if(RCVD_PSSYNC_PTR->local_ppg!=NULL){
-			nsec += RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec *
+			double delay;
+			/* Note: Using a temporary delay value to avoid a bug where large nsec
+			 * values lose presision when cast to double. */
+			delay=(double)RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec *
 				(RCVD_PSSYNC_PTR->rateRatio /
 				 RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborRateRatio) +
-				RCVD_PSSYNC_PTR->local_ppg->forAllDomain->delayAsymmetry.nsec;
+				(double)RCVD_PSSYNC_PTR->local_ppg->forAllDomain->delayAsymmetry.nsec;
+			nsec += (uint64_t)delay;
 		}
 
 		sm->ptasg->lastSyncSeqID = RCVD_PSSYNC_PTR->lastSyncSeqID;
@@ -125,11 +129,14 @@ static void *send_sync_indication_proc(clock_slave_sync_data_t *sm)
 
 		sm->ptasg->syncReceiptLocalTime.nsec = RCVD_PSSYNC_PTR->upstreamTxTime.nsec;
 		if(RCVD_PSSYNC_PTR->local_ppg!=NULL){
-			sm->ptasg->syncReceiptLocalTime.nsec +=
-				(RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec /
-				 RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborRateRatio) +
-				(RCVD_PSSYNC_PTR->local_ppg->forAllDomain->delayAsymmetry.nsec /
+			/* Note: Using a temporary delay value to avoid a bug where large nsec
+			 * values lose presision when cast to double. */
+			double delay;
+			delay=(double)(RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborPropDelay.nsec /
+				   RCVD_PSSYNC_PTR->local_ppg->forAllDomain->neighborRateRatio) +
+				((double)RCVD_PSSYNC_PTR->local_ppg->forAllDomain->delayAsymmetry.nsec /
 				 RCVD_PSSYNC_PTR->rateRatio);
+			sm->ptasg->syncReceiptLocalTime.nsec += (uint64_t)delay;
 		}
 
 		sm->ptasg->gmTimeBaseIndicator = RCVD_PSSYNC_PTR->gmTimeBaseIndicator;

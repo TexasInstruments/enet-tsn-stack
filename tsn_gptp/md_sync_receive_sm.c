@@ -80,6 +80,7 @@ typedef enum {
 static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 {
 	int64_t offset=0;
+	double delay;
 	sm->mdSyncReceive.domainIndex =
 		md_domain_number2index(RCVD_SYNC_PTR->head.domainNumber);
 	sm->mdSyncReceive.seqid = ntohs(RCVD_SYNC_PTR->head.sequenceId_ns);
@@ -155,11 +156,13 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 		md_port_number2index(ntohs(RCVD_SYNC_PTR->head.sourcePortIdentity.portNumber_ns));
 	sm->mdSyncReceive.logMessageInterval = RCVD_SYNC_PTR->head.logMessageInterval;
 
-	sm->mdSyncReceive.upstreamTxTime.nsec = sm->syncEventIngressTimestamp -
-		(uint64_t)((double)sm->ppg->forAllDomain->neighborPropDelay.nsec /
-		 sm->ppg->forAllDomain->neighborRateRatio) -
-		(uint64_t)((double)sm->ppg->forAllDomain->delayAsymmetry.nsec /
+	/* Note: Using a temporary delay value to avoid a bug where large nsec
+	 * values lose presision when cast to double. */
+	delay=((double)sm->ppg->forAllDomain->neighborPropDelay.nsec /
+		   sm->ppg->forAllDomain->neighborRateRatio) +
+		((double)sm->ppg->forAllDomain->delayAsymmetry.nsec /
 		 sm->mdSyncReceive.rateRatio);
+	sm->mdSyncReceive.upstreamTxTime.nsec=sm->syncEventIngressTimestamp-(uint64_t)delay;
 
 	/* IEEE1588-2019 MasterSlaveDelay calculation (J.2 Timestamping monitoring, p. 409)
 	 *  MasterSlaveDelay = syncEventIngressTimestamp - preciseOriginTimestamp - correctionField

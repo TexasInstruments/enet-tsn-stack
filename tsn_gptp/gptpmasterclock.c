@@ -305,7 +305,7 @@ int gptpmasterclock_wait_until_ts64(int64_t tts, int64_t vclose, int64_t toofar)
 		       __func__, dts, toofar);
 		return 3;
 	}
-	UB_LOG(UBL_INFO,"%s: wait for %"PRIi64"nsec\n", __func__, dts);
+	UB_LOG(UBL_DEBUG,"%s: wait for %"PRIi64"nsec\n", __func__, dts);
 	if(cb_nanosleep64(dts,&rem)!=0){
 		if(errno==EINTR){
 			cb_nanosleep64(rem, NULL);
