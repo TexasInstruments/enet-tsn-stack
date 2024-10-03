@@ -54,7 +54,7 @@
 
 #if ENET_CFG_IS_ON(CPSW_EST)
 
-static uint64_t getCurrentTime(Enet_Handle hEnet, uint32_t coreId)
+uint64_t getCurrentTime(Enet_Handle hEnet, uint32_t coreId)
 {
 	Enet_IoctlPrms prms;
 	int32_t status;
@@ -69,7 +69,7 @@ static uint64_t getCurrentTime(Enet_Handle hEnet, uint32_t coreId)
 	return tsVal;
 }
 
-static EnetTas_TasState getEstState(Enet_Handle hEnet,
+EnetTas_TasState getEstState(Enet_Handle hEnet,
 				 uint32_t coreId, Enet_MacPort macPort)
 {
 	Enet_IoctlPrms prms;
@@ -111,7 +111,7 @@ static int32_t setEstState(Enet_Handle hEnet, uint32_t coreId,
 	return status;
 }
 
-static void printEstList(EnetTas_ControlList *list)
+void printEstList(EnetTas_ControlList *list)
 {
 	uint8_t gateMask = 0U;
 	uint32_t start = 0U;
@@ -138,7 +138,7 @@ static void printEstList(EnetTas_ControlList *list)
 		start += dur;
 	}
 
-	UB_LOG(UBL_INFO, "Base time=%llu, Cycle time=%llu \n", list->baseTime, list->cycleTime);
+	UB_LOG(UBL_INFO, "Base time=%llu, Cycle time=%llu \n", (long long unsigned int)list->baseTime, (long long unsigned int)list->cycleTime);
 }
 
 static int validateOperListParams(Enet_Handle hEnet, uint32_t coreId,

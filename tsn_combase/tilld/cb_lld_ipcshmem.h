@@ -54,6 +54,10 @@
 #define CB_LLD_IPCSHMEM_H
 
 /* To have O_RDONLY, O_RDWR, ... flags */
-#include <file.h>
+#ifdef __aarch64__
+    #include <sys/file.h>
+#else 
+    #include <file.h>
+#endif
 
 #endif //CB_LLD_IPCSHMEM_H

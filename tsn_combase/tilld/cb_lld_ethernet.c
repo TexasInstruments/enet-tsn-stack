@@ -82,7 +82,7 @@ UB_SD_GETMEM_DEF(CB_LLDSOCKET_MMEM, (int)sizeof(lld_socket_t),
 
 static netdev_map_t *find_netdev_map(const char *netdev);
 
-static int ovip_socket_open(CB_SOCKET_T *sfd, cb_rawsock_ovip_para_t *ovipp)
+ int ovip_socket_open(CB_SOCKET_T *sfd, cb_rawsock_ovip_para_t *ovipp)
 {
 	UB_LOG(UBL_ERROR,"%s: not supported\n",__func__);
 	return -1;

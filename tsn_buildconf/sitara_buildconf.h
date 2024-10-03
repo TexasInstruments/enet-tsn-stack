@@ -58,7 +58,13 @@
 #define HAVE_GPTP_READY_NOTICE
 #define UB_ESARRAY_DFNUM 256
 #define CB_NOIPCSHMEM_DFNUM 4
-#define CB_NOIPCSHMEM_DFSIZE 64
+#ifdef __aarch64__
+    #define CB_NOIPCSHMEM_DFSIZE 128
+#else
+    #define CB_NOIPCSHMEM_DFSIZE 64
+#endif
+
+
 
 #define SIMPLEDB_DBDATANUM 1800
 
