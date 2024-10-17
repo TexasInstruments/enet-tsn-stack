@@ -284,10 +284,12 @@ typedef int (*cb_socket_lldcfg_update_cb_t)(cb_socket_lldcfg_update_t *update_cf
  * @param ndevs number of devices in the array
  * @param enet_type LLD ethernet type
  * @param instance_id LLD ethernet instance ID
+ * @param tsSource LLDTsync timestamp source
  * @return 0: OK, <0: error, detailed error will be printed out.
  */
 int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
-						   uint32_t enet_type, uint32_t instance_id);
+						   uint32_t enet_type, uint32_t instance_id,
+						   const LLDTsyncTsSource tsSource);
 
 /**
  * @brief This function sets the callback for updating LLD config parameters.
@@ -392,6 +394,13 @@ int cb_lld_set_default_rxdata_cb(CB_SOCKET_T sfd,
 int cb_lld_get_type_instance(uint32_t *enet_type, uint32_t *instance_id);
 
 /**
+ * @brief Get Timestamp source that is set via cb_lld_init_devs_table()
+ * @param tsSource Pointer to the tsSource
+ * @return 0: OK, <0: error, detailed error will be printed out
+ */
+int cb_lld_get_ts_source(LLDTsyncTsSource *tsSource);
+
+/**
  * @brief Get all virtual network interfaces which were defined for the TI platform.
  * @param netdevs an array of pointer points to the net devices acquired by this api.
  * @param len  how many net devices are returned by this api.
@@ -437,6 +446,13 @@ int cb_lld_get_port_stats(CB_SOCKET_T sfd, int port, cb_tilld_port_stats_t *stat
  * @note valid index of mac port depends on HW platform
  */
 void cb_lld_reset_port_stats(CB_SOCKET_T sfd, int port);
+
+/**
+ * @brief process the Phy status frames.
+ * @param sfd socket fd
+ * @return number of status frames processed.
+ */
+int cb_lld_process_status_frames(CB_SOCKET_T sfd);
 
 #ifdef __cplusplus
 }

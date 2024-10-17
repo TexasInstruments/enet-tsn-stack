@@ -72,6 +72,13 @@ typedef struct {
 	uint32_t instId;
 } LLDTSyncCfg_t;
 
+typedef enum
+{
+	LLDTSYNC_TS_SOURCE_INVALID = 0,
+	LLDTSYNC_TS_SOURCE_CPTS,
+	LLDTSYNC_TS_SOURCE_PHY,
+}LLDTsyncTsSource;
+
 /**
  * @brief Structure representing the LLDTSync instance.
  */
@@ -86,9 +93,10 @@ void LLDTSyncCfgInit(LLDTSyncCfg_t *cfg);
 /**
  * @brief Opens a new LLDTSync instance to access the PTP clock.
  * @param cfg Pointer to the LLDTSyncCfg_t configuration structure.
+ * @param tsSource Timestamp source selection, CPTS or PHY.
  * @return Pointer to the opened LLDTSync instance.
  */
-LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg);
+LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg, LLDTsyncTsSource tsSource);
 
 /**
  * @brief Closes the LLDTSync instance.
@@ -162,6 +170,31 @@ int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPort
  * @return LLDENET_E_OK if successful, an error code otherwise.
  */
 int LLDTSyncShiftTime(LLDTSync_t *hTSync, int64_t offset);
+
+/**
+ * @brief Put the TX packet in the wait list.
+ * @param hTSync Pointer to the LLDTSync instance.
+ * @param txPort Mac port number of Tx packet.
+ * @param msgType Message type of Tx packet.
+ * @param seqId Sequence ID of Tx packet.
+ * @param domain Domain number of the PTP instance.
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDTsyncPhyWaitTxTs(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
+					  uint16_t seqId, uint8_t domain);
+
+/**
+ * @brief Process the status frame.
+ * @param hEnet Enet handle pointer. (Typecasted to void *)
+ * @param coreId Application core ID.
+ * @param txPort Macport number of TX port.
+ * @param frame Pointer to the ethernet frame.
+ * @param size size of the ethernet frame.
+ * @return LLDENET_E_OK if successful, an error code otherwise.
+ */
+int LLDTSyncProcPhyStatusFrame(void* hEnet, uint8_t coreId , uint8_t txPort,
+													uint8_t* frame, uint32_t size);
+
 
 #endif //LLDTSYNC_H_
 

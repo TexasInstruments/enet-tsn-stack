@@ -63,6 +63,8 @@ static netdev_map_t s_ndevmap_table[MAX_NUMBER_ENET_DEVS];
 static int s_num_devs;
 static uint32_t s_enet_type;
 static uint32_t s_instance_id;
+static LLDTsyncTsSource s_tsSource = LLDTSYNC_TS_SOURCE_INVALID;
+
 static cb_socket_lldcfg_update_cb_t s_socket_lldcfg_update_cb;
 
 /*
@@ -495,7 +497,7 @@ int cb_get_ptpdev_from_netdev(char *netdev, char *ptpdev)
 
 /* TI lld specific combase APIs */
 static int lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
-						   uint32_t enet_type, uint32_t instance_id)
+						   uint32_t enet_type, uint32_t instance_id, const LLDTsyncTsSource tsSource)
 {
 	int i;
 
@@ -528,16 +530,17 @@ static int lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
 	}
 	s_enet_type = enet_type;
 	s_instance_id = instance_id;
-
+	s_tsSource = tsSource;
 	return 0;
 }
 
 int cb_lld_init_devs_table(lld_ethdev_t *ethdevs, uint32_t ndevs,
-						   uint32_t enet_type, uint32_t instance_id)
+						   uint32_t enet_type, uint32_t instance_id,
+						   const LLDTsyncTsSource tsSource)
 {
 	int res;
 	UB_PROTECTED_FUNC(lld_init_devs_table, res, ethdevs,
-					  ndevs, enet_type, instance_id);
+					  ndevs, enet_type, instance_id, tsSource);
 	return res;
 }
 
@@ -758,6 +761,20 @@ int cb_lld_get_type_instance(uint32_t *enet_type, uint32_t *instance_id)
 	return 0;
 }
 
+int cb_lld_get_ts_source(LLDTsyncTsSource *tsSource)
+{
+	if (tsSource == NULL) {
+		UB_LOG(UBL_ERROR,"%s:invalid param\n", __func__);
+		return -1;
+	}
+	if (s_num_devs == 0) {
+		UB_LOG(UBL_ERROR, "%s:no valid number of devs\n", __func__);
+		return -1;
+	}
+	*tsSource = s_tsSource;
+	return 0;
+}
+
 int cb_socket_set_lldcfg_update_cb(cb_socket_lldcfg_update_cb_t lldcfg_update_cb)
 {
 	if (s_socket_lldcfg_update_cb != NULL) {
@@ -779,4 +796,9 @@ int cb_lld_get_port_stats(CB_SOCKET_T sfd, int port, cb_tilld_port_stats_t *stat
 void cb_lld_reset_port_stats(CB_SOCKET_T sfd, int port)
 {
 	LLDEnetResetPortStats(sfd->lldenet, port);
+}
+
+int cb_lld_process_status_frames(CB_SOCKET_T sfd)
+{
+	return LLDEnet_processStatusFrames(sfd->lldenet);
 }

@@ -60,7 +60,14 @@ PTPFD_TYPE ptpdev_clock_open(char *ptpdev, int permission)
 
 	LLDTSyncCfgInit(&tsyncfg);
 	cb_lld_get_type_instance(&tsyncfg.enetType, &tsyncfg.instId);
-	return LLDTSyncOpen(&tsyncfg);
+	LLDTsyncTsSource tsSource = LLDTSYNC_TS_SOURCE_INVALID;
+	cb_lld_get_ts_source(&tsSource);
+	if (tsSource == LLDTSYNC_TS_SOURCE_INVALID)
+	{
+		UB_LOG(UBL_ERROR, "%s: Timestamp source invald\n", __func__);
+		return NULL;
+	}
+	return LLDTSyncOpen(&tsyncfg, tsSource);
 }
 
 int ptpdev_clock_close(PTPFD_TYPE fd)

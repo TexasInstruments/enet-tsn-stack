@@ -450,6 +450,18 @@ int LLDEnetFilter(LLDEnet_t *hLLDEnet, uint8_t *dstMacAddr,
 	return LLDENET_E_OK;
 }
 
+static bool LLDEnet_isStatusFrame(EthFrame *frame)
+{
+	bool isStatusFrame = false;
+	if ((frame->hdr.srcMac[0] == 0x08) &&
+		(frame->hdr.srcMac[1] == 0x00))
+	{
+		isStatusFrame = true;
+	}
+
+	return isStatusFrame;
+}
+
 static uint32_t LLDEnetReceiveRxReadyPkts(LLDEnetRxDma_t *hLLDRxDma)
 {
 	EnetDma_PktQ rxTempQ;
@@ -1276,4 +1288,66 @@ int LLDEnetSetCreditBasedShaping(LLDEnet_t *hLLDEnet, uint8_t port,
 #endif // CPSW_MACPORT_TRAFFIC_SHAPING
 #endif // #if ENET_ENABLE_PER_CPSW
 	return status;
+}
+
+int LLDEnet_processStatusFrames(LLDEnet_t *hLLDEnet)
+{
+	#if !ENET_ENABLE_PER_ICSSG
+	int status = LLDENET_E_OK;
+	int numStatusFrames = 0;
+	EnetDma_PktQ tempQ;
+	LLDEnetRxDma_t *hLLDRxDma = NULL;
+
+	/* Initialize the temp Queue. */
+	EnetQueue_initQ(&tempQ);
+
+	/* Get the size of the status frame Queue. */
+	int qSize = EnetQueue_getQCount(&hLLDEnet->rxReadyQ);
+
+	for (int i = 0; i < qSize; i++)
+	{
+		EnetDma_Pkt* packet = (EnetDma_Pkt *)EnetQueue_deq(&hLLDEnet->rxReadyQ);
+
+		EthFrame* rxFrame = (EthFrame *)packet->sgList.list[0].bufPtr;
+        uint32_t size = packet->sgList.list[0].segmentFilledLen;
+
+		if (LLDEnet_isStatusFrame(rxFrame))
+		{
+			numStatusFrames += 1;
+
+			/* Process the status frames. */
+			status = LLDTSyncProcPhyStatusFrame(hLLDEnet->hEnet,
+							hLLDEnet->coreId, 0, (uint8_t *)rxFrame, size);
+			Enet_devAssert(status == LLDENET_E_OK, "process status frame failed");
+
+			EnetDma_checkPktState(&packet->pktState, ENET_PKTSTATE_MODULE_APP,
+													ENET_PKTSTATE_APP_WITH_READYQ,
+													ENET_PKTSTATE_APP_WITH_FREEQ);
+
+			EnetQueue_enq(&tempQ, &packet->node);
+
+			hLLDRxDma = (LLDEnetRxDma_t *)packet->appPriv;
+		}
+		else
+		{
+			/* Put it back in the Queue. */
+			EnetQueue_enq(&hLLDEnet->rxReadyQ, &packet->node);
+		}
+	}
+
+	if (EnetQueue_getQCount(&tempQ) > 0)
+	{
+		EnetAppUtils_validatePacketState(&tempQ,
+									 ENET_PKTSTATE_APP_WITH_FREEQ,
+									 ENET_PKTSTATE_APP_WITH_DRIVER);
+
+		status = EnetDma_submitRxPktQ(hLLDRxDma->hRxCh, &tempQ);
+		Enet_devAssert(status == 0, "Submit rx packet failed");
+	}
+
+	return numStatusFrames;
+	#else
+	(void)hLLDEnet;
+	return 0;
+	#endif
 }

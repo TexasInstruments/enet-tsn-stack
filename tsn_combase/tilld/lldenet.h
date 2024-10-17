@@ -57,7 +57,7 @@
 #define LLDENET_H_
 
 #include "lldtype.h"
-
+#include "lldtsync.h"
 /**
  * @brief Structure representing the LLDEnet instance.
  */
@@ -407,6 +407,13 @@ int LLDEnetSetDefaultRxDataCb(LLDEnet_t *hLLDEnet,
  * @return true if isRxTsInPkt is true for the LLDEnet handle.
  */
 bool LLDEnetIsRxTsInPkt(LLDEnet_t *hLLDEnet);
+
+/**
+ * @brief Proccess the PHY status frames.
+ * @param hLLDEnet Pointer to the LLDEnet instance.
+ * @return Number of status frames processed.
+ */
+int LLDEnet_processStatusFrames(LLDEnet_t *hLLDEnet);
 
 #endif //LLDENET_H_
 

@@ -63,6 +63,11 @@ extern char *PTPMsgType_debug[];
 extern int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl);
 extern int gptpgcfg_nonyang_notice_check(uint8_t gptpInstanceIndex);
 
+static int ndev_index_to_macport(gptpnet_data_t *gpnet, int ndev_index);
+
+#define STATUS_FRAME_PROCESS_STACK_SIZE (2*1024)
+static uint8_t gStatusFrameProcessTaskStack[STATUS_FRAME_PROCESS_STACK_SIZE] __attribute__((aligned(32)));
+
 typedef struct {
 	int ndev_index;
 	uint8_t msgtype;
@@ -106,6 +111,9 @@ struct gptpnet_data {
 	uint8_t gptpInstanceIndex;
 	uint32_t tout_interval;
 	bool supportRtNotice;
+	LLDTsyncTsSource tsSource;
+	CB_SEM_T statPktSem;
+	TaskP_Object procStatTaskObj;
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -136,7 +144,17 @@ static int pop_txts_info(txts_queue_t *q, txts_info_t *out)
 static void txrx_notify_cb(void *arg)
 {
 	gptpnet_data_t *gpnet = (gptpnet_data_t *)arg;
-	CB_SEM_POST(&gpnet->semaphore);
+
+	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_CPTS)	{
+		CB_SEM_POST(&gpnet->semaphore);
+	}
+	else if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY) {
+		/* Seperate Status frames from Rx frames. */
+		CB_SEM_POST(&gpnet->statPktSem);
+	}
+	else {
+		ub_assert_fatal(false, __func__, "Timestamp Source is unknown");
+	}
 }
 
 static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet,
@@ -172,8 +190,20 @@ static int onenet_init(uint8_t gptpInstanceIndex, gptpnet_data_t *gpnet,
 		if(cb_rawsock_open(&llrawp, &gpnet->lldsock, NULL, NULL, srcmac) < 0) {
 			return -1;
 		}
-		cb_lld_set_txnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
 		cb_lld_set_rxnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
+		if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY) {
+			/* Do not call the txrx Notify fn after tx completion. */
+			cb_lld_set_txnotify_cb(gpnet->lldsock, NULL, gpnet);
+		}
+		else if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_CPTS) {
+			cb_lld_set_txnotify_cb(gpnet->lldsock, txrx_notify_cb, gpnet);
+		}
+		else {
+			UB_LOG(UBL_ERROR,"Invalid Timestamp Source: %d\n", (int)gpnet->tsSource);
+			cb_rawsock_close(gpnet->lldsock);
+			gpnet->lldsock = NULL;
+			return -1;
+		}
 
 		if(cb_reg_multicast_address(gpnet->lldsock,
 					ndev->nlstatus.devname, destmac, 0)) {
@@ -221,6 +251,45 @@ static int onenet_activate(gptpnet_data_t *gpnet, int ndevIndex)
 						  &gpnet->event_ts64, &ndev->nlstatus);
 }
 
+void gptpnet_statusFrameProcTask(void* args)
+{
+	gptpnet_data_t *gpnet = (gptpnet_data_t *)args;
+
+	while (1)
+	{
+		/*< Wait for Status packets. */
+		CB_SEM_WAIT(&gpnet->statPktSem);
+
+		/*< Read from the ready Queue. */
+		int numStatusFrames = cb_lld_process_status_frames(gpnet->lldsock);
+
+		if (numStatusFrames > 0)
+		{
+			/* Post the semaphore. */
+			CB_SEM_POST(&gpnet->semaphore);
+		}
+	}
+}
+
+int gptpnet_createStatusFrameProcTask(gptpnet_data_t *gpnet)
+{
+	TaskP_Params taskParams;
+	int status;
+
+	TaskP_Params_init(&taskParams);
+	/* This task is sensitive to priority. please do not change. */
+	taskParams.priority       = 3U;
+	taskParams.stack          = gStatusFrameProcessTaskStack;
+	taskParams.stackSize      = sizeof(gStatusFrameProcessTaskStack);
+	taskParams.args           = (void*)gpnet;
+	taskParams.name           = "proc_stat_frame_task";
+	taskParams.taskMain       = gptpnet_statusFrameProcTask;
+
+	status = TaskP_construct(&gpnet->procStatTaskObj, &taskParams);
+	DebugP_assert(SystemP_SUCCESS == status);
+
+	return status;
+}
 gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 				 void *cb_data, const char *netdev[], uint8_t num_ports,
 				 char *master_ptpdev)
@@ -250,6 +319,9 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 		return NULL;
 	}
 	(void)memset(gpnet->netdevices, 0, num_ports * sizeof(netdevice_t));
+
+	cb_lld_get_ts_source(&gpnet->tsSource);
+	ub_assert_fatal(gpnet->tsSource != LLDTSYNC_TS_SOURCE_INVALID, __func__, "Invalid TsSource");
 
 	for (i = 0; i < gpnet->num_netdevs; i++) {
 		res = onenet_init(gptpInstanceIndex, gpnet, &gpnet->netdevices[i], netdev[i]);
@@ -290,9 +362,15 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 		goto error;
 	}
 
+	if (CB_SEM_INIT(&gpnet->statPktSem, 0, 0) < 0) {
+		UB_LOG(UBL_ERROR,"%s:failed to init sem!\n", __func__);
+		goto error;
+	}
+
+	/**< Todo pass the timestamp source param as well. */
 	LLDTSyncCfgInit(&tsyncfg);
 	cb_lld_get_type_instance(&tsyncfg.enetType, &tsyncfg.instId);
-	gpnet->lldtsync = LLDTSyncOpen(&tsyncfg);
+	gpnet->lldtsync = LLDTSyncOpen(&tsyncfg, gpnet->tsSource);
 	if (gpnet->lldtsync == NULL) {
 		UB_LOG(UBL_ERROR,"%s:failed to open lldtsync!\n", __func__);
 		goto error;
@@ -302,6 +380,12 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 	if (res != LLDENET_E_OK) {
 		UB_LOG(UBL_ERROR,"%s:failed to enable tsevent!\n", __func__);
 		goto error;
+	}
+
+	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
+	{
+		/**< Create RX task to handle status frames. */
+		gptpnet_createStatusFrameProcTask(gpnet);
 	}
 
 	UB_LOG(UBL_INFO,"%s:Open lldtsync OK!\n", __func__);
@@ -316,7 +400,7 @@ error:
 void gptpnet_update_tout_intervalns(gptpnet_data_t *gpnet, uint32_t tout_ns)
 {
 	gpnet->tout_interval = tout_ns;
-	gptpgcfg_set_item(gpnet->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_GPTPNET_INTERVAL_TIMEOUT_NSEC, 
+	gptpgcfg_set_item(gpnet->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_GPTPNET_INTERVAL_TIMEOUT_NSEC,
 					false, (void*)&gpnet->tout_interval, sizeof(uint32_t));
 }
 uint32_t gptpnet_get_tout_intervalns(gptpnet_data_t *gpnet)
@@ -329,6 +413,11 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 	UB_LOG(UBL_DEBUGV, "%s:\n",__func__);
 	if (!gpnet) {return -1;}
 	gptpgcfg_remove_netdevs(gpnet->gptpInstanceIndex);
+	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
+	{
+		/* Destroy the task. */
+		TaskP_destruct(&gpnet->procStatTaskObj);
+	}
 	if (gpnet->lldsock) {
 		cb_rawsock_close(gpnet->lldsock);
 		gpnet->lldsock = NULL;
@@ -336,6 +425,10 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 	if (gpnet->lldtsync) {
 		LLDTSyncClose(gpnet->lldtsync);
 		gpnet->lldtsync = NULL;
+	}
+	if (gpnet->statPktSem) {
+		CB_SEM_DESTROY(&gpnet->statPktSem);
+		gpnet->statPktSem = NULL;
 	}
 	if (gpnet->semaphore) {
 		CB_SEM_DESTROY(&gpnet->semaphore);
@@ -388,12 +481,6 @@ int gptpnet_send(gptpnet_data_t *gpnet, int ndev_index, uint16_t length)
 	seqid = PTP_HEAD_SEQID(ndev->txbuf.pdata);
 	domain = PTP_HEAD_DOMAIN_NUMBER(ndev->txbuf.pdata);
 
-	res = CB_SOCK_SENDTO(gpnet->lldsock, &ndev->txbuf, length+sizeof(CB_ETHHDR_T),
-						 0, &ndev->addr, sizeof(ndev->addr));
-	if (res < 0) {
-		UB_LOG(UBL_ERROR,"%s:sent %s failed\n", __func__, msg);
-		return -1;
-	}
 	if (msgtype < 8) {
 		txts_info_t txts_info;
 		txts_info.ndev_index = ndev_index;
@@ -402,6 +489,29 @@ int gptpnet_send(gptpnet_data_t *gpnet, int ndev_index, uint16_t length)
 		txts_info.domain = domain;
 		push_txts_info(&gpnet->txts_queue, &txts_info);
 	}
+
+	#if !ENET_ENABLE_PER_ICSSG
+	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY) {
+		int macport = ndev_index_to_macport(gpnet, ndev_index);
+		LLDTsyncPhyWaitTxTs(gpnet->lldtsync, macport, msgtype, seqid, domain);
+	}
+	#endif
+
+	res = CB_SOCK_SENDTO(gpnet->lldsock, &ndev->txbuf, length+sizeof(CB_ETHHDR_T),
+						 0, &ndev->addr, sizeof(ndev->addr));
+	if (res < 0) {
+		UB_LOG(UBL_ERROR,"%s:sent %s failed\n", __func__, msg);
+		res = -1;
+	}
+
+	if (res < 0)
+	{
+		/* Send Failed, Pop from txts Queue. */
+		txts_info_t txts_info;
+		pop_txts_info(&gpnet->txts_queue, &txts_info);
+		(void)txts_info; /* Unused, just to pop the previously pushed. */
+	}
+
 	return res;
 }
 
