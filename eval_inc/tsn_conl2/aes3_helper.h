@@ -55,9 +55,15 @@
 #define MAX_AES32_FRAME_LENGTH (2048 * 2)
 #define SMPTE_PREAMBLE_LENGTH (12)
 
-/// @brief 
-/// In talker mode, file -> ec3 sync-frame -> smpte337_frame -> aes3org -> aes3aaf -> uint8_t* buf -> send out fragments
-/// In listener mode, rx uint8_t payload -> aes3aaf -> smpte337_frame -> ec3 sync-frame -> file
+/// @brief AES3 RX return values
+typedef enum
+{
+    RX_INVALID,             // RX payload is invalid format
+    RX_WAIT_ANOTHER_PAYLOAD,// Frame337 is need to wait for another fragment(s) to complete
+    RX_DONE                 // Frame337 successfully construct
+} AES3_RX_RET;
+
+/// @brief SMPTE337 buffer
 typedef struct smpte337_frame
 {
 	// first 12 bytes is smpte337_preamble and next is 1536 bytes
@@ -89,40 +95,66 @@ typedef struct smpte337_frame
 	uint32_t word_length; // in bit
 } smpte337_frame_t;
 
-/// @brief Set Dolby EC3 word length to dummy smpte337 preamble infos
-/// @param frmsiz Frame size is extract from sync-frame 'bsi' info
-///   data length is frmsiz * 2 (bytes)
-void set_smpte_preamble_word_length(uint32_t frmsiz);
+typedef struct aes3helper_talkerprocessor
+{
+    uint8_t smpte337preamble[SMPTE_PREAMBLE_LENGTH]; // tx part
+    ///??? Actually 192bits is only apply for AES3 Original Format that fixed to 192 subframes
+    /// In our case, 192bits are not usefull anymore, since the frame size can be dynamic
+    uint8_t channelstatus[24];
 
-/// @brief Reset TXRX local info for next TXRX
-void reset_aes3_txrx_info();
+    aes3_aaf_stream_t aesaaf_tx;
+    aes3_org_stream_t aes3org_tx;
+} aes3helper_talkerprocessor_t;
 
-/// @brief Handle AES3 RX
-///   Note: This is very simple logic which expecting SMPTE337 data burst data size should <= MAX MTU size
-///   As mentioned, SMPTE337 decoder MUST take responsibility of collecting enough SMPTE337 data burst base on it's word length.
+typedef struct aes3helper_listenerprocessor
+{
+    smpte337_frame_t frame337rx;
+    aes3_aaf_stream_t aesaaf_rx;
+    aes3_org_stream_t aes3org_rx;
+} aes3helper_listenerprocessor_t;
+
+/// @brief Initial aes3helper_talkerprocessor_t, each avtp talker stream can have one processor
+/// @param talkerprocessor 
+void init_aes3talkerprocessor(aes3helper_talkerprocessor_t* talkerprocessor);
+
+/// @brief Initial SMPTE preamble
+/// @param talkerprocessor 
+/// @param preamble 
+void set_tx_smpte_preamle(aes3helper_talkerprocessor_t* talkerprocessor, uint8_t *preamble);
+
+/// @brief Initial channelstatus preamble (fixed size 192bits = 24 bytes)
+/// @param talkerprocessor 
+/// @param preamble 
+void set_tx_channelstatus(aes3helper_talkerprocessor_t* talkerprocessor, uint8_t *cstatus);
+
+/// @brief Convert from dolbyec3 syncframe to AES3 Original Frame Format
+/// @param talkerprocessor Processor
+/// @param audiobufptr Pointer to audio buffer
+/// @param audiobuflen Buf len
+/// @return 
+uint8_t* dolbysyncframe_to_aes3org(aes3helper_talkerprocessor_t* talkerprocessor, uint8_t* audiobufptr, int audiobuflen);
+
+/// @brief Convert from dolbyec3 syncframe to AES3 AAF Frame Format
+/// @param talkerprocessor Processor
+/// @param audiobufptr Pointer to audio buffer
+/// @param audiobuflen Buf len
+/// @return 
+uint8_t* dolbysyncframe_to_aes3aaf(aes3helper_talkerprocessor_t* talkerprocessor, uint8_t* audiobufptr, int audiobuflen);
+
+/// @brief Initial aes3helper_talkerprocessor_t, each avtp talker stream can have one processor
+/// @param talkerprocessor 
+void init_aes3listenerprocessor(aes3helper_listenerprocessor_t* listenerprocessor);
+
+/// @brief Fill rx info into SMPTE337 frame
+/// @param aes3listenerprocessor 
 /// @param payload 
 /// @param plsize 
 /// @return 
-int handle_aes3_rx(uint8_t *payload, int plsize);
-
-typedef enum
-{
-    RX_INVALID,
-    RX_WAIT_ANOTHER_PAYLOAD,
-    RX_DONE
-} AES3_RX_RET;
-AES3_RX_RET fill_aes3_rx(uint8_t *payload, int plsize);
-
-/// @brief Convert from Dolby sync-frame -> SMPTE337 -> AES3 ORG -> AES3 AAF frame
-/// @param audio_buf 
-/// @param size 
-void syncframe_to_aes3aaf(uint8_t* audio_buf, int size);
+AES3_RX_RET fill_aes3aaf_rx(aes3helper_listenerprocessor_t* listenerprocessor, uint8_t *payload, int plsize);
 
 /// @brief Get output frame337 from handle_aes3_rx APIs
+///   User should only call it if fill_aes3_rx return RX_DONE
+///   Other cases, data will be invalid
 /// @return 
-smpte337_frame_t* get_frame337();
-
-/// @brief Get output AES3 AAF frame from syncframe_to_aes3aaf
-/// @return 
-uint8_t* get_frameaaf();
+smpte337_frame_t* get_frame337rx(aes3helper_listenerprocessor_t* listenerprocessor);
 #endif
