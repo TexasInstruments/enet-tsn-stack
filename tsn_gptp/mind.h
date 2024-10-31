@@ -59,6 +59,7 @@
 typedef struct PTPMsgAnnounce PTPMsgAnnounce;
 typedef struct PTPMsgIntervalRequestTLV PTPMsgIntervalRequestTLV;
 typedef struct PTPMsgGPTPCapableTLV PTPMsgGPTPCapableTLV;
+typedef struct PTPMsgGPTPCapableMsgIntervalReqTLV PTPMsgGPTPCapableMsgIntervalReqTLV;
 typedef struct PerPortGlobal PerPortGlobal;
 
 // 10.2 Time-synchronization state machines
@@ -272,7 +273,7 @@ typedef struct PerTimeAwareSystemGlobal {
 	uint32_t perfmonCurrentPeriod_ms; // updates current short and long data records
 } PerTimeAwareSystemGlobal;
 
-// 10.2.4 Per-port global variables
+// 10.2.5 Per-port global variables (802.1AS 2020)
 typedef struct PerPortGlobalForAllDomain {
 	bool asymmetryMeasurementMode;
 	double neighborRateRatio;
@@ -286,8 +287,9 @@ typedef struct PerPortGlobalForAllDomain {
 	//14.8.25 useMgtSettableLogPdelayReqInterval
 	bool useMgtSettableLogPdelayReqInterval;
 	int8_t mgtSettableLogPdelayReqInterval;
-	//when PdelayReq comes in CMLDS mode(SdoId=0x200), set this
-	int8_t receivedNonCMLDSPdelayReq;
+	// 14.8.29 useMgtSettableLogGptpCapableMessageInterval
+	bool useMgtSettableLogGptpCapableMessageInterval;
+	int8_t mgtSettableLogGptpCapableMessageInterval;
 }PerPortGlobalForAllDomain;
 struct PerPortGlobal {
 	bool asCapable; // for domain!=0, somebody needs to set this
@@ -304,8 +306,6 @@ struct PerPortGlobal {
 	PerPortGlobalForAllDomain *forAllDomain;
 	// 10.7.3.1 syncReceiptTimeout
 	int8_t syncReceiptTimeout;
-	// 10.4.1 gPtpCapableTransmit state machine needs this value
-	int8_t logGptpCapableMessageInterval;
 	// 10.7.3.3 gPtpCapableReceiptTimeout
 	int8_t gPtpCapableReceiptTimeout;
 	// 14.8.19 useMgtSettableLogSyncInterval
@@ -320,6 +320,14 @@ struct PerPortGlobal {
 	bool useMgtSettableOneStepTxOper;
 	// 14.8.41 mgtSettableOneStepTxOper
 	bool mgtSettableOneStepTxOper;
+
+	// 10.4.1 gPtpCapableTransmit state machine needs this value
+	// int8_t logGptpCapableMessageInterval; -> currentLogGptpCapableMessageInterval
+	bool gPtpCapableMessageSlowdown;
+	UScaledNs gPtpCapableMessageInterval;
+	UScaledNs oldGptpCapableMessageInterval;
+	int8_t currentLogGptpCapableMessageInterval; // 10.2.5.22
+	int8_t initialLogGptpCapableMessageInterval; // 10.2.5.23
 
 	// IEEE1588-2019 J.5 Data set for performance monitoring
 	PerfMonPortDS *perfmonDS;
@@ -522,11 +530,17 @@ typedef struct AnnounceIntervalSettingSM {
 	PTPMsgIntervalRequestTLV *rcvdSignalingPtr;
 } AnnounceIntervalSettingSM;
 
+typedef struct GPTPCapableIntervalSettingSM {
+	bool rcvdSignalingMsg4;
+	PTPMsgGPTPCapableMsgIntervalReqTLV *rcvdSignalingPtr;
+} GPTPCapableIntervalSettingSM;
+
 // 10.4 State machines related to signaling gPTP protocol capability
 // 10.4.1 gPtpCapableTransmit state machine
 typedef struct gPtpCapableTransmitSM {
 	UScaledNs signalingMsgTimeInterval;
 	UScaledNs intervalTimer;
+	uint8_t numberGptpCapableMessageTransmissions; // 10.4.1.1.4
 	PTPMsgGPTPCapableTLV *txSignalingMsgPtr;
 } gPtpCapableTransmitSM;
 
@@ -591,6 +605,17 @@ struct PTPMsgGPTPCapableTLV {
 	Enumeration24 organizationSubType;
 	int8_t logGptpCapableMessageInterval;
 	Octet flags;
+	Octet4 reserved;
+};
+
+// 10.6.4.5 gPTP capable Message Interval Request TLV
+struct PTPMsgGPTPCapableMsgIntervalReqTLV {
+	Enumeration16 tlvType;
+	uint16_t lengthField;
+	Octet3 organizationId;
+	Enumeration24 organizationSubType;
+	int8_t logGptpCapableMessageInterval;
+	Octet3 reserved;
 };
 
 // 10.6.4.3.9 flags (Octet)

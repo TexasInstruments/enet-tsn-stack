@@ -196,43 +196,46 @@ const char *ieee1588_ptp_tt_enum_strings[]={
 	"current-log-pdelay-req-interval",		// 132(0x84)
 	"use-mgt-log-pdelay-req-interval",		// 133(0x85)
 	"mgt-log-pdelay-req-interval",		// 134(0x86)
-	"current-log-gptp-cap-interval",		// 135(0x87)
-	"use-mgt-compute-rate-ratio",		// 136(0x88)
-	"use-mgt-compute-mean-link-delay",		// 137(0x89)
-	"allowed-lost-responses",		// 138(0x8a)
-	"allowed-faults",		// 139(0x8b)
-	"gptp-cap-receipt-timeout",		// 140(0x8c)
-	"one-step-tx-oper",		// 141(0x8d)
-	"one-step-receive",		// 142(0x8e)
-	"one-step-transmit",		// 143(0x8f)
-	"initial-one-step-tx-oper",		// 144(0x90)
-	"current-one-step-tx-oper",		// 145(0x91)
-	"use-mgt-one-step-tx-oper",		// 146(0x92)
-	"mgt-one-step-tx-oper",		// 147(0x93)
-	"pdelay-truncated-timestamps",		// 148(0x94)
-	"port-statistics-ds",		// 149(0x95)
-	"rx-sync-count",		// 150(0x96)
-	"rx-one-step-sync-count",		// 151(0x97)
-	"rx-follow-up-count",		// 152(0x98)
-	"rx-pdelay-req-count",		// 153(0x99)
-	"rx-pdelay-resp-count",		// 154(0x9a)
-	"rx-pdelay-resp-follow-up-count",		// 155(0x9b)
-	"rx-announce-count",		// 156(0x9c)
-	"tx-sync-count",		// 157(0x9d)
-	"tx-follow-up-count",		// 158(0x9e)
-	"tx-pdelay-req-count",		// 159(0x9f)
-	"tx-pdelay-resp-count",		// 160(0xa0)
-	"tx-pdelay-resp-follow-up-count",		// 161(0xa1)
-	"tx-announce-count",		// 162(0xa2)
+	"initial-log-gptp-cap-interval",		// 135(0x87)
+	"current-log-gptp-cap-interval",		// 136(0x88)
+	"use-mgt-log-gptp-cap-interval",		// 137(0x89)
+	"mgt-log-gptp-cap-interval",		// 138(0x8a)
+	"use-mgt-compute-rate-ratio",		// 139(0x8b)
+	"use-mgt-compute-mean-link-delay",		// 140(0x8c)
+	"allowed-lost-responses",		// 141(0x8d)
+	"allowed-faults",		// 142(0x8e)
+	"gptp-cap-receipt-timeout",		// 143(0x8f)
+	"one-step-tx-oper",		// 144(0x90)
+	"one-step-receive",		// 145(0x91)
+	"one-step-transmit",		// 146(0x92)
+	"initial-one-step-tx-oper",		// 147(0x93)
+	"current-one-step-tx-oper",		// 148(0x94)
+	"use-mgt-one-step-tx-oper",		// 149(0x95)
+	"mgt-one-step-tx-oper",		// 150(0x96)
+	"pdelay-truncated-timestamps",		// 151(0x97)
+	"port-statistics-ds",		// 152(0x98)
+	"rx-sync-count",		// 153(0x99)
+	"rx-one-step-sync-count",		// 154(0x9a)
+	"rx-follow-up-count",		// 155(0x9b)
+	"rx-pdelay-req-count",		// 156(0x9c)
+	"rx-pdelay-resp-count",		// 157(0x9d)
+	"rx-pdelay-resp-follow-up-count",		// 158(0x9e)
+	"rx-announce-count",		// 159(0x9f)
+	"tx-sync-count",		// 160(0xa0)
+	"tx-follow-up-count",		// 161(0xa1)
+	"tx-pdelay-req-count",		// 162(0xa2)
+	"tx-pdelay-resp-count",		// 163(0xa3)
+	"tx-pdelay-resp-follow-up-count",		// 164(0xa4)
+	"tx-announce-count",		// 165(0xa5)
 	// augmented by xl4gptp
-	"port-clock",		// 163(0xa3)
-	"adjrate",		// 164(0xa4)
-	"ptpdev-name",		// 165(0xa5)
-	"clock-state",		// 166(0xa6)
-	"gmstate",		// 167(0xa7)
-	"instance-domain-map",		// 168(0xa8)
+	"port-clock",		// 166(0xa6)
+	"adjrate",		// 167(0xa7)
+	"ptpdev-name",		// 168(0xa8)
+	"clock-state",		// 169(0xa9)
+	"gmstate",		// 170(0xaa)
+	"instance-domain-map",		// 171(0xab)
 };
-const uint8_t ieee1588_ptp_tt_enum_max=169;
+const uint8_t ieee1588_ptp_tt_enum_max=172;
 
 static int prefix_namespace_init(uc_dbald *dbald)
 {
@@ -240,12 +243,12 @@ static int prefix_namespace_init(uc_dbald *dbald)
 		"urn:ieee:std:1588:yang:ieee1588-ptp-tt")!=0){
 		return -1;
 	}
-	if(yang_node_set_prefix_namespace(dbald, "xl4gptp",
-		"http://excelfore.com/ns/xl4gptp")!=0){
-		return -1;
-	}
 	if(yang_node_set_prefix_namespace(dbald, "dot1as-ptp",
 		"urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "xl4gptp",
+		"http://excelfore.com/ns/xl4gptp")!=0){
 		return -1;
 	}
 	return 0;
@@ -589,7 +592,43 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[4]=IEEE1588_PTP_TT_PORTS;
 	apsd[5]=IEEE1588_PTP_TT_PORT;
 	apsd[6]=IEEE1588_PTP_TT_PORT_DS;
+	apsd[7]=IEEE1588_PTP_TT_INITIAL_LOG_GPTP_CAP_INTERVAL;
+	apsd[8]=IEEE1588_PTP_TT_NSASC;
+	apsd[9]=255u;
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+		return -1;
+	}
+	apsd[1]=IEEE1588_PTP_TT_PTP;
+	apsd[2]=IEEE1588_PTP_TT_INSTANCES;
+	apsd[3]=IEEE1588_PTP_TT_INSTANCE;
+	apsd[4]=IEEE1588_PTP_TT_PORTS;
+	apsd[5]=IEEE1588_PTP_TT_PORT;
+	apsd[6]=IEEE1588_PTP_TT_PORT_DS;
 	apsd[7]=IEEE1588_PTP_TT_CURRENT_LOG_GPTP_CAP_INTERVAL;
+	apsd[8]=IEEE1588_PTP_TT_NSASC;
+	apsd[9]=255u;
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+		return -1;
+	}
+	apsd[1]=IEEE1588_PTP_TT_PTP;
+	apsd[2]=IEEE1588_PTP_TT_INSTANCES;
+	apsd[3]=IEEE1588_PTP_TT_INSTANCE;
+	apsd[4]=IEEE1588_PTP_TT_PORTS;
+	apsd[5]=IEEE1588_PTP_TT_PORT;
+	apsd[6]=IEEE1588_PTP_TT_PORT_DS;
+	apsd[7]=IEEE1588_PTP_TT_USE_MGT_LOG_GPTP_CAP_INTERVAL;
+	apsd[8]=IEEE1588_PTP_TT_NSASC;
+	apsd[9]=255u;
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+		return -1;
+	}
+	apsd[1]=IEEE1588_PTP_TT_PTP;
+	apsd[2]=IEEE1588_PTP_TT_INSTANCES;
+	apsd[3]=IEEE1588_PTP_TT_INSTANCE;
+	apsd[4]=IEEE1588_PTP_TT_PORTS;
+	apsd[5]=IEEE1588_PTP_TT_PORT;
+	apsd[6]=IEEE1588_PTP_TT_PORT_DS;
+	apsd[7]=IEEE1588_PTP_TT_MGT_LOG_GPTP_CAP_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
 	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
@@ -1179,10 +1218,21 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = IEEE1588_PTP_TT_MGT_LOG_PDELAY_REQ_INTERVAL;
 	vtype=YANG_VTYPE_INT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[7] = IEEE1588_PTP_TT_INITIAL_LOG_GPTP_CAP_INTERVAL;
+	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[7] = IEEE1588_PTP_TT_CURRENT_LOG_GPTP_CAP_INTERVAL;
 	vtype=YANG_VTYPE_INT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[7] = IEEE1588_PTP_TT_USE_MGT_LOG_GPTP_CAP_INTERVAL;
+	vtype=YANG_VTYPE_BOOLEAN;
+	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IEEE1588_PTP_TT_RW;
+	aps[7] = IEEE1588_PTP_TT_MGT_LOG_GPTP_CAP_INTERVAL;
+	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[7] = IEEE1588_PTP_TT_USE_MGT_COMPUTE_RATE_RATIO;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}

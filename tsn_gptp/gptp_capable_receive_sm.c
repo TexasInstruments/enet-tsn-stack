@@ -67,7 +67,10 @@ typedef enum {
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
 // ??? !domainEnabled, Figure 10-20—gPtpCapableReceive state machine
 // we set domainEnabled by receiving CMLDS mode PdelayReq
-#define DOMAIN_ENABLED (sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1)
+// domainEnabled mean this domain (index) is active or not. And once gptp_capable_receive_sm_init(**,domainIndex, **)
+// is called, it also means this domain is enabled.
+// Basically can ignore this flag, but will define as TRUE to follow spec Figure 10-20
+#define DOMAIN_ENABLED (true)
 
 static gptp_capable_receive_state_t allstate_condition(gptp_capable_receive_data_t *sm)
 {
@@ -119,8 +122,8 @@ static void *received_tlv_proc(gptp_capable_receive_data_t *sm, uint64_t cts64)
 	sm->thisSM->timeoutTime.nsec = cts64 +
 		sm->thisSM->gPtpCapableReceiptTimeoutInterval.nsec;
 	if(sm->ppg->neighborGptpCapable){return NULL;}
-	UB_LOG(UBL_INFO, "set neighborGptpCapable, domainIndex=%d, portIndex=%d\n",
-	       sm->domainIndex, sm->portIndex);
+	UB_LOG(UBL_INFO, "set neighborGptpCapable, domainIndex=%d, portIndex=%d wtout=%" PRIu64 "\n",
+	       sm->domainIndex, sm->portIndex, sm->thisSM->gPtpCapableReceiptTimeoutInterval.nsec);
 	sm->ppg->neighborGptpCapable = true;
 	return NULL;
 }
@@ -128,7 +131,13 @@ static void *received_tlv_proc(gptp_capable_receive_data_t *sm, uint64_t cts64)
 static gptp_capable_receive_state_t received_tlv_condition(gptp_capable_receive_data_t *sm,
 							   uint64_t cts64)
 {
-	if(cts64 >= sm->thisSM->timeoutTime.nsec){return INITIALIZE;}
+	if(cts64 >= sm->thisSM->timeoutTime.nsec){
+		UB_LOG(UBL_INFO, "wtout(%" PRIu64 ") expired without receive neighborAsCapable(cts64=%" PRIu64 " expiredtime=%" PRIu64 ")\n",
+						sm->thisSM->gPtpCapableReceiptTimeoutInterval.nsec,
+						cts64,
+						sm->thisSM->timeoutTime.nsec);
+		return INITIALIZE;
+	}
 	if(sm->thisSM->rcvdGptpCapableTlv){sm->last_state=REACTION;}
 	return RECEIVED_TLV;
 }

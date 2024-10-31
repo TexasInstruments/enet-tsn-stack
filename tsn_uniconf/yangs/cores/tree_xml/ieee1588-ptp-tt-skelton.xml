@@ -133,7 +133,10 @@
 							<current-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
 							<use-mgt-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
 							<mgt-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
+							<initial-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
 							<current-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
+							<use-mgt-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
+							<mgt-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
 							<use-mgt-compute-rate-ratio xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
 							<use-mgt-compute-mean-link-delay xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
 							<allowed-lost-responses xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>

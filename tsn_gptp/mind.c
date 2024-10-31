@@ -179,6 +179,19 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 				IEEE1588_PTP_TT_INITIAL_LOG_PDELAY_REQ_INTERVAL,
 				portIndex, domainIndex, YDBI_CONFIG);
 		(*ppglb)->useMgtSettableLogSyncInterval = false;
+
+		// GptpCapableIntervalSetting state machine params
+		(*ppglb)->forAllDomain->useMgtSettableLogGptpCapableMessageInterval =
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_TT_USE_MGT_LOG_GPTP_CAP_INTERVAL, //  use-mgt-log-gptp-cap-interval
+				portIndex, domainIndex, YDBI_STATUS);
+		(*ppglb)->forAllDomain->mgtSettableLogGptpCapableMessageInterval =
+			gptpgcfg_get_yang_portds_intitem(
+				gptpInstanceIndex,
+				IEEE1588_PTP_TT_MGT_LOG_GPTP_CAP_INTERVAL, // used if use-mgt-log-gptp-cap-interval is true.
+				portIndex, domainIndex, YDBI_CONFIG);
+		UB_LOG(UBL_INFO, "%s: use-mgt-log-gptp-cap-interval=%d\n", __func__, (*ppglb)->forAllDomain->useMgtSettableLogGptpCapableMessageInterval);
 	}
 
 	(*ppglb)->asCapable = false;
@@ -212,11 +225,21 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 	(*ppglb)->neighborGptpCapable = false;
 	(*ppglb)->syncSlowdown = false;
 
-	(*ppglb)->logGptpCapableMessageInterval =
+	// old name (logGptpCapableMessageInterval) should be corrected to currentLogGptpCapableMessageInterval
+	(*ppglb)->currentLogGptpCapableMessageInterval =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,
 			IEEE1588_PTP_TT_CURRENT_LOG_GPTP_CAP_INTERVAL,
 			portIndex, domainIndex, YDBI_STATUS);
+	(*ppglb)->initialLogGptpCapableMessageInterval =
+		gptpgcfg_get_yang_portds_intitem(
+			gptpInstanceIndex,
+			IEEE1588_PTP_TT_INITIAL_LOG_GPTP_CAP_INTERVAL,
+			portIndex, domainIndex, YDBI_CONFIG);
+	UB_LOG(UBL_INFO, "current-log-gptp-cap-interval=%d initial-log-gptp-cap-interval=%d\n",
+			(*ppglb)->currentLogGptpCapableMessageInterval, 
+			(*ppglb)->initialLogGptpCapableMessageInterval);
+	// End gptp as capable setting varaibles
 	(*ppglb)->gPtpCapableReceiptTimeout =
 		gptpgcfg_get_yang_portds_intitem(
 			gptpInstanceIndex,

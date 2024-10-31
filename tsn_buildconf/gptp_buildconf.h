@@ -47,31 +47,40 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef SYNC_INTERVAL_SETTING_SM_H_
-#define SYNC_INTERVAL_SETTING_SM_H_
+#ifndef __GPTP_BUILDCONF_H_
+#define __GPTP_BUILDCONF_H_
 
-struct sync_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	int state;
-	int last_state;
-	SyncIntervalSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
+#define GPTP_MAX_PORTS MAX_TILLD_PORTS
 
-typedef struct sync_interval_setting_data sync_interval_setting_data_t;
+#define GPTP_TASK_NUM   1
+#define GPTP_SEM_NUM    4 // ydbi_access_init, ifup/down notice, rx sem, gptpready
 
-void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64);
+/// GPTP is internally using some array to store clock data and share memory (via combase)
+/// GPTP also depends on Uniconf which also required store data into array(s)
+/// Below configuration are reserved for uniconf usage in case of GPTP stack is build without lldp, avtp and mrp
+#define GPTP_EASYARR_DFNUM 128
+#define GPTP_EASYARR_INSNUM 8
 
-void sync_interval_setting_sm_init(sync_interval_setting_data_t **sm,
-				   int domainIndex, int portIndex,
-				   PerTimeAwareSystemGlobal *ptasg,
-				   PerPortGlobal *ppg);
+/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
+#define GPTP_MAX_DOMAINS 1 /*GPTP max domain is 2*/
+#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+#define HAVE_GPTP_READY_NOTICE /*Once this flag is defined, avtp app need to wait for gptp ready signal*/
 
-int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm);
-
-void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
-					  PTPMsgIntervalRequestTLV *rcvdSignalingPtr,
-					  uint64_t cts64);
+/// CB_NOIPCSHMEM_DFNUM and CB_NOIPCSHMEM_DFSIZE are used to reserve static memory for gptp clock share memory.
+/// The formula is:
+///    gcd->shmsize = ((int)sizeof(gptp_clock_ppara_t)*max_domains) + (int)sizeof(gptp_master_clock_shm_head_t);
+/// Below config cover both cases (max domains can be 1 or 2).
+/// For now, in case of 1 domain, the shmsize is 236/256 bytes, and in case of 2 domains, shmsize takes 308/320 bytes
+#if GPTP_MAX_DOMAINS == 1
+#define CB_NOIPCSHMEM_DFNUM 4
+#elif GPTP_MAX_DOMAINS == 2
+#define CB_NOIPCSHMEM_DFNUM 5
+#else
+    #error "Only support 2 domains"
 #endif
+#define CB_NOIPCSHMEM_DFSIZE 64
+
+/* Interval timeout in nanoseconds used to generate timers in GPTP.
+ * Supported values are 125, 62.5, 31.25, 15.625 and 7.8125 milliseconds. */
+//#define GPTPNET_INTERVAL_TIMEOUT_NSEC 15625000u
+#endif // __GPTP_BUILDCONF_H_

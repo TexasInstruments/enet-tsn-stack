@@ -98,19 +98,57 @@ void print_priority_vector(ub_dbgmsg_level_t level, const char *identifier,
         );
 }
 
+#define SELECT_PRIORITY(a,b) (((a)==(b))?(SAME_PRIORITY):((((a)<(b))?(SUPERIOR_PRIORITY):(INFERIOR_PRIORITY))))
+static bmcs_priority_comparison_result compare_clockid(ClockIdentity* clockIdentityA, ClockIdentity *clockIdentityB)
+{
+        int i=0;
+        bmcs_priority_comparison_result ret;
+        for (i=0; i<CLOCK_IDENTITY_LENGTH; i++)
+        {
+                ret=SELECT_PRIORITY( ((uint8_t*)clockIdentityA)[i], ((uint8_t*)clockIdentityB)[i]);
+                if (ret!=SAME_PRIORITY)
+                {
+                        return ret;
+                }
+        }
+
+        return SAME_PRIORITY;
+}
+
 uint8_t compare_priority_vectors(UInteger224 *priorityA, UInteger224 *priorityB)
 {
         /* 10.3.5 priority vector comparison */
         uint8_t result = SAME_PRIORITY;
 
-        /* 10.3.4 For all components, a lsser numerical value is better,
-           and earlier components in the list are more significant */
-        int compare = memcmp(priorityA, priorityB,sizeof(UInteger224));
-        if (compare < 0){
-                result = SUPERIOR_PRIORITY;
-        }
-        else if (compare > 0){
-                result = INFERIOR_PRIORITY;
-        }else{}
+        result = SELECT_PRIORITY(priorityA->rootSystemIdentity.priority1, priorityB->rootSystemIdentity.priority1);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = SELECT_PRIORITY(priorityA->rootSystemIdentity.clockClass, priorityB->rootSystemIdentity.clockClass);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = SELECT_PRIORITY(priorityA->rootSystemIdentity.clockAccuracy, priorityB->rootSystemIdentity.clockAccuracy);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = SELECT_PRIORITY(priorityA->rootSystemIdentity.offsetScaledLogVariance, priorityB->rootSystemIdentity.offsetScaledLogVariance);
+        if (result != SAME_PRIORITY) {return result;}
+        
+        result = SELECT_PRIORITY(priorityA->rootSystemIdentity.priority2 , priorityB->rootSystemIdentity.priority2);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = compare_clockid(&priorityA->rootSystemIdentity.clockIdentity, &priorityB->rootSystemIdentity.clockIdentity);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = SELECT_PRIORITY(priorityA->stepsRemoved, priorityB->stepsRemoved);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = compare_clockid(&priorityA->sourcePortIdentity.clockIdentity, &priorityB->sourcePortIdentity.clockIdentity);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = SELECT_PRIORITY(priorityA->sourcePortIdentity.portIndex , priorityB->sourcePortIdentity.portIndex);
+        if (result != SAME_PRIORITY) {return result;}
+
+        result = SELECT_PRIORITY(priorityA->portNumber, priorityB->portNumber);
+        if (result != SAME_PRIORITY) {return result;}
+
         return result;
 }

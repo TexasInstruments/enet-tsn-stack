@@ -153,24 +153,24 @@ const uint8_t ietf_interfaces_enum_max=84;
 
 static int prefix_namespace_init(uc_dbald *dbald)
 {
-	if(yang_node_set_prefix_namespace(dbald, "dot1q",
-		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
-		return -1;
-	}
-	if(yang_node_set_prefix_namespace(dbald, "if",
-		"urn:ietf:params:xml:ns:yang:ietf-interfaces")!=0){
-		return -1;
-	}
 	if(yang_node_set_prefix_namespace(dbald, "sched-bridge",
 		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched-bridge")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "xl4if",
+		"http://excelfore.com/ns/xl4interfaces")!=0){
 		return -1;
 	}
 	if(yang_node_set_prefix_namespace(dbald, "preempt-bridge",
 		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption-bridge")!=0){
 		return -1;
 	}
-	if(yang_node_set_prefix_namespace(dbald, "xl4if",
-		"http://excelfore.com/ns/xl4interfaces")!=0){
+	if(yang_node_set_prefix_namespace(dbald, "if",
+		"urn:ietf:params:xml:ns:yang:ietf-interfaces")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "dot1q",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
 		return -1;
 	}
 	return 0;

@@ -47,31 +47,33 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef SYNC_INTERVAL_SETTING_SM_H_
-#define SYNC_INTERVAL_SETTING_SM_H_
+#ifndef GPTP_CAPABLE_INTERVAL_SETTING_SM_H_
+#define GPTP_CAPABLE_INTERVAL_SETTING_SM_H_
 
-struct sync_interval_setting_data{
+struct gptp_capable_interval_setting_data{
 	PerTimeAwareSystemGlobal *ptasg;
 	PerPortGlobal *ppg;
 	int state;
 	int last_state;
-	SyncIntervalSettingSM *thisSM;
+	GPTPCapableIntervalSettingSM *thisSM;
 	int domainIndex;
 	int portIndex;
+	PTPMsgGPTPCapableMsgIntervalReqTLV signalingMsg;
 };
 
-typedef struct sync_interval_setting_data sync_interval_setting_data_t;
+typedef struct gptp_capable_interval_setting_data gptp_capable_interval_setting_data_t;
 
-void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64);
+void *gptp_capable_interval_setting_sm(gptp_capable_interval_setting_data_t *sm, uint64_t cts64);
 
-void sync_interval_setting_sm_init(sync_interval_setting_data_t **sm,
-				   int domainIndex, int portIndex,
-				   PerTimeAwareSystemGlobal *ptasg,
-				   PerPortGlobal *ppg);
+void gptp_capable_interval_setting_sm_init(gptp_capable_interval_setting_data_t **sm,
+	int domainIndex, int portIndex,
+	PerTimeAwareSystemGlobal *ptasg,
+	PerPortGlobal *ppg);
 
-int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm);
+int gptp_capable_interval_setting_sm_close(gptp_capable_interval_setting_data_t **sm);
 
-void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
-					  PTPMsgIntervalRequestTLV *rcvdSignalingPtr,
-					  uint64_t cts64);
+void *gptp_capable_interval_setting_sm_SignalingMsg4(gptp_capable_interval_setting_data_t *sm,
+                                                PTPMsgGPTPCapableMsgIntervalReqTLV *rcvdSignalingPtr,
+                                                uint64_t cts64);
+
 #endif

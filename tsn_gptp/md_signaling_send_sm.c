@@ -129,6 +129,12 @@ static int sendSignaling(md_signaling_send_data_t *sm)
 	(void)memset(&((uint8_t*)sdata)[sizeof(MDPTPMsgHeader)], 0xff, sizeof(MDPortIdentity));
 	((MDPTPMsgHeader*)sdata)->domainNumber=
 		md_domain_index2number(sm->ptasg->domainIndex);
+
+	if (sm->cmlds_mode)
+	{
+		((MDPTPMsgHeader*)sdata)->majorSdoId_messageType = 
+			(((MDPTPMsgHeader*)sdata)->majorSdoId_messageType & 0x0Fu) | 0x20u;
+	}
 	switch(sm->stype){
 	case MD_SIGNALING_MSG_INTERVAL_REQ:
 		setup_msg_interval_req_tlv(sm, sdata);
@@ -247,6 +253,9 @@ void md_signaling_send_sm_init(md_signaling_send_data_t **sm,
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
+	(*sm)->cmlds_mode = gptpgcfg_get_intitem(
+		ptasg->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_CMLDS_MODE,
+		YDBI_CONFIG);
 }
 
 int md_signaling_send_sm_close(md_signaling_send_data_t **sm)

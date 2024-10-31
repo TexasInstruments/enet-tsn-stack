@@ -61,6 +61,7 @@ struct md_signaling_send_data{
 	int stype;
 	void *rcvd_txmsg;
 	uint16_t sequenceId;
+	int cmlds_mode;
 };
 
 typedef struct md_signaling_send_data md_signaling_send_data_t;

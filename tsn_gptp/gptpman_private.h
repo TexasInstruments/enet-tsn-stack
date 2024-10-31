@@ -74,6 +74,7 @@
 #include "clock_master_sync_offset_sm.h"
 #include "gptp_capable_transmit_sm.h"
 #include "gptp_capable_receive_sm.h"
+#include "gptp_capable_interval_setting_sm.h"
 #include "sync_interval_setting_sm.h"
 #include "link_delay_interval_setting_sm.h"
 #include "one_step_tx_oper_setting_sm.h"
@@ -109,6 +110,7 @@ typedef struct gptpsm_ptd{
 	bool cmldsLinkPortEnabled; // 11.2.16.1
 	gptp_capable_transmit_data_t *gctransd;
 	gptp_capable_receive_data_t *gcrecd;
+	gptp_capable_interval_setting_data_t *gcinvsetd;
 	sync_interval_setting_data_t *sisetd;
 	link_delay_interval_setting_data_t *ldisetd;
 	one_step_tx_oper_setting_data_t *ostxopd;

@@ -161,6 +161,8 @@ void eui48to64(const uint8_t *eui48, uint8_t *eui64, const uint8_t *insert);
 	SM_DATA_ALIGN(sizeof(SyncIntervalSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
 	SM_DATA_ALIGN(sizeof(announce_interval_setting_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+	\
 	SM_DATA_ALIGN(sizeof(AnnounceIntervalSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(gptp_capable_interval_setting_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
+	SM_DATA_ALIGN(sizeof(GPTPCapableIntervalSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
 	SM_DATA_ALIGN(sizeof(one_step_tx_oper_setting_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
 	SM_DATA_ALIGN(sizeof(OneStepTxOperSettingSM))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
 	SM_DATA_ALIGN(sizeof(md_announce_send_data_t))*(GPTP_MAX_PORTS*GPTP_MAX_DOMAINS)+ \
@@ -262,6 +264,13 @@ UB_SD_GETMEM_DEF_EXTERN(GPTP_MEDIUM_ALLOC);
          ((pp).rootSystemIdentity.offsetScaledLogVariance != 0u) || \
          ((pp).rootSystemIdentity.priority2 != 0u) || \
          ((pp).stepsRemoved != 0u))
+
+/* flag for tracking changes since 802.1AS-2011 */
+#ifdef FOLLOW_8021_AS_2011
+#define MODE_8021_AS_2011 true
+#else /* !FOLLOW_8021_AS_2011 */
+#define MODE_8021_AS_2011 false
+#endif /* FOLLOW_8021_AS_2011 */
 
 typedef enum {
         SAME_PRIORITY,

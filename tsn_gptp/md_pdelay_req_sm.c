@@ -93,7 +93,7 @@ static MDPTPMsgPdelayReq *setPdelayReq(md_pdelay_req_data_t *sm)
 				sm->thisSM->pdelayReqSequenceId,
 				sm->mdeg->forAllDomain->currentLogPdelayReqInterval);
 	if(!sdata){return NULL;}
-	if(sm->cmlds_mode && (sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq!=1)){
+	if(sm->cmlds_mode){
 		sdata->head.majorSdoId_messageType =
 			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x20u;
 	}
@@ -191,6 +191,13 @@ static md_pdelay_req_state_t allstate_condition(md_pdelay_req_data_t *sm)
 {
 	if(sm->ptasg->BEGIN || !sm->ppg->forAllDomain->portOper ||
 	   !sm->thisSM->portEnabled0){return NOT_ENABLED;}
+
+	// Table 10-15 Interpretation of special values of logLinkDelayInterval
+	if (sm->mdeg->forAllDomain->currentLogPdelayReqInterval == 127)
+	{
+		return INITIAL_SEND_PDELAY_REQ;
+	}
+
 	return (md_pdelay_req_state_t)sm->state;
 }
 
@@ -206,8 +213,6 @@ static void *not_enabled_proc(md_pdelay_req_data_t *sm)
 			gptpgcfg_get_intitem(
 				GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_NEIGHBOR_PROP_DELAY,
 				YDBI_CONFIG);
-		// this mode works only for Domain 0
-		sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq=1;
 		return NULL;
 	}
 	return NULL;
@@ -262,6 +267,8 @@ static int initial_send_pdelay_req_proc(md_pdelay_req_data_t *sm, uint64_t cts64
 static md_pdelay_req_state_t initial_send_pdelay_req_condition(md_pdelay_req_data_t *sm,
 							       uint64_t cts64)
 {
+	// Table 10-15 Interpretation of special values of logLinkDelayInterval
+	if(sm->mdeg->forAllDomain->currentLogPdelayReqInterval == 127) {return INITIAL_SEND_PDELAY_REQ;}
 	if(sm->thisSM->rcvdMDTimestampReceive){return WAITING_FOR_PDELAY_RESP;}
 	if((cts64 - sm->thisSM->pdelayIntervalTimer.nsec) >=
 	   gptpnet_txtslost_time(sm->gpnetd, sm->portIndex-1)){
@@ -411,6 +418,7 @@ static void *waiting_for_pdelay_resp_proc(md_pdelay_req_data_t *sm)
 static md_pdelay_req_state_t waiting_for_pdelay_resp_condition(md_pdelay_req_data_t *sm,
 							       uint64_t cts64)
 {
+	uint8_t rxmajorSdoId;
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d\n", __func__, sm->portIndex);
 	if(isPdelayIntervalTimerExpired(sm, cts64)){
 		UB_LOG(UBL_DEBUGV, "%s:pdelayIntervalTimer timedout\n", __func__);
@@ -479,15 +487,13 @@ static md_pdelay_req_state_t waiting_for_pdelay_resp_condition(md_pdelay_req_dat
 	if(md_port_number2index(ntohs(RCVD_PDELAY_RESP_PTR->requestingPortIdentity.portNumber_ns))
 	   != sm->ppg->thisPort){return RESET;}
 
-	if(!sm->cmlds_mode){
-		// 802.1AS-2020 8.1 the value of majorSdoId for gPTP domain must be 0x1
-		// When device is accepting message under CMLDS domain, allow values
-		// other than 0x1
-		if((RCVD_PDELAY_RESP_PTR->head.majorSdoId_messageType & 0xF0u)!=0x10u){
-			UB_LOG(UBL_DEBUGV, "%s: recevied RESP (seqId=%d) with invalid majorSdoId, ignore\n",
-					__func__, ntohs(RCVD_PDELAY_RESP_PTR->head.sequenceId_ns));
-			return WAITING_FOR_PDELAY_RESP;
-		}
+	// We will accept both CMLDS and non-CMLDS responses
+	rxmajorSdoId = (RCVD_PDELAY_RESP_PTR->head.majorSdoId_messageType & 0xF0u);
+	if(rxmajorSdoId != 0x10 && rxmajorSdoId != 0x20){
+		UB_LOG(UBL_INFO, "%s: received PDResp (seqId=%d) with invalid majorSdoId(%x), ignore\n",
+				__func__, RCVD_PDELAY_RESP_PTR->head.sequenceId_ns,
+				rxmajorSdoId);
+		return WAITING_FOR_PDELAY_RESP;
 	}
 
 	if(RCVD_PDELAY_RESP_PTR->head.sequenceId_ns !=
@@ -521,6 +527,7 @@ static void *waiting_for_pdelay_resp_follow_up_proc(md_pdelay_req_data_t *sm)
 static md_pdelay_req_state_t waiting_for_pdelay_resp_follow_up_condition(
 	md_pdelay_req_data_t *sm, uint64_t cts64)
 {
+	uint8_t rxmajorSdoId;
 	if(isPdelayIntervalTimerExpired(sm, cts64)){
 		UB_LOG(UBL_DEBUG, "%s:portIndex=%d, pdelayIntervalTimer timedout\n",
 		       __func__, sm->portIndex);
@@ -540,16 +547,13 @@ static md_pdelay_req_state_t waiting_for_pdelay_resp_follow_up_condition(
 
 	if(!RCVD_PDELAY_RESP_FOLLOWUP){return WAITING_FOR_PDELAY_RESP_FOLLOW_UP;}
 
-	if(!sm->cmlds_mode){
-		// 802.1AS-2020 8.1 the value of majorSdoId for gPTP domain must be 0x1
-		// When device is accepting message under CMLDS domain, allow values
-		// other than 0x1
-		if((RCVD_PDELAY_RESP_FOLLOWUP_PTR->head.majorSdoId_messageType & 0xF0u)!=0x10u){
-
-			UB_LOG(UBL_DEBUGV, "%s: received PDFup (seqId=%d) with invalid majorSdoId, ignore\n",
-					__func__, RCVD_PDELAY_RESP_FOLLOWUP_PTR->head.sequenceId_ns);
-			return WAITING_FOR_PDELAY_RESP_FOLLOW_UP;
-		}
+	// We will accept both CMLDS and non-CMLDS responses
+	rxmajorSdoId = (RCVD_PDELAY_RESP_FOLLOWUP_PTR->head.majorSdoId_messageType & 0xF0u);
+	if(rxmajorSdoId != 0x10 && rxmajorSdoId != 0x20){
+		UB_LOG(UBL_INFO, "%s: received PDFup (seqId=%d) with invalid majorSdoId(%x), ignore\n",
+				__func__, RCVD_PDELAY_RESP_FOLLOWUP_PTR->head.sequenceId_ns,
+				rxmajorSdoId);
+		return WAITING_FOR_PDELAY_RESP_FOLLOW_UP;
 	}
 
 	/* 802.1AS-2020 11.2.2 Determination of asCapable

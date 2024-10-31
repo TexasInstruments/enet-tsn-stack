@@ -150,24 +150,35 @@ void md_header_template(uint8_t gptpInstanceIndex, int portIndex, PTPMsgHeader *
 			break;
 	}
 	// IEEE1588_PTP_TT_PTP_TIMESCALE
-	head->flags[1]=0x0u|(((uint32_t)gptpgcfg_get_yang_intitem(
+	if (msgtype==ANNOUNCE || MODE_8021_AS_2011) {
+		head->flags[1]=0x0u|(((uint32_t)gptpgcfg_get_yang_intitem(
 				     gptpInstanceIndex, IEEE1588_PTP_TT_DEFAULT_DS,
 				     IEEE1588_PTP_TT_PTP_TIMESCALE, 255,
 				     0, YDBI_STATUS)&0x1u)<<3u);
+	}
+	else {
+		head->flags[1]=0x0u;
+	}
 	head->correctionField=0;
 	(void)memset(head->messageTypeSpecific,0,4);
 	(void)memcpy(&head->sourcePortIdentity, portId, sizeof(PortIdentity));
 	head->sequenceId=seqid;
-	switch(msgtype){
-	case SYNC:
+	if (MODE_8021_AS_2011) {
+		switch(msgtype){
+		case SYNC:
+			head->control=0x0;
+			break;
+		case FOLLOW_UP:
+			head->control=0x2;
+			break;
+		default:
+			head->control=0x5;
+			break;
+		}
+	}
+	else {
+		/*From 802.1AS 2020 Section 10.6.2.2.13 controlField (UInteger8) The value is 0*/
 		head->control=0x0;
-		break;
-	case FOLLOW_UP:
-		head->control=0x2;
-		break;
-	default:
-		head->control=0x5;
-		break;
 	}
 	head->logMessageInterval=logMessageInterval;
 }

@@ -186,6 +186,7 @@ void *announce_interval_setting_sm(announce_interval_setting_data_t *sm, uint64_
 			sm->state = set_intervals_condition(sm);
 			break;
 		case REACTION:
+			sm->state = SET_INTERVALS;
 		default:
 			break;
 		}

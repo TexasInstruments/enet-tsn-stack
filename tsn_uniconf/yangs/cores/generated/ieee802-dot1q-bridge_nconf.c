@@ -208,7 +208,7 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"971c8b1a657bff11ea1dd6371f0b7e54682d1583";
+	dbpara.value=(void*)"b584b394945823ef2a6bb2565850cb02cff6dcd2";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 

@@ -82,6 +82,23 @@ static void *recv_gptp_capable(md_signaling_receive_data_t *sm)
 	return &sm->gctlm;
 }
 
+static void *recv_gptp_capable_msg_interval_req(md_signaling_receive_data_t *sm)
+{
+	MDPTPMsgGPTPCapableIntervalRequestTLV *gcmsg=(MDPTPMsgGPTPCapableIntervalRequestTLV *)sm->rcvd_rxmsg;
+	//PTPMsgHeader header;
+	//md_decompose_head((MDPTPMsgHeader *)sm->rcvd_rxmsg, &header);
+	sm->gcmirtlm.tlvType = ntohs(gcmsg->signalingMsgHdr.tlvType_ns);
+	sm->gcmirtlm.lengthField = ntohs(gcmsg->signalingMsgHdr.lengthField_ns);
+	memcpy(&sm->gcmirtlm.organizationId, gcmsg->signalingMsgHdr.organizationId, 3);
+	sm->gcmirtlm.organizationSubType =
+		(gcmsg->signalingMsgHdr.organizationSubType_nb[0] << 16) |
+		(gcmsg->signalingMsgHdr.organizationSubType_nb[1] << 8) |
+		gcmsg->signalingMsgHdr.organizationSubType_nb[2];
+	sm->gcmirtlm.logGptpCapableMessageInterval=gcmsg->logGptpCapableMessageInterval;
+	memcpy(sm->gcmirtlm.reserved,gcmsg->reserved, sizeof(gcmsg->reserved));
+	return &sm->gcmirtlm;
+}
+
 static void *recv_msg_interval_req(md_signaling_receive_data_t *sm)
 {
 	MDPTPMsgIntervalRequestTLV *mrmsg=(MDPTPMsgIntervalRequestTLV *)sm->rcvd_rxmsg;
@@ -179,10 +196,11 @@ static void *recv_signaling_proc(md_signaling_receive_data_t *sm)
 	else if(stype==SINALING_GPTP_CAPABLE){
 		PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, asCapableRx);
 		return recv_gptp_capable(sm);
-	}else if (stype==SINALING_GPTP_CAPABLE_INTERVAL_REQ)
+	}
+	else if (stype==SINALING_GPTP_CAPABLE_INTERVAL_REQ)
 	{
-		UB_LOG(UBL_INFO, "%s:tlv type SINALING_GPTP_CAPABLE_INTERVAL_REQ will be supported soon\n", __func__);
-		return NULL;
+		// TODO: PERFMON_PPMSDR_INC(sm->ppg->perfmonDS, msgAsCapableRxIntervalReqRx);
+		return recv_gptp_capable_msg_interval_req(sm);
 	}
 	return NULL;
 }

@@ -209,7 +209,7 @@ int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm)
 	return 0;
 }
 
-void *sync_interval_setting_SignalingMsg1(sync_interval_setting_data_t *sm,
+void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
 					  PTPMsgIntervalRequestTLV *rcvdSignalingPtr,
 					  uint64_t cts64)
 {

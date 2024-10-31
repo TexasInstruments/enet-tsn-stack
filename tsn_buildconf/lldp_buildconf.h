@@ -47,31 +47,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef SYNC_INTERVAL_SETTING_SM_H_
-#define SYNC_INTERVAL_SETTING_SM_H_
+#ifndef __LLDP_BUILDCONF_H_
+#define __LLDP_BUILDCONF_H_
 
-struct sync_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	int state;
-	int last_state;
-	SyncIntervalSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
+#define LLDP_TASK_NUM 1
+#define LLDP_SEM_NUM  4 // rx sem, link , monitor DB changes x2
 
-typedef struct sync_interval_setting_data sync_interval_setting_data_t;
+/// LLDP internally do not have any array/fragments.
+/// But LLDP depends on Uniconf which also required store data into array(s)
+/// Below configuration are reserved for uniconf usage in case of LLDP stack is build without gptp, avtp and mrp
+/// In case of gptp, mrp is also built, reduce these value to '0' is okay.
+#define LLDP_EASYARR_DFNUM 128
+#define LLDP_EASYARR_INSNUM 8
 
-void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64);
+// Each port can have 3 LLDP agents
+// Nearest bridge agent. Dest MAC 0x0180-C200-000E
+// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000
+// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
+#define LLDP_CFG_PORT_INSTNUM (MAX_TILLD_PORTS * 3)
+// LLDP system has one timer to check db change
+// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
+// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
+#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
 
-void sync_interval_setting_sm_init(sync_interval_setting_data_t **sm,
-				   int domainIndex, int portIndex,
-				   PerTimeAwareSystemGlobal *ptasg,
-				   PerPortGlobal *ppg);
+// The information below apply  for max length of
+// - Local Chassis ID,
+// - Local Port ID,
+// - Local Port Description
+// - Local System name
+// - Local System Description
+#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
 
-int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm);
+// The information below apply  for max length of remote info
+// - Chassis ID
+// - Port ID
+// - Port Description
+// - System name
+// - System Description
+#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
 
-void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
-					  PTPMsgIntervalRequestTLV *rcvdSignalingPtr,
-					  uint64_t cts64);
-#endif
+// The information below apply  for max length of remote unknown TLV info
+// - Remote unknown TLV
+#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
+
+// The information below apply  for max length of Remote organization info
+// - Remote organization info TLV
+#define MAX_RM_ORG_INFO_LEN  64
+
+#endif // __LLDP_BUILDCONF_H_

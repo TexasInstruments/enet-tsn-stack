@@ -332,7 +332,10 @@ module: ieee1588-ptp-tt
      |     |     |  +--ro dot1as-ptp:current-log-pdelay-req-interval?   int8
      |     |     |  +--ro dot1as-ptp:use-mgt-log-pdelay-req-interval?   boolean
      |     |     |  +--rw dot1as-ptp:mgt-log-pdelay-req-interval?       int8
+     |     |     |  +--rw dot1as-ptp:initial-log-gptp-cap-interval?     int8
      |     |     |  +--ro dot1as-ptp:current-log-gptp-cap-interval?     int8
+     |     |     |  +--ro dot1as-ptp:use-mgt-log-gptp-cap-interval?     boolean
+     |     |     |  +--rw dot1as-ptp:mgt-log-gptp-cap-interval?         int8
      |     |     |  +--ro dot1as-ptp:use-mgt-compute-rate-ratio?        boolean
      |     |     |  +--ro dot1as-ptp:use-mgt-compute-mean-link-delay?   boolean
      |     |     |  +--rw dot1as-ptp:allowed-lost-responses?            uint8

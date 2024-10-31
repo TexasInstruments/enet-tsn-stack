@@ -69,6 +69,47 @@ typedef enum {
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
+/**
+ * 802.1AS 2020 CMLDS mode
+ * NOTE 4 In general, a port can receive:
+a) Peer delay messages of the CMLDS,
+b) PTP Instance-specific peer delay messages of domain 0 (with sdoId of 0x100), and
+c) If there are other PTP profiles on the neighbor port that use instance-specific peer delay, peer delay messages of
+those profiles.
+The port responds to the messages of type a) if it invokes CMLDS, the messages of type b) if it invokes gPTP domain 0,
+and the messages of type c) if it invokes the respective other PTP profiles.
+
+Basically:
+1/ CMLDS mode: we will copy pdelayreq MajorSdoId to pdelayresp/pdelayresp fup
+2/ Domain mode (non CMLDS): it means we only have 1 Domain (#0) active, we will just reply with our domain #0.
+*/
+static void setMajorSdoIdPdelayResp(md_pdelay_resp_data_t *sm, MDPTPMsgPdelayResp *sdata)
+{
+	if(sm->cmlds_mode){
+		sdata->head.majorSdoId_messageType = (sdata->head.majorSdoId_messageType & 0x0Fu) |
+			(sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u);
+		sdata->head.domainNumber = sm->thisSM->rcvdPdelayReqPtr->head.domainNumber;
+	}else{
+		sdata->head.majorSdoId_messageType =
+			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x10u;
+		sdata->head.domainNumber = 0;
+	}
+
+}
+
+static void setMajorSdoIdPdelayRespFollowUp(md_pdelay_resp_data_t *sm, MDPTPMsgPdelayRespFollowUp *sdata)
+{
+	if(sm->cmlds_mode){
+		sdata->head.majorSdoId_messageType = (sdata->head.majorSdoId_messageType & 0x0Fu) |
+			(sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u);
+		sdata->head.domainNumber = sm->thisSM->rcvdPdelayReqPtr->head.domainNumber;
+	}else{
+		sdata->head.majorSdoId_messageType =
+			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x10u;
+		sdata->head.domainNumber = 0;
+	}
+}
+
 static MDPTPMsgPdelayRespFollowUp *setPdelayRespFollowUp(md_pdelay_resp_data_t *sm)
 {
 	MDPTPMsgPdelayRespFollowUp *sdata;
@@ -82,11 +123,7 @@ static MDPTPMsgPdelayRespFollowUp *setPdelayRespFollowUp(md_pdelay_resp_data_t *
 		ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
 		0x7f);
 	if(!sdata){return NULL;}
-	if((sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1) && sm->cmlds_mode){
-		// PdelayReq came with CMLDS and we are also in CMLDS
-		sdata->head.majorSdoId_messageType =
-			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x20u;
-	}
+	setMajorSdoIdPdelayRespFollowUp(sm, sdata);
 	// As the fractional ns portion can't be measure, leave the 'correctionField' as 0
 	UB_NSEC2TS(sm->ts3, ts);
 	sdata->requestOriginTimestamp.seconds_lsb_nl=htonl(ts.tv_sec);
@@ -117,11 +154,7 @@ static MDPTPMsgPdelayResp *setPdelayResp(md_pdelay_resp_data_t *sm)
 		ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns),
 		0x7f);
 	if(!sdata){return NULL;}
-	if((sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1) && sm->cmlds_mode){
-		// PdelayReq came with CMLDS and we are also in CMLDS
-		sdata->head.majorSdoId_messageType =
-			(sdata->head.majorSdoId_messageType & 0x0Fu) | 0x20u;
-	}
+	setMajorSdoIdPdelayResp(sm, sdata);
 	// As the fractional ns portion can't be measure, leave the 'correctionField' as 0
 	UB_NSEC2TS(sm->ts2, ts);
 	sdata->requestReceiptTimestamp.seconds_lsb_nl=htonl(ts.tv_sec);
@@ -135,7 +168,7 @@ static MDPTPMsgPdelayResp *setPdelayResp(md_pdelay_resp_data_t *sm)
 
 static int txPdelayResp(gptpnet_data_t *gpnetd, int portIndex)
 {
-	int ssize=sizeof(MDPTPMsgPdelayReq);
+	int ssize=sizeof(MDPTPMsgPdelayResp);
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d\n",__func__, portIndex);
 	return gptpnet_send_whook(gpnetd, portIndex-1, ssize);
 }
@@ -327,35 +360,18 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 			       uint64_t cts64)
 {
 	uint16_t recsqid;
+	uint8_t majorSdoId;
 	UB_TLOG(UBL_DEBUGV, "%s:port=%d, state=%d\n",__func__, sm->portIndex, sm->state);
 	memcpy(&sm->rcvdPdelayReq, edrecv->recbptr, sizeof(MDPTPMsgPdelayReq));
 	sm->thisSM->rcvdPdelayReqPtr = &sm->rcvdPdelayReq;
 
-	if(!sm->cmlds_mode){
-		// 802.1AS-2020 8.1 the value of majorSdoId for gPTP domain must be 0x1
-		// When device is accepting message under CMLDS domain, allow values
-		// other than 0x1
-		if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u)!=0x10u){
+	// Currently will validate only majorSdoId 0x2 (CMLDS) and 0x1(Domain)
+	majorSdoId = (sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u);
+	if(majorSdoId !=0x10u &&  majorSdoId !=0x20u){
 			UB_LOG(UBL_DEBUGV,
-			       "%s:port=%d, invalid majorSdoId on gPTP domain, ignore event.\n",
-			       __func__, sm->portIndex);
+			       "%s:port=%d, invalid majorSdoId=0x%x on gPTP domain, ignore event.\n",
+			       __func__, sm->portIndex, majorSdoId);
 			return 0;
-		}
-	}else{
-		if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u)==0x20u){
-			if(sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq!=-1){
-				UB_LOG(UBL_INFO, "%s:port=%d, set receivedNonCMLDSPdelayReq=-1\n",
-				       __func__, sm->portIndex);
-				sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq=-1;
-			}
-		}
-	}
-	if((sm->thisSM->rcvdPdelayReqPtr->head.majorSdoId_messageType & 0xF0u)==0x10u){
-		if(sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq!=1){
-			UB_LOG(UBL_INFO, "%s:port=%d, set receivedNonCMLDSPdelayReq=1\n",
-			       __func__, sm->portIndex);
-			sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq=1;
-		}
 	}
 
 	recsqid=ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns);

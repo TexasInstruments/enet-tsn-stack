@@ -60,6 +60,7 @@ struct md_signaling_receive_data{
 	bool recv;
 	void *rcvd_rxmsg;
 	PTPMsgGPTPCapableTLV gctlm;
+	PTPMsgGPTPCapableMsgIntervalReqTLV gcmirtlm;
 	PTPMsgIntervalRequestTLV mrtlm;
 };
 

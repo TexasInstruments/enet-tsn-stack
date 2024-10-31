@@ -148,7 +148,7 @@ typedef struct UInteger112 {
 	uint16_t offsetScaledLogVariance;
 	uint8_t priority2;
 	ClockIdentity clockIdentity;
-} __attribute__((packed, aligned(1))) UInteger112;
+} UInteger112;
 
 /**
  * @brief UInteger224 (802.1AS, 10.3.4 time-synchronization spanning
@@ -159,7 +159,7 @@ typedef struct UInteger224 {
         uint16_t stepsRemoved;
         PortIdentity sourcePortIdentity;
         uint16_t portNumber;
-} __attribute__((packed, aligned(1))) UInteger224;
+} UInteger224;
 
 /**
  * @brief The ScaledNs type represents signed values of time and time

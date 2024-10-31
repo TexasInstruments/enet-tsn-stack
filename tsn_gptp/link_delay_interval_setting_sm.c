@@ -216,6 +216,17 @@ void link_delay_interval_setting_sm_init(link_delay_interval_setting_data_t **sm
 	(*sm)->ppg = ppg;
 	(*sm)->mdeg = mdeg;
 	(*sm)->portIndex = portIndex;
+	(*sm)->cmlds_mode = gptpgcfg_get_intitem(
+		ptasg->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_CMLDS_MODE,
+		YDBI_CONFIG);
+
+	//11.2.21.2.3
+	if((*sm)->cmlds_mode!=0){
+		// ??? cmldsLinkPortEnabled for CMLDS, but we use ptpPortEnabled here
+		(*sm)->thisSM->portEnabled3 = (*sm)->ppg->ptpPortEnabled;
+	}else{
+		(*sm)->thisSM->portEnabled3 = (*sm)->ppg->ptpPortEnabled;
+	}
 }
 
 int link_delay_interval_setting_sm_close(link_delay_interval_setting_data_t **sm)

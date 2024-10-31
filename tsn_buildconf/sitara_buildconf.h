@@ -50,116 +50,96 @@
 #ifndef __TSN_TILLD_INCLUDE_H_
 #define __TSN_TILLD_INCLUDE_H_
 
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define HAVE_GPTP_READY_NOTICE
-#define UB_ESARRAY_DFNUM 256
-#define CB_NOIPCSHMEM_DFNUM 4
-#ifdef __aarch64__
-    #define CB_NOIPCSHMEM_DFSIZE 128
-#else
-    #define CB_NOIPCSHMEM_DFSIZE 64
-#endif
+// max ports sitara 2
+#define MAX_TILLD_PORTS 2
 
+/// These flags are used to calculate number of task to be reserved
+/// User should self consider which modules stack should be built
+#define GPTP_LIB_ENABLE 1
+#define AVTP_LIB_ENABLE 1
+#define MRP_LIB_ENABLE 1
+#define LLDP_LIB_ENABLE 1
+#define TSN_USE_LOG_BUFFER 0
 
+#if (GPTP_LIB_ENABLE == 1)
+#include "gptp_buildconf.h"
+#else // (GPTP_LIB_ENABLE == 1)
+#define GPTP_TASK_NUM   0
+#define GPTP_SEM_NUM    0
+#define GPTP_EASYARR_DFNUM 0
+#define GPTP_EASYARR_INSNUM 0
+#endif // (GPTP_LIB_ENABLE == 1)
 
-#define SIMPLEDB_DBDATANUM 1800
+#if (AVTP_LIB_ENABLE == 1)
+#include "avtp_buildconf.h"
+#else //(AVTP_LIB_ENABLE == 1)
+#define AVTP_TASK_NUM   0
+#define AVTP_SEM_NUM    0
+#endif //(AVTP_LIB_ENABLE == 1)
 
-// Default values in case of unuse avtp
-//#define CB_LLDTASK_INSTNUM 10
-//#define CB_LLDSEM_INSTNUM 12
-//#define CB_LLDTASK_STACK_INSTNUM 1
+#if (MRP_LIB_ENABLE == 1)
+#include "mrp_buildconf.h"
+#else //(MRP_LIB_ENABLE == 1)
+#define MRP_TASK_NUM   0
+#define MRP_SEM_NUM    0
+#define MRP_EASYARR_DFNUM 0
+#define MRP_EASYARR_INSNUM 0
+#endif //(MRP_LIB_ENABLE == 1)
 
-#define TSN_USE_LOG_BUFFER 1
+#if (LLDP_LIB_ENABLE == 1)
+#include "lldp_buildconf.h"
+#else // (LLDP_LIB_ENABLE == 1)
+#define LLDP_TASK_NUM   0
+#define LLDP_SEM_NUM    0 // rx sem
+#define LLDP_EASYARR_DFNUM 0
+#define LLDP_EASYARR_INSNUM 0
+#endif // (LLDP_LIB_ENABLE == 1)
 
-#if TSN_USE_LOG_BUFFER == 1
+#if (TSN_USE_LOG_BUFFER == 1)
 #define LOG_TASK_NUM 1
 #else
 #define LOG_TASK_NUM 0
 #endif
-// To enable up to 2 avtp applications, use below configurations:
-// Note: Increase the configuration values will cause memory size increased.
-// Number of task(s) to be used:
 
-// To configure CB_LLDTASK_INSTNUM
-// Log task: LOG_TASK_NUM
-// Per system: uniconf, gptp2, avtpd, uc_hwal_catch_events_thread (total 4)
-// Avtp RX: alwas 1 (even if there are multiple interfaces tilld0,1,..)
-// Per stream (+2 per app):
-//      +1 per avtp apps (talker or listener)
-//      +1 avtpc connection handle if the stream is listener
-//      +1 avtpd connection handle if the stream is the talker
-// => To enable 1 avtp app: we need 4 + 1 + 2 = 7 tasks
-// => To enable 2 avtp app: we need 4 + 1 + 2*2 = 9 tasks
-// => To enable 7 avtp app: we need 4 + 1 + 2*7 = 19 tasks
-// MRP App:
-//      +1 mrpd
-//      +1 mrp app
-// => To enable mrp app + 1 avtp app: we need 7 tasks + 2 = 9 tasks
-// => To enable mrp app + 2 avtp app: we need 9 tasks + 2 = 11 tasks
-// => To enable mrp app + 7 avtp app: we need 19 tasks + 2 = 21 tasks
-// #define CB_LLDTASK_INSTNUM (9 + LOG_TASK_NUM)
-// If ignore avtpd and using direct mode, we can remove one threads per stream
-// -> Total 7 avtps + mrp (4 + 1 + 7 + 2) = 14
-#define CB_LLDTASK_INSTNUM 14
+#define UNICONF_TASK_NUM   2 // uniconf main, uc_hwal_catch_events_thread
+#define UNICONF_SEM_NUM   3 // simpledb open, uc_notice_init, ydbi_access_init
+#define TSNAPP_SEM_NUM   1 // ucReadySem
+
+#define CB_LLDTASK_INSTNUM (UNICONF_TASK_NUM + \
+                            GPTP_TASK_NUM + \
+                            AVTP_TASK_NUM + \
+                            MRP_TASK_NUM + \
+                            LLDP_TASK_NUM + \
+                            LOG_TASK_NUM)
+
+#define CB_LLDSEM_INSTNUM (UNICONF_SEM_NUM + \
+                            TSNAPP_SEM_NUM + \
+                            GPTP_SEM_NUM + \
+                            AVTP_SEM_NUM + \
+                            MRP_SEM_NUM + \
+                            LLDP_SEM_NUM)
+
+#define UB_ESARRAY_DFNUM (GPTP_EASYARR_DFNUM + \
+                         MRP_EASYARR_DFNUM + \
+                         LLDP_EASYARR_DFNUM)
+
+#define UB_ESARRAY_INSTNUM (GPTP_EASYARR_INSNUM + \
+                         MRP_EASYARR_INSNUM + \
+                         LLDP_EASYARR_INSNUM)
 
 // To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
 // inside the combase.
 // Per system: uc_hwal_catch_events_thread (total: 1)
 // Avtp RX: alwas 1 (even if there are multiple interfaces tilld0,1,..)
-// Per stream (+1 per app):
-//      +1 avtpc connection handle if the stream is listener
-//      +1 avtpd connection handle if the stream is the talker
-// => To enable 1 avtp app: we need 1 + 1 + 1 = 3 stacks
-// => To enable 2 avtp app: we need 1 + 1 + 1*2 = 4 stacks
-// => To enable 7 avtp app: we need 1 + 1 + 1*7 = 9 stacks
-// If ignore avtpd and using direct mode, we can remove one threads per stream
-// -> Total 7 avtps only use 2
 #define CB_LLDTASK_STACK_INSTNUM 2
 
-// To configure CB_LLDSEM_INSTNUM (CB_SEM_INIT)
-// Per system:
-//      tsnapp  (total 2)
-//          ucReadySem
-//          g_avtpd_ready_sem(in case avtp enabled) +1)
-//      uniconf (total 3)
-//          simpledb open
-//          uc_notice_init
-//          ydbi_access_init
-//      gptp2   (total 3)
-//          ydbi_access_init
-//          ifup/down notice
-//          rx sem
-//      avtpd   (total 4)
-//          ydbi_access_init
-//          avtpd_init sem_request/sem_response + 2
-//          rx sem + 1
-// Per stream:
-//      avtpd (+4 per stream tsem_set/tsem_rel/rsem_set/rsem_rel)
-// => To enable 1 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*1 = 16 SEMs
-// => To enable 2 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*2 = 20 SEMs
-// => To enable 7 avtp app in tilld0: we need 2 + 3 + 3 + 4 + 4*7 = 40 SEMs
-
-// MRP App (total 5):
-//      ydbi_access_init
-//      tilld_mrpnet.c rx_sem
-//      mrp_extcontrol
-//      link up/down + 1
-//      cbs register finish + 1
-// => To enable mrp app + 7 avtp app in tilld0: we need 40 + 3 = 43 SEMs
-// If ignore avtpd and using direct mode, we can remove 4 per streams, also 4 for avtpd
-// -> Total 7 avtps + mrp only use 13 (talker case)
-// -> Total 7 avtps + mrp only use 14 (listener case direct mode using 1 SEM to receive data)
-#define CB_LLDSEM_INSTNUM 14
-
-/* When RX zero copy is used, clear this flag to reduce the lib size */
-#define AVTP_USE_TILLD_RX_ZERO_COPY 1
-#define AVTP_ETHPKT_NUM 0
-#define AVTPC_RXDIRECT_ETHPKT_NUM 0
-
+/// Below params are for tsn-stack internal usage
+#define COMBASE_NO_INET
+#define COMBASE_NO_CRC
+#define COMBASE_NO_IPCSOCK
+#define UB_SD_STATIC
+#define UC_RUNCONF
+#define SIMPLEDB_DBDATANUM 1800
 #define DISABLE_FAT_FS
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
 #define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
@@ -170,56 +150,5 @@
 
 /* Disable the DEBUG and DEBUGV log level at the compilation time */
 #define UB_LOG_COMPILE_LEVEL UBL_INFOV
-
-/* Interval timeout in nanoseconds used to generate timers in GPTP.
- * Supported values are 125, 62.5, 31.25, 15.625 and 7.8125 milliseconds. */
-//#define GPTPNET_INTERVAL_TIMEOUT_NSEC 15625000u
-
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 2
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
-
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (2 * 3)
-
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
-
-// The information below apply  for max length of
-// - Local Chassis ID,
-// - Local Port ID,
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
-
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
-
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-/* LLDP Definition End */
-
-// MRP defininition
-#define UB_ESARRAY_INSTNUM 40
-#define XMRPD_MAX_PORT_NUM 2
 
 #endif /* __TSN_TILLD_INCLUDE_H_ */

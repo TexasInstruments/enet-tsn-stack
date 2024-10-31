@@ -47,31 +47,17 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef SYNC_INTERVAL_SETTING_SM_H_
-#define SYNC_INTERVAL_SETTING_SM_H_
+#ifndef __MRP_BUILDCONF_H_
+#define __MRP_BUILDCONF_H_
 
-struct sync_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	int state;
-	int last_state;
-	SyncIntervalSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
+#define XMRPD_MAX_PORT_NUM MAX_TILLD_PORTS
+#define MRP_TASK_NUM   (1 + 1) // mrp app and xmrpd
+#define MRP_SEM_NUM    5 // ydbi_access_init, rx sem, mrp_extcontrol, link up/down,cbs register finish
 
-typedef struct sync_interval_setting_data sync_interval_setting_data_t;
+/// MRP is internally using many arrays to store streams data and also attribute's data
+/// MRP also depends on Uniconf which also required store data into array(s)
+#define MRP_EASYARR_DFNUM 128
+// MRP required more ARRAY instance than GPTP or LLDP due to attribute value can be increased per neighbor
+#define MRP_EASYARR_INSNUM 32
 
-void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64);
-
-void sync_interval_setting_sm_init(sync_interval_setting_data_t **sm,
-				   int domainIndex, int portIndex,
-				   PerTimeAwareSystemGlobal *ptasg,
-				   PerPortGlobal *ppg);
-
-int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm);
-
-void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
-					  PTPMsgIntervalRequestTLV *rcvdSignalingPtr,
-					  uint64_t cts64);
-#endif
+#endif //__MRP_BUILDCONF_H_

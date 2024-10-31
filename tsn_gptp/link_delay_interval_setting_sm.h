@@ -58,6 +58,7 @@ struct link_delay_interval_setting_data{
 	int last_state;
 	LinkDelayIntervalSettingSM *thisSM;
 	int portIndex;
+	int cmlds_mode;
 };
 
 typedef struct link_delay_interval_setting_data link_delay_interval_setting_data_t;

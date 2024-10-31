@@ -47,31 +47,29 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef SYNC_INTERVAL_SETTING_SM_H_
-#define SYNC_INTERVAL_SETTING_SM_H_
+#ifndef __AVTP_BUILDCONF_H_
+#define __AVTP_BUILDCONF_H_
 
-struct sync_interval_setting_data{
-	PerTimeAwareSystemGlobal *ptasg;
-	PerPortGlobal *ppg;
-	int state;
-	int last_state;
-	SyncIntervalSettingSM *thisSM;
-	int domainIndex;
-	int portIndex;
-};
+// Each tx will take one task (thread)
+#define AVB_TALKER_STREAMS_NUMBER 2
 
-typedef struct sync_interval_setting_data sync_interval_setting_data_t;
+// There is only one task to receive multiple (interleaved) rx streams
+#define AVB_LISTENER_STREAMS_NUMBER 1
 
-void *sync_interval_setting_sm(sync_interval_setting_data_t *sm, uint64_t cts64);
+/* When RX zero copy is used, clear this flag to reduce the lib size */
+#define AVTP_USE_TILLD_RX_ZERO_COPY 1
 
-void sync_interval_setting_sm_init(sync_interval_setting_data_t **sm,
-				   int domainIndex, int portIndex,
-				   PerTimeAwareSystemGlobal *ptasg,
-				   PerPortGlobal *ppg);
+#define AVTP_TASK_NUM   (AVB_TALKER_STREAMS_NUMBER + AVB_LISTENER_STREAMS_NUMBER)
+#define AVTP_SEM_NUM    2 // ydbi_access_init, rx sem
 
-int sync_interval_setting_sm_close(sync_interval_setting_data_t **sm);
+// Defines the number of Ethernet buffers avtpd can allocate for RX packets when zero-copy mode is disabled
+// Set this to match the maximum number of Ethernet interfaces. 
+// If zero-copy mode is enabled, set to 0 since no buffer is needed.
+#define AVTP_ETHPKT_NUM 0
 
-void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
-					  PTPMsgIntervalRequestTLV *rcvdSignalingPtr,
-					  uint64_t cts64);
-#endif
+// Defines the number of Ethernet buffers avtpc direct mode can allocate for RX packets when zero-copy mode is disabled. 
+// Set this to match the maximum number of Ethernet interfaces. 
+// If zero-copy mode is enabled, set to 0 since no buffer is needed.
+#define AVTPC_RXDIRECT_ETHPKT_NUM 0
+
+#endif //__AVTP_BUILDCONF_H_

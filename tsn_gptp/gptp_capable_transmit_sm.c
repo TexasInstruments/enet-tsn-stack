@@ -65,9 +65,11 @@ typedef enum {
 
 #define PORT_OPER sm->ppg->forAllDomain->portOper
 #define PTP_PORT_ENABLED sm->ppg->ptpPortEnabled
-// ??? domainEnabled, Figure 10-19—gPtpCapableTransmit state machine
-// we set domainEnabled by receiving CMLDS mode PdelayReq
-#define DOMAIN_ENABLED (sm->ppg->forAllDomain->receivedNonCMLDSPdelayReq==-1)
+// domainEnabled, Figure 10-21—gPtpCapableTransmit state machine
+// domainEnabled mean this domain (index) is active or not. And once gptp_capable_transmit_sm_init(**,di, **)
+// is called, it also means this domain is enabled.
+// Basically can ignore this flag, but will define as TRUE to follow spec Figure 10-21
+#define DOMAIN_ENABLED (true)
 
 static void *setGptpCapableTlv(gptp_capable_transmit_data_t *sm)
 {
@@ -78,13 +80,9 @@ static void *setGptpCapableTlv(gptp_capable_transmit_data_t *sm)
 	sm->signalingMsg.organizationId[1]=0x80;
 	sm->signalingMsg.organizationId[2]=0xC2;
 	sm->signalingMsg.organizationSubType=4;
-	sm->signalingMsg.logGptpCapableMessageInterval = sm->ppg->logGptpCapableMessageInterval;
-	// Table 10-15 - Definitions of bits of flags field of message interval request TLV
-	SET_RESET_FLAG_BIT(sm->ppg->forAllDomain->computeNeighborPropDelay,
-			   sm->signalingMsg.flags, (uint8_t)COMPUTE_NEIGHBOR_PROP_DELAY_BIT);
-	SET_RESET_FLAG_BIT(sm->ppg->forAllDomain->computeNeighborRateRatio,
-			   sm->signalingMsg.flags, (uint8_t)COMPUTE_NEIGHBOR_RATE_RATIO_BIT);
-	// ??? bit2 of flags,  oneStepReceiveCapable
+	sm->signalingMsg.logGptpCapableMessageInterval = sm->ppg->currentLogGptpCapableMessageInterval;
+	sm->signalingMsg.flags=0x00; // 10.6.4.4.7 The flag bits shall be transmitted as FALSE and ignored on receipt.
+	memset (&sm->signalingMsg.reserved[0], 0x00, sizeof(sm->signalingMsg.reserved));
 	return &sm->signalingMsg;
 }
 
@@ -92,6 +90,8 @@ static gptp_capable_transmit_state_t allstate_condition(gptp_capable_transmit_da
 {
 	if(sm->ptasg->BEGIN || !sm->ptasg->instanceEnable || !DOMAIN_ENABLED ||
 	   !PORT_OPER || !PTP_PORT_ENABLED){return NOT_ENABLED;}
+
+	if (sm->ppg->currentLogGptpCapableMessageInterval == 127) {return INITIALIZE;}
 	return (gptp_capable_transmit_state_t)sm->state;
 }
 
@@ -118,21 +118,46 @@ static void *initialize_proc(gptp_capable_transmit_data_t *sm, uint64_t cts64)
 	}
 	// the default of logGptpCapableMessageInterval is TBD
 	sm->thisSM->signalingMsgTimeInterval.nsec =
-		(uint64_t)UB_SEC_NS * (1u << (uint8_t)sm->ppg->logGptpCapableMessageInterval);
+		(uint64_t)UB_SEC_NS * (1u << (uint8_t)sm->ppg->currentLogGptpCapableMessageInterval);
 	sm->thisSM->intervalTimer.nsec = cts64;
+	sm->ppg->gPtpCapableMessageSlowdown = false;
 	return NULL;
 }
 
 static gptp_capable_transmit_state_t initialize_condition(gptp_capable_transmit_data_t *sm)
 {
+	if (sm->ppg->currentLogGptpCapableMessageInterval == 127) {return INITIALIZE;}
 	return TRANSMIT_TLV;
 }
 
 static void *transmit_tlv_proc(gptp_capable_transmit_data_t *sm)
 {
+	uint64_t interval3;
 	UB_LOG(UBL_DEBUGV, "gptp_capable_transmit:%s:domainIndex=%d, portIndex=%d\n",
 		__func__, sm->domainIndex, sm->portIndex);
-	sm->thisSM->intervalTimer.nsec += sm->thisSM->signalingMsgTimeInterval.nsec;
+	
+	if (sm->ppg->gPtpCapableMessageSlowdown)
+	{
+		if (sm->thisSM->numberGptpCapableMessageTransmissions >= sm->ppg->gPtpCapableReceiptTimeout)
+		{
+			interval3 = sm->ppg->gPtpCapableMessageInterval.nsec;
+			sm->thisSM->numberGptpCapableMessageTransmissions = 0;
+			sm->ppg->gPtpCapableMessageSlowdown = false;
+		}
+		else
+		{
+			interval3 = sm->ppg->oldGptpCapableMessageInterval.nsec;
+			sm->thisSM->numberGptpCapableMessageTransmissions++;
+		}
+	}
+	else
+	{
+		interval3 = sm->ppg->gPtpCapableMessageInterval.nsec;
+		sm->thisSM->numberGptpCapableMessageTransmissions = 0;
+	}
+
+	UB_LOG(UBL_DEBUGV, "%s:gptpCap tx interval3=%" PRIu64 "\n",__func__, interval3);
+	sm->thisSM->intervalTimer.nsec += interval3;
 	//txGptpCapableSignalingMsg (&txSignalingMsgPtr);
 	//UB_LOG(UBL_DEBUG, "gptp_capable_transmit:txGptpCapableSignalingMsg\n");
 	return setGptpCapableTlv(sm);
@@ -141,6 +166,7 @@ static void *transmit_tlv_proc(gptp_capable_transmit_data_t *sm)
 static gptp_capable_transmit_state_t transmit_tlv_condition(gptp_capable_transmit_data_t *sm,
 							    uint64_t cts64)
 {
+	if (sm->ppg->currentLogGptpCapableMessageInterval == 127) {return INITIALIZE;}
 	if(cts64 >= sm->thisSM->intervalTimer.nsec){sm->last_state=REACTION;}
 	return TRANSMIT_TLV;
 }
@@ -199,6 +225,7 @@ void gptp_capable_transmit_sm_init(gptp_capable_transmit_data_t **sm,
 	(*sm)->ppg = ppg;
 	(*sm)->domainIndex = domainIndex;
 	(*sm)->portIndex = portIndex;
+	(*sm)->thisSM->numberGptpCapableMessageTransmissions = 0;
 }
 
 int gptp_capable_transmit_sm_close(gptp_capable_transmit_data_t **sm)

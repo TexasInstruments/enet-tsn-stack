@@ -64,11 +64,35 @@ UB_SD_GETMEM_DEF(SM_DATA_INST, SM_DATA_FSIZE, SM_DATA_FNUM);
 UB_SD_GETMEM_DEF(GPTP_SMALL_ALLOC, GPTP_SMALL_AFSIZE, GPTP_SMALL_AFNUM);
 UB_SD_GETMEM_DEF(GPTP_MEDIUM_ALLOC, GPTP_MEDIUM_AFSIZE, GPTP_MEDIUM_AFNUM);
 
+/// This function implement condition f) 2) in 802.1AS 2020 to ensure backward compatibility with 2011 edition
+static bool is_rxPdelayMsgAre2011Compatible(uint8_t gptpInstanceIndex, PerTimeAwareSystemGlobal *tasg,
+			  gptpsm_ptd_t *ptd)
+{
+	if (!ptd->mdpdreqd || !ptd->mdpdrespd) {return false;}
+	if ( (ptd->mdpdreqd->recPdelayResp.head.majorSdoId_messageType & 0xF0)==0x10 &&
+			ptd->mdpdreqd->recPdelayResp.head.domainNumber == 0x00 &&
+			(ptd->mdpdreqd->recPdelayRespFup.head.majorSdoId_messageType & 0xF0)==0x10 &&
+			ptd->mdpdreqd->recPdelayRespFup.head.domainNumber == 0x00 &&
+			(ptd->mdpdrespd->rcvdPdelayReq.head.majorSdoId_messageType & 0xF0)==0x10  &&
+			ptd->mdpdrespd->rcvdPdelayReq.head.domainNumber == 0x00 )
+	{
+		return true;
+	}
+	return false;
+}
 static void set_asCapable(uint8_t gptpInstanceIndex, PerTimeAwareSystemGlobal *tasg,
 			  gptpsm_ptd_t *ptd)
 {
-	if(ptd->mdeglb->forAllDomain->asCapableAcrossDomains ||
-	    ptd->ppglb->neighborGptpCapable){
+	// The per-PTP Port, per-domain global variable asCapable shall be set to TRUE if and only if the following
+	// conditions hold:
+	// e)The value of asCapableAcrossDomains is TRUE, and
+	// f)One of the following conditions holds:
+	// 		1)The value of neighborGptpCapable for this PTP Port is TRUE, or
+	// 		2)The value of domainNumber is zero, and the value of sdoId for peer delay messages received
+	// on this PTP Port is 0x100.
+	bool is2011PdelayMsgCompatible = is_rxPdelayMsgAre2011Compatible(gptpInstanceIndex, tasg, ptd);
+	if(ptd->mdeglb->forAllDomain->asCapableAcrossDomains &&
+	    (ptd->ppglb->neighborGptpCapable || is2011PdelayMsgCompatible)){
 		if(ptd->ppglb->asCapable){return;}
 		ptd->ppglb->asCapable = true;
 		UB_LOG(UBL_INFO,
@@ -205,6 +229,7 @@ static int sm_bmcs_domain_port_update(gptpman_data_t *gpmand, int domainIndex,
 	// update state machine on event occurence
 	// ie. portOper = true, asCapable = true
 	(void)announce_interval_setting_sm(gpmand->tasds[domainIndex].ptds[portIndex].aisetd, cts64);
+	(void)sync_interval_setting_sm(gpmand->tasds[domainIndex].ptds[portIndex].sisetd, cts64);
 	(void)sm_bmcs_perform(gpmand, domainIndex, portIndex, cts64);
 	return 0;
 }
@@ -238,6 +263,7 @@ static int sm_close_for_domain_port(gptpman_data_t *gpmand, int di, int pi)
 	SM_CLOSE(port_sync_sync_send_sm_close, gpmand->tasds[di].ptds[pi].psssendd);
 	SM_CLOSE(gptp_capable_transmit_sm_close, gpmand->tasds[di].ptds[pi].gctransd);
 	SM_CLOSE(gptp_capable_receive_sm_close, gpmand->tasds[di].ptds[pi].gcrecd);
+	SM_CLOSE(gptp_capable_interval_setting_sm_close, gpmand->tasds[di].ptds[pi].gcinvsetd);
 	SM_CLOSE(sync_interval_setting_sm_close, gpmand->tasds[di].ptds[pi].sisetd);
 	SM_CLOSE(one_step_tx_oper_setting_sm_close, gpmand->tasds[di].ptds[pi].ostxopd);
 	SM_CLOSE(md_announce_send_sm_close, gpmand->tasds[di].ptds[pi].mdansendd);
@@ -291,7 +317,6 @@ static int gptpnet_cb_devdown(gptpman_data_t *gpmand, int portIndex,
 	gpmand->tasds[0].ptds[portIndex].ppglb->forAllDomain->portOper=false;
 
 	gpmand->tasds[0].ptds[portIndex].mdeglb->forAllDomain->asCapableAcrossDomains=false;
-	gpmand->tasds[0].ptds[portIndex].ppglb->forAllDomain->receivedNonCMLDSPdelayReq=0;
 	for(di=0;di<gpmand->max_domains;di++){
 		if(!gpmand->tasds[di].ptds[portIndex].ppglb->asCapable){continue;}
 		gpmand->tasds[di].ptds[portIndex].ppglb->asCapable = false;
@@ -316,6 +341,7 @@ static int gptpnet_cb_timeout(gptpman_data_t *gpmand, uint64_t cts64)
 			for(pi=1;pi<gpmand->max_ports;pi++){
 				(void)md_pdelay_req_sm(gpmand->tasds[di].ptds[pi].mdpdreqd, cts64);
 				(void)md_pdelay_resp_sm(gpmand->tasds[di].ptds[pi].mdpdrespd, cts64);
+				(void)link_delay_interval_setting_sm(gpmand->tasds[di].ptds[pi].ldisetd, cts64);
 			}
 		}
 		smret=clock_master_sync_send_sm(gpmand->tasds[di].cmssendd, cts64);
@@ -331,11 +357,16 @@ static int gptpnet_cb_timeout(gptpman_data_t *gpmand, uint64_t cts64)
 				      &gpmand->tasds[di].ptds[pi]);
 			gpmand->tasds[di].tasglb->asCapableOrAll |=
 				gpmand->tasds[di].ptds[pi].ppglb->asCapable;
+			
+			// 
+			(void)gptp_capable_interval_setting_sm(gpmand->tasds[di].ptds[pi].gcinvsetd, cts64);
+
 			smret=gptp_capable_transmit_sm(gpmand->tasds[di].ptds[pi].gctransd, cts64);
 			if(smret!=NULL){
 				(void)md_signaling_send_sm_mdSignalingSend(
 					gpmand->tasds[di].ptds[pi].mdsigsendd, smret, cts64);
 			}
+			gptp_capable_receive_sm(gpmand->tasds[di].ptds[pi].gcrecd, cts64);
 
 			// The next 4 md_* calls are to check and send defered msg.
 			// However, ensure that this are called after the calling
@@ -460,17 +491,24 @@ static int gptpnet_cb_recv(gptpman_data_t *gpmand, int portIndex,
 		if(!smret){return 0;}
 		stype=((PTPMsgIntervalRequestTLV *)smret)->organizationSubType;
 		if(stype==2u){
-			sync_interval_setting_SignalingMsg1(
+			sync_interval_setting_SignalingMsg3(
 				gpmand->tasds[di].ptds[portIndex].sisetd,
 				(PTPMsgIntervalRequestTLV *)smret, cts64);
 			link_delay_interval_setting_SignalingMsg1(
 				gpmand->tasds[di].ptds[portIndex].ldisetd,
+				(PTPMsgIntervalRequestTLV *)smret, cts64);
+			announce_interval_setting_sm_SignalingMsg2(
+				gpmand->tasds[di].ptds[portIndex].aisetd,
 				(PTPMsgIntervalRequestTLV *)smret, cts64);
 
 		}else if(stype==4u){
 			gptp_capable_receive_rcvdSignalingMsg(
 				gpmand->tasds[di].ptds[portIndex].gcrecd,
 				(PTPMsgGPTPCapableTLV *)smret, cts64);
+		}else if(stype==5u){
+			gptp_capable_interval_setting_sm_SignalingMsg4(
+				gpmand->tasds[di].ptds[portIndex].gcinvsetd,
+				(PTPMsgGPTPCapableMsgIntervalReqTLV *)smret, cts64);
 		}else{
 			UB_LOG(UBL_WARN,"%s:unknown signaling message, stype=%u\n",
 			       __func__, (unsigned int)stype);
@@ -618,6 +656,8 @@ static int domain_port_sm_init(gptpsm_tasd_t *tasd, gptpnet_data_t *gpnetd, int 
 	gptp_capable_transmit_sm_init(&tasd->ptds[pi].gctransd, di, pi, tasd->tasglb,
 			tasd->ptds[pi].ppglb);
 	gptp_capable_receive_sm_init(&tasd->ptds[pi].gcrecd, di, pi, tasd->tasglb,
+			tasd->ptds[pi].ppglb);
+	gptp_capable_interval_setting_sm_init(&tasd->ptds[pi].gcinvsetd, di, pi, tasd->tasglb,
 			tasd->ptds[pi].ppglb);
 	sync_interval_setting_sm_init(&tasd->ptds[pi].sisetd, di, pi, tasd->tasglb,
 			tasd->ptds[pi].ppglb);

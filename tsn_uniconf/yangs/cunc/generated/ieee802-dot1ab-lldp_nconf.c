@@ -243,7 +243,7 @@ int ieee802_dot1ab_lldp_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"e5adda98a721737033b8f07d4aca97b204ee4d08";
+	dbpara.value=(void*)"ac1be222a4ff09aae59a8ff7d18975293fd46c32";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 

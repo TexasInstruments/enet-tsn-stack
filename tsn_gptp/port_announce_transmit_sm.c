@@ -124,6 +124,11 @@ static port_announce_transmit_state_t allstate_condition(port_announce_transmit_
 	if (sm->ptasg->BEGIN || !sm->ptasg->instanceEnable || !AS_CAPABLE){
 		return TRANSMIT_INIT;
 	}
+
+	// Table 10-17-Interpretation of special values of logAnnounceInterval
+	if (sm->bppg->currentLogAnnounceInterval == 127) {
+		return TRANSMIT_INIT;
+	}
 	return (port_announce_transmit_state_t)sm->state;
 }
 
@@ -140,6 +145,8 @@ static void *transmit_init_proc(port_announce_transmit_data_t *sm)
 
 static port_announce_transmit_state_t transmit_init_condition(port_announce_transmit_data_t *sm)
 {
+	// Table 10-17-Interpretation of special values of logAnnounceInterval
+	if(sm->bppg->currentLogAnnounceInterval == 127) {return TRANSMIT_INIT;}
 	/* unconditional transfer (UCT) */
 	return IDLE;
 }
