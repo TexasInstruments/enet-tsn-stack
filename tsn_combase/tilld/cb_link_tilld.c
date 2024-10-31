@@ -61,6 +61,7 @@ struct combase_link_data {
 	char *netdevs[MAX_NUMBER_ENET_DEVS];
 	uint32_t netdev_opersts[MAX_NUMBER_ENET_DEVS]; // keep current operation status
 	int numof_netdevs;
+	uint64_t linkchange_ts64;
 };
 
 #define CBL_DATA_INSTMEM cbl_data_inst
@@ -70,6 +71,12 @@ struct combase_link_data {
 
 UB_SD_GETMEM_DEF(CBL_DATA_INSTMEM, (int)sizeof(struct combase_link_data),
 		 CBL_DATA_INSTNUM);
+
+#ifndef USE_LINK_CHANGE_EVENT
+#define USE_LINK_CHANGE_EVENT (1)
+#endif /* USE_LINK_CHANGE_EVENT */
+
+cbl_query_thread_data_t *g_cqtd = NULL;
 
 combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg,
 				       combase_link_extfd_t *extfdp)
@@ -172,8 +179,10 @@ int cbl_query_response(combase_link_data_t *cbld, int tout_ms)
 				       __func__, nevent.ifname);
 			}
 			nevent.eventflags = CBL_EVENT_DEVUP;
-			UB_LOG(UBL_INFO, "%s:%s: link UP, speed=%d, duplex=%d !!!!\n", __func__,
-				   cbld->netdevs[i], nevent.u.linkst.speed, nevent.u.linkst.duplex);
+			UB_TLOG(UBL_INFO, "%s:%s: link UP, speed=%d, duplex=%d !!!!" \
+				" (%"PRIi64"us since link change event)\n", __func__,
+				cbld->netdevs[i], nevent.u.linkst.speed, nevent.u.linkst.duplex,
+				(uint64_t)(ub_rt_gettime64() - cbld->linkchange_ts64)/1000);
 		} else {
 			nevent.eventflags=CBL_EVENT_DEVDOWN;
 			UB_LOG(UBL_INFO, "%s:%s link DOWN !!!!\n", __func__, cbld->netdevs[i]);
@@ -244,8 +253,21 @@ static int check_linkstate_change(combase_link_data_t *cbld)
 	return 0;
 }
 
+void notify_linkchange(void)
+{
+	if (g_cqtd) {
+		combase_link_data_t *cbld=(combase_link_data_t *)g_cqtd->cbld;
+		cbld->linkchange_ts64 = ub_rt_gettime64();
+#if USE_LINK_CHANGE_EVENT
+		CB_SEM_POST(g_cqtd->sigp);
+#endif /* USE_LINK_CHANGE_EVENT */
+	}
+}
+
 void *cbl_query_thread(void *ptr)
 {
+	g_cqtd=(cbl_query_thread_data_t *)ptr;
+#if (USE_LINK_CHANGE_EVENT==0)
 	cbl_query_thread_data_t *cqtd=(cbl_query_thread_data_t *)ptr;
 	combase_link_data_t *cbld=(combase_link_data_t *)cqtd->cbld;
 	int res;
@@ -259,6 +281,7 @@ void *cbl_query_thread(void *ptr)
 			CB_SEM_POST( cqtd->sigp);
 		}
 	}
+#endif /* !USE_LINK_CHANGE_EVENT */
 	return NULL;
 }
 

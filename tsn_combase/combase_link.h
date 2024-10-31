@@ -248,6 +248,13 @@ void combase_link_close(combase_link_data_t *cbld);
 uint32_t cbl_get_capabilities(combase_link_data_t *cbld);
 
 /**
+ * @brief notify link change
+ * @param none
+ *
+ */
+void notify_linkchange(void);
+
+/**
  * @brief catch HW events to process
  * @param cbl_query_thread_data_t pointer
  * @note don't process data inside the thread. just signal the semaphore by events.

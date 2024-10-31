@@ -59,7 +59,7 @@
 #define AVTP_LIB_ENABLE 1
 #define MRP_LIB_ENABLE 1
 #define LLDP_LIB_ENABLE 1
-#define TSN_USE_LOG_BUFFER 0
+#define TSN_USE_LOG_BUFFER 1
 
 #if (GPTP_LIB_ENABLE == 1)
 #include "gptp_buildconf.h"

@@ -75,7 +75,9 @@ typedef enum {
 #define	RCVD_LOCAL_CLOCK_TICK sm->thisSM->rcvdLocalClockTick
 #define GPTPINSTNUM sm->ptasg->gptpInstanceIndex
 
+#ifndef SKIP_FREQADJ_COUNT_MAX
 #define SKIP_FREQADJ_COUNT_MAX 2
+#endif
 
 //if passing time between GM and thisClock, no way to calculate the freq offset
 #define CMSR_TOO_BIG_PASSTIME_GAP (UB_SEC_NS/10)
