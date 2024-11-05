@@ -105,7 +105,11 @@ int ptpdev_clock_adjtime(PTPFD_TYPE fd, int adjppb)
 	return 0;
 }
 
+#ifdef ENET_ENABLE_PER_ICSSG // ICSSG doesn’t have nudge support currently.
+int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset)
+#else
 static int ptpdev_clock_setoffset_big(PTPFD_TYPE fd, int64_t offset)
+#endif
 {
 	int64_t ts;
 	int res;
@@ -134,6 +138,7 @@ static int ptpdev_clock_setoffset_big(PTPFD_TYPE fd, int64_t offset)
 	return ptpdev_clock_settime(fd, &ts);
 }
 
+#ifndef ENET_ENABLE_PER_ICSSG // ICSSG doesn’t have nudge support currently.
 int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset)
 {
 	int res;
@@ -150,3 +155,4 @@ int ptpdev_clock_setoffset(PTPFD_TYPE fd, int64_t offset)
 	}
 	return 0;
 }
+#endif
