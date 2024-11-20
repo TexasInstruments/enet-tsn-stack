@@ -69,33 +69,33 @@ const char *xl4_extmod_xl4gptp_enum_strings[]={
 	"TEST_SYNC_SEND_PORT", 		// 7(0x7)
 	"MAX_DOMAIN_NUMBER", 		// 8(0x8)
 	"MASTER_PTPDEV", 		// 9(0x9)
-	"TXTS_LOST_TIME", 		// 10(0xa)
-	"SOCKET_TXPRIORITY", 		// 11(0xb)
-	"FIRST_DOMAIN_THIS_CLOCK", 		// 12(0xc)
-	"SECOND_DOMAIN_THIS_CLOCK", 		// 13(0xd)
-	"SECOND_DOMAIN_NUMBER", 		// 14(0xe)
-	"SINGLE_CLOCK_MODE", 		// 15(0xf)
-	"AFTERSEND_GUARDTIME", 		// 16(0x10)
-	"GPTPNET_EXTRA_TOUTNS", 		// 17(0x11)
-	"MAX_ADJUST_RATE_ON_CLOCK", 		// 18(0x12)
-	"NEIGHBOR_PROP_DELAY", 		// 19(0x13)
-	"STATIC_PORT_STATE_SLAVE_PORT", 		// 20(0x14)
-	"FOLLOW_AVNU", 		// 21(0x15)
-	"BMCS_QUICK_UPDATE_MODE", 		// 22(0x16)
-	"CMLDS_MODE", 		// 23(0x17)
-	"NEIGHBOR_PROPDELAY_MINLIMIT", 		// 24(0x18)
-	"INITIAL_SLAVE_TIME", 		// 25(0x19)
-	"INITIAL_GM_STABLE_TIME", 		// 26(0x1a)
-	"NORMAL_GM_STABLE_TIME", 		// 27(0x1b)
-	"FREQ_OFFSET_IIR_ALPHA_START_VALUE", 		// 28(0x1c)
-	"FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE", 		// 29(0x1d)
-	"PHASE_OFFSET_IIR_ALPHA_START_VALUE", 		// 30(0x1e)
-	"PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE", 		// 31(0x1f)
-	"CLOCK_COMPUTE_INTERVAL_MSEC", 		// 32(0x20)
-	"FREQ_OFFSET_UPDATE_MRATE_PPB", 		// 33(0x21)
-	"FREQ_OFFSET_STABLE_PPB", 		// 34(0x22)
-	"FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB", 		// 35(0x23)
-	"PHASE_OFFSET_ADJUST_BY_FREQ", 		// 36(0x24)
+	"GPTPNET_INTERVAL_TIMEOUT_NSEC", 		// 10(0xa)
+	"TXTS_LOST_TIME", 		// 11(0xb)
+	"SOCKET_TXPRIORITY", 		// 12(0xc)
+	"FIRST_DOMAIN_THIS_CLOCK", 		// 13(0xd)
+	"SECOND_DOMAIN_THIS_CLOCK", 		// 14(0xe)
+	"SECOND_DOMAIN_NUMBER", 		// 15(0xf)
+	"SINGLE_CLOCK_MODE", 		// 16(0x10)
+	"AFTERSEND_GUARDTIME", 		// 17(0x11)
+	"GPTPNET_EXTRA_TOUTNS", 		// 18(0x12)
+	"MAX_ADJUST_RATE_ON_CLOCK", 		// 19(0x13)
+	"NEIGHBOR_PROP_DELAY", 		// 20(0x14)
+	"STATIC_PORT_STATE_SLAVE_PORT", 		// 21(0x15)
+	"FOLLOW_AVNU", 		// 22(0x16)
+	"BMCS_QUICK_UPDATE_MODE", 		// 23(0x17)
+	"CMLDS_MODE", 		// 24(0x18)
+	"NEIGHBOR_PROPDELAY_MINLIMIT", 		// 25(0x19)
+	"INITIAL_SLAVE_TIME", 		// 26(0x1a)
+	"FREQ_OFFSET_IIR_ALPHA_START_VALUE", 		// 27(0x1b)
+	"FREQ_OFFSET_IIR_ALPHA_STABLE_VALUE", 		// 28(0x1c)
+	"PHASE_OFFSET_IIR_ALPHA_START_VALUE", 		// 29(0x1d)
+	"PHASE_OFFSET_IIR_ALPHA_STABLE_VALUE", 		// 30(0x1e)
+	"CLOCK_COMPUTE_INTERVAL_MSEC", 		// 31(0x1f)
+	"FREQ_OFFSET_UPDATE_MRATE_PPB", 		// 32(0x20)
+	"FREQ_OFFSET_STABLE_PPB", 		// 33(0x21)
+	"FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB", 		// 34(0x22)
+	"PHASE_OFFSET_ADJUST_BY_FREQ", 		// 35(0x23)
+	"SKIP_FREQADJ_COUNT_MAX", 		// 36(0x24)
 	"QUICK_SYNC_ALGO", 		// 37(0x25)
 	"ACTIVE_DOMAIN_AUTO_SWITCH", 		// 38(0x26)
 	"TSN_SCHEDULE_ON", 		// 39(0x27)
@@ -118,8 +118,13 @@ const char *xl4_extmod_xl4gptp_enum_strings[]={
 	"PERFMON_CURRENT_PERIOD", 		// 56(0x38)
 	"CONF_TILLD_PPS_REFCLK_HZ", 		// 57(0x39)
 	"CONF_TILLD_PPS_OUTIDX", 		// 58(0x3a)
+	"SUPPORT_RUNTIME_NOTICE_CHECK", 		// 59(0x3b)
+	"TRIGGER_MESSAGE_INTERVAL_REQ", 		// 60(0x3c)
+	"MESSAGE_INTERVAL_REQ_LOGSYNC", 		// 61(0x3d)
+	"MESSAGE_INTERVAL_REQ_LOGANNOUNCE", 		// 62(0x3e)
+	"MESSAGE_INTERVAL_REQ_LOGLINKDELAY", 		// 63(0x3f)
 };
-const uint8_t xl4_extmod_xl4gptp_enum_max=59;
+const uint8_t xl4_extmod_xl4gptp_enum_max=64;
 
 static int enumstring_init(uc_dbald *dbald, uint8_t modid)
 {
@@ -161,6 +166,9 @@ int xl4_extmod_xl4gptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_MASTER_PTPDEV;
 	vtype=YANG_VTYPE_STRING;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_GPTPNET_INTERVAL_TIMEOUT_NSEC;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_TXTS_LOST_TIME;
 	vtype=YANG_VTYPE_UINT32;
@@ -210,12 +218,6 @@ int xl4_extmod_xl4gptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[3] = XL4_EXTMOD_XL4GPTP_INITIAL_SLAVE_TIME;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = XL4_EXTMOD_XL4GPTP_INITIAL_GM_STABLE_TIME;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
-	aps[3] = XL4_EXTMOD_XL4GPTP_NORMAL_GM_STABLE_TIME;
-	vtype=YANG_VTYPE_UINT32;
-	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_FREQ_OFFSET_IIR_ALPHA_START_VALUE;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
@@ -242,6 +244,9 @@ int xl4_extmod_xl4gptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_PHASE_OFFSET_ADJUST_BY_FREQ;
 	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_SKIP_FREQADJ_COUNT_MAX;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_QUICK_SYNC_ALGO;
 	vtype=YANG_VTYPE_UINT8;
@@ -308,6 +313,21 @@ int xl4_extmod_xl4gptp_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_CONF_TILLD_PPS_OUTIDX;
 	vtype=YANG_VTYPE_UINT32;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_SUPPORT_RUNTIME_NOTICE_CHECK;
+	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ;
+	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGSYNC;
+	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGANNOUNCE;
+	vtype=YANG_VTYPE_INT8;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[3] = XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGLINKDELAY;
+	vtype=YANG_VTYPE_INT8;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = XL4_EXTMOD_XL4GPTP_VALUEKEY;
 	aps[4] = XL4_EXTMOD_XL4GPTP_INSTANCE_INDEX;

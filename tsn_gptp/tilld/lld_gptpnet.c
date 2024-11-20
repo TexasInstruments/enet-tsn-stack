@@ -61,6 +61,7 @@ CB_SEM_T g_gptpd_ready_semaphore = NULL;
 extern char *PTPMsgType_debug[];
 
 extern int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl);
+extern int gptpgcfg_nonyang_notice_check(uint8_t gptpInstanceIndex);
 
 typedef struct {
 	int ndev_index;
@@ -103,6 +104,8 @@ struct gptpnet_data {
 	ptpkt_t rxbuf;
 	CB_SOCKET_T lldsock;
 	uint8_t gptpInstanceIndex;
+	uint32_t tout_interval;
+	bool supportRtNotice;
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -260,6 +263,14 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 		nports++;
 	}
 
+	gpnet->supportRtNotice = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_SUPPORT_RUNTIME_NOTICE_CHECK,
+			YDBI_CONFIG);
+	gpnet->tout_interval = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_GPTPNET_INTERVAL_TIMEOUT_NSEC,
+			YDBI_CONFIG);
+	UB_LOG(UBL_INFO, "%s:supportRtNotice=%d tout_interval=%uNs\n", __func__,
+				gpnet->supportRtNotice, gpnet->tout_interval);
 	gpnet->cb_func = cb_func;
 	gpnet->cb_data = cb_data;
 	gpnet->event_ts64 = ub_mt_gettime64();
@@ -300,6 +311,17 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 error:
 	gptpnet_close(gpnet);
 	return NULL;
+}
+
+void gptpnet_update_tout_intervalns(gptpnet_data_t *gpnet, uint32_t tout_ns)
+{
+	gpnet->tout_interval = tout_ns;
+	gptpgcfg_set_item(gpnet->gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_GPTPNET_INTERVAL_TIMEOUT_NSEC, 
+					false, (void*)&gpnet->tout_interval, sizeof(uint32_t));
+}
+uint32_t gptpnet_get_tout_intervalns(gptpnet_data_t *gpnet)
+{
+	return gpnet->tout_interval;
 }
 
 int gptpnet_close(gptpnet_data_t *gpnet)
@@ -527,6 +549,23 @@ static int find_netdev(netdevice_t *devices, int dnum, char *netdev)
 	return -1;
 }
 
+static int gptpnet_notice_check(gptpnet_data_t *gpnet, int64_t ts64)
+{
+	int key_changed;
+	gptpnet_event_t event;
+
+	key_changed = gptpgcfg_nonyang_notice_check(gpnet->gptpInstanceIndex);
+	if (key_changed==0) {return 0;} // no key changed
+
+	if (XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ == key_changed)
+	{
+		event=GPTPNET_EVENT_TX_MSG_INTERVAL_REQ;
+		return gpnet->cb_func(gpnet->cb_data, 0, event, &ts64, NULL);
+	}
+
+	return 0;
+
+}
 static int gptpnet_link_check(gptpnet_data_t *gpnet, int64_t ts64)
 {
 	int res;
@@ -561,6 +600,7 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 	int err;
 
 	ts64 = ub_mt_gettime64();
+	if (gpnet->supportRtNotice) {(void)gptpnet_notice_check(gpnet, ts64);}
 	(void)gptpnet_link_check(gpnet, ts64);
 
 	tstout64 = ts64-gpnet->last_ts64;
@@ -579,8 +619,8 @@ static int gptpnet_catch_event(gptpnet_data_t *gpnet)
 						 &ts64, NULL);
 		}
 	} else {
-		gpnet->next_tout64 = ((ts64 / GPTPNET_INTERVAL_TIMEOUT_NSEC) + 1) *
-			GPTPNET_INTERVAL_TIMEOUT_NSEC;
+		gpnet->next_tout64 = ((ts64 / gpnet->tout_interval) + 1) *
+			gpnet->tout_interval;
 	}
 
 	gptpgcfg_releasedb(gpnet->gptpInstanceIndex);

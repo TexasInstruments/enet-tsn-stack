@@ -235,7 +235,9 @@ static int set_phase_offsetGM(clock_master_sync_receive_data_t *sm, int64_t dts,
 		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_USE_HW_PHASE_ADJUSTMENT,
 		   YDBI_CONFIG) && (sm->ptasg->domainIndex==0u)){
 		sm->offsetGM=0;
-		sm->skip_freqadj=SKIP_FREQADJ_COUNT_MAX;
+		sm->skip_freqadj=gptpgcfg_get_intitem(
+		   GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_SKIP_FREQADJ_COUNT_MAX,
+		   YDBI_CONFIG);
 	}else{
 		sm->offsetGM=offsetGM;
 	}
@@ -287,7 +289,7 @@ static int computeGmRateRatio(clock_master_sync_receive_data_t *sm,
 	 * 2. Skip the first SYNC, we need 2 SYNCs to calculate the rate. */
 	if(sm->skip_freqadj > 0){
 		sm->skip_freqadj--;
-		UB_LOG(UBL_INFO, "domainIndex=%d, clock_master_sync_receive:"
+		UB_TLOG(UBL_INFO, "domainIndex=%d, clock_master_sync_receive:"
 			   "the master clock rate skip update, GMdiff=%"PRIi64"nsec\n",
 			   sm->ptasg->domainIndex, dts-sm->offsetGM);
 		return -1;
@@ -356,7 +358,7 @@ static int computeGmRateRatio(clock_master_sync_receive_data_t *sm,
 		}else{}
 		(void)gptpclock_setadj(GPTPINSTNUM, sm->gmadjppb,
 				 sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
-		UB_LOG(UBL_INFOV, "domainIndex=%d, clock_master_sync_receive:"
+		UB_TLOG(UBL_INFOV, "domainIndex=%d, clock_master_sync_receive:"
 		       "the master clock rate to %dppb, GMdiff=%"PRIi64"nsec\n",
 		       sm->ptasg->domainIndex, sm->gmadjppb, dts-sm->offsetGM);
 		// the master must be synchronized and the rate becomes 1.0
@@ -439,6 +441,10 @@ static void *receive_source_time_proc(clock_master_sync_receive_data_t *sm)
 		if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)==GMSYNC_UNSYNC){
 			(void)gptpclock_set_gmsync(GPTPINSTNUM,
 						   sm->ptasg->domainIndex, GMSYNC_SYNC);
+		}
+		else if (sm->rate_is_stable && sm->offsetGM_stable==OFFSET_STABLE_ADJ){
+			(void)gptpclock_set_gmsync(GPTPINSTNUM,
+						   sm->ptasg->domainIndex, GMSYNC_SYNC_STABLE);
 		}
 	}
 	RCVD_CLOCK_SOURCE_REQ = false;

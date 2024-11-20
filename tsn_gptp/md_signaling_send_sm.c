@@ -272,8 +272,8 @@ void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *m
 					   uint64_t cts64)
 {
 	uint32_t stype;
-	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
-	       __func__, sm->domainIndex, sm->portIndex);
+	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d, currentState=%d \n",
+	       __func__, sm->domainIndex, sm->portIndex, sm->state);
 	stype=((PTPMsgGPTPCapableTLV *)msg)->organizationSubType;
 	sm->stype=MD_SIGNALING_NONE;
 	if(stype==2u){
@@ -289,4 +289,21 @@ void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *m
 	sm->rcvd_txmsg=msg;
 	sm->last_state=REACTION;
 	return md_signaling_send_sm(sm, cts64);
+}
+
+void* md_signaling_send_set_msg_interval_req(md_signaling_send_data_t *sm, int8_t logSync, int8_t logAnnounce,int8_t logPdelay)
+{
+	// 10.6.4.4 gPTP-capable TLV definition
+	sm->txmsg_interval_req.tlvType=0x0003;
+	sm->txmsg_interval_req.lengthField=12;
+	sm->txmsg_interval_req.organizationId[0]=0x00;
+	sm->txmsg_interval_req.organizationId[1]=0x80;
+	sm->txmsg_interval_req.organizationId[2]=0xC2;
+	sm->txmsg_interval_req.organizationSubType=2;
+	sm->txmsg_interval_req.linkDelayInterval = logPdelay;
+	sm->txmsg_interval_req.timeSyncInterval = logSync;
+	sm->txmsg_interval_req.announceInterval = logAnnounce;
+	sm->txmsg_interval_req.flags=0x00;
+
+	return (void*)&sm->txmsg_interval_req;
 }

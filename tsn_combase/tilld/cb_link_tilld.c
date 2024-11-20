@@ -237,6 +237,7 @@ int cbl_preempt_setup(combase_link_data_t *cbld, cbl_preempt_params_t *cpemp,
 	return (res == LLDENET_E_OK? 1: -1);
 }
 
+#if (USE_LINK_CHANGE_EVENT==0)
 static int check_linkstate_change(combase_link_data_t *cbld)
 {
 	int i;
@@ -252,6 +253,7 @@ static int check_linkstate_change(combase_link_data_t *cbld)
 	}
 	return 0;
 }
+#endif
 
 void notify_linkchange(void)
 {

@@ -83,6 +83,7 @@ typedef enum {
 	GPTPNET_EVENT_TXTS,
 	GPTPNET_EVENT_GUARDUP,
 	GPTPNET_EVENT_GUARDDOWN,
+	GPTPNET_EVENT_TX_MSG_INTERVAL_REQ,
 } gptpnet_event_t;
 
 /*
@@ -138,6 +139,8 @@ int gptpnet_send(gptpnet_data_t *gpnet, int ndevIndex, uint16_t length);
 char *gptpnet_ptpdev(gptpnet_data_t *gpnet, int ndevIndex);
 int gptpnet_num_netdevs(gptpnet_data_t *gpnet);
 int gptpnet_tsn_schedule(gptpnet_data_t *gpnet, uint32_t aligntime, uint32_t cycletime);
+void gptpnet_update_tout_intervalns(gptpnet_data_t *gpnet, uint32_t tout_ns);
+uint32_t gptpnet_get_tout_intervalns(gptpnet_data_t *gpnet);
 
 /**
  * @brief return portid, which is extended from MAC address by inserting FF:FE

@@ -160,6 +160,14 @@ int gptpgcfg_set_item(uint8_t gptpInstanceIndex, uint8_t confitem,
 		      bool status, void *value, uint32_t vsize);
 
 /**
+ * @brief Only for NON-YANG Data. Sets the non-yang 1588-ptp item in the database
+ *
+ * @param gptpInstanceIndex Index of the gptp instance to be configured
+ * @return int 0 on success, !0 on failure
+ */
+int gptpgcfg_trigger_msg_interval_request(uint8_t gptpInstanceIndex, int8_t logSync, int8_t logAnnounce, int8_t logPdelay);
+
+/**
  * @brief wait until tsn_gptpd sets port0 PORT_STATE
  * @param ydbia Yang db item access pointer
  * @param gptpInstance Index of the gptp instance to be configured
@@ -196,6 +204,13 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 int gptpgcfg_init(const char *dbname, const char **confnames,
 		uint8_t gptpInstanceIndex, bool ucthread,
 		int (*nonconfile_cb)(uint8_t gptpInstanceIndex));
+
+/**
+ * @brief Register uniconf notice
+ *
+ * @param gptpInstanceIndex Index of the gptp instance to be configured
+ */
+void gptpgcfg_init_notice(uint8_t gptpInstanceIndex);
 
 /**
  * @brief Close gptp configuration

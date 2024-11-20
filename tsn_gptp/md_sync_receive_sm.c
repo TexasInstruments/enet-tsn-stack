@@ -235,13 +235,15 @@ static md_sync_receive_state_t discard_condition(md_sync_receive_data_t *sm)
 static void *waiting_for_follow_up_proc(md_sync_receive_data_t *sm, uint64_t cts64)
 {
 	int64_t dts;
+	int64_t rsync_ts_threshold;
 	UB_LOG(UBL_DEBUGV, "md_sync_receive:%s:domainIndex=%d, portIndex=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex);
 	if(RCVD_SYNC) {
 		dts=cts64-sm->rsync_ts;
-		if(sm->rsync_ts && (dts>175000000)) {
-			UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%"PRIi64"\n",
-				 __func__, sm->domainIndex, sm->portIndex, dts);
+		rsync_ts_threshold=(int64_t)((double)sm->thisSM->upstreamSyncInterval.nsec*WARNING_IF_SYNC_INTERVAL_EXCEED_THRESHOLD);
+		if(sm->rsync_ts && (dts>rsync_ts_threshold)) {
+			UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%"PRIi64", rsync_ts_threshold=%"PRIi64"\n",
+				 __func__, sm->domainIndex, sm->portIndex, dts, rsync_ts_threshold);
 		}
 		sm->rsync_ts=cts64;
 	}
@@ -292,14 +294,16 @@ static md_sync_receive_state_t waiting_for_follow_up_condition(md_sync_receive_d
 static void *waiting_for_sync_proc(md_sync_receive_data_t *sm, uint64_t cts64)
 {
 	int64_t dts;
+	int64_t rsync_ts_threshold;
 	UB_LOG(UBL_DEBUGV, "md_sync_receive:%s:domainIndex=%d, portIndex=%d\n",
 		__func__, sm->domainIndex, sm->portIndex);
 	RCVD_SYNC = false;
 	if(RCVD_FOLLOWUP) {
 		dts=cts64-sm->rfup_ts;
-		if(sm->rfup_ts && (dts>175000000)) {
-			UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, fup gap=%"PRIi64"\n",
-				 __func__, sm->domainIndex, sm->portIndex, dts);
+		rsync_ts_threshold=(int64_t)((double)sm->thisSM->upstreamSyncInterval.nsec*WARNING_IF_SYNC_INTERVAL_EXCEED_THRESHOLD);
+		if(sm->rfup_ts && (dts>rsync_ts_threshold)) {
+			UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, fup gap=%"PRIi64", rsync_ts_threshold=%"PRIi64"\n",
+				 __func__, sm->domainIndex, sm->portIndex, dts, rsync_ts_threshold);
 		}
 		sm->rfup_ts=cts64;
 	}

@@ -152,3 +152,31 @@ uint8_t compare_priority_vectors(UInteger224 *priorityA, UInteger224 *priorityB)
 
         return result;
 }
+
+uint32_t adjust_tout_interval(int gptpInstanceIndex, uint32_t crrToutIntervalNs, uint64_t syncIntervalNs, uint64_t AnnounceIntervalNs, uint64_t pDelayIntervalNs, uint64_t asCapableIntervalNs)
+{
+        uint64_t minToutIntervalNs;
+         // Adjust tout interval, but never exceed this value 125ms
+        static const uint32_t maxToutIntervalNs = 125000000;
+        minToutIntervalNs=maxToutIntervalNs;
+        
+        if (syncIntervalNs !=0) {
+                minToutIntervalNs=(syncIntervalNs<minToutIntervalNs)?syncIntervalNs:minToutIntervalNs;
+        }
+
+        if (AnnounceIntervalNs !=0){
+                minToutIntervalNs=(AnnounceIntervalNs<minToutIntervalNs)?AnnounceIntervalNs:minToutIntervalNs;
+        }
+
+        if (pDelayIntervalNs !=0){
+                minToutIntervalNs=(pDelayIntervalNs<minToutIntervalNs)?pDelayIntervalNs:minToutIntervalNs;
+        }
+
+        if (asCapableIntervalNs != 0) {
+                minToutIntervalNs=(asCapableIntervalNs<minToutIntervalNs)?asCapableIntervalNs:minToutIntervalNs;
+        }
+        
+        minToutIntervalNs=(minToutIntervalNs>maxToutIntervalNs)?maxToutIntervalNs:minToutIntervalNs;
+
+        return ((uint32_t)minToutIntervalNs != crrToutIntervalNs) ? (uint32_t)minToutIntervalNs: crrToutIntervalNs;
+}

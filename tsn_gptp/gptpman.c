@@ -327,6 +327,120 @@ static int gptpnet_cb_devdown(gptpman_data_t *gpmand, int portIndex,
 	return 0;
 }
 
+static void gptpnet_adjust_glb_interval_and_tout(gptpsm_tasd_t *tasd, int di, int pi, 
+					int8_t logSync, int8_t logAnnounce, int8_t logPdelay)
+{
+	// This implementation is supporting Automotive scenario, there is no use case 
+	// for MASTER to send message interval request yet
+	if (tasd->pssd->ptasg->selectedState[pi] == SlavePort)
+	{
+		// Adjust pdelayReqInterval in advance
+		if (!LOG_INTERVAL_IN_RESERVED_RANGE(logPdelay))
+		{
+			if (logPdelay==126) // reset
+			{
+				tasd->ptds[pi].ldisetd->mdeg->forAllDomain->currentLogPdelayReqInterval = 
+					tasd->ptds[pi].ldisetd->mdeg->forAllDomain->initialLogPdelayReqInterval;
+				tasd->ptds[pi].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec =
+					LOG_TO_NSEC(tasd->ptds[pi].ldisetd->mdeg->forAllDomain->initialLogPdelayReqInterval);
+			} else if (logPdelay!=-128) {
+				tasd->ptds[pi].ldisetd->mdeg->forAllDomain->currentLogPdelayReqInterval = logPdelay;
+				tasd->ptds[pi].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec=LOG_TO_NSEC(logPdelay);
+			} else {/*-128: do not change logPdelay*/}
+		}
+
+		// Update SyncReceiptToutInterval
+		if (!LOG_INTERVAL_IN_RESERVED_RANGE(logSync) && logSync!=-128)
+		{
+			// Table 10-16--Interpretation of special values of logTimeSyncInterval
+			// When a Signaling message that contains this TLV is sent by a PTP Port, the value of
+			// syncReceiptTimeoutTimeInterval for that PTP Port (see 10.2.5.3) shall be set equal to syncReceiptTimeout
+			// (see 10.7.3.1) multiplied by the value of the interval, in seconds, reflected by logTimeSyncInterval.
+			uint64_t oldSyncReceiptToutNsec=tasd->ptds[pi].sisetd->ppg->syncReceiptTimeoutTimeInterval.nsec;
+			tasd->ptds[pi].sisetd->ppg->syncReceiptTimeoutTimeInterval.nsec =
+				tasd->ptds[pi].sisetd->ppg->syncReceiptTimeout * 
+				LOG_TO_NSEC( (logSync==126)?tasd->ptds[pi].sisetd->ppg->initialLogSyncInterval:logSync );
+
+			UB_LOG(UBL_INFO, "%s:di=%d Updated SyncReceiptToutNsec=%" PRIu64 "ns->%" PRIu64 "ns\n",
+				__func__, di, oldSyncReceiptToutNsec, tasd->ptds[pi].sisetd->ppg->syncReceiptTimeoutTimeInterval.nsec);
+
+		}
+
+		// Update AnnounceReceiptToutInterval
+		if (!LOG_INTERVAL_IN_RESERVED_RANGE(logAnnounce) && logAnnounce!=-128)
+		{
+			// Table 10-17--Interpretation of special values of logAnnounceInterval
+			// When a Signaling message that contains this TLV is sent by a PTP Port, the value of
+			// announceReceiptTimeoutTimeInterval for that PTP Port (see 10.3.10.1) shall be set equal to
+			//announceReceiptTimeout (see 10.7.3.2) multiplied by the value of the interval, in seconds, reflected by
+			// logAnnounceInterval.
+			uint64_t oldAnnReceiptToutNsec = tasd->ptds[pi].aisetd->bppg->announceReceiptTimeoutTimeInterval.nsec;
+			tasd->ptds[pi].aisetd->bppg->announceReceiptTimeoutTimeInterval.nsec =
+				tasd->ptds[pi].aisetd->bppg->announceReceiptTimeout * 
+				LOG_TO_NSEC( (logAnnounce==126)?tasd->ptds[pi].aisetd->bppg->initialLogAnnounceInterval:logAnnounce );
+
+			UB_LOG(UBL_INFO, "%s:di=%d, Updated oldAnnReceiptToutNsec=%" PRIu64 "ns->%" PRIu64 "ns\n",
+				__func__, di, oldAnnReceiptToutNsec, tasd->ptds[pi].aisetd->bppg->announceReceiptTimeoutTimeInterval.nsec);
+		}
+	}
+}
+
+static int gptpnet_tx_msg_interval_req(gptpman_data_t *gpmand, uint64_t cts64)
+{
+	int8_t logSync, logAnnounce, logPdelay;
+	int pi, di;
+	uint32_t toutIntervalNs;
+	uint32_t newToutIntervalNs;
+
+	logSync = gptpgcfg_get_intitem(
+				gpmand->gptpInstanceIndex,
+				XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGSYNC,
+				YDBI_CONFIG);
+	logAnnounce = gptpgcfg_get_intitem(
+				gpmand->gptpInstanceIndex,
+				XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGANNOUNCE,
+				YDBI_CONFIG);
+	logPdelay = gptpgcfg_get_intitem(
+				gpmand->gptpInstanceIndex,
+				XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGLINKDELAY,
+				YDBI_CONFIG);
+
+	toutIntervalNs = gptpnet_get_tout_intervalns(gpmand->gpnetd);
+	UB_LOG(UBL_INFO, 
+		"%s: recv request update logSync(%d) logAnn(%d) logPdelay(%d) current toutIntervalNs=%u\n",
+		__func__, logSync, logAnnounce, logPdelay, toutIntervalNs);
+
+	for(di=0;di<gpmand->max_domains;di++){
+		if(!DOMAIN_DATA_EXIST(di)){continue;}
+		gptpsm_tasd_t *tasd=&gpmand->tasds[di];
+		for (pi=1; pi<gpmand->max_ports; pi++)
+		{
+			gptpnet_adjust_glb_interval_and_tout(tasd, di, pi, logSync, logAnnounce, logPdelay);
+
+			// Done setting locally, now form+send tx MessageIntervalRequest Signaling
+			void* smret= md_signaling_send_set_msg_interval_req(
+							gpmand->tasds[di].ptds[pi].mdsigsendd, logSync, logAnnounce, logPdelay);
+			(void)md_signaling_send_sm_mdSignalingSend(
+							gpmand->tasds[di].ptds[pi].mdsigsendd, smret, cts64);
+
+			// Adjust tout interval time which is suitable with min logInterval
+			newToutIntervalNs = adjust_tout_interval(gpmand->gptpInstanceIndex,
+								toutIntervalNs,
+								0xFFFFFFFFFFFFFFFF, //sync is not involved
+								0xFFFFFFFFFFFFFFFF, //announce is not involved
+								tasd->ptds[pi].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec,
+								0xFFFFFFFFFFFFFFFF); //asCapable is not involved
+			if (newToutIntervalNs!=toutIntervalNs)
+			{
+				UB_LOG(UBL_INFO, "%s: di=%d, Adjust toutIntervalNs=%u->%u\n",
+					__func__, di, toutIntervalNs, newToutIntervalNs);
+				gptpnet_update_tout_intervalns(gpmand->gpnetd, newToutIntervalNs);
+			}
+		}
+	}
+
+	return 0;
+}
 
 // return 1 when TxTS is expected after this call
 static int gptpnet_cb_timeout(gptpman_data_t *gpmand, uint64_t cts64)
@@ -491,6 +605,8 @@ static int gptpnet_cb_recv(gptpman_data_t *gpmand, int portIndex,
 		if(!smret){return 0;}
 		stype=((PTPMsgIntervalRequestTLV *)smret)->organizationSubType;
 		if(stype==2u){
+			uint32_t toutIntervalNs, newToutIntervalNs;
+			toutIntervalNs = gptpnet_get_tout_intervalns(gpmand->gpnetd);
 			sync_interval_setting_SignalingMsg3(
 				gpmand->tasds[di].ptds[portIndex].sisetd,
 				(PTPMsgIntervalRequestTLV *)smret, cts64);
@@ -501,18 +617,47 @@ static int gptpnet_cb_recv(gptpman_data_t *gpmand, int portIndex,
 				gpmand->tasds[di].ptds[portIndex].aisetd,
 				(PTPMsgIntervalRequestTLV *)smret, cts64);
 
+			newToutIntervalNs = adjust_tout_interval(gpmand->gptpInstanceIndex, 
+					toutIntervalNs,
+					gpmand->tasds[di].ptds[portIndex].sisetd->ppg->syncInterval.nsec,
+					gpmand->tasds[di].ptds[portIndex].aisetd->bppg->announceInterval.nsec,
+					gpmand->tasds[di].ptds[portIndex].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec,
+					gpmand->tasds[di].ptds[portIndex].gcinvsetd->ppg->gPtpCapableMessageInterval.nsec);
+			if (newToutIntervalNs!=toutIntervalNs)
+			{
+				UB_LOG(UBL_INFO, "%s: Adjust toutIntervalNs=%u->%u\n",
+					__func__, toutIntervalNs, newToutIntervalNs);
+				gptpnet_update_tout_intervalns(gpmand->gpnetd, newToutIntervalNs);
+			}
+
 		}else if(stype==4u){
 			gptp_capable_receive_rcvdSignalingMsg(
 				gpmand->tasds[di].ptds[portIndex].gcrecd,
 				(PTPMsgGPTPCapableTLV *)smret, cts64);
 		}else if(stype==5u){
+			uint32_t toutIntervalNs, newToutIntervalNs;
+			toutIntervalNs = gptpnet_get_tout_intervalns(gpmand->gpnetd);
 			gptp_capable_interval_setting_sm_SignalingMsg4(
 				gpmand->tasds[di].ptds[portIndex].gcinvsetd,
 				(PTPMsgGPTPCapableMsgIntervalReqTLV *)smret, cts64);
+
+			newToutIntervalNs= adjust_tout_interval(gpmand->gptpInstanceIndex, 
+					toutIntervalNs,
+					gpmand->tasds[di].ptds[portIndex].sisetd->ppg->syncInterval.nsec,
+					gpmand->tasds[di].ptds[portIndex].aisetd->bppg->announceInterval.nsec,
+					gpmand->tasds[di].ptds[portIndex].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec,
+					gpmand->tasds[di].ptds[portIndex].gcinvsetd->ppg->gPtpCapableMessageInterval.nsec);
+			if (newToutIntervalNs!=toutIntervalNs)
+			{
+				UB_LOG(UBL_INFO, "%s: Adjust toutIntervalNs=%u->%u\n",
+					__func__, toutIntervalNs, newToutIntervalNs);
+				gptpnet_update_tout_intervalns(gpmand->gpnetd, newToutIntervalNs);
+			}
 		}else{
 			UB_LOG(UBL_WARN,"%s:unknown signaling message, stype=%u\n",
 			       __func__, (unsigned int)stype);
 		}
+
 		return 0;
 	default:
 		return 0;
@@ -609,6 +754,9 @@ static int gptpnet_cb(void *cb_data, int portIndex, gptpnet_event_t event,
 		break;
 	case GPTPNET_EVENT_GUARDDOWN:
 		gpmand->tasds[0].ptds[portIndex].ppglb->forAllDomain->portOper=false;
+		break;
+	case GPTPNET_EVENT_TX_MSG_INTERVAL_REQ:
+		(void)gptpnet_tx_msg_interval_req(gpmand, cts64);
 		break;
 	default:
 		break;
@@ -756,6 +904,7 @@ int gptpman_domain_init(gptpman_data_t *gpmand, uint8_t domainIndex)
 			gpmand->tasds[di].btasglb, gpmand->tasds[di].bppglbl,
 			gpmand->max_ports,
 			&gpmand->tasds[0].pssd);
+			
 	return 0;
 }
 
@@ -882,6 +1031,7 @@ static int static_domains_init(gptpman_data_t *gpmand, uint8_t gptpInstanceIndex
 	   or an action to create a new domain */
 	int this_ci;
 	int di;
+	uint32_t toutIntervalNs, newToutIntervalNs;
 
 	di=0; // domainIndex=0
 	this_ci=gptpgcfg_get_intitem(
@@ -903,6 +1053,29 @@ static int static_domains_init(gptpman_data_t *gpmand, uint8_t gptpInstanceIndex
 	bmcs_ptas_glb_update(gpmand->gptpInstanceIndex,
 			     &gpmand->tasds[di].btasglb,
 			     gpmand->tasds[di].tasglb, di);
+
+	toutIntervalNs = gptpnet_get_tout_intervalns(gpmand->gpnetd);
+	for(int pi=1;pi<gpmand->max_ports;pi++){
+
+		UB_LOG(UBL_INFO, "%s: instance=%d, di=%d, pi=%d, currentToutIntervalNs=%u\n", __func__, gptpInstanceIndex, di, pi, toutIntervalNs);
+		UB_LOG(UBL_INFO, "syncIntervalNs=%" PRIu64 ", announceInterval=%" PRIu64 ",pdelayReqInterval=%" PRIu64 ",gPtpCapableMessageInterval=%" PRIu64 "\n",
+						gpmand->tasds[di].ptds[pi].sisetd->ppg->syncInterval.nsec,
+						gpmand->tasds[di].ptds[pi].aisetd->bppg->announceInterval.nsec,
+						gpmand->tasds[di].ptds[pi].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec,
+						gpmand->tasds[di].ptds[pi].gcinvsetd->ppg->gPtpCapableMessageInterval.nsec);
+		newToutIntervalNs= adjust_tout_interval(gpmand->gptpInstanceIndex, 
+						toutIntervalNs,
+						gpmand->tasds[di].ptds[pi].sisetd->ppg->syncInterval.nsec,
+						gpmand->tasds[di].ptds[pi].aisetd->bppg->announceInterval.nsec,
+						gpmand->tasds[di].ptds[pi].ldisetd->mdeg->forAllDomain->pdelayReqInterval.nsec,
+						gpmand->tasds[di].ptds[pi].gcinvsetd->ppg->gPtpCapableMessageInterval.nsec);
+		if (newToutIntervalNs!=toutIntervalNs)
+		{
+			UB_LOG(UBL_INFO, "%s: Adjust toutIntervalNs=%u->%u\n",
+				__func__, toutIntervalNs, newToutIntervalNs);
+			gptpnet_update_tout_intervalns(gpmand->gpnetd, newToutIntervalNs);
+		}
+	}
 
 	di=gptpgcfg_get_intitem(
 		gpmand->gptpInstanceIndex,
@@ -942,6 +1115,7 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	void *value;
 	uint32_t vsize;
 	int max_domains;
+	int8_t supportRtNotice;
 
 	if(max_ports==0) return -1;
 	gpmand=(gptpman_data_t *)UB_SD_GETMEM(GPTP_MEDIUM_ALLOC, sizeof(gptpman_data_t));
@@ -967,6 +1141,7 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	   so that clockIndex=1 is safe to use for thisClockIndex */
 	YDBI_GET_ITEM_PSUBST(nyptk1vk0, masterptpdev, vsize, value,
 			     gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_MASTER_PTPDEV, YDBI_CONFIG);
+
 	gpmand->gpnetd=gptpnet_init(gptpInstanceIndex, gptpnet_cb,
 				    gpmand, netdevs, max_ports, masterptpdev);
 	YDBI_REL_ITEM(nyptk1vk0, gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_MASTER_PTPDEV, YDBI_CONFIG);
@@ -1014,8 +1189,11 @@ int gptpman_run(uint8_t gptpInstanceIndex, const char *netdevs[],
 	UB_SD_PRINT_USAGE(GPTP_MEDIUM_ALLOC, UBL_INFO);
 	UB_SD_PRINT_USAGE(GPTP_SMALL_ALLOC, UBL_INFO);
 	UB_SD_PRINT_USAGE(SM_DATA_INST, UBL_INFO);
-	UB_LOG(UBL_INFO, "%s:GPTPNET_INTERVAL_TIMEOUT_NSEC=%d\n",
-		   __func__,(int)GPTPNET_INTERVAL_TIMEOUT_NSEC);
+
+	supportRtNotice = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_SUPPORT_RUNTIME_NOTICE_CHECK,
+			YDBI_CONFIG);
+	if (supportRtNotice == 1) {gptpgcfg_init_notice(gptpInstanceIndex);}
 	res=gptpnet_eventloop(gpmand->gpnetd, stopgptp);
 	(void)all_sm_close(gpmand);
 	md_abnormal_close();

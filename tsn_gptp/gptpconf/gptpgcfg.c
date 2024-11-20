@@ -192,6 +192,23 @@ int gptpgcfg_set_item(uint8_t gptpInstanceIndex, uint8_t confitem,
 				       confitem, status, value, vsize, YDBI_NO_NOTICE);
 }
 
+int gptpgcfg_trigger_msg_interval_request(uint8_t gptpInstanceIndex, int8_t logSync, int8_t logAnnounce, int8_t logPdelay)
+{
+	int8_t support_msg_interval_req_signaling = gptpgcfg_get_intitem(
+		gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_SUPPORT_RUNTIME_NOTICE_CHECK,
+		YDBI_CONFIG);
+	int8_t trigger_tx=1;
+	if (support_msg_interval_req_signaling==0) {return -1;} // not support
+
+	gptpgcfg_set_item(gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGANNOUNCE, false, &logAnnounce, sizeof(int8_t));
+	gptpgcfg_set_item(gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGSYNC, false, &logSync, sizeof(int8_t));
+	gptpgcfg_set_item(gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_MESSAGE_INTERVAL_REQ_LOGLINKDELAY, false, &logPdelay, sizeof(int8_t));
+
+	return ydbi_set_item_nyptk1vk0(ydbi_access_handle(), gptpInstanceIndex,
+			XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ, false, &trigger_tx, sizeof(int8_t), YDBI_PUSH_NOTICE);
+
+}
+
 int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIndex, int tout_ms)
 {
 	int gdi;
@@ -314,6 +331,7 @@ int gptpcfg_copy_instance(uint8_t sginst, uint8_t sdomain, uint8_t dginst, uint8
 #endif
 
 #define GPTP_LINKSEMNAME "/gptplinksem"
+#define GPTP_NONYANGSEMNAME "/gptpnonyangsem"
 
 struct gptpgcfg_data{
 	uc_dbald *dbald;
@@ -324,6 +342,8 @@ struct gptpgcfg_data{
 	int8_t rep_port;
 	UC_NOTICE_SIG_T *linksem;
 	char semname[12+16+1]; // strlen(GPTP_LINKSEMNAME)+64bitTS+NULL
+	UC_NOTICE_SIG_T *nonyangsem;
+	char nyangsemname[15+16+1]; // strlen(GPTP_LINKSEMNAME)+64bitTS+NULL
 };
 
 #define GPTP_YANCONF_MEM gptp_yanconf_mem
@@ -425,6 +445,47 @@ static int gptp_nonyang_init(uc_dbald *dbald)
 		res=-1;
 	}
 	return res;
+}
+
+// static void gptp_nonyang_init_notice(uc_dbald *dbald, uc_notice_data_t *ucntd, UC_NOTICE_SIG_T *sem, char* semname)
+static void gptp_nonyang_init_notice(gptpgcfg_data_t * gycd)
+{
+	uint8_t aps[5];
+	int i;
+	void* kvs[3];
+	uint8_t kss[3];
+	uc_dbald *dbald = gycd->dbald;
+	uc_notice_data_t *ucntd = gycd->ucntd;
+	
+	kvs[0]=&ydbi_instIndex;
+	kss[0]=sizeof(uint8_t);
+	kvs[1] = (char*)gycd->nyangsemname;
+	kss[1] = strlen(gycd->nyangsemname)+1;
+	kvs[2] = NULL;
+	
+	uint8_t non_yang_mon_items [] =
+	{
+		XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ,
+		// Add more if needed in the future
+	};
+
+	aps[0] = XL4_EXTMOD_RW;
+	aps[1] = XL4_EXTMOD_XL4GPTP;
+	aps[2] = XL4_EXTMOD_XL4GPTP_GPTP_INSTANCE;
+	aps[4] = 255;
+
+	for (i=0; i<(int)(sizeof(non_yang_mon_items)/sizeof(uint8_t)); i++)
+	{
+		aps[3]=non_yang_mon_items[i];
+		if(uc_nc_notice_register(ucntd, dbald, aps, kvs, kss, UC_NOTICE_DBVAL_ADD, 
+								(gycd->nonyangsem==NULL) ? &gycd->nonyangsem : NULL) )
+		{
+			UB_LOG(UBL_ERROR, "%s: uc_nc_notice_register failed \n", __func__);
+			break;
+		}
+	}
+
+	UB_LOG(UBL_INFO, "%s: done, semname=%s, gptpInstance:%d\n", __func__, gycd->semname, ydbi_instIndex);
 }
 
 
@@ -718,6 +779,52 @@ void gptpgcfg_remove_netdevs(uint8_t gptpInstanceIndex)
 	(void)uc_nc_notice_deregister_all(gycd->ucntd, gycd->dbald, gycd->semname);
 	gycd->linksem=NULL;
 	return;
+}
+
+int gptpgcfg_nonyang_notice_check(uint8_t gptpInstanceIndex)
+{
+	char key[UC_MAX_KEYSIZE];
+	uint32_t ksize;
+	int res;
+	gptpgcfg_data_t *gycd = gycdl[gptpInstanceIndex];
+	bool thread_mode=(gycd->callmode==UC_CALLMODE_THREAD);
+	int8_t is_tx_signaling=0;
+
+	if (!gycd->nonyangsem) {
+		UB_LOG(UBL_ERROR, "%s:nonyangsem not init yet %p|gptpInstanceIndex=%d gycd=%p\n",
+		       __func__, gycd->nonyangsem, gptpInstanceIndex, gycd);
+		return -1;
+	}
+	if(uc_notice_sig_trywait(thread_mode, gycd->nonyangsem)!=0){return 1;}
+
+	res=uc_nc_get_notice_act(gycd->ucntd, gycd->dbald, gycd->nyangsemname, key, &ksize);
+	if(res!=0){
+		UB_LOG(UBL_ERROR, "%s:failed in uc_nc_get_notice_act, res=%d\n",
+		       __func__, res);
+		return 0;
+	}
+
+	// Add more comparison in the future, if another key-changed need to be listened
+	if((ksize<5u) || (key[3]!=XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ)){
+		UB_LOG(UBL_WARN, "%s:Unexpected notice key, %d\n",__func__, key[3]);
+		return 0;
+	}
+
+	is_tx_signaling = gptpgcfg_get_intitem(
+			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ,
+			YDBI_CONFIG);
+
+	if (is_tx_signaling==0) { return 0;} 
+	else {
+		UB_LOG(UBL_INFO, "%s:Received request to send message interval request signaling\n",__func__);
+		int8_t reset_tx_flag=0;
+		gptpgcfg_set_item(gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ,
+		      false, &reset_tx_flag, sizeof(int8_t));
+	}
+
+	// return the key which is changed
+	return (int)XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ;
+
 }
 
 int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl)
@@ -1035,4 +1142,13 @@ int gptpgcfg_cascade_port_perfmonDS(uint8_t id, uint8_t gptpInstanceIndex, uint8
 		res=0; // other record types does not need cascading
 	}
 	return res;
+}
+
+
+void gptpgcfg_init_notice(uint8_t gptpInstanceIndex)
+{
+	gptpgcfg_data_t * gycd = gycdl[gptpInstanceIndex];
+	(void)sprintf(gycd->nyangsemname, "%s%16"PRIx64, GPTP_NONYANGSEMNAME, ub_rt_gettime64());
+	gptp_nonyang_init_notice(gycd);
+	UB_LOG(UBL_DEBUG, "%s: gptp_nonyang_init_notice gptpInstanceIndex=%d, gycd->nyangsemname=%s\n", __func__, gptpInstanceIndex, gycd->nyangsemname);
 }

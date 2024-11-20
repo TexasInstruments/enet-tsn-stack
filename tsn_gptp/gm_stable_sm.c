@@ -78,10 +78,6 @@ static gm_stable_state_t allstate_condition(gm_stable_data_t *sm)
 static void *initialize_proc(gm_stable_data_t *sm)
 {
 	UB_LOG(UBL_DEBUGV, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
-	sm->gm_stable_time=0;
-	sm->gm_stable_timer_time=gptpgcfg_get_intitem(
-		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_INITIAL_GM_STABLE_TIME,
-		YDBI_CONFIG)*1000000LL;
 	sm->ptasg->gm_stable_initdone=false;
 	if(sm->ptasg->selectedState[0]!=(uint8_t)SlavePort){
 		// if this device is not GM, gmsync must be lost
@@ -104,7 +100,6 @@ static gm_stable_state_t initialize_condition(gm_stable_data_t *sm)
 static void *gm_lost_proc(gm_stable_data_t *sm)
 {
 	UB_LOG(UBL_DEBUGV, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
-	sm->gm_stable_time=0;
 	sm->gm_change=false;
 	return NULL;
 }
@@ -120,7 +115,6 @@ static gm_stable_state_t gm_lost_condition(gm_stable_data_t *sm)
 static void *gm_unstable_proc(gm_stable_data_t *sm, uint64_t cts64)
 {
 	UB_TLOG(UBL_INFO, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
-	sm->gm_stable_time=cts64+sm->gm_stable_timer_time;
 	if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)==GMSYNC_SYNC_STABLE){
 		gptpclock_set_gmsync(GPTPINSTNUM, sm->domainIndex, GMSYNC_SYNC);
 	}
@@ -129,7 +123,9 @@ static void *gm_unstable_proc(gm_stable_data_t *sm, uint64_t cts64)
 
 static gm_stable_state_t gm_unstable_condition(gm_stable_data_t *sm, uint64_t cts64)
 {
-	if(cts64>sm->gm_stable_time){return GM_STABLE;}
+	if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)==GMSYNC_SYNC_STABLE){
+		return GM_STABLE;
+	}
 	if(sm->gm_change){return GM_LOST;}
 	return GM_UNSTABLE;
 }
@@ -137,13 +133,6 @@ static gm_stable_state_t gm_unstable_condition(gm_stable_data_t *sm, uint64_t ct
 static void *gm_stable_proc(gm_stable_data_t *sm)
 {
 	UB_TLOG(UBL_INFO, "gm_stable:%s:domainIndex=%d\n", __func__, sm->domainIndex);
-	sm->gm_stable_time=0;
-	sm->gm_stable_timer_time=gptpgcfg_get_intitem(
-		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_NORMAL_GM_STABLE_TIME,
-		YDBI_CONFIG)*1000000LL;
-	if(gptpclock_get_gmsync(GPTPINSTNUM, sm->ptasg->domainIndex)==GMSYNC_SYNC){
-		gptpclock_set_gmsync(GPTPINSTNUM, sm->domainIndex, GMSYNC_SYNC_STABLE);
-	}
 	sm->ptasg->gm_stable_initdone=true;
 	return NULL;
 }

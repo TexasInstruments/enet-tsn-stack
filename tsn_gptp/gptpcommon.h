@@ -56,21 +56,11 @@
 /* Minimal message interval gptp can generate */
 #define GPTPNET_INTERVAL_GRANULARITY_NSEC 7812500u //Should not be changed
 
-#ifndef GPTPNET_INTERVAL_TIMEOUT_NSEC
-#define GPTPNET_INTERVAL_TIMEOUT_NSEC 125000000u
-#endif //GPTPNET_INTERVAL_TIMEOUT_NSEC
-
-#if (GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC) && \
-	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*2u) && \
-	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*4u) && \
-	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*8u) && \
-	(GPTPNET_INTERVAL_TIMEOUT_NSEC != GPTPNET_INTERVAL_GRANULARITY_NSEC*16u)
-#error "Unsupported this GPTPNET_INTERVAL_TIMEOUT_NSEC"
-#endif
-
 #define ALIGN_TIME(x, a) ((((x)+((a)/2))/(a))*(a))
 #define GPTP_ALIGN_TIME(x) ALIGN_TIME(x, GPTPNET_INTERVAL_GRANULARITY_NSEC)
 #define LOG_INTERVAL_IN_RESERVED_RANGE(v) ( (v>=-127 && v<=-25) || (v>=25 && v<=125))
+// If actual sync_interval more than 40%, compare to SyncInterval expected, we should printing some warning
+#define WARNING_IF_SYNC_INTERVAL_EXCEED_THRESHOLD (1.4)
 /*==============Static memory configuration==============*/
 /* The memory size increase when number of instances/ports/domains are increased.
  * Since the memory for small and medium are hard to estimate exactly,
@@ -280,5 +270,6 @@ typedef enum {
 
 void print_priority_vector(ub_dbgmsg_level_t level, const char *identifier, UInteger224 *priorityVector);
 uint8_t compare_priority_vectors(UInteger224 *priorityA, UInteger224 *priorityB);
+uint32_t adjust_tout_interval(int gptpInstanceIndex, uint32_t crrToutIntervalNs, uint64_t syncIntervalNs, uint64_t AnnounceIntervalNs, uint64_t pDelayIntervalNs, uint64_t asCapableIntervalNs);
 
 #endif

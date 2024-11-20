@@ -18,6 +18,11 @@
 			<!--	use "" for the first detected ptpdev -->
 			<MASTER_PTPDEV type="string">""</MASTER_PTPDEV>
 
+			<!-- gptp timer timeout interval in nanoseconds
+				Used for sending messages, updating states.
+				Supported values are 125, 62.5, 31.25, 15.625 and 7.8125 * 10^6 nanoseconds -->
+			<GPTPNET_INTERVAL_TIMEOUT_NSEC type="uint32">125000000</GPTPNET_INTERVAL_TIMEOUT_NSEC>
+
 			<!-- 20msec, give up if no TxTS in this time -->
 			<TXTS_LOST_TIME type="uint32">20000000</TXTS_LOST_TIME>
 
@@ -105,12 +110,6 @@
 					 E.G. setting 12, the first 12 seconds of Domain0 uses priority1=254 -->
 			<INITIAL_SLAVE_TIME type="uint32">0</INITIAL_SLAVE_TIME>
 
-			<!-- msec unit, criterion to set GM stable,
-					 INITIAL_* is used when all ports are not asCapable -->
-			<INITIAL_GM_STABLE_TIME type="uint32">1000</INITIAL_GM_STABLE_TIME>
-
-			<NORMAL_GM_STABLE_TIME type="uint32">10000</NORMAL_GM_STABLE_TIME>
-
 			<!-- ptp clock offset and freq adjustment
 					 IIR filter coefficients
 					 reciprocal number is used -->
@@ -142,6 +141,10 @@
 			<!-- If the phase offset between the GM and the local clock exceeds the threshold, phase offset
 					 will be applied; otherwise, the clock rate is adjusted to match the phase. -->
 			<PHASE_OFFSET_ADJUST_BY_FREQ type="uint32">100000</PHASE_OFFSET_ADJUST_BY_FREQ>
+
+			<!-- Number of Sync message cycle in which freq adjustment will be skipped
+				after offset has just been adjusted. -->
+			<SKIP_FREQADJ_COUNT_MAX type="uint8">2</SKIP_FREQADJ_COUNT_MAX>
 
 			<!-- 1: use the quick sync algorithm, 0: no use
            - By default the quick sync algorithm is disabled for backward compatible,
@@ -248,6 +251,30 @@
 
 			<!-- TI ENET LLD PPS output event index -->
 			<CONF_TILLD_PPS_OUTIDX type="uint32">0</CONF_TILLD_PPS_OUTIDX>
+
+			<!-- set to 1, gptp will listen for runtime notice event, may come from application layer
+				Current support runtime notice for:
+				- TRIGGER_MESSAGE_INTERVAL_REQ: triggering message interval request
+				...
+					TODO: Add more if needed in the future
+				...
+			 -->
+			<SUPPORT_RUNTIME_NOTICE_CHECK type="int8">0</SUPPORT_RUNTIME_NOTICE_CHECK>
+			<!-- set to 1, in case of tsn_gptpd will support tx message interval request 
+				Once this flag is enabled, gptp will listen for the change of TX_MESSAGE_INTERVAL_REQ 
+				and send message interval request, with the values are set in: 
+				10.6.4.3 Message interval request TLV definition
+				MESSAGE_INTERVAL_REQ_LOGSYNC 
+				MESSAGE_INTERVAL_REQ_LOGANNOUNCE
+				MESSAGE_INTERVAL_REQ_LOGLINKDELAY
+
+				Together with TX, the currentIntervalReq for SYNC, ANNOUNCE and LINKDELAY will be updated.
+				It means, sender and receiver should have same interval in case we send message interval request
+			-->
+			<TRIGGER_MESSAGE_INTERVAL_REQ type="int8">0</TRIGGER_MESSAGE_INTERVAL_REQ> <!-- runtime trigger -->
+			<MESSAGE_INTERVAL_REQ_LOGSYNC type="int8">-128</MESSAGE_INTERVAL_REQ_LOGSYNC>
+			<MESSAGE_INTERVAL_REQ_LOGANNOUNCE type="int8">-128</MESSAGE_INTERVAL_REQ_LOGANNOUNCE>
+			<MESSAGE_INTERVAL_REQ_LOGLINKDELAY type="int8">-128</MESSAGE_INTERVAL_REQ_LOGLINKDELAY>
 		</GPTP_INSTANCE>
 
 	</xl4gptp>

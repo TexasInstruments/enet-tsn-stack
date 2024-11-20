@@ -59,7 +59,12 @@ struct md_signaling_send_data{
 	int domainIndex;
 	int portIndex;
 	int stype;
+	// If rcvd_txmsg is tx ascapable signaling, the variable is init-ed and kept in gptp_capable_transmit_sm
+	// But for msg interval request, currently we need a place to keep data, instead of local function in which
+	// the msg interval request will be destroyed as out-of its scope
+	// That's why txmsg_interval_req is kep in here
 	void *rcvd_txmsg;
+	PTPMsgIntervalRequestTLV txmsg_interval_req;
 	uint16_t sequenceId;
 	int cmlds_mode;
 };
@@ -78,5 +83,10 @@ int md_signaling_send_sm_close(md_signaling_send_data_t **sm);
 
 void *md_signaling_send_sm_mdSignalingSend(md_signaling_send_data_t *sm, void *msg,
 					   uint64_t cts64);
+
+void* md_signaling_send_set_msg_interval_req(md_signaling_send_data_t *sm,
+					int8_t logSync, 
+					int8_t logAnnounce,
+					int8_t logPdelay);
 
 #endif

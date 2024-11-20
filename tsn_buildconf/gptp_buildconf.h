@@ -80,12 +80,4 @@
 #endif
 #define CB_NOIPCSHMEM_DFSIZE 64
 
-/* Interval timeout in nanoseconds used to generate timers in GPTP.
- * Supported values are 125, 62.5, 31.25, 15.625 and 7.8125 milliseconds. */
-//#define GPTPNET_INTERVAL_TIMEOUT_NSEC 15625000u
-
-/* Number of Sync message cycle in which freq adjustment will be skipped
- * after offset has just been adjusted. */
-#define SKIP_FREQADJ_COUNT_MAX 1
-
 #endif // __GPTP_BUILDCONF_H_

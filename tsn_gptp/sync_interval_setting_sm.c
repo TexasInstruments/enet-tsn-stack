@@ -119,6 +119,7 @@ static void *set_interval_proc(sync_interval_setting_data_t *sm)
 	// All values in the ranges [-127, -25] and [25, 125] are reserved.
 	if (!LOG_INTERVAL_IN_RESERVED_RANGE(sm->thisSM->rcvdSignalingPtr->timeSyncInterval))
 	{
+		uint64_t oldIntervalNs=sm->ppg->syncInterval.nsec;
 		switch (sm->thisSM->rcvdSignalingPtr->timeSyncInterval) {
 		case (-128): /* don’t change the interval */
 			break;
@@ -132,6 +133,15 @@ static void *set_interval_proc(sync_interval_setting_data_t *sm)
 				LOG_TO_NSEC(sm->thisSM->rcvdSignalingPtr->timeSyncInterval);
 			sm->ppg->currentLogSyncInterval = sm->thisSM->rcvdSignalingPtr->timeSyncInterval;
 			break;
+		}
+
+		if (oldIntervalNs!=sm->ppg->syncInterval.nsec)
+		{
+			UB_LOG(UBL_INFO, "sync_interval_setting:%s: Adjust SyncIntervalNs=%u->%u, ClockMasterSyncIntervalNs=%u->%u\n",
+						__func__, (uint32_t)oldIntervalNs, (uint32_t)sm->ppg->syncInterval.nsec,
+						(uint32_t)sm->ptasg->clockMasterSyncInterval.nsec, (uint32_t)sm->ppg->syncInterval.nsec);
+			sm->ptasg->clockMasterLogSyncInterval=sm->ppg->currentLogSyncInterval;
+			sm->ptasg->clockMasterSyncInterval.nsec=sm->ppg->syncInterval.nsec;
 		}
 	}
 	sm->thisSM->rcvdSignalingMsg1 = false;

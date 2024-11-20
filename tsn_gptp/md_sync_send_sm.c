@@ -135,6 +135,7 @@ static int setSyncTwoStep_txSync(md_sync_send_data_t *sm, uint64_t cts64)
 	int ssize=sizeof(MDPTPMsgSync);
 	int64_t dts;
 	int res;
+	int64_t tsync_ts_threshold;
 
 	sdata=(MDPTPMsgSync*)composeSyncHeader(sm, cts64, ssize);
 	if(sdata==NULL){return -1;}
@@ -147,9 +148,10 @@ static int setSyncTwoStep_txSync(md_sync_send_data_t *sm, uint64_t cts64)
 	}
 	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, syncTx);
 	dts=cts64-sm->tsync_ts;
-	if(dts>175000000) {
-		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%dmsec\n",
-			__func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000));
+	tsync_ts_threshold=(int64_t)((double)sm->ppg->syncInterval.nsec*WARNING_IF_SYNC_INTERVAL_EXCEED_THRESHOLD);
+	if(dts>tsync_ts_threshold) {
+		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%dmsec, tsync_ts_threshold=%dmsec\n",
+			__func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000), (int)(tsync_ts_threshold/1000000));
 	}
 	sm->tsync_ts=cts64;
 
@@ -170,6 +172,7 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 	PTPMsgHeader head;
 	int64_t dts;
 	uint64_t cf;
+	int64_t tsync_ts_threshold;
 
 	sdata=gptpnet_get_sendbuf(sm->gpnetd, sm->portIndex-1);
 	(void)memset(sdata, 0, ssize);
@@ -197,9 +200,10 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 	       sm->domainIndex, sm->portIndex);
 
 	dts=cts64-sm->tfup_ts;
-	if(dts>175000000) {
-		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, fup gap=%dmsec\n",
-			 __func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000));
+	tsync_ts_threshold=(int64_t)((double)sm->ppg->syncInterval.nsec*WARNING_IF_SYNC_INTERVAL_EXCEED_THRESHOLD);
+	if(dts>tsync_ts_threshold) {
+		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, fup gap=%dmsec tsync_ts_threshold=%dmsec\n",
+			 __func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000), (int)(tsync_ts_threshold/1000000));
 	}
 	if(gptpnet_send_whook(sm->gpnetd, sm->portIndex-1, ssize)==-1){return -1;}
 	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, followUpTx);
@@ -216,6 +220,7 @@ static int setSyncOneStep(md_sync_send_data_t *sm, uint64_t cts64)
 	uint64_t cf;
 	int64_t correctionField;
 	uint64_t ld;
+	int64_t tsync_ts_threshold;
 
 	sdata=(MDPTPMsgSyncOneStep*)composeSyncHeader(sm, cts64, ssize);
 	if(sdata==NULL){return -1;}
@@ -245,9 +250,10 @@ static int setSyncOneStep(md_sync_send_data_t *sm, uint64_t cts64)
 	}
 	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, syncTx);
 	dts=cts64-sm->tsync_ts;
-	if(dts>175000000) {
-		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%dmsec\n",
-			__func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000));
+	tsync_ts_threshold=(int64_t)((double)sm->ppg->syncInterval.nsec*WARNING_IF_SYNC_INTERVAL_EXCEED_THRESHOLD);
+	if(dts>tsync_ts_threshold) {
+		UB_TLOG(UBL_INFO, "%s:domainIndex=%d, portIndex=%d, sync gap=%dmsec, tsync_ts_threshold=%dmsec\n",
+			__func__, sm->domainIndex, sm->portIndex, (int)(dts/1000000), (int)(tsync_ts_threshold/1000000));
 	}
 	sm->tsync_ts=cts64;
 

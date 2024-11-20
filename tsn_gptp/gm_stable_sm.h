@@ -55,8 +55,6 @@ struct gm_stable_data{
 	int state;
 	int last_state;
 	int domainIndex;
-	uint64_t gm_stable_time;
-	uint64_t gm_stable_timer_time;
 	ClockIdentity clockIdentity;
 	bool gm_change;
 };
