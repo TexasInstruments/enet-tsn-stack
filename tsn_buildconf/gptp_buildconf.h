@@ -78,6 +78,11 @@
 #else
     #error "Only support 2 domains"
 #endif
-#define CB_NOIPCSHMEM_DFSIZE 64
+
+#ifdef __aarch64__
+    #define CB_NOIPCSHMEM_DFSIZE 128
+#else
+    #define CB_NOIPCSHMEM_DFSIZE 64
+#endif
 
 #endif // __GPTP_BUILDCONF_H_
