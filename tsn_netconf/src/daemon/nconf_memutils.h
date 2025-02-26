@@ -47,69 +47,65 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_memutils.h
+ *
+ * @brief       Netconf Memory Allocator Utility Interface Header
+ */
+#ifndef __NCONF_MEMUTILS_H__
+#define __NCONF_MEMUTILS_H__
 
-#define UB_ESARRAY_DFNUM 256
+/*=============================================================================
+ * Include Files
+ *============================================================================*/
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#include <stddef.h>
+#include <stdbool.h>
+#include <ub_logging.h>
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+/*=============================================================================
+ * Macros and Constants
+ *============================================================================*/
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+#ifdef NCONF_MEMUSTILS_DEBUG
+#define FILE_LINE_PARAMS    file, line,
+#define ALLOC_PARAMS        const char *file, int line, size_t size
+#define REALLOC_PARAMS      const char *file, int line, void *optr, size_t size
+#define STRDUP_PARAMS       const char *file, int line, char *src
+#define FREE_PARAMS         const char *file, int line, void *ptr
+#define nconf_memalloc(_sz)         nconf_memalloc_def(__FILE__, __LINE__, _sz)
+#define nconf_memrealloc(_ptr, _sz) nconf_memrealloc_def(__FILE__, __LINE__, _ptr, _sz)
+#define nconf_strdup(_src)          nconf_strdup_def(__FILE__, __LINE__, _src)
+#define nconf_memfree(_ptr)         nconf_memfree_def(__FILE__, __LINE__, _ptr)
+#else
+#define FILE_LINE_PARAMS
+#define ALLOC_PARAMS        size_t size
+#define REALLOC_PARAMS      void *optr, size_t size
+#define STRDUP_PARAMS       char *src
+#define FREE_PARAMS         void *ptr
+#define nconf_memalloc(_sz)         nconf_memalloc_def(_sz)
+#define nconf_memrealloc(_ptr, _sz) nconf_memrealloc_def(_ptr, _sz)
+#define nconf_strdup(_src)          nconf_strdup_def(_src)
+#define nconf_memfree(_ptr)         nconf_memfree_def(_ptr)
+#endif
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+/*=============================================================================
+ * Allocation/Deallocation Utility APIs
+ *============================================================================*/
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+void* nconf_memalloc_def(ALLOC_PARAMS);
+void* nconf_memrealloc_def(REALLOC_PARAMS);
+char* nconf_strdup_def(STRDUP_PARAMS);
+void nconf_memfree_def(FREE_PARAMS);
+void nconf_memusage(ub_dbgmsg_level_t level);
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+#ifdef __cplusplus
+}
+#endif
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+#endif /* __NCONF_MEMUTILS_H__ */

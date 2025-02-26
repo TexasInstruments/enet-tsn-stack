@@ -373,3 +373,28 @@ void cb_lld_task_exit(void *retval)
 {
 	UB_LOG(UBL_WARN,"%s:don't support\n", __func__);
 }
+
+/// @brief 
+/// @param objnum pointer address and will be cast to TaskP_Object*
+/// @param thread_mode unused, always true
+/// @return 
+int cb_killproc(int64_t objnum, bool thread_mode)
+{
+	(void)thread_mode; // unused
+
+	CB_THREAD_T *th=(CB_THREAD_T*)objnum;
+	// (CB_THREAD_T*)objnum casting is never NULL, 
+	/// so we can't simply check task is detroyed by (*th) != NULL, 
+	// we need to check (*th)->exit as well
+	if ((*th) != NULL && (*th)->exit==false) {
+		UB_LOG(UBL_WARN,"%s: thread id=%" PRId64 "\n", __func__, objnum);
+		(*th)->exit=true;
+		cb_lld_task_join(*th, NULL);
+	}
+	return 0;
+}
+
+void cb_waitproc(int64_t objnum, bool thread_mode)
+{
+	// do nothing. We already joined thread in cb_killproc
+}

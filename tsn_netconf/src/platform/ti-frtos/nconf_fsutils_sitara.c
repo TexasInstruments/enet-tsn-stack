@@ -47,69 +47,63 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_fsutils.c
+ *
+ * @brief       Netconf FileSystem Utility Implementation in
+ *              TI FreeRTOS (Sitara)
+ */
 
-#define UB_ESARRAY_DFNUM 256
+/*=============================================================================
+ * Include Files
+ *============================================================================*/
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#if !defined(DISABLE_FAT_FS)
+#include <FreeRTOS.h>
+#include <ff_mmcsd.h>
+#include <ff_stdio.h>
+#endif //!DISABLE_FAT_FS
+#include "nconf_fsutils.h"
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+/*=============================================================================
+ * Macros and Constants
+ *============================================================================*/
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+#if !defined(DISABLE_FAT_FS)
+#define NCONF_FILE      FF_FILE
+#define NCONF_FOPEN     ff_fopen
+#define NCONF_FREAD     ff_fread
+#define NCONF_FCLOSE    ff_fclose
+#else
+#define NCONF_FILE      FILE
+#define NCONF_FOPEN     fopen
+#define NCONF_FREAD     fread
+#define NCONF_FCLOSE    fclose
+#endif //!DISABLE_FAT_FS
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+/*=============================================================================
+ * Function Definitions
+ *============================================================================*/
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+nconf_fshdl_t nconf_fopen(const char *pathname, char *mode)
+{
+    NCONF_FILE *file=NCONF_FOPEN(pathname, mode);
+    if (NULL==file) {
+        UB_LOG(UBL_ERROR, "%s:failed to open [%s]\n", __func__, pathname);
+    }
+    return (nconf_fshdl_t)file;
+}
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+size_t nconf_fread(void *buff, uint32_t size, uint32_t nmemb, nconf_fshdl_t hdl)
+{
+    return NCONF_FREAD(buff, size, nmemb, hdl);
+}
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+void nconf_fclose(nconf_fshdl_t hdl)
+{
+    int ret=NCONF_FCLOSE(hdl);
+    if (0!=ret) {
+        UB_LOG(UBL_ERROR, "%s:failed to close file\n", __func__);
+    }
+}
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */

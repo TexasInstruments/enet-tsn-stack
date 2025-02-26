@@ -47,69 +47,35 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_netstack.h
+ *
+ * @brief       Netconf Platform Dependent Network Stack
+ *              includes and definitions
+ */
+#ifndef __NCONF_NETWORK_STACK_H__
+#define __NCONF_NETWORK_STACK_H__
 
-#define UB_ESARRAY_DFNUM 256
+/*=============================================================================
+ * Include Files
+ *============================================================================*/
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#include "nconf_types.h"
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+/*=============================================================================
+ * Typedefs, Structures, and Enums
+ *============================================================================*/
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+typedef void * nconf_nethdl_t;
+typedef void * nconf_pbuf_t;
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+#ifdef __cplusplus
+}
+#endif
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
-
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
-
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+#endif /* __NCONF_NETWORK_STACK_H__ */

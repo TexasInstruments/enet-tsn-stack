@@ -55,25 +55,49 @@
 #include "tilld/lldtsync.h"
 #include "combase_private.h"
 
+typedef struct
+{
+	int (*getRxTime)(const LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
+					  uint16_t seqId, uint8_t domain, uint64_t *ts);
+
+	int (*getTxTime)(const LLDTSync_t *hTSync, uint8_t txPort, int msgType,
+					  uint16_t seqId, uint8_t domain, uint64_t *ts);
+
+	int (*adjTsSourceFreq)(const LLDTSync_t *hTSync, int ppb);
+
+	int (*setTsSourceTime)(const LLDTSync_t *hTSync, uint64_t ts);
+
+	int (*getTsSourceTime)(const LLDTSync_t *hTSync, uint64_t *ts);
+
+	int (*enableTsEvent)(const LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPorts);
+
+	int (*shiftTsSourceTime)(const LLDTSync_t *hTSync, int64_t offset);
+
+	int (*phyWaitTxTs)(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
+						uint16_t seqId, uint8_t domain);
+}LLDTsync_driver;
+
 struct LLDTSync {
 	Enet_Type enetType;
 	uint32_t instId;
 	Enet_Handle hEnet;
 	uint32_t coreId;
+	LLDTsyncTsSource tsSource;
+	LLDTsync_driver *tsyncDrv;
 };
 
 void OpenMcmProtected(Enet_Type enetType, uint32_t *coreKey,
 					  Enet_Handle *hEnet, Udma_DrvHandle *hUdmaDrv);
 void CloseMcmProtected(Enet_Type enetType);
 
-LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg)
+LLDTSync_t *LLDTSyncOpen(LLDTSyncCfg_t *cfg, LLDTsyncTsSource tsSource)
 {
 	LLDTSync_t *hTSync;
 
 	if (cfg == NULL) {
 		return NULL;
 	}
-
+	// TODO: Use the tsSource here
 	hTSync = (LLDTSync_t *)malloc(sizeof(LLDTSync_t));
 	EnetAppUtils_assert(hTSync != NULL);
 	memset(hTSync, 0, sizeof(LLDTSync_t));
@@ -223,6 +247,29 @@ int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
 	return LLDENET_E_OK;
 }
 
+#if !ENET_ENABLE_PER_ICSSG
+int LLDTsyncPhyWaitTxTs(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
+					  uint16_t seqId, uint8_t domain)
+{
+	int retval = LLDENET_E_FAILURE;
+	LLDTsync_driver* drv = hTSync->tsyncDrv;
+
+	if ((hTSync == NULL) || (drv == NULL)) {
+		return LLDENET_E_PARAM;
+	}
+
+	if (drv->phyWaitTxTs != NULL)
+	{
+		retval = drv->phyWaitTxTs(hTSync, txPort, msgType, seqId, domain);
+	}
+	else
+	{
+		retval = LLDENET_E_UNSUPPORT;
+	}
+
+	return retval;
+}
+#endif
 static void SetPortTsEventPrms(CpswMacPort_TsEventCfg *tsPortEventCfg)
 {
 	memset(tsPortEventCfg, 0, sizeof(CpswMacPort_TsEventCfg));

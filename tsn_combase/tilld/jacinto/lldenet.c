@@ -608,7 +608,7 @@ int LLDEnetSend(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frame)
 int LLDEnetSendMultiScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frames,
 							uint32_t nFrames)
 {
-	return LLDENET_E_NOTSUPPORTED;
+	return LLDENET_E_UNSUPPORT;
 }
 
 int LLDEnetSendScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frame)

@@ -47,69 +47,64 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_types.h
+ *
+ * @brief       Netconf Common Data Types.
+ */
+#ifndef __NCONF_TYPES_H__
+#define __NCONF_TYPES_H__
 
-#define UB_ESARRAY_DFNUM 256
+/*=============================================================================
+ * Include Files
+ *============================================================================*/
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#include <stdint.h>
+#include <stdbool.h>
+#include <signal.h>
+#include <unibase.h>
+#include <unibase_macros.h>
+#include <unibase_binding.h>
+#include "nconf_version.h"
+#include "nconf_config.h"
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+/*=============================================================================
+ * Macros and Constants
+ *============================================================================*/
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+/**
+ * \anchor Unibase Static Memory Names
+ * \name Unibase Static Memory Names
+ *  @{
+*/
+#define NCONF_GEN_STATIC_MEM        nconf_gen_static_mem
+#define NCONF_UCCLIENT_HANDLE       nconf_ucclient_handle
+#define NCONF_CFG_CACHE_DATAINST    nconf_cfg_cache_datainst
+#define NCONF_CFG_CACHE_LISTNODE    nconf_cfg_cache_listnode
+#define NCONF_XMLUTILS_SEARCH_ARGS  nconf_xmlutils_search_args
+#define NCONF_MSGDEC_HANDLE         nconf_msgdec_handle
+/* @} */
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+/** \brief general macro to resolve unused parameter warning */
+#define NCONF_UNUSED(x)             (void)(x)
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+/*=============================================================================
+ * Typedefs, Structures, and Enums
+ *============================================================================*/
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+/** \brief Netconf Transport Type */
+typedef enum {
+    NCONF_TRANSPORT_TYPE_TLS=0x00,
+    NCONF_TRANSPORT_TYPE_SUB
+} nconf_trans_type_t;
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
+#ifdef __cplusplus
+}
+#endif
 
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+#endif /* __NCONF_TYPES_H__ */

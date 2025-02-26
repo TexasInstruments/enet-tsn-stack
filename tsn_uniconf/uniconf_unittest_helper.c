@@ -47,69 +47,76 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+#include <sys/stat.h>
+#include <errno.h>
+#include <signal.h>
+#include <sys/wait.h>
+#include "uniconf_unittest_helper.h"
 
-#define UB_ESARRAY_DFNUM 256
+static const char *check_exec_file(const char *efiles[])
+{
+	struct stat sf;
+	int i;
+	for(i=0;efiles[i];i++){
+		if(!stat(efiles[i], &sf) &&
+		   (sf.st_mode & (S_IXUSR|S_IXGRP|S_IXOTH))){return efiles[i];}
+	}
+	return NULL;
+}
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+int uniconf_unittest_setup(void **state)
+{
+	unibase_init_para_t init_para;
+	uniconf_uthp_data_t *utd=(uniconf_uthp_data_t *)*state;
+	const char *uniconf[]={"../tsn_uniconf/uniconf", "./uniconf", NULL};
+	const char *runiconf;
+	ubb_default_initpara(&init_para);
+	init_para.ub_log_initstr=UBL_OVERRIDE_ISTR("4,ubase:45,cbase:45,uconf:66",
+						   "UBL_UNICONF");
+	unibase_init(&init_para);
+	uniconf_remove_dbfile(utd->ucmd.dbname);
+	utd->ucmd.stoprun=&utd->stoprun;
+	if(utd->thread_mode){
+		CB_SEM_INIT(utd->ucmd.ucmanstart, 0, 0);
+		if(CB_THREAD_CREATE(&utd->ucthreadt, NULL, uniconf_main, &utd->ucmd)){
+			return -1;
+		}
+		CB_SEM_WAIT(utd->ucmd.ucmanstart);
+		UB_LOG(UBL_INFO, "uniconf started in thread mode\n");
+	}else{
+		runiconf=check_exec_file(uniconf);
+		if(!runiconf){
+			// expect it is in the executable path
+			runiconf="uniconf";
+		}
+		if((utd->uniconf_pid=fork())==0){
+			if(execlp(runiconf, runiconf, "-p", utd->ucmd.dbname, NULL)<0){
+				UB_LOG(UBL_ERROR,"can't run %s:%s\n",
+				       runiconf, strerror(errno));
+				return -1;
+			}
+			exit(0);
+		}
+		if(uniconf_ready(utd->ucmd.dbname, 0, 100)){return -1;}
+	}
+	return 0;
+}
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
-
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
-
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
-
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
-
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
-
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
-
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+int uniconf_unittest_teardown(void **state)
+{
+	uniconf_uthp_data_t *utd=(uniconf_uthp_data_t *)*state;
+	if(utd->thread_mode){
+		utd->stoprun=true;
+		CB_THREAD_JOIN(utd->ucthreadt, NULL);
+	}else{
+		kill(utd->uniconf_pid, SIGINT);
+		waitpid(utd->uniconf_pid, NULL, 0);
+	}
+	uniconf_remove_dbfile(utd->ucmd.dbname);
+	if(utd->debuglog_file){
+		ubb_memory_file_out(utd->debuglog_file);
+	}
+	ubb_memory_out_close();
+	unibase_close();
+	return 0;
+}

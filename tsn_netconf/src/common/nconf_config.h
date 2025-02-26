@@ -47,69 +47,65 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_config.h
+ *
+ * @brief       Netconf Build Configs.
+ */
+#ifndef __NCONF_CONFIG_H__
+#define __NCONF_CONFIG_H__
 
-#define UB_ESARRAY_DFNUM 256
+/** \brief SSH Server Port dedicated for NETCONF subsystem, default is 830 (ref. RFC 4742/6242) */
+#ifndef NCONF_TLS_TRANSPORT_PORT
+#define NCONF_SSH_TRANSPORT_PORT        (830U)
+#endif
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+/** \brief Port used for NETCONF over TLS Transport Default is 6513 (ref. RFC 5539/7589) */
+#ifndef NCONF_TLS_TRANSPORT_PORT
+#define NCONF_TLS_TRANSPORT_PORT        (6513U)
+#endif
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+/** \brief TCP Local Port used for communicating with SSH Subsystem application */
+#ifndef NCONF_SUB_TRANSPORT_PORT
+#define NCONF_SUB_TRANSPORT_PORT        (10830U)
+#endif
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+/** \brief Expected reply from daemon to confirm ssh connection is valid */
+#ifndef NCONF_VALID_SSHINFO_ACK
+#define NCONF_VALID_SSHINFO_ACK         "WDROQ09ORjogU1NIX0NPTk5FQ1RJT04gT0s="
+#endif
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+/** \brief maximum number of fragment used in pre-allocate buffer used for
+ *         general allocation inside netconf total memory size allocated
+ *         is <max number of fragment> * 8
+ */
+#ifndef NCONF_GEN_ALLOC_FRAGMENTS
+#define NCONF_GEN_ALLOC_FRAGMENTS       (3000U)
+#endif
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+/** \brief Maximum number of config info that netconf server could
+ *         process per subtree
+ */
+#ifndef NCONF_MAX_UCCFG_INFO_NUM
+#define NCONF_MAX_UCCFG_INFO_NUM        (128U)
+#endif
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+/** \brief Use Unix Domain Socket for internal communication between
+ *         the SSH subsystem application and NETCONF daemon instead of
+ *         Local TCP Socket
+ */
+#ifndef NCONF_USE_UNIX_DOMAIN_SOCKET
+#define NCONF_USE_UNIX_DOMAIN_SOCKET    (0x00U)
+#endif
+#ifndef NCONF_UNIX_DOMAIN_SOCKET_PATH
+#define NCONF_UNIX_DOMAIN_SOCKET_PATH   "/tmp/x4nconfsrv.sock"
+#endif
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+/** \brief Enabled/DisplayTCP Transport Transport
+ *  \note  Used only for development
+ */
+#ifndef NCONF_ENABLE_TCP_PLAINTEXT
+#define NCONF_ENABLE_TCP_PLAINTEXT      (0x00U)
+#endif
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+#endif /* __NCONF_CONFIG_H__ */

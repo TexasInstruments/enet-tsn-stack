@@ -47,69 +47,105 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_msgqueue.c
+ *
+ * @brief       Netconf Message Queue Implemenation using
+ *              FreeRTOS xQueue
+ */
 
-#define UB_ESARRAY_DFNUM 256
+/*=============================================================================
+ * Include Files
+ *============================================================================*/
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#include <FreeRTOS.h>
+#include <string.h>
+#include <queue.h>
+#include "nconf_msgqueue.h"
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+/*=============================================================================
+ * Typedefs, Structures, and Enums
+ *============================================================================*/
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+struct _msgq_hdl {
+    QueueHandle_t msgq_id;
+};
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+/*=============================================================================
+ * Macros and Constants
+ *============================================================================*/
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+#define NCONF_MSGQ_DEFAULT_QUEUE_NUM    (10U)
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+/*=============================================================================
+ * Global Variables
+ *============================================================================*/
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+UB_SD_GETMEM_DEF(NCONF_MSGQ_HANDLE, sizeof(struct _msgq_hdl), 1);
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
+/*=============================================================================
+ * Function Definitions
+ *============================================================================*/
 
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
+int nconf_msgq_init(nconf_msgq_t *msgq, uint32_t maxmsg, uint32_t maxsize)
+{
+    struct _msgq_hdl *new_msgq=NULL;
+    UBaseType_t queueLength=(maxmsg>0) ? maxmsg : NCONF_MSGQ_DEFAULT_QUEUE_NUM;
 
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
+    new_msgq=(struct _msgq_hdl *)
+        UB_SD_GETMEM(NCONF_MSGQ_HANDLE, sizeof(struct _msgq_hdl));
+    if(NULL==new_msgq) {
+        UB_LOG(UBL_ERROR, "%s:Failed to allocate new message queue\n", __func__);
+        return -1;
+    }
+    memset(new_msgq, 0, sizeof(struct _msgq_hdl));
 
-/* LLDP Definition End */
+    new_msgq->msgq_id=xQueueCreate(queueLength, (UBaseType_t)maxsize);
+    if(new_msgq->msgq_id==NULL) {
+        UB_LOG(UBL_ERROR, "%s:xQueueCreate() failed\n", __func__);
+        return -1;
+    }
 
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+    *msgq=new_msgq;
+    return 0;
+}
+
+
+int nconf_msgq_recv(nconf_msgq_t msgq, void *buf, size_t buf_size)
+{
+    BaseType_t qret=pdFALSE;
+    int ret=0;
+    NCONF_UNUSED(buf_size);
+    qret=xQueueReceive(msgq->msgq_id, buf, portMAX_DELAY);
+    if (pdTRUE!=qret) {
+        UB_LOG(UBL_ERROR, "%s:xQueueReceive() failed\n", __func__);
+        ret=-1;
+    }
+    return ret;
+}
+
+int nconf_msgq_send(nconf_msgq_t msgq, void *buf, size_t buf_size)
+{
+    BaseType_t qret=pdFALSE;
+    int ret=0;
+    NCONF_UNUSED(buf_size);
+    qret=xQueueSendToBack(msgq->msgq_id, buf, portMAX_DELAY);
+    if (pdTRUE!=qret) {
+        UB_LOG(UBL_ERROR, "%s:xQueueSendToBack() failed\n", __func__);
+        ret=-1;
+    }
+    return ret;
+}
+
+void nconf_msgq_deinit(nconf_msgq_t *msgq)
+{
+    struct _msgq_hdl *tmp=*msgq;
+    if (NULL != tmp) {
+        vQueueDelete(tmp->msgq_id);
+        UB_SD_RELMEM(NCONF_MSGQ_HANDLE, tmp);
+        *msgq=NULL;
+    } else {
+        UB_LOG(UBL_DEBUG, "%s:msgq handle not yet initialized\n", __func__);
+    }
+}
+

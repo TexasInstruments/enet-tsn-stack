@@ -1,12 +1,9 @@
 internal_docs/
 tsn_combase/cb_crc.c
-tsn_combase/cb_crc.h
 tsn_combase/cb_ethernet.c
 tsn_combase/cb_inet.c
-tsn_combase/cb_inet.h
 tsn_combase/cb_ipcshmem.c
 tsn_combase/cb_ipcsock.c
-tsn_combase/cb_ipcsock.h
 tsn_combase/cb_tmevent.c
 tsn_combase/configure.ac
 tsn_gptp/configure.ac

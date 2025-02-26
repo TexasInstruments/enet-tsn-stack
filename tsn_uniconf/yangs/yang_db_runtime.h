@@ -53,6 +53,7 @@
 #include "../uc_dbal.h"
 #include "../hal/uc_hwal.h"
 #include "../uc_notice.h"
+#include "yang_db_access.h"
 
 #ifdef __cplusplus
 extern "C" {

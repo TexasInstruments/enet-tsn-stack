@@ -66,7 +66,7 @@ extern int gptpgcfg_nonyang_notice_check(uint8_t gptpInstanceIndex);
 static int ndev_index_to_macport(gptpnet_data_t *gpnet, int ndev_index);
 
 #define STATUS_FRAME_PROCESS_STACK_SIZE (2*1024)
-static uint8_t gStatusFrameProcessTaskStack[STATUS_FRAME_PROCESS_STACK_SIZE] __attribute__((aligned(32)));
+// static uint8_t gStatusFrameProcessTaskStack[STATUS_FRAME_PROCESS_STACK_SIZE] __attribute__((aligned(32)));
 
 typedef struct {
 	int ndev_index;
@@ -114,7 +114,8 @@ struct gptpnet_data {
 	LLDTsyncTsSource tsSource;
 	bool bStopped;
 	CB_SEM_T statPktSem;
-	TaskP_Object procStatTaskObj;
+	// TaskP_Object procStatTaskObj;
+
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -273,25 +274,25 @@ void gptpnet_statusFrameProcTask(void* args)
 	}
 }
 
-int gptpnet_createStatusFrameProcTask(gptpnet_data_t *gpnet)
-{
-	TaskP_Params taskParams;
-	int status;
+// int gptpnet_createStatusFrameProcTask(gptpnet_data_t *gpnet)
+// {
+// 	TaskP_Params taskParams;
+// 	int status;
 
-	TaskP_Params_init(&taskParams);
-	/* This task is sensitive to priority. please do not change. */
-	taskParams.priority       = 3U;
-	taskParams.stack          = gStatusFrameProcessTaskStack;
-	taskParams.stackSize      = sizeof(gStatusFrameProcessTaskStack);
-	taskParams.args           = (void*)gpnet;
-	taskParams.name           = "proc_stat_frame_task";
-	taskParams.taskMain       = gptpnet_statusFrameProcTask;
+// 	TaskP_Params_init(&taskParams);
+// 	/* This task is sensitive to priority. please do not change. */
+// 	taskParams.priority       = 3U;
+// 	taskParams.stack          = gStatusFrameProcessTaskStack;
+// 	taskParams.stacksize      = sizeof(gStatusFrameProcessTaskStack);
+// 	taskParams.args           = (void*)gpnet;
+// 	taskParams.name           = "proc_stat_frame_task";
+// 	taskParams.taskMain       = gptpnet_statusFrameProcTask;
 
-	status = TaskP_construct(&gpnet->procStatTaskObj, &taskParams);
-	DebugP_assert(SystemP_SUCCESS == status);
+// 	status = TaskP_construct(&gpnet->procStatTaskObj, &taskParams);
+// 	DebugP_assert(SystemP_SUCCESS == status);
 
-	return status;
-}
+// 	return status;
+// }
 gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 				 void *cb_data, const char *netdev[], uint8_t num_ports,
 				 char *master_ptpdev)
@@ -384,11 +385,11 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 		goto error;
 	}
 
-	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
-	{
-		/**< Create RX task to handle status frames. */
-		gptpnet_createStatusFrameProcTask(gpnet);
-	}
+	// if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
+	// {
+	// 	/**< Create RX task to handle status frames. */
+	// 	gptpnet_createStatusFrameProcTask(gpnet);
+	// }
 
 	UB_LOG(UBL_INFO,"%s:Open lldtsync OK!\n", __func__);
 
@@ -415,11 +416,11 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 	UB_LOG(UBL_DEBUGV, "%s:\n",__func__);
 	if (!gpnet) {return -1;}
 	gptpgcfg_remove_netdevs(gpnet->gptpInstanceIndex);
-	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
-	{
-		/* Destroy the task. */
-		TaskP_destruct(&gpnet->procStatTaskObj);
-	}
+	// if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
+	// {
+	// 	/* Destroy the task. */
+	// 	TaskP_destruct(&gpnet->procStatTaskObj);
+	// }
 	if (gpnet->lldsock) {
 		cb_rawsock_close(gpnet->lldsock);
 		gpnet->lldsock = NULL;

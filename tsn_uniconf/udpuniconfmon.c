@@ -47,69 +47,74 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+#include <tsn_unibase/unibase.h>
+#include <tsn_unibase/unibase_binding.h>
+#include <tsn_combase/combase.h>
+#include <getopt.h>
 
-#define UB_ESARRAY_DFNUM 256
+static int print_usage(void)
+{
+	UB_CONSOLE_PRINT("udpuniconfmon [addr(default=127.0.0.1)] "
+			 "port [uniconfmon parameters]\n");
+	UB_CONSOLE_PRINT("E.G. udpuniconfmon 6666 -p .testdb -n\"/0/0/\"\n");
+	return -1;
+}
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+int main(int argc, char *argv[])
+{
+	char *addr="127.0.0.1";
+	uint16_t port=0;
+	int opti=1;
+	int fd;
+	char data[256]="uniconfmon ";
+	int dp=11; // strlen("uniconfmon ")
+	int rp;
+	int res=-1;
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+	ubb_unibase_easyinit();
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+	if(argc<3){return print_usage();}
+	if(strchr(argv[opti], '.')!=NULL){
+		addr=argv[opti++];
+	}
+	port=strtol(argv[opti++], NULL, 0);
+	if(port==0){return print_usage();}
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
-
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
-
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
-
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
-
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+	for(;opti<argc;opti++){
+		if(ub_strncpy(&data[dp], argv[opti], sizeof(data)-dp-1)){goto erexit;}
+		dp+=strlen(argv[opti]);
+		if(opti==argc-1){
+			data[dp]=0;
+		}else{
+			data[dp++]=' ';
+		}
+	}
+	res=cb_ipcsocket_udp_init(&fd, NULL, addr, port);
+	if(res!=0){goto erexit;}
+	res=CB_SOCK_WRITE(fd, data, dp);
+	if(res!=dp){goto erexit;}
+	while(true){
+		res=cb_fdread_timeout(fd, data, sizeof(data)-1, 100);
+		if(res<=0){break;}
+		data[res]=0;
+		rp=0;
+		if(res>=6){
+			if(data[res-7]=='#'){
+				rp=7;
+			}else if(data[res-6]=='#'){
+				rp=6;
+			}
+		}
+		if((rp>0) && (strstr(&data[res-rp], "#res=")==&data[res-rp])){
+			res=atoi(&data[res-rp+5]);
+			break;
+		}
+		UB_CONSOLE_PRINT("%s", data);
+	}
+erexit:
+	if(CB_SOCKET_VALID(fd)) {
+		(void)CB_SOCK_CLOSE(fd);
+	}
+	unibase_close();
+	return res;
+}

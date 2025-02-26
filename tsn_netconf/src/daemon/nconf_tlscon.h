@@ -47,69 +47,51 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+/**
+ * @file        nconf_tlscon.h
+ *
+ * @brief       Netconf TLS Connection Manager Interface Header
+ */
+#ifndef __NCONF_TLSCON_MNGR_H__
+#define __NCONF_TLSCON_MNGR_H__
 
-#define UB_ESARRAY_DFNUM 256
+/*=============================================================================
+ * Include Files
+ *============================================================================*/
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+#include "nconf_tlscon_priv.h"
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+#ifdef __cplusplus
+extern "C"
+{
+#endif
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+/*=============================================================================
+ * Macros and Constants
+ *============================================================================*/
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+/** \brief Maximum number of simultaneous tls client connection */
+#define NCONF_TLS_MAX_CLIENTS       (5U)
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+/*=============================================================================
+ * TLS Connection Manager Common APIs
+ *============================================================================*/
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+int nconf_tlscon_mngr_init(nconf_tlssrvopt_t *sopt);
+int nconf_tlscon_accept_new_client(nconf_nethdl_t ctx, uint32_t sessid,
+                                   nconf_tlscon_hdl_t *rconhdl);
+int nconf_tlscon_recv_msg(nconf_tlscon_hdl_t chdl, nconf_pbuf_t p, uint8_t **retbuf);
+int nconf_tlscon_send_msg(nconf_tlscon_hdl_t chdl, uint8_t *msg, uint32_t msglen);
+bool nconf_tlscon_is_connection_valid(nconf_tlscon_hdl_t chdl);
+uint32_t nconf_tlscon_get_sessid(nconf_tlscon_hdl_t chdl);
+uint8_t* nconf_tlscon_unlink_readbuf(nconf_tlscon_hdl_t chdl, uint8_t *rbuf);
+nconf_tlscon_hdl_t nconf_tlscon_get_connhdl_by_sessid(uint32_t sessiond_id);
+void nconf_tlscon_release_readbuf(uint8_t *rbuf);
+void nconf_tlscon_disconnect_client(nconf_tlscon_hdl_t chdl);
+void nconf_tlscon_mngr_deinit(void);
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+#ifdef __cplusplus
+}
+#endif
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
-
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
-
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
-
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+#endif /* __NCONF_TLSCON_MNGR_H__ */

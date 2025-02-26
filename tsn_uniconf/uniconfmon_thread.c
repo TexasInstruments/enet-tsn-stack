@@ -47,69 +47,126 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
-#ifndef __TSN_TILLD_INCLUDE_H_
-#define __TSN_TILLD_INCLUDE_H_
+#include <tsn_combase/combase.h>
 
-#define UB_ESARRAY_DFNUM 256
+extern int UCMON_MAIN(int argc, char *argv[]); // from uniconfmon.c
 
-#define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
-#define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
-#define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"
-#define CB_EVENT_NON_POSIX_H "tsn_combase/tilld/cb_lld_tmevent.h"
-#define UB_GETMEM_OVERRIDE_H "tsn_combase/tilld/ub_getmem_override.h"
+static CB_SOCKADDR_IN_T client_address;
+static CB_THREAD_T ucmthread;
+static uint16_t ucmport;
+static CB_SOCKET_T ucmonfd=CB_SOCKET_INVALID_VALUE;
 
-#define UB_LOG_COMPILE_LEVEL UBL_INFOV
+#define MAX_BADCOUNT 10
+#define UCMON_MAX_ARGMENTS 10
 
-/* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
-#define GPTP_MAX_PORTS 4
-#define GPTP_MAX_DOMAINS 1
-#define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
+static int ucmon_udp_proc(char *dbuf, int dsize)
+{
+	char *argv[UCMON_MAX_ARGMENTS];
+	int argc;
+	argc=ub_command_line_parser(dbuf, argv, UCMON_MAX_ARGMENTS);
+	if((argc<1) || (strcmp(argv[0], "uniconfmon")!=0)){return -1;}
+	argv[0]="uniconfmot";
+	return UCMON_MAIN(argc, argv);
+}
 
-/*LLDP Definition*/
-// Each port can have 3 LLDP agents     
-// Nearest bridge agent. Dest MAC 0x0180-C200-000E 
-// Nearest customer bridge agent. Dest MAC 0x0180-C200-0000 
-// Nearest non-TPMR bridge agent. Dest MAC 0x0180-C200-0003
-#define LLDP_CFG_PORT_INSTNUM (4 * 3)
+static void *uniconfmon_thread(void *ptr)
+{
+	char dbuf[256];
+	int rsize;
+	int badcount=0;
+	int res=0;
+	CB_SOCKLEN_T address_length=sizeof(CB_SOCKADDR_IN_T);
 
-// LLDP system has one timer to check db change
-// Each agent need 5 timers (txinterval, txtick, txshutdownwhile, agedout_monitor and too many neighbor )
-// MAX timers needed is 5 * LLDP_CFG_PORT_INSTNUM + 1 = 31
-#define CB_XTIMER_TMNUM ((LLDP_CFG_PORT_INSTNUM * 5) + 1)
+	if(cb_ipcsocket_udp_init(&ucmonfd, NULL, NULL, ucmport)){
+		ucmport=0;
+		return NULL;
+	}
+	while(ucmport>0){
+		if(badcount>MAX_BADCOUNT){
+			UB_LOG(UBL_ERROR, "%s:too many bad format data, close thread\n",
+			       __func__);
+			res=-1;
+			break;
+		}
+		rsize=CB_SOCK_RECVFROM(ucmonfd, dbuf, sizeof(dbuf)-1, 0,
+				       (CB_SOCKADDR_T*)&client_address, &address_length);
+		if(rsize<=0){
+			badcount++;
+			continue;
+		}
+		dbuf[rsize]=0;// guarantee it is terminated with '\0'
+		if(strcmp(dbuf, "quitmon")==0){break;}
+		res=ucmon_udp_proc(dbuf, rsize);
+		if(res){
+			badcount++;
+		}else{
+			badcount=0;// reset the counter when it gets a good data
+		}
+		rsize=sprintf(dbuf, "#res=%d", res);
+		CB_SOCK_SENDTO(ucmonfd, dbuf, rsize, 0,
+			       (CB_SOCKADDR_T*)&client_address, address_length);
+	}
+	(void)cb_ipcsocket_close(ucmonfd, NULL, NULL);
+	ucmonfd=CB_SOCKET_INVALID_VALUE;
+	return NULL;
+}
 
-// The information below apply  for max length of 
-// - Local Chassis ID, 
-// - Local Port ID, 
-// - Local Port Description
-// - Local System name
-// - Local System Description
-#define LLDP_LOCAL_INFO_STRING_MAX_LEN 20
+int uniconfmon_thread_start(uint16_t port)
+{
+	if(ucmport!=0){
+		UB_LOG(UBL_ERROR, "%s:already running\n", __func__);
+		return -1;
+	}
+	ucmport=port;
+	if(CB_THREAD_CREATE(&ucmthread, NULL, uniconfmon_thread, NULL)){
+		UB_LOG(UBL_ERROR, "%s:can't start\n", __func__);
+		return -1;
+	}
+	return 0;
+}
 
-// The information below apply  for max length of remote info
-// - Chassis ID
-// - Port ID
-// - Port Description
-// - System name
-// - System Description
-#define LLDP_REMOTE_INFO_STRING_MAX_LEN 256
+int uniconfmon_thread_stop(void)
+{
+	int fd;
+	if(ucmport==0){
+		UB_LOG(UBL_ERROR, "%s:not running\n", __func__);
+		return -1;
+	}
+	if(cb_ipcsocket_udp_init(&fd, NULL, "127.0.0.1", ucmport)==0)
+	{
+		// send signale to close
+		if(CB_SOCK_WRITE(fd, "quitmon", 8)==8){
+			cb_ipcsocket_close(fd, NULL, NULL);
+		}
+	}
+	ucmport=0;
+	CB_THREAD_JOIN(ucmthread, NULL);
+	return 0;
+}
 
-// The information below apply  for max length of remote unknown TLV info
-// - Remote unknown TLV
-#define MAX_RM_UNKNOWN_TLV_INFO_LEN    64
+bool uniconfmon_thread_running(void)
+{
+	return ucmonfd!=CB_SOCKET_INVALID_VALUE;
+}
 
-// The information below apply  for max length of Remote organization info
-// - Remote organization info TLV
-#define MAX_RM_ORG_INFO_LEN  64
 
-// Below params are for tsn-stack internal usage
-#define COMBASE_NO_INET
-#define COMBASE_NO_CRC
-#define COMBASE_NO_IPCSOCK
-#define UB_SD_STATIC
-#define UC_RUNCONF
-#define GENERATE_INITCONFIG
-#define SIMPLEDB_DBDATANUM 1600
+int uniconfmon_thread_write(uint8_t *data, int size)
+{
+	int ssize;
+	if(ucmonfd==CB_SOCKET_INVALID_VALUE){return -1;}
+	ssize=sizeof(CB_SOCKADDR_IN_T);
+	return CB_SOCK_SENDTO(ucmonfd, data, size, 0,
+			      (CB_SOCKADDR_T*)&client_address, ssize);
+}
 
-/* LLDP Definition End */
-
-#endif /* __TSN_TILLD_INCLUDE_H_ */
+int uniconfmon_thread_read(uint8_t *data, int size, int tout_ms)
+{
+	int rsize;
+	if(ucmonfd==CB_SOCKET_INVALID_VALUE){return -1;}
+	if(tout_ms<=0){
+		rsize=read(ucmonfd, data, size);
+	}else{
+		rsize=cb_fdread_timeout(ucmonfd, data, size, tout_ms);
+	}
+	return rsize;
+}

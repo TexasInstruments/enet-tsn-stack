@@ -59,6 +59,7 @@
 #define CB_LLD_ETHERNET_H
 
 #include <sys/types.h>
+#include <errno.h>
 #include "lldenet.h"
 #include "lldtsync.h"
 #ifdef __cplusplus
@@ -97,6 +98,10 @@ extern "C" {
 
 /* does not support */
 #define CB_IN_ADDR_T void*
+
+#ifndef IFNAMSIZ
+#define IFNAMSIZ		16
+#endif
 
 #define ETH_ALEN		6		/* Octets in one ethernet addr	 */
 #define ETH_HLEN		14		/* Total octets in header.	 */
