@@ -254,7 +254,6 @@ static int check_linkstate_change(combase_link_data_t *cbld)
 	return 0;
 }
 #endif
-
 void notify_linkchange(void)
 {
 	if (g_cqtd) {
@@ -262,7 +261,7 @@ void notify_linkchange(void)
 		cbld->linkchange_ts64 = ub_rt_gettime64();
 #if USE_LINK_CHANGE_EVENT
 		CB_SEM_POST(g_cqtd->sigp);
-#endif /* USE_LINK_CHANGE_EVENT */
+#endif
 	}
 }
 
@@ -280,7 +279,7 @@ void *cbl_query_thread(void *ptr)
 		res=check_linkstate_change(cbld);
 		if(res<=0){continue;}
 		if(cqtd->sigp!=NULL){
-			CB_SEM_POST( cqtd->sigp);
+				CB_SEM_POST( cqtd->sigp);
 		}
 	}
 #endif /* !USE_LINK_CHANGE_EVENT */

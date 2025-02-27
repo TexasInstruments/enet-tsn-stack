@@ -86,6 +86,7 @@ typedef struct cb_tsn_thread_attr{
  * And provide them in a header file defined as CB_THREAD_NON_POSIX_H */
 #include CB_THREAD_NON_POSIX_H
 #else
+#include <unistd.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <string.h>
@@ -129,6 +130,8 @@ typedef struct cb_tsn_thread_attr{
 #define CB_SEM_CLOSE sem_close
 #define CB_SEM_UNLINK sem_unlink
 #define CB_SEM_FAILED SEM_FAILED
+
+#define CB_GETPID getpid
 #endif
 
 static inline int cb_tsn_thread_attr_init(cb_tsn_thread_attr_t *attr, int pri,
@@ -251,6 +254,18 @@ static inline void cb_waitpoint_wakeup_at(cb_waitpoint_t *wp, uint64_t time, boo
  * @param wp object reference to a waitpoint
  */
 #define cb_waitpoint_unlock(wp) CB_THREAD_MUTEX_UNLOCK(&(wp)->lock)
+
+/**
+ * @brief kill forcefully running process or thread
+ * @param objnum	64-bit number of the process ID or thread object
+ * @param thread_mode	true: kill thread, false: kill process
+ * @return 0:succes, -1:error
+ * @note this call needs to terminate the process or thread immediately.
+ *       the caller should know and care a risk by this call.
+ */
+int cb_killproc(int64_t objnum, bool thread_mode);
+
+void cb_waitproc(int64_t objnum, bool thread_mode);
 
 #endif
 /** @}*/

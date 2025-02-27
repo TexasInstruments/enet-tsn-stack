@@ -70,6 +70,12 @@ typedef struct cbl_preempt_status{
 	uint8_t hold_request; // 1:hold request 2:release reuquest has been issued
 } cbl_preempt_status_t;
 
+typedef struct cbl_frer_status{
+	uint32_t stream_index;
+	bool generation;
+	bool enabled;
+} cbl_frer_status_t;
+
 typedef struct cbl_cb_event{
 	char ifname[CB_MAX_NETDEVNAME];
 	uint32_t ifindex;
@@ -78,6 +84,7 @@ typedef struct cbl_cb_event{
 	union{
 		cbl_linkstatus_t linkst;
 		cbl_preempt_status_t preempt;
+		cbl_frer_status_t frerst;
 	}u;
 } cbl_cb_event_t;
 
@@ -111,6 +118,10 @@ typedef struct cbl_cb_event{
 #define CBL_EVENT_BRIDGE_SUCCESS (1<<10)
 #define CBL_EVENT_BRIDGE_FAIL (1<<11)
 #define CBL_EVENT_MASTER (1<<12)
+#define CBL_EVENT_SETVLAN_SUCCESS (1<<13)
+#define CBL_EVENT_SETVLAN_FAIL (1<<14)
+#define CBL_EVENT_FRER_SUCCESS (1<<15)
+#define CBL_EVENT_FRER_FAIL (1<<16)
 
 enum {
 	CBL_CAPABILITY_ETHSTATUS=0,
@@ -212,6 +223,27 @@ typedef struct cbl_query_thread_data{
 	bool running;
 } cbl_query_thread_data_t;
 
+/* frer mode */
+#define CBL_FRER_INVALID (0)
+#define CBL_FRER_REPLICATE (1)
+#define CBL_FRER_ELIMINATE (2)
+
+/* maximum frer port number */
+#define CBL_FRER_PORT_MAX (4)
+
+/* maximum length of port name */
+#define CBL_FRER_PORT_NAMES_LEN_MAX (128)
+
+typedef struct cbl_frer_params{
+	uint32_t stream_index;
+	uint8_t in_port_num;
+	uint8_t out_port_num;
+	char *in_port;
+	char *out_port;
+	ub_macaddr_t dest_mac;
+	uint16_t vlanid;
+} cbl_frer_params_t;
+
 /*
  * this layer's APIs are only for uc_hwal.c in uniconf.
  * The other layer should read the status in the uniconf DB.
@@ -257,9 +289,6 @@ void notify_linkchange(void);
 /**
  * @brief catch HW events to process
  * @param cbl_query_thread_data_t pointer
- * @note don't process data inside the thread. just signal the semaphore by events.
- *	If polling actions are needed, make periodic siganl on the semaphore.
- *	The main thread should do polling.
  */
 void *cbl_query_thread(void *ptr);
 
@@ -347,7 +376,9 @@ int cbl_bridge_close(combase_link_data_t *cbld, const char *bridgename);
  * @param vid1	VLAN ID to start
  * @param vid2	VLAN ID to end
  * @param reg	true:register, false:deregister
- * @return -1:error, 0:success
+ * @return -1:error, 0:success, 1:completed
+ * @note with return "1" it successfully completes,
+ *       with return "0", the result comes later by the callback
  */
 int cbl_bridge_set_vlan(combase_link_data_t *cbld, const char *bridgename,
 			int port_ref, uint16_t vid1, uint16_t vid2, bool reg);
@@ -366,5 +397,36 @@ int cbl_bridge_set_vlan(combase_link_data_t *cbld, const char *bridgename,
 int cbl_bridge_set_forwarding(combase_link_data_t *cbld, const char *bridgename,
 			      int iport_ref, int eport_ref, ub_macaddr_t destmac,
 			      uint8_t priority, bool reg);
+
+/**
+ * @brief set up FRER replication fuction
+ * @param cbld	combase_link_data
+ * @param frp	FRER parameters
+ * @param enable	true:enable, false:disable
+ * @return -1:error, 0:success, 1:completed
+ * @note with return "1" it successfully completes,
+ *       with return "0", the result comes later by the callback
+ */
+int cbl_frer_replicate(combase_link_data_t *cbld, cbl_frer_params_t *frp, bool enable);
+
+/**
+ * @brief set up FRER elimination function
+ * @param cbld	combase_link_data
+ * @param frp	FRER parameters
+ * @param enable	true:enable, false:disable
+ * @return -1:error, 0:success, 1:completed
+ * @note with return "1" it successfully completes,
+ *       with return "0", the result comes later by the callback
+ */
+int cbl_frer_eliminate(combase_link_data_t *cbld, cbl_frer_params_t *frp, bool enable);
+
+/**
+ * @brief get current FRER params function
+ * @param cbld	combase_link_data
+ * @param frp	FRER parameters
+ * @param mode	0: frer not run, 1: replicate, 2: eliminate
+ * @return -1:error, 0:success
+ */
+int cbl_frer_check(combase_link_data_t *cbld, cbl_frer_params_t *frp, int *mode);
 
 #endif

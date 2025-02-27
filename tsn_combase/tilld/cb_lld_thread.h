@@ -90,6 +90,8 @@ typedef struct cb_lld_task cb_lld_task_t;
 	UB_PROTECTED_FUNC_VOID(cb_lld_mutex_init_protect,&(x))
 #define CB_STATIC_MUTEX_DESTRUCTOR(x) \
 	UB_PROTECTED_FUNC_VOID(cb_lld_mutex_destroy_protect, &(x))
+#define CB_GETPID() ( 0 )
+#define CB_GETTID() ( 0 )
 
 /* does not need to support these macros */
 #define CB_THREAD_MUTEXATTR_T void*
@@ -301,6 +303,17 @@ int cb_lld_task_join(CB_THREAD_T th, void **retval);
  * @param retval Exit value of the thread (unsupported).
  */
 void cb_lld_task_exit(void *retval);
+
+/// @brief Kill thread by ID
+/// @param objnum int64_t pointer which will be cast to CB_THREAD_T*
+/// @param thread_mode always true, unused
+/// @return 
+int cb_killproc(int64_t objnum, bool thread_mode);
+
+/// @brief Wait process to be finished
+/// @param objnum int64_t pointer which will be cast to CB_THREAD_T*
+/// @param thread_mode always true, unused
+void cb_waitproc(int64_t objnum, bool thread_mode);
 
 #ifdef __cplusplus
 }
