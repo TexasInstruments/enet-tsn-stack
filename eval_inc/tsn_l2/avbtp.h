@@ -555,8 +555,9 @@ typedef struct avbtp_sd_info {
 	uint8_t seqn_diff;
 	/* target time to play: calculated from the timestamp in the header */
 	uint64_t timestamp;
-	 /* current ptp timestamp, this is only valid when the ccr->avtpc_expandts32=true */
+	/* current ptp timestamp, this is only valid when the ccr->avtpc_expandts32=true */
 	uint64_t current_timestamp;
+	uint64_t rxts; // the timestamp captured at the time packet arrives
 	union {
 		avbtp_sd_generic_info_t gen;
 		avbtp_sd_iec_info_t iec;
@@ -1079,6 +1080,7 @@ typedef struct client_connection_data {
 struct ccdbuf_data_info {
 	int size; //payload size
 	uint64_t timestamp;
+	uint64_t rxts; // the timestamp captured at the time packet arrives
 } __attribute__ ((packed));
 typedef struct ccdbuf_data_info ccdbuf_data_info_t;
 

@@ -64,7 +64,7 @@ void lldpd_uniconf_access_mode(uint8_t mode);
 /// @param netdevs List of network interface name tilld0, tilld1, enp2s0, ..
 /// @param ndev_size Size of netdevs list
 /// @return status
-int lldpd_init(const char* lldp_db_name, netdevname_t *netdevs, int ndev_size);
+int lldpd_init(const char* lldp_db_name, const char* conf_file, netdevname_t *netdevs, int ndev_size);
 
 /// @brief Start LLDPD
 /// @param terminated 

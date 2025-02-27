@@ -114,6 +114,13 @@ int avtpc_set_txdirect(avtpc_data_t *avtpc);
 int avtpc_set_rxdirect(avtpc_data_t *avtpc);
 
 /**
+ * @brief check if the client is direct mode or not
+ * @param avtpc	the data handle of avtpc
+ * @return true:if either tx or rx is direct mode, else return false
+ */
+bool avtpc_is_direct(avtpc_data_t *avtpc);
+
+/**
  * @brief set the list of join multicast address beyond the join_mcast
  * specified in the ccr. This function is used only in the rxdirect mode to support
  * receiving multiple streams from multiple multicast addresses.
@@ -291,6 +298,13 @@ int avtpc_get_bufused(avtpc_data_t *avtpc);
  * @note This function is not applied for direct mode.
  */
 bool avtpc_rcv_thread_is_running(avtpc_data_t *avtpc);
+
+/**
+ * @brief get connection index
+ * @return connection index:success, -1:error
+ * @param avtpc	the data handle of avtpc
+ */
+int avtpc_get_connection_index(avtpc_data_t *avtpc);
 
 #endif
 /** @}*/

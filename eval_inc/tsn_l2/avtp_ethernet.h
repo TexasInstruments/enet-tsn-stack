@@ -158,7 +158,8 @@ typedef struct avtp_traffic_shaper_prams{
  * @brief callback funtion type,called from the raw ethernet receiver thread
  */
 typedef int (*avtp_ethernet_rcv_cb_t)(uint8_t *data, int size,
-				      CB_ETHHDR_T *ethdr, void *cbdata, uint16_t pcv);
+				      CB_ETHHDR_T *ethdr, void *cbdata, 
+					  uint16_t pcv, uint64_t rxts);
 
 /**
  * @brief the data handle of avtp_ethernet object, the inside of it is private
