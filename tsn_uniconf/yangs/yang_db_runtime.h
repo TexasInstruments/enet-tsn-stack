@@ -58,23 +58,35 @@
 extern "C" {
 #endif
 
+#define YANG_DB_LINE_BUF_SIZE 512u
+
 typedef struct yang_db_runtime_data yang_db_runtime_dataq_t;
 
 yang_db_runtime_dataq_t *yang_db_runtime_init(uc_dbald *dbald, uc_hwald *hwald);
 
 void yang_db_runtime_close(yang_db_runtime_dataq_t *ydrd);
 
+/**
+ * @brief hwald is set with yang_db_runtime_init, this function sets/resets later.
+ */
+void yang_db_runtime_set_hwadl(yang_db_runtime_dataq_t *ydrd, uc_hwald *hwald);
+
 
 /**
  * @brief read from a config file, and set data.
  * @param ydrd yang_db_runtime_dataq_t
  * @param fname config file name
- * @param ucntd uc_notice handle to ask an action to uniconf.
- *              if NULL no action is pushed.
  * @return -1:error, 0:success
  */
-int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname,
-			     uc_notice_data_t *ucntd);
+int yang_db_runtime_readfile(yang_db_runtime_dataq_t *ydrd, const char* fname);
+
+/**
+ * @brief internally create ydrd and then call "yang_db_runtime_readfile"
+ * @param dbald	uc_dbald
+ * @param fname config file name
+ * @return -1:error, 0:success
+ */
+int yang_db_runtime_read_conffile(uc_dbald *dbald, const char* fname);
 
 /**
  * @brief get value type of 'aps' leaf
@@ -215,6 +227,67 @@ int yang_db_runtime_state_keyvkstr(yang_db_runtime_dataq_t *ydrd, char **rstr);
  */
 const char *convxml2conf_getconf(yang_db_runtime_dataq_t *ydrd, const char *ifname,
 				 const char *ofname);
+
+bool yang_db_runtime_needaction(yang_db_runtime_dataq_t *ydrd);
+
+/**
+ * @brief convert yang key string to aps,kvs,kss,,, in ydrd
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param line	key string
+ * @param aps	return node keys, it must have UC_MAX_AP_DEPTH of uint8_t space
+ * @param kvs	return value keys, it must have UC_MAX_KV_DEPTH+1 of void pointer space
+ * @param kss	return value key sizes, it must have UC_MAX_KV_DEPTH of uint8_t space
+ * @return -1:error, vtype>=0:success
+ * @note returned aps is terminated with 255, kvs with NULL, and kss with 0
+ */
+int yang_db_runtime_nodestr2apkv(yang_db_runtime_dataq_t *ydrd,
+                    const char* line, uint8_t *aps, void **kvs, uint8_t *kss);
+
+/**
+ * @brief read from the DB, and print into the log file, optionally print on console.
+ * @param consoleprint	true:priont on console
+ * @param dbald	uc_dbald
+ * @param headmsg prefix of message log
+ * @param aps	node keys
+ * @param kvs	value keys
+ * @param kss	value key sizes
+ */
+void yang_db_runtime_readdb_log(bool consoleprint, uc_dbald *dbald, const char *headmsg,
+				uint8_t aps[], void *kvs[], uint8_t kss[]);
+
+/**
+ * @brief get a range from line, then iterate the contents
+ * @param ydrd yang_db_runtime_dataq_t
+ * @param range when the iteration stops at the middle(stop with return 0 status)
+ *	        needs to be released by uc_get_range_release. when it comes to the end
+ *              it is internally called, and no need to release 'range'
+ * @param line key string, value keys can be wildcard without value part
+ * @param kvs return value keys, it must have MAX_KV_DEPTH+1 of void pointer space
+ * @param kss return value key sizes, it must have MAX_KV_DEPTH of uint8_t space
+ * @param status true:get range from status('ro') area, false: get from config('rw') area
+ * @param value	value of the iterated key
+ * @param vsize	value size
+ * @param qstr	data out
+ * @return >=0:vtype, -1:error or comes to the end
+ */
+int yang_db_runtime_iterate_fromline(yang_db_runtime_dataq_t *ydrd, uc_range **range,
+				     const char* line, void *kvs[], uint8_t kss[],
+				     bool status, void **value,
+				     uint32_t *vsize, char **qstr);
+
+/**
+ * @brief call 'yang_db_runtime_iterate_fromline' internally and cache (qstr, vstr)
+ *        into 'rvalue'.
+ */
+int yang_db_runtime_cache_fromline(yang_db_runtime_dataq_t *ydrd,
+				   const char* line, bool status,
+				   char **rvalue, int *rvsize);
+
+/**
+ * @brief release the reserved memory in 'yang_db_runtime_cache_fromline'
+ */
+void yang_db_runtime_cache_fromline_release(char *rvalue);
+
 
 #ifdef __cplusplus
 }

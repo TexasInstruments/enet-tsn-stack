@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<xl4-uni xmlns="http://excelfore.com/ns/excelfore-config-uni">
+		<domain>
+			<domain-id/>
+			<event-bridges>
+				<!-- # entries: 0.. -->
+			</event-bridges>
+			<nconf-servers>
+				<name/>
+				<address/>
+				<port/>
+				<transport/>
+				<role/>
+			</nconf-servers>
+			<nconf-clients>
+				<name/>
+				<cert/>
+				<key/>
+				<ca-cert/>
+			</nconf-clients>
+			<mac-address-pool>
+				<top-address/>
+				<busy-bitmap/>
+			</mac-address-pool>
+		</domain>
+	</xl4-uni>
+</data>

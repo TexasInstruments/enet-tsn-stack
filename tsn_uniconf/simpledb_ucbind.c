@@ -87,6 +87,21 @@ uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode)
 	return sdbd;
 }
 
+bool uc_dbal_threadmode(uc_dbald *dbald)
+{
+	return true;
+}
+
+int uc_dbal_lock(uc_dbald *dbald)
+{
+	return simpledb_lock((simpledb_data_t *)dbald);
+}
+
+void uc_dbal_unlock(uc_dbald *dbald)
+{
+	return simpledb_unlock((simpledb_data_t *)dbald);
+}
+
 static void closedb_protect(uc_dbald *dbald, uint8_t callmode)
 {
 	if(sdbd_refcounter==0){return;}

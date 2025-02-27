@@ -101,11 +101,40 @@ int ietf_yang_library_nconf_config_init(uc_dbald *dbald)
 		dbpara.atype=YANG_DB_ACTION_APPEND;
 	};
 
+	kvs[0]=(void*)"ietf-inet-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types";
+		dbpara.vsize=44;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"c9ccf4e4350c548582da5c15180fc9a7382318f6";
+	dbpara.value=(void*)"74b34281603840b1f5c7bd4af0f1403d773b1433";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
@@ -124,6 +153,12 @@ int ietf_yang_library_nconf_config_init(uc_dbald *dbald)
 	dbpara.vsize=70;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
 
+	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types?module=ietf-inet-types&revision=2013-07-15";
+	nvsize=87;
+	dbpara.value=nvalue;
+	dbpara.vsize=66;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
 	// ietf-yang-library ietf-netconf-monitoring schemas
 	aps[2]=IETF_NETCONF_MONITORING_SCHEMAS;
 	aps[3]=IETF_NETCONF_MONITORING_SCHEMA;
@@ -133,9 +168,10 @@ int ietf_yang_library_nconf_config_init(uc_dbald *dbald)
 	kss[0]=18;
 	kvs[1]=(void*)"2016-06-21";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-library";
 	dbpara.vsize=46;
@@ -144,6 +180,25 @@ int ietf_yang_library_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ietf-inet-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types";
+	dbpara.vsize=44;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	return 0;
 }

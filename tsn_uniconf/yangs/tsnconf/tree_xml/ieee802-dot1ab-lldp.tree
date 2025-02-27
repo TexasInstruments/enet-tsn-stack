@@ -1,0 +1,82 @@
+module: ieee802-dot1ab-lldp
+  +--rw lldp
+     +--rw message-fast-tx?              uint32
+     +--rw message-tx-hold-multiplier?   uint32
+     +--rw message-tx-interval?          uint32
+     +--rw reinit-delay?                 uint32
+     +--rw tx-credit-max?                uint32
+     +--rw tx-fast-init?                 uint32
+     +--ro remote-statistics
+     |  +--ro last-change-time?   yang:timestamp
+     |  +--ro remote-inserts?     yang:zero-based-counter32
+     |  +--ro remote-deletes?     yang:zero-based-counter32
+     |  +--ro remote-drops?       yang:zero-based-counter32
+     |  +--ro remote-ageouts?     yang:zero-based-counter32
+     +--ro local-system-data
+     |  +--ro chassis-id-subtype?              ieee:chassis-id-subtype-type
+     |  +--ro chassis-id?                      ieee:chassis-id-type
+     |  +--ro system-name?                     string
+     |  +--ro system-description?              string
+     |  +--ro system-capabilities-supported?   lldp-types:system-capabilities-map
+     |  +--ro system-capabilities-enabled?     lldp-types:system-capabilities-map
+     +--rw port* [name dest-mac-address]
+        +--rw name                          if:interface-ref
+        +--rw dest-mac-address              ieee:mac-address
+        +--rw admin-status?                 enumeration
+        +--rw tlvs-tx-enable?               bits
+        +--rw message-fast-tx?              uint32
+        +--rw message-tx-hold-multiplier?   uint32
+        +--rw message-tx-interval?          uint32
+        +--rw reinit-delay?                 uint32
+        +--rw tx-credit-max?                uint32
+        +--rw tx-fast-init?                 uint32
+        +--rw management-address-tx-port* [address-subtype man-address]
+        |  +--rw address-subtype    identityref
+        |  +--rw man-address        lldp-types:man-addr-type
+        |  +--rw tx-enable?         boolean
+        |  +--ro addr-len?          uint32
+        |  +--ro if-subtype?        lldp-types:man-addr-if-subtype
+        |  +--ro if-id?             uint32
+        +--ro port-id-subtype?              ieee:port-id-subtype-type
+        +--ro port-id?                      ieee:port-id-type
+        +--ro port-desc?                    string
+        +--ro tx-statistics
+        |  +--ro total-frames?          yang:counter32
+        |  +--ro total-length-errors?   yang:counter32
+        +--ro rx-statistics
+        |  +--ro total-ageouts?             yang:zero-based-counter32
+        |  +--ro total-discarded-frames?    yang:counter32
+        |  +--ro error-frames?              yang:counter32
+        |  +--ro total-frames?              yang:counter32
+        |  +--ro total-discarded-tlvs?      yang:counter32
+        |  +--ro total-unrecognized-tlvs?   yang:counter32
+        +--ro remote-systems-data* [time-mark remote-index]
+           +--ro time-mark                        yang:timeticks
+           +--ro remote-index                     uint32
+           +--ro remote-too-many-neighbors?       boolean
+           +--ro remote-changes?                  boolean
+           +--ro chassis-id-subtype?              ieee:chassis-id-subtype-type
+           +--ro chassis-id?                      ieee:chassis-id-type
+           +--ro port-id-subtype?                 ieee:port-id-subtype-type
+           +--ro port-id?                         ieee:port-id-type
+           +--ro port-desc?                       string
+           +--ro system-name?                     string
+           +--ro system-description?              string
+           +--ro system-capabilities-supported?   lldp-types:system-capabilities-map
+           +--ro system-capabilities-enabled?     lldp-types:system-capabilities-map
+           +--ro management-address* [address-subtype address]
+           |  +--ro address-subtype    identityref
+           |  +--ro address            lldp-types:man-addr-type
+           |  +--ro if-subtype?        lldp-types:man-addr-if-subtype
+           |  +--ro if-id?             uint32
+           +--ro remote-unknown-tlv* [tlv-type]
+           |  +--ro tlv-type    uint32
+           |  +--ro tlv-info?   binary
+           +--ro remote-org-defined-info* [info-identifier info-subtype info-index]
+              +--ro info-identifier    uint32
+              +--ro info-subtype       uint32
+              +--ro info-index         uint32
+              +--ro remote-info?       binary
+
+  notifications:
+    +---n remote-table-change

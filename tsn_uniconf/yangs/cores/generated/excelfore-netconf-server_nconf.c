@@ -101,6 +101,35 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 		dbpara.atype=YANG_DB_ACTION_APPEND;
 	};
 
+	kvs[0]=(void*)"ietf-inet-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types";
+		dbpara.vsize=44;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
 	kvs[0]=(void*)"ietf-x509-cert-to-name";
 	kss[0]=23;
 	kvs[1]=(void*)"2014-12-10";
@@ -134,7 +163,7 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"9a5463bae9e5a18c172760adbd773af1d10e9644";
+	dbpara.value=(void*)"5c99c72f5258fc8dec3d9d0881db67ebfad9d646";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
@@ -153,6 +182,12 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 	dbpara.vsize=80;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
 
+	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types?module=ietf-inet-types&revision=2013-07-15";
+	nvsize=87;
+	dbpara.value=nvalue;
+	dbpara.vsize=66;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
 	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-x509-cert-to-name?module=ietf-x509-cert-to-name&revision=2014-12-10";
 	nvsize=101;
 	dbpara.value=nvalue;
@@ -168,9 +203,10 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 	kss[0]=25;
 	kvs[1]=(void*)"2023-08-07";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"http://excelfore.com/ns/excelfore-netconf-server";
 	dbpara.vsize=49;
@@ -179,14 +215,34 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ietf-inet-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types";
+	dbpara.vsize=44;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	kvs[0]=(void*)"ietf-x509-cert-to-name";
 	kss[0]=23;
 	kvs[1]=(void*)"2014-12-10";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-x509-cert-to-name";
 	dbpara.vsize=51;
@@ -195,6 +251,7 @@ int excelfore_netconf_server_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	return 0;
 }

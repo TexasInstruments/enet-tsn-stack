@@ -1,0 +1,20 @@
+module: ieee802-dot1cb-stream-identification
+  +--rw stream-identity* [index]
+     +--rw index                               uint32
+     +--rw handle                              uint32
+     +--rw in-facing
+     |  +--rw input-port*    if:interface-ref
+     |  +--rw output-port*   if:interface-ref
+     +--rw out-facing
+     |  +--rw input-port*    if:interface-ref
+     |  +--rw output-port*   if:interface-ref
+     +--rw (parameters)
+     |  +--:(null-stream-identification)
+     |     +--rw null-stream-identification
+     |        +--rw destination-mac?   ieee:mac-address
+     |        +--rw tagged?            vlan-tag-identification-type
+     |        +--rw vlan?              vlan-identifier-type
+     +--ro xl4cb-sid:config-status?            uint8
+
+  augment /if:interfaces/if:interface/if:statistics:
+    +--ro stream-id

@@ -101,11 +101,40 @@ int ietf_netconf_monitoring_nconf_config_init(uc_dbald *dbald)
 		dbpara.atype=YANG_DB_ACTION_APPEND;
 	};
 
+	kvs[0]=(void*)"ietf-yang-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-types";
+		dbpara.vsize=44;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"19c2f7f38584c37cc3d1b1dd85a3c792644e6e94";
+	dbpara.value=(void*)"fd222c16c0d643698b9de2ad173f68f43d5ddd68";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
@@ -118,11 +147,40 @@ int ietf_netconf_monitoring_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	dbpara.atype=YANG_DB_ACTION_APPEND;
 
+	nvalue=(void*)"urn:ietf:params:netconf:base:1.0";
+	nvsize=33;
+	dbpara.value=nvalue;
+	dbpara.vsize=nvsize;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"urn:ietf:params:netconf:base:1.1";
+	nvsize=33;
+	dbpara.value=nvalue;
+	dbpara.vsize=nvsize;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
 	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring?module=ietf-netconf-monitoring&revision=2010-10-04&features=";
 	nvsize=113;
 	dbpara.value=nvalue;
 	dbpara.vsize=82;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-types?module=ietf-yang-types&revision=2013-07-15";
+	nvsize=87;
+	dbpara.value=nvalue;
+	dbpara.vsize=66;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	aps[2]=IETF_NETCONF_MONITORING_DATASTORES;
+	aps[3]=IETF_NETCONF_MONITORING_DATASTORE;
+	aps[4]=IETF_NETCONF_MONITORING_DUMMY;
+	res=0; //hard coded with 'running/name'=0(netconf_datastore_type)
+	kvs[0]=&res;
+	kss[0]=4;
+	kvs[1]=NULL;
+	dbpara.value=(void*)"";
+	dbpara.vsize=1;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
 	// ietf-netconf-monitoring ietf-netconf-monitoring schemas
 	aps[2]=IETF_NETCONF_MONITORING_SCHEMAS;
@@ -133,9 +191,10 @@ int ietf_netconf_monitoring_nconf_config_init(uc_dbald *dbald)
 	kss[0]=24;
 	kvs[1]=(void*)"2010-10-04";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-netconf-monitoring";
 	dbpara.vsize=52;
@@ -144,6 +203,25 @@ int ietf_netconf_monitoring_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ietf-yang-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-types";
+	dbpara.vsize=44;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	return 0;
 }

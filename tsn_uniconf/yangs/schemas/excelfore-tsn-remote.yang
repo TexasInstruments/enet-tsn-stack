@@ -1,0 +1,335 @@
+module excelfore-tsn-remote {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/excelfore-tsn-remote";
+  prefix xl4tsnrmt;
+
+  import ietf-interfaces {
+    prefix if;
+  }
+  import ieee802-types {
+    prefix ieee;
+  }
+  import ieee802-dot1q-tsn-types {
+    prefix tsn;
+    reference
+      "48.6.3 of IEEE Std 802.1Q-2022";
+  }
+
+  description
+    "This YANG module define the part of
+     IEEE802.1Q-2022 12.32.4 MRP External Control.";
+
+  revision 2023-04-18 {
+    description
+      "Initial revision.";
+    reference
+      "IEEE Std 801.1Q-2022
+       Excelfore xmrpd";
+  }
+
+  typedef mrp-protocol {
+    type enumeration {
+      enum mmrp {
+        value 1;
+        description
+          "Multiple MAC Registration Protocol";
+      }
+      enum mvrp {
+        value 2;
+        description
+          "Multiple VLAN Registration Protocol";
+      }
+      enum msrp {
+        value 3;
+        description
+          "Multiple Stream Registration Protocol";
+      }
+    }
+  }
+
+  typedef msrp-attribute-type {
+    type enumeration {
+      enum talker-advertise {
+        value 1;
+        description
+          "Talker Advertise Vector";
+      }
+      enum talker-failed {
+        value 2;
+        description
+          "Talker Failed Vector";
+      }
+      enum listener {
+        value 3;
+        description
+          "Listener Vector";
+      }
+      enum domain {
+        value 4;
+        description
+          "Domain Vector";
+      }
+      enum talker-enhanced {
+        value 5;
+        description
+          "Talker Enhanced Vector";
+      }
+      enum listener-enhanced {
+        value 6;
+        description
+          "Listener Enhanced Vector";
+      }
+    }
+  }
+
+  grouping msrp-attribute-ta {
+    leaf stream-id {
+      type tsn:stream-id-type;
+    }
+    leaf dest-address {
+      type ieee:mac-address;
+    }
+    leaf vlan-id {
+      type uint16;
+    }
+    leaf max-frame-size {
+      type uint16;
+    }
+    leaf max-interval-frames {
+      type uint16;
+    }
+    leaf pcp {
+      type uint8;
+    }
+    leaf rank {
+      type uint8;
+    }
+    leaf accumulated-latency {
+      type uint32;
+    }
+  }
+
+  grouping msrp-attribute-tf {
+    uses msrp-attribute-ta;
+    leaf system-id {
+      type ieee:mac-address;
+    }
+    leaf failuer-code {
+      type uint8;
+    }
+  }
+
+  grouping msrp-attribute-te {
+    leaf stream-id {
+      type tsn:stream-id-type;
+    }
+    uses tsn:group-talker;
+    uses tsn:group-status-talker-listener;
+    uses tsn:group-status-stream;
+  }
+
+  grouping msrp-attribute-ls {
+    leaf four_packed_event {
+      type uint8;
+    }
+    leaf stream-id {
+      type tsn:stream-id-type;
+    }
+  }
+
+  grouping msrp-attribute-le {
+    leaf stream-id {
+      type tsn:stream-id-type;
+    }
+    uses tsn:group-listener;
+    uses tsn:group-status-talker-listener;
+    uses tsn:group-status-stream;
+  }
+
+  grouping msrp-attribute-dm {
+    leaf srclass-id {
+      type uint8;
+    }
+    leaf srclass-priority {
+      type uint8;
+    }
+    leaf srclass-vid {
+      type uint16;
+    }
+  }
+
+  container tsn-remote {
+    container instances {
+      description
+        "mrpd can have multiple instances.
+         this instances have the same meaning.";
+      list instance {
+        key "instance-index";
+        leaf instance-index {
+          type uint8;
+        }
+        container update {
+          description
+            "notice updates in (port, protocol).
+             xmrpd gets a notice signal with this information.";
+          leaf port {
+            type if:interface-ref;
+          }
+          leaf protocol {
+            type mrp-protocol;
+          }
+          leaf request-status {
+            description
+              "request to xmrpd process, 0:no reg, 1:reg";
+            type uint8;
+          }
+          leaf result-status {
+            config false;
+            description
+              "result of xmrpd process, 0:no reg, 1:success, 2:failure";
+            type uint8;
+          }
+        }
+        container external-control-man {
+          description
+            "MRP External Control managed object, 12.32.4.";
+          list control-objects {
+            key "port protocol";
+            leaf port {
+              type if:interface-ref;
+            }
+            leaf protocol {
+              type mrp-protocol;
+            }
+            leaf external-control {
+              type boolean;
+              default "false";
+            }
+            leaf indication-change-counter {
+              config false;
+              type uint32;
+            }
+            container msrp-ta {
+              list indication-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-ta;
+              }
+              list admin-request-list {
+                key "stream-id";
+                uses msrp-attribute-ta;
+              }
+              list oper-request-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-ta;
+              }
+            }
+            container msrp-tf {
+              list indication-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-tf;
+              }
+              list admin-request-list {
+                key "stream-id";
+                uses msrp-attribute-tf;
+              }
+              list oper-request-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-tf;
+              }
+            }
+            container msrp-te {
+              list indication-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-te;
+              }
+              list admin-request-list {
+                key "stream-id";
+                uses msrp-attribute-te;
+              }
+              list oper-request-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-te;
+              }
+            }
+            container msrp-ls {
+              list indication-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-ls;
+              }
+              list admin-request-list {
+                key "stream-id";
+                uses msrp-attribute-ls;
+              }
+              list oper-request-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-ls;
+              }
+            }
+            container msrp-le {
+              list indication-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-le;
+              }
+              list admin-request-list {
+                key "stream-id";
+                uses msrp-attribute-le;
+              }
+              list oper-request-list {
+                config false;
+                key "stream-id";
+                uses msrp-attribute-le;
+              }
+            }
+            container msrp-dm {
+              list indication-list {
+                config false;
+                key "srclass-id srclass-priority";
+                uses msrp-attribute-dm;
+              }
+              list admin-request-list {
+                key "srclass-id srclass-priority";
+                uses msrp-attribute-dm;
+              }
+              list oper-request-list {
+                config false;
+                key "srclass-id srclass-priority";
+                uses msrp-attribute-dm;
+              }
+            }
+            container mvrp {
+              list indication-list {
+                config false;
+                key "vlan-id";
+                leaf vlan-id {
+                  type uint16;
+                }
+              }
+              list admin-request-list {
+                key "vlan-id";
+                leaf vlan-id {
+                  type uint16;
+                }
+              }
+              list oper-request-list {
+                config false;
+                key "vlan-id";
+                leaf vlan-id {
+                  type uint16;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

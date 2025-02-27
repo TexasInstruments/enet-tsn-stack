@@ -77,6 +77,8 @@ const char *ietf_yang_library_enum_strings[]={
 };
 const uint8_t ietf_yang_library_enum_max=14;
 
+#ifdef GENERATE_INITCONFIG
+
 static int prefix_namespace_init(uc_dbald *dbald)
 {
 	if(yang_node_set_prefix_namespace(dbald, "yanglib",
@@ -123,14 +125,14 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_YANG_LIBRARY_VALUEKEY;
 	aps[5] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_YANG_LIBRARY_REVISION;
 	vtype=YANG_VTYPE_UNION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_YANG_LIBRARY_VALUEKEY;
 	aps[4] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_YANG_LIBRARY_REVISION;
 	vtype=YANG_VTYPE_UNION;
@@ -138,24 +140,24 @@ int ietf_yang_library_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0001_ietf-yang-library/modules-state/module/submodule
 	aps[3] = IETF_YANG_LIBRARY_SUBMODULE;
 	aps[4] = IETF_YANG_LIBRARY_SCHEMA;
-	vtype=YANG_VTYPE_INET_URI;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_YANG_LIBRARY_VALUEKEY;
 	aps[5] = IETF_YANG_LIBRARY_NAME;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_YANG_LIBRARY_REVISION;
 	vtype=YANG_VTYPE_UNION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0002_ietf-yang-library/modules-state/module
 	aps[3] = IETF_YANG_LIBRARY_SCHEMA;
-	vtype=YANG_VTYPE_INET_URI;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_YANG_LIBRARY_NAMESPACE;
-	vtype=YANG_VTYPE_INET_URI;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_YANG_LIBRARY_FEATURE;
-	vtype=YANG_VTYPE_YANG_YANG_IDENTIFIER;
+	vtype=YANG_VTYPE_STRING_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
 	vtype=YANG_VTYPE_ENUMERATION;
@@ -172,3 +174,4 @@ erexit:
 	return res;
 }
 
+#endif

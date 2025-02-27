@@ -103,6 +103,8 @@ const char *ietf_netconf_monitoring_enum_strings[]={
 };
 const uint8_t ietf_netconf_monitoring_enum_max=40;
 
+#ifdef GENERATE_INITCONFIG
+
 static int prefix_namespace_init(uc_dbald *dbald)
 {
 	if(yang_node_set_prefix_namespace(dbald, "ncm",
@@ -144,7 +146,7 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 	aps[1] = IETF_NETCONF_MONITORING_NETCONF_STATE;
 	aps[2] = IETF_NETCONF_MONITORING_CAPABILITIES;
 	aps[3] = IETF_NETCONF_MONITORING_CAPABILITY;
-	vtype=YANG_VTYPE_INET_URI;
+	vtype=YANG_VTYPE_STRING_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	//0001_ietf-netconf-monitoring/netconf-state/datastores/datastore/locks/global-lock
 	aps[2] = IETF_NETCONF_MONITORING_DATASTORES;
@@ -155,7 +157,7 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_NETCONF_MONITORING_LOCKED_TIME;
-	vtype=YANG_VTYPE_YANG_DATE_AND_TIME;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_VALUEKEY;
 	aps[5] = IETF_NETCONF_MONITORING_NAME;
@@ -168,29 +170,29 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_NETCONF_MONITORING_LOCKED_TIME;
-	vtype=YANG_VTYPE_YANG_DATE_AND_TIME;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_NETCONF_MONITORING_SELECT;
-	vtype=YANG_VTYPE_YANG_XPATH1_0;
+	vtype=YANG_VTYPE_STRING_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_NETCONF_MONITORING_LOCKED_NODE;
-	vtype=YANG_VTYPE_INSTANCE_IDENTIFIER;
+	vtype=YANG_VTYPE_INSTANCE_IDENTIFIER_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_NETCONF_MONITORING_VALUEKEY;
 	aps[7] = IETF_NETCONF_MONITORING_LOCK_ID;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0003_ietf-netconf-monitoring/netconf-state/schemas
+	//0003_ietf-netconf-monitoring/netconf-state/datastores/datastore/locks
 	//0004_ietf-netconf-monitoring/netconf-state/datastores/datastore
-	//0005_ietf-netconf-monitoring/netconf-state/schemas
+	//0005_ietf-netconf-monitoring/netconf-state/datastores
 	//0006_ietf-netconf-monitoring/netconf-state/schemas/schema
 	aps[2] = IETF_NETCONF_MONITORING_SCHEMAS;
 	aps[3] = IETF_NETCONF_MONITORING_SCHEMA;
 	aps[4] = IETF_NETCONF_MONITORING_NAMESPACE;
-	vtype=YANG_VTYPE_INET_URI;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_LOCATION;
-	vtype=YANG_VTYPE_UNION;
+	vtype=YANG_VTYPE_UNION_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_VALUEKEY;
 	aps[5] = IETF_NETCONF_MONITORING_IDENTIFIER;
@@ -202,7 +204,7 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 	aps[5] = IETF_NETCONF_MONITORING_FORMAT;
 	vtype=YANG_VTYPE_IDENTITYREF;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0007_ietf-netconf-monitoring/netconf-state/sessions
+	//0007_ietf-netconf-monitoring/netconf-state/schemas
 	//0008_ietf-netconf-monitoring/netconf-state/sessions/session
 	aps[2] = IETF_NETCONF_MONITORING_SESSIONS;
 	aps[3] = IETF_NETCONF_MONITORING_SESSION;
@@ -213,53 +215,53 @@ int ietf_netconf_monitoring_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_SOURCE_HOST;
-	vtype=YANG_VTYPE_INET_HOST;
+	vtype=YANG_VTYPE_UNION;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_LOGIN_TIME;
-	vtype=YANG_VTYPE_YANG_DATE_AND_TIME;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_IN_RPCS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_IN_BAD_RPCS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_OUT_RPC_ERRORS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_OUT_NOTIFICATIONS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_NETCONF_MONITORING_VALUEKEY;
 	aps[5] = IETF_NETCONF_MONITORING_SESSION_ID;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0009_ietf-netconf-monitoring/netconf-state/statistics
+	//0009_ietf-netconf-monitoring/netconf-state/sessions
 	//0010_ietf-netconf-monitoring/netconf-state/statistics
 	aps[2] = IETF_NETCONF_MONITORING_STATISTICS;
 	aps[3] = IETF_NETCONF_MONITORING_NETCONF_START_TIME;
-	vtype=YANG_VTYPE_YANG_DATE_AND_TIME;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_IN_BAD_HELLOS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_IN_SESSIONS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_DROPPED_SESSIONS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_IN_RPCS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_IN_BAD_RPCS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_OUT_RPC_ERRORS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_NETCONF_MONITORING_OUT_NOTIFICATIONS;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[1] = IETF_NETCONF_MONITORING_VALUEKEY;
 	vtype=YANG_VTYPE_UINT8;
@@ -269,3 +271,4 @@ erexit:
 	return res;
 }
 
+#endif

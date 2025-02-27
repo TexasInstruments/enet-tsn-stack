@@ -1,0 +1,15 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<instance xmlns="http://excelfore.com/ns/excelfore-aed">
+		<instance-index/>
+		<aed-event>
+			<stream-type/>
+			<stream>
+				<stream-index/>
+				<port/>
+				<status/>
+				<timestamp/>
+			</stream>
+		</aed-event>
+	</instance>
+</data>

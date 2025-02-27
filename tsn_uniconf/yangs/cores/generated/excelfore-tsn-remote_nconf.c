@@ -130,11 +130,40 @@ int excelfore_tsn_remote_nconf_config_init(uc_dbald *dbald)
 		dbpara.atype=YANG_DB_ACTION_APPEND;
 	};
 
+	kvs[0]=(void*)"ietf-inet-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types";
+		dbpara.vsize=44;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"c8014bc04fd614a3386207b0b292e6e633cd4c23";
+	dbpara.value=(void*)"5c965149da31242cb1ec7c0a22de2d4dff7763dd";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
@@ -159,6 +188,12 @@ int excelfore_tsn_remote_nconf_config_init(uc_dbald *dbald)
 	dbpara.vsize=79;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
 
+	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types?module=ietf-inet-types&revision=2013-07-15";
+	nvsize=87;
+	dbpara.value=nvalue;
+	dbpara.vsize=66;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
 	// excelfore-tsn-remote ietf-netconf-monitoring schemas
 	aps[2]=IETF_NETCONF_MONITORING_SCHEMAS;
 	aps[3]=IETF_NETCONF_MONITORING_SCHEMA;
@@ -168,9 +203,10 @@ int excelfore_tsn_remote_nconf_config_init(uc_dbald *dbald)
 	kss[0]=21;
 	kvs[1]=(void*)"2023-04-18";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"http://excelfore.com/ns/excelfore-tsn-remote";
 	dbpara.vsize=45;
@@ -179,14 +215,16 @@ int excelfore_tsn_remote_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	kvs[0]=(void*)"ieee802-dot1q-tsn-types";
 	kss[0]=24;
 	kvs[1]=(void*)"2022-10-29";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"urn:ieee:std:802.1Q:yang:ieee802-dot1q-tsn-types";
 	dbpara.vsize=49;
@@ -195,6 +233,25 @@ int excelfore_tsn_remote_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ietf-inet-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-inet-types";
+	dbpara.vsize=44;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	return 0;
 }

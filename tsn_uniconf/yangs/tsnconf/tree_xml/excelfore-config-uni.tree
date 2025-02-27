@@ -1,0 +1,19 @@
+module: excelfore-config-uni
+  +--rw xl4-uni
+     +--rw domain* [domain-id]
+        +--rw domain-id           string
+        +--rw event-bridges*      string
+        +--rw nconf-servers* [name]
+        |  +--rw name         dot1q-types:name-type
+        |  +--rw address?     inet:host
+        |  +--rw port?        inet:port-number
+        |  +--rw transport?   identityref
+        |  +--ro role?        uint8
+        +--rw nconf-clients* [name]
+        |  +--rw name       dot1q-types:name-type
+        |  +--ro cert       string
+        |  +--ro key        string
+        |  +--ro ca-cert    string
+        +--rw mac-address-pool
+           +--rw top-address?   yang:mac-address
+           +--rw busy-bitmap?   uint64

@@ -1,0 +1,54 @@
+module xl4-ieee802-dot1cb-stream-identification {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/xl4-ieee802-dot1cb-stream-identification";
+  prefix xl4cb-sid;
+
+  import ieee802-dot1cb-stream-identification {
+    prefix dot1cb-sid;
+  }
+  import ietf-interfaces {
+    prefix if;
+  }
+
+  augment "/dot1cb-sid:stream-identity" {
+    leaf config-status {
+      config false;
+      type uint8;
+      description
+        "Stream's FRER configuration status
+         0:Initial value, no configuration ongoing.
+         1:FRER configuration busy.
+         2:FRER configuration enabled.
+         3:FRER configuration disabled.
+         4:FRER configuration failed.";
+    }
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-sid:parameters/dot1cb-sid:null-stream-identification/dot1cb-sid:null-stream-identification/dot1cb-sid:identification-type" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-sid:parameters/dot1cb-sid:smac-vlan-stream-identification" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-sid:parameters/dot1cb-sid:dmac-vlan-stream-identification" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-sid:parameters/dot1cb-sid:ip-stream-identification" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-sid:parameters/dot1cb-sid:organization-specific" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:statistics/dot1cb-sid:stream-id/dot1cb-sid:per-port-counters" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:statistics/dot1cb-sid:stream-id/dot1cb-sid:per-port-per-stream-counters" {
+    deviate not-supported;
+  }
+}

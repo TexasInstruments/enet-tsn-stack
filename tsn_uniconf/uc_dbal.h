@@ -107,6 +107,16 @@ uc_dbald *uc_dbal_open(const char *pfname, const char *mode, uint8_t callmode);
 
 void uc_dbal_close(uc_dbald *dbald, uint8_t callmode);
 
+bool uc_dbal_threadmode(uc_dbald *dbald);
+
+/*
+ * lock / unlock the entire DB.
+ * these calls must be paired in a short time.
+ * during locked time, no processes or threads can get the dB
+ */
+int uc_dbal_lock(uc_dbald *dbald);
+void uc_dbal_unlock(uc_dbald *dbald);
+
 int uc_dbal_getdb(uc_dbald *dbald, int toutms, uint8_t *key, uint32_t ksize);
 
 void uc_dbal_releasedb(uc_dbald *dbald);

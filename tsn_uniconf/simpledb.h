@@ -79,6 +79,14 @@ simpledb_data_t *simpledb_open(const char *pfname);
 void simpledb_close(simpledb_data_t *sdbd);
 
 /**
+ * @brief lock / unlock the entire DB.
+ * @note these calls must be paired in a short time.
+ *       during locked time, keep sdbd->dbmutex locked
+ */
+int simpledb_lock(simpledb_data_t *sdbd);
+void simpledb_unlock(simpledb_data_t *sdbd);
+
+/**
  * @brief save data to a file
  * @note keyranges must be terminated by NULL
  */

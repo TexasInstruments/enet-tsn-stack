@@ -65,30 +65,48 @@ extern uint8_t EXCELFORE_TSN_REMOTE_func(uc_dbald *dbald);
 #define EXCELFORE_TSN_REMOTE_RW EXCELFORE_TSN_REMOTE_func(dbald)
 extern const char *excelfore_tsn_remote_enum_strings[];
 extern const uint8_t excelfore_tsn_remote_enum_max;
+extern uint8_t EXCELFORE_AED_func(uc_dbald *dbald);
+#define EXCELFORE_AED_RW EXCELFORE_AED_func(dbald)
+extern const char *excelfore_aed_enum_strings[];
+extern const uint8_t excelfore_aed_enum_max;
+#ifdef UC_NETCONF
 extern uint8_t EXCELFORE_NETCONF_SERVER_func(uc_dbald *dbald);
 #define EXCELFORE_NETCONF_SERVER_RW EXCELFORE_NETCONF_SERVER_func(dbald)
 extern const char *excelfore_netconf_server_enum_strings[];
 extern const uint8_t excelfore_netconf_server_enum_max;
+#endif
+#ifdef UC_NETCONF
 extern uint8_t IETF_NETCONF_MONITORING_func(uc_dbald *dbald);
 #define IETF_NETCONF_MONITORING_RW IETF_NETCONF_MONITORING_func(dbald)
 extern const char *ietf_netconf_monitoring_enum_strings[];
 extern const uint8_t ietf_netconf_monitoring_enum_max;
+#endif
+#ifdef UC_NETCONF
 extern uint8_t IETF_YANG_LIBRARY_func(uc_dbald *dbald);
 #define IETF_YANG_LIBRARY_RW IETF_YANG_LIBRARY_func(dbald)
 extern const char *ietf_yang_library_enum_strings[];
 extern const uint8_t ietf_yang_library_enum_max;
+#endif
 extern uint8_t IEEE802_DOT1AB_LLDP_func(uc_dbald *dbald);
 #define IEEE802_DOT1AB_LLDP_RW IEEE802_DOT1AB_LLDP_func(dbald)
 extern const char *ieee802_dot1ab_lldp_enum_strings[];
 extern const uint8_t ieee802_dot1ab_lldp_enum_max;
-extern uint8_t IEEE802_DOT1Q_TSN_CONFIG_UNI_func(uc_dbald *dbald);
-#define IEEE802_DOT1Q_TSN_CONFIG_UNI_RW IEEE802_DOT1Q_TSN_CONFIG_UNI_func(dbald)
-extern const char *ieee802_dot1q_tsn_config_uni_enum_strings[];
-extern const uint8_t ieee802_dot1q_tsn_config_uni_enum_max;
+extern uint8_t IEEE802_DOT1Q_CNC_CONFIG_func(uc_dbald *dbald);
+#define IEEE802_DOT1Q_CNC_CONFIG_RW IEEE802_DOT1Q_CNC_CONFIG_func(dbald)
+extern const char *ieee802_dot1q_cnc_config_enum_strings[];
+extern const uint8_t ieee802_dot1q_cnc_config_enum_max;
 extern uint8_t EXCELFORE_CONFIG_UNI_func(uc_dbald *dbald);
 #define EXCELFORE_CONFIG_UNI_RW EXCELFORE_CONFIG_UNI_func(dbald)
 extern const char *excelfore_config_uni_enum_strings[];
 extern const uint8_t excelfore_config_uni_enum_max;
+extern uint8_t IEEE802_DOT1CB_FRER_func(uc_dbald *dbald);
+#define IEEE802_DOT1CB_FRER_RW IEEE802_DOT1CB_FRER_func(dbald)
+extern const char *ieee802_dot1cb_frer_enum_strings[];
+extern const uint8_t ieee802_dot1cb_frer_enum_max;
+extern uint8_t IEEE802_DOT1CB_STREAM_IDENTIFICATION_func(uc_dbald *dbald);
+#define IEEE802_DOT1CB_STREAM_IDENTIFICATION_RW IEEE802_DOT1CB_STREAM_IDENTIFICATION_func(dbald)
+extern const char *ieee802_dot1cb_stream_identification_enum_strings[];
+extern const uint8_t ieee802_dot1cb_stream_identification_enum_max;
 //HEADER_PART
 const char *yang_static_get_name_by_id(uc_dbald *dbald, uint8_t nameid, uint8_t ap)
 {
@@ -108,29 +126,47 @@ const char *yang_static_get_name_by_id(uc_dbald *dbald, uint8_t nameid, uint8_t 
 		if(nameid>=excelfore_tsn_remote_enum_max){return NULL;}
 		return excelfore_tsn_remote_enum_strings[nameid];
 	}
+	if(ap==EXCELFORE_AED_RW){
+		if(nameid>=excelfore_aed_enum_max){return NULL;}
+		return excelfore_aed_enum_strings[nameid];
+	}
+#ifdef UC_NETCONF
 	if(ap==EXCELFORE_NETCONF_SERVER_RW){
 		if(nameid>=excelfore_netconf_server_enum_max){return NULL;}
 		return excelfore_netconf_server_enum_strings[nameid];
 	}
+#endif
+#ifdef UC_NETCONF
 	if(ap==IETF_NETCONF_MONITORING_RW){
 		if(nameid>=ietf_netconf_monitoring_enum_max){return NULL;}
 		return ietf_netconf_monitoring_enum_strings[nameid];
 	}
+#endif
+#ifdef UC_NETCONF
 	if(ap==IETF_YANG_LIBRARY_RW){
 		if(nameid>=ietf_yang_library_enum_max){return NULL;}
 		return ietf_yang_library_enum_strings[nameid];
 	}
+#endif
 	if(ap==IEEE802_DOT1AB_LLDP_RW){
 		if(nameid>=ieee802_dot1ab_lldp_enum_max){return NULL;}
 		return ieee802_dot1ab_lldp_enum_strings[nameid];
 	}
-	if(ap==IEEE802_DOT1Q_TSN_CONFIG_UNI_RW){
-		if(nameid>=ieee802_dot1q_tsn_config_uni_enum_max){return NULL;}
-		return ieee802_dot1q_tsn_config_uni_enum_strings[nameid];
+	if(ap==IEEE802_DOT1Q_CNC_CONFIG_RW){
+		if(nameid>=ieee802_dot1q_cnc_config_enum_max){return NULL;}
+		return ieee802_dot1q_cnc_config_enum_strings[nameid];
 	}
 	if(ap==EXCELFORE_CONFIG_UNI_RW){
 		if(nameid>=excelfore_config_uni_enum_max){return NULL;}
 		return excelfore_config_uni_enum_strings[nameid];
+	}
+	if(ap==IEEE802_DOT1CB_FRER_RW){
+		if(nameid>=ieee802_dot1cb_frer_enum_max){return NULL;}
+		return ieee802_dot1cb_frer_enum_strings[nameid];
+	}
+	if(ap==IEEE802_DOT1CB_STREAM_IDENTIFICATION_RW){
+		if(nameid>=ieee802_dot1cb_stream_identification_enum_max){return NULL;}
+		return ieee802_dot1cb_stream_identification_enum_strings[nameid];
 	}
 	//NAME_BY_ID
 	return NULL;
@@ -162,39 +198,63 @@ int yang_static_get_id_by_name(uc_dbald *dbald, const char *name, uint8_t ap)
 		}
 		return -1;
 	}
+	if(ap==EXCELFORE_AED_RW){
+		for(i=0;i<excelfore_aed_enum_max;i++){
+			if(strcmp(name, excelfore_aed_enum_strings[i])==0){return i;}
+		}
+		return -1;
+	}
+#ifdef UC_NETCONF
 	if(ap==EXCELFORE_NETCONF_SERVER_RW){
 		for(i=0;i<excelfore_netconf_server_enum_max;i++){
 			if(strcmp(name, excelfore_netconf_server_enum_strings[i])==0){return i;}
 		}
 		return -1;
 	}
+#endif
+#ifdef UC_NETCONF
 	if(ap==IETF_NETCONF_MONITORING_RW){
 		for(i=0;i<ietf_netconf_monitoring_enum_max;i++){
 			if(strcmp(name, ietf_netconf_monitoring_enum_strings[i])==0){return i;}
 		}
 		return -1;
 	}
+#endif
+#ifdef UC_NETCONF
 	if(ap==IETF_YANG_LIBRARY_RW){
 		for(i=0;i<ietf_yang_library_enum_max;i++){
 			if(strcmp(name, ietf_yang_library_enum_strings[i])==0){return i;}
 		}
 		return -1;
 	}
+#endif
 	if(ap==IEEE802_DOT1AB_LLDP_RW){
 		for(i=0;i<ieee802_dot1ab_lldp_enum_max;i++){
 			if(strcmp(name, ieee802_dot1ab_lldp_enum_strings[i])==0){return i;}
 		}
 		return -1;
 	}
-	if(ap==IEEE802_DOT1Q_TSN_CONFIG_UNI_RW){
-		for(i=0;i<ieee802_dot1q_tsn_config_uni_enum_max;i++){
-			if(strcmp(name, ieee802_dot1q_tsn_config_uni_enum_strings[i])==0){return i;}
+	if(ap==IEEE802_DOT1Q_CNC_CONFIG_RW){
+		for(i=0;i<ieee802_dot1q_cnc_config_enum_max;i++){
+			if(strcmp(name, ieee802_dot1q_cnc_config_enum_strings[i])==0){return i;}
 		}
 		return -1;
 	}
 	if(ap==EXCELFORE_CONFIG_UNI_RW){
 		for(i=0;i<excelfore_config_uni_enum_max;i++){
 			if(strcmp(name, excelfore_config_uni_enum_strings[i])==0){return i;}
+		}
+		return -1;
+	}
+	if(ap==IEEE802_DOT1CB_FRER_RW){
+		for(i=0;i<ieee802_dot1cb_frer_enum_max;i++){
+			if(strcmp(name, ieee802_dot1cb_frer_enum_strings[i])==0){return i;}
+		}
+		return -1;
+	}
+	if(ap==IEEE802_DOT1CB_STREAM_IDENTIFICATION_RW){
+		for(i=0;i<ieee802_dot1cb_stream_identification_enum_max;i++){
+			if(strcmp(name, ieee802_dot1cb_stream_identification_enum_strings[i])==0){return i;}
 		}
 		return -1;
 	}

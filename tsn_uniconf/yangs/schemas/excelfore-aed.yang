@@ -1,0 +1,68 @@
+module excelfore-aed {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/excelfore-aed";
+  prefix xl4aed;
+
+  import ieee802-dot1q-types {
+    prefix dot1q-types;
+  }
+
+  description
+    "This YANG module define excelfore tsn stream.";
+
+  revision 2024-10-25 {
+    description
+      "Initial revision.";
+  }
+
+  list instance {
+    key "instance-index";
+    leaf instance-index {
+      type uint8;
+    }
+    list aed-event {
+      key "stream-type";
+      leaf stream-type {
+        type uint8;
+      }
+      list stream {
+        key "stream-index";
+        leaf stream-index {
+          type uint8;
+        }
+        leaf port {
+          config false;
+          type dot1q-types:name-type;
+          description
+            "port name of the stream instance.";
+        }
+        leaf status {
+          config false;
+          type enumeration {
+            enum none {
+              value 0;
+              description
+                "media status is not inited";
+            }
+            enum not-ready {
+              value 1;
+              description
+                "media stream is not ready";
+            }
+            enum ready {
+              value 2;
+              description
+                "media stream is ready";
+            }
+          }
+        }
+        leaf timestamp {
+          config false;
+          description
+            "timestamp when stream media status is updated";
+          type uint64;
+        }
+      }
+    }
+  }
+}

@@ -55,6 +55,7 @@
 #include "../uc_dbal.h"
 #include "../hal/uc_hwal.h"
 #include "../uc_notice.h"
+#include "../uc_binconf.h"
 
 /* number of network devices never go beyond this number */
 #define XL4_DATA_ABS_MAX_NETDEVS 16
@@ -84,18 +85,6 @@
 #else
 #define ADJUST_ENDIAN(x, mindex, csize)
 #endif
-
-#ifdef UC_RUNCONF
-#define UC_RUNCONF_DATA yang_db_runtime_dataq_t
-#define UC_RUNCONF_INIT(dbald,hwald) yang_db_runtime_init(dbald,hwald)
-#define UC_RUNCONF_CLOSE(ydrd) yang_db_runtime_close(ydrd)
-#define UC_RUNCONF_READFILE(ydrd,fname) yang_db_runtime_readfile(ydrd, fname, NULL)
-#else
-#define UC_RUNCONF_DATA void
-#define UC_RUNCONF_INIT(dbald,hwald) NULL
-#define UC_RUNCONF_CLOSE(ydrd)
-#define UC_RUNCONF_READFILE(ydrd,fname) 0
-#endif // UC_RUNCONF
 
 #define UC_INIT_COPY_INSTANCE_PRE "COPY_INSTANCE_"
 
@@ -128,13 +117,6 @@ enum {
 	YANG_DB_ONHW_ALWAYS,
 };
 
-#define YANG_VTYPE_ENUM_e2e 1
-#define YANG_VTYPE_ENUM_p2p 2
-#define YANG_VTYPE_ENUM_no_mechanism 254
-#define YANG_VTYPE_ENUM_common_p2p 3
-#define YANG_VTYPE_ENUM_special 4
-
-
 typedef void* kvs_t;
 
 typedef struct yang_db_access_para{
@@ -158,24 +140,30 @@ typedef struct yang_db_item_access {
 
 /************************************
  * specific YANG data support
- * 'FTYPE' is like [2-character][kN][vkM]
+ * 'FTYPE' is like [2-character][kN][vkM]{m}
  *
  * optional 2 prefix character 'ny' is used for non-yong type data
  * 2 character abbreviations
  *  if: ietf-interfaces, qb: ieee802-dot1q-bridge, pt: ieee1588-ptp-tt,
  *  mr: xmrpd, tu: ieee802-dot1q-tsn-config-uni, tr: excelfore-tsn-remote,
  *  nc: excelfore-netconf-server, yl: ietf-yang-library
- *  nm: ietf-netconf-monitoring
+ *  nm: ietf-netconf-monitoring, cc: cnc-config
  *  [kN] k1:1-key access, k2:2-key access,,,
  *  [vkN] vk0:vk1=1-value_key access, vk2:2-value_key access,,,
+ *  {m} optional character 'm' at the end of ftype means particular API is for
+ *      mirror data, thus uc_mirror prefix will be added to the operations aps
+ *      enum
  ************************************/
 #define YDBI_CONFIG false
 #define YDBI_STATUS true
 #define YDBI_KEEP_LOCK true
 #define YDBI_REL_LOCK false
+#define YDBI_MIRROR true
+#define YDBI_NON_MIRROR false
 #define YDBI_PUSH_NOTICE_IN_UNICONF 2
 #define YDBI_PUSH_NOTICE 1
 #define YDBI_NO_NOTICE 0
+#define YDBI_MAX_NAME_TYPE_SIZE 33 // including '\0' terminator
 
 /**
  * @brief read an item data from the db which is set by 'ydbi_access_init'
@@ -204,15 +192,15 @@ typedef struct yang_db_item_access {
 	ydbi_rel_item_##FTYPE(ydbi_access_handle(), __VA_ARGS__)
 
 /**
- * @brief substitute RES data to the read data from the DB
+ * @brief substitute integer type RES data to the read data from the DB
  * @note
  *  The data is released in this macro call, no need of a separated release call.
- *  E.G. YDBI_GET_ITEM_VSUBST(uint8_t*, ifk3vk0, res, rval, "eth0",,,,)
+ *  E.G. YDBI_GET_ITEM_INTSUBST(ifk3vk0, res, rval, "eth0",,,,)
 */
-#define YDBI_GET_ITEM_VSUBST(CAST, FTYPE, RES, RVAL, ...)			\
+#define YDBI_GET_ITEM_INTSUBST(FTYPE, RES, RVAL, ...)			\
 	{								\
 		if(ydbi_get_item_##FTYPE(ydbi_access_handle(), &(RVAL), __VA_ARGS__)>0){ \
-			RES=*((CAST)(RVAL));				\
+			ub_non_aligned_intsubst(RVAL, &(RES), sizeof(RES)); \
 			ydbi_get_item_release(ydbi_access_handle(), YDBI_REL_LOCK); \
 		}							\
 	}
@@ -359,7 +347,8 @@ int yang_db_listmove(uc_dbald *dbald, uint8_t *ap, kvs_t *kvs, uint8_t *kss,
  *		Can be set to NULL for most types.
  * @return	data size, it is different from the allocated *size
  */
-int yang_value_conv(uint8_t vtype, char *vstr, void **d, uint32_t *size, char *hints);
+int yang_value_conv(uint8_t vtype, const char *vstr, void **destd,
+		    uint32_t *size, const char *hints);
 
 /**
  * @brief convert value to string
@@ -371,7 +360,8 @@ int yang_value_conv(uint8_t vtype, char *vstr, void **d, uint32_t *size, char *h
  * @note	this is a utility function to convert value to its string equivalent.
  *		the return string is a static value, and not thread-safe.
  */
-char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t index, char *hints);
+char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize,
+			uint8_t index, const char *hints);
 
 /**
  * @brief get the namespace of the given vtype and value combination
@@ -383,7 +373,7 @@ char *yang_value_string(uint8_t vtype, void *value, uint32_t vsize, uint8_t inde
  * @return	the namespace prefix associate with the vtype and value.
  * @note	the return string is a static value, and not thread-safe.
  */
-char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, char *hints);
+char *yang_value_namespace(uint8_t vtype, void *value, uint8_t index, const char *hints);
 
 /**
  * @brief get sizeof vtype
@@ -470,5 +460,91 @@ void *yang_db_key_bottomp(void *key, uint32_t ksize);
  * @brief request to save the DB into a file
  */
 int ydbi_request_savedb(yang_db_item_access_t *ydbia);
+
+/**
+ * @brief some leaf-items always need askaction, by registering "/xl4-data/uc-needaction-reg/..."
+ * @param dbald	DB access pointer
+ * @param vkey	key data
+ * @param vksize	key size
+ * @return true if the key(aps,kvs,kss) is in the registered list, false if not.
+ */
+bool yang_db_key_needaction(uc_dbald *dbald, uint8_t *vkey, uint32_t vksize);
+
+/**
+ * @brief some leaf-items always need askaction, by registering "/xl4-data/uc-needaction-reg/..."
+ * @param dbald	DB access pointer
+ * @param aps	node keys
+ * @param kvs	value keys
+ * @param kss	value key sizes
+ * @return true if the key(aps,kvs,kss) is in the registered list, false if not.
+ */
+bool yang_db_needaction(uc_dbald *dbald, uint8_t *aps, void **kvs, uint8_t *kss);
+
+/**
+ * @brief some leaf-items always need askaction, by registering "/xl4-data/uc-needaction-reg/..."
+ * @param dbald	DB access pointer
+ * @param aps	node keys
+ * @param kvs	value keys
+ * @param kss	value key sizes
+ * @param remove	false:regisger, true:de-register
+ * @return 0:succes, -1:error
+ */
+int yang_db_set_needaction(uc_dbald *dbald, uint8_t *aps, void **kvs, uint8_t *kss,
+			   bool remove);
+
+
+/**
+ * @brief scan in the reange, and copy the data in a newly allocated cache
+ * @param dbald	DB access pointer
+ * @param key1	key1 to select range
+ * @param ksize1	key1 size
+ * @param key2	key2 to select range
+ * @param ksize1	key2 size
+ * @param inckvs	value keys to include, terminated with inckvs[n]=NULL
+ * @param inckss	value key sizes to include, inckss[i]=0 skips checking of inckvs[i]
+ * @return cache pointer:succes, NULL:error or no data
+ * @note the caller must free the allocated data with UB_SD_RELMEM(YANGINIT_GEN_SMEM, )
+ *	 the cache data is the next structure and size=0 is the terminator.
+ *	 [size(uint8_t), data, size(uint8_t), data,,,,,size(uint8_t), data, 0]
+ */
+void *yang_db_cache_range(uc_dbald *dbald, void *key1, uint32_t ksize1,
+			  void *key2, uint32_t ksize2, void **inckvs, uint8_t *inckss);
+
+/**
+ * @brief delete all itemes in the range
+ * @param dbald	DB access pointer
+ * @param key1	key1 to select range
+ * @param ksize1	key1 size
+ * @param key2	key2 to select range
+ * @param ksize1	key2 size
+ * @force if true, delete locked data too.
+ * @return number of deleted items
+ */
+int yang_db_delete_range(uc_dbald *dbald, void *key1, uint32_t ksize1,
+			 void *key2, uint32_t ksize2, bool force);
+
+/******************************
+ * macros to cover definitions in "yang_db_runtime.h"
+ ******************************/
+#ifdef UC_RUNCONF
+#include "yang_db_runtime.h"
+#define UC_RUNCONF_DATA yang_db_runtime_dataq_t
+#define UC_RUNCONF_INIT(dbald,hwald) yang_db_runtime_init(dbald,hwald)
+#define UC_RUNCONF_CLOSE(ydrd) yang_db_runtime_close(ydrd)
+#define UC_RUNCONF_READFILE(ydrd,fname) yang_db_runtime_readfile(ydrd, fname)
+#define UC_READ_CONF_BCONF_FILE(dbald,fname,res)			\
+	res=yang_db_runtime_read_conffile(dbald, fname);		\
+	if(res!=0){							\
+		res=uc_binconf_read_bconffile(dbald, fname);		\
+	}
+#else
+#define UC_RUNCONF_DATA void
+#define UC_RUNCONF_INIT(dbald,hwald) NULL
+#define UC_RUNCONF_CLOSE(ydrd)
+#define UC_RUNCONF_READFILE(ydrd,fname) 0
+#define UC_READ_CONF_BCONF_FILE(dbald,fname,res)			\
+	res=uc_binconf_read_bconffile(dbald, fname);
+
+#endif // UC_RUNCONF
 
 #endif

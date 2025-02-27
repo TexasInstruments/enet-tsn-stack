@@ -49,9 +49,10 @@
 */
 #include <tsn_unibase/unibase.h>
 #include <tsn_combase/cb_tmevent.h>
-#include "yangs/yang_db_runtime.h"
+#include "yangs/yang_db_access.h"
 #include "uc_private.h"
 #include "ucman.h"
+#include "uc_binconf.h"
 #include "yangs/yang_modules.h"
 #include "uniconfmon_thread.h"
 #include "yangs/yang_node.h"
@@ -60,7 +61,8 @@
 #endif
 
 extern int yang_config_init(uc_dbald *dbald, uc_hwald *hwald);
-extern int yang_nconf_config_init(uc_dbald *dbald);
+extern void close_aps_dbal(uc_dbald *dbald, uint8_t callmode);
+extern int uc_dbal_setproc(uc_dbald *dbald, const char *name, int64_t pvalue);
 
 static void ucman_builtin_close(uc_dbald *dbald, uc_hwald *hwald)
 {
@@ -78,7 +80,11 @@ void *uniconf_main(void *ptr)
 	uint8_t apsd[5]={XL4_DATA_RW, YANG_VALUE_TYPES, XL4_DATA_RO, UC_READY, 255};
 	uint8_t vtype=YANG_VTYPE_UINT8;
 	uint8_t *uc_rap=&apsd[2];
-	uint8_t uc_rv=1;
+	uint8_t uc_rv=2;
+	void *rvalue;
+	uint32_t rvsize;
+	uc_bcdata_t *ucbcd=NULL;
+	UB_LOG(UBL_INFO, "uniconf-"TSNPKGVERSION"\n");
 
 	(void)memset(&ucd, 0, sizeof(ucd));
 	ucmd->rval=-1;
@@ -87,8 +93,8 @@ void *uniconf_main(void *ptr)
 		UB_LOG(UBL_ERROR, "%s:can't open the db\n", __func__);
 		goto erexit;
 	}
-	yang_node_uniconf_init(ucd.dbald);
 	uniconf_cleanup_status(ucd.dbald);
+	yang_node_uniconf_init(ucd.dbald);
 	if(!ucmd->hwmod[0]){
 		ucd.hwald=uc_hwal_open(ucd.dbald);
 	}else if(!strcmp(ucmd->hwmod, "NONE")){
@@ -104,21 +110,41 @@ void *uniconf_main(void *ptr)
 	}
 
 	if(yang_config_init(ucd.dbald, ucd.hwald)!=0){goto erexit;}
-	if(yang_nconf_config_init(ucd.dbald)!=0){goto erexit;}
 
 	ucd.ucntd=uc_notice_init(ucmd->ucmode, ucmd->dbname);
 	if(!ucd.ucntd){goto erexit;}
 	ydbi_access_init(ucd.dbald, ucd.ucntd);
 
 	ydrd=UC_RUNCONF_INIT(ucd.dbald, ucd.hwald);
-	if(!ydrd){goto erexit;}
-	for(i=0;i<ucmd->numconfigfile;i++){
-		if(UC_RUNCONF_READFILE(ydrd, ucmd->configfiles[i])!=0){
-			UB_LOG(UBL_ERROR, "%s:can't read run-time cofnig file=%s\n",
-			       __func__, ucmd->configfiles[i]);
+	if(ucmd->ucinit!=NULL){
+		ucbcd=uc_binconf_init(1024);
+		if(ucbcd==NULL){goto erexit;}
+		if(uc_binconf_read_bindata(ucbcd, ucd.dbald,
+					   ucmd->ucinit, ucmd->ucinit_size)!=0){
 			goto erexit;
 		}
 	}
+	for(i=0;i<ucmd->numconfigfile;i++){
+		if(strstr(ucmd->configfiles[i], ".bconf")!=NULL){
+			if(ucbcd==NULL){
+				ucbcd=uc_binconf_init(1024);
+				if(ucbcd==NULL){goto erexit;}
+			}
+			if(strstr(ucmd->configfiles[i], "ucinit.bconf")==NULL){
+				uc_binconf_set_hwald(ucbcd, ucd.hwald);
+			}else{
+				uc_binconf_set_hwald(ucbcd, NULL);
+			}
+			if(uc_binconf_read_binfile(ucbcd, ucd.dbald, ucmd->configfiles[i])!=0){
+				goto erexit;
+			}
+		}else{
+			if(UC_RUNCONF_READFILE(ydrd, ucmd->configfiles[i])!=0){
+				goto erexit;
+			}
+		}
+	}
+	if(ucbcd!=NULL){uc_binconf_close(ucbcd);}
 	if(ydrd!=NULL){UC_RUNCONF_CLOSE(ydrd);}
 
 	uc_dbal_releasedb(ucd.dbald);
@@ -132,6 +158,7 @@ void *uniconf_main(void *ptr)
 		if(uniconfmon_thread_start(ucmd->ucmon_thread_port)!=0){goto erexit;}
 	}
 	if(uc_notice_start_events_thread(ucd.ucntd, ucd.hwald)!=0){goto erexit;}
+	uc_dbal_setproc(ucd.dbald, "uniconf", 0);
 	while(!*ucmd->stoprun){
 		// 'uc_hwal_detect_notice' is called inside 'uc_nu_proc_asked_actions'
 		// this returns '2', when the DB should be saved
@@ -146,7 +173,15 @@ void *uniconf_main(void *ptr)
 			// save the DB to a file
 			if(uc_dbal_save(ucd.dbald)){goto erexit;}
 			if(uc_dbal_create(ucd.dbald, uc_rap, 3, &uc_rv, 1)){goto erexit;}
+			continue;
 		}
+		res=uc_dbal_get(ucd.dbald, uc_rap, 3, &rvalue, &rvsize);
+		if((res!=0) || (rvsize!=1) || (*((uint8_t*)rvalue)!=1)){
+			UB_TLOG(UBL_WARN, "%s:need to stop\n", __func__);
+			break;
+		}
+		uc_dbal_get_release(ucd.dbald, uc_rap, 3, &rvalue, rvsize);
+		if(uc_dbal_create(ucd.dbald, uc_rap, 3, &uc_rv, 1)){goto erexit;}
 	}
 	ucmd->rval=0;
 erexit:
@@ -157,14 +192,14 @@ erexit:
 		ucman_builtin_close(ucd.dbald, ucd.hwald);
 		uc_dbal_del(ucd.dbald, uc_rap, 3);
 	}
-	UB_TLOG(UBL_INFO, "%s:closing\n", __func__);
+	UB_TLOG(UBL_INFO, "%s:closing, dbname=%s\n", __func__, ucmd->dbname);
 	*ucmd->stoprun=true;
 	if(ucmd->ucmanstart!=NULL){
 		(void)uc_notice_sig_post(UC_CALL_THREAD(ucmd->ucmode), ucmd->ucmanstart);
 	}
 	if(ucd.hwald!=NULL){uc_hwal_close(ucd.hwald);}
 	if(ucd.ucntd!=NULL){uc_notice_close(ucd.ucntd, ucmd->ucmode);}
-	if(ucd.dbald!=NULL){uc_dbal_close(ucd.dbald, ucmd->ucmode);}
+	if(ucd.dbald!=NULL){close_aps_dbal(ucd.dbald, ucmd->ucmode);}
 	ydbi_access_close();
 	return NULL;
 }
@@ -179,8 +214,8 @@ int uniconf_ready(const char *dbname, uint8_t callmode, int tout_ms)
 	do{
 		dbald=uc_dbal_open(dbname, "m", callmode);
 		if(dbald){break;}
-		CB_USLEEP(10000);
-		tout_ms-=10;
+		CB_USLEEP(1000);
+		tout_ms-=1;
 	}while(tout_ms>0);
 	while(dbald){
 		if(uc_dbal_get(dbald, uc_rap, 3, &value, &vsize)==0){
@@ -189,8 +224,8 @@ int uniconf_ready(const char *dbname, uint8_t callmode, int tout_ms)
 			if(ready==1){break;}
 		}
 		uc_dbal_releasedb(dbald);
-		CB_USLEEP(10000);
-		tout_ms-=10;
+		CB_USLEEP(1000);
+		tout_ms-=1;
 		if(tout_ms<=0){break;}
 	}
 	if(dbald){
@@ -211,4 +246,5 @@ void uniconf_cleanup_status(uc_dbald *dbald)
 	while(true){
 		if(uc_del_in_range(dbald, range, UC_DBAL_FORWARD)!=0){break;}
 	}
+	uc_get_range_release(dbald, range);
 }

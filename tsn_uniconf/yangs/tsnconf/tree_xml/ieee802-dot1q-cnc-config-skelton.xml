@@ -1,0 +1,230 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<cnc-config xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1q-cnc-config">
+		<domain>
+			<domain-id/>
+			<cnc-enabled></cnc-enabled>
+			<cuc>
+				<cuc-id/>
+				<stream>
+					<stream-id/>
+					<stream-status/>
+					<talker>
+						<stream-rank>
+							<rank/>
+						</stream-rank>
+						<end-station-interfaces>
+							<mac-address/>
+							<interface-name/>
+							<accept xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<status xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<station-name xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<accumulated-latency xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<update-accept xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+						</end-station-interfaces>
+						<data-frame-specification>
+							<index/>
+							<ieee802-mac-addresses>
+								<destination-mac-address/>
+								<source-mac-address/>
+							</ieee802-mac-addresses>
+							<ieee802-vlan-tag>
+								<priority-code-point/>
+								<vlan-id/>
+							</ieee802-vlan-tag>
+						</data-frame-specification>
+						<traffic-specification>
+							<interval>
+								<numerator/>
+								<denominator/>
+							</interval>
+							<max-frames-per-interval/>
+							<max-frame-size/>
+							<transmission-selection/>
+							<time-aware>
+								<earliest-transmit-offset/>
+								<latest-transmit-offset/>
+								<jitter/>
+							</time-aware>
+						</traffic-specification>
+						<user-to-network-requirements>
+							<num-seamless-trees></num-seamless-trees>
+							<max-latency></max-latency>
+						</user-to-network-requirements>
+						<interface-capabilities>
+							<vlan-tag-capable></vlan-tag-capable>
+							<cb-stream-iden-type-list>
+								<!-- # entries: 0.. -->
+							</cb-stream-iden-type-list>
+							<cb-sequence-type-list>
+								<!-- # entries: 0.. -->
+							</cb-sequence-type-list>
+						</interface-capabilities>
+						<accumulated-latency/>
+						<interface-configuration>
+							<interface-list>
+								<mac-address/>
+								<interface-name/>
+								<config-list>
+									<index/>
+									<ieee802-mac-addresses>
+										<destination-mac-address/>
+										<source-mac-address/>
+									</ieee802-mac-addresses>
+									<ieee802-vlan-tag>
+										<priority-code-point/>
+										<vlan-id/>
+									</ieee802-vlan-tag>
+									<time-aware-offset/>
+								</config-list>
+							</interface-list>
+						</interface-configuration>
+					</talker>
+					<listener>
+						<index/>
+						<end-station-interfaces>
+							<mac-address/>
+							<interface-name/>
+							<accept xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<status xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<station-name xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+							<accumulated-latency xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+						</end-station-interfaces>
+						<user-to-network-requirements>
+							<num-seamless-trees></num-seamless-trees>
+							<max-latency></max-latency>
+						</user-to-network-requirements>
+						<interface-capabilities>
+							<vlan-tag-capable></vlan-tag-capable>
+							<cb-stream-iden-type-list>
+								<!-- # entries: 0.. -->
+							</cb-stream-iden-type-list>
+							<cb-sequence-type-list>
+								<!-- # entries: 0.. -->
+							</cb-sequence-type-list>
+						</interface-capabilities>
+						<accumulated-latency/>
+						<interface-configuration>
+							<interface-list>
+								<mac-address/>
+								<interface-name/>
+								<config-list>
+									<index/>
+									<ieee802-mac-addresses>
+										<destination-mac-address/>
+										<source-mac-address/>
+									</ieee802-mac-addresses>
+									<ieee802-vlan-tag>
+										<priority-code-point/>
+										<vlan-id/>
+									</ieee802-vlan-tag>
+									<time-aware-offset/>
+								</config-list>
+							</interface-list>
+						</interface-configuration>
+					</listener>
+					<status-info>
+						<talker-status/>
+						<listener-status/>
+						<failure-code/>
+					</status-info>
+					<failed-interfaces>
+						<mac-address/>
+						<interface-name/>
+					</failed-interfaces>
+					<frer-enabled xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+				</stream>
+				<eventflags xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+				<accept-policy xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+				<accept-connectlist xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config">
+					<!-- # entries: 0.. -->
+				</accept-connectlist>
+				<cbs-policy xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+				<cbs-uselist xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config">
+					<!-- # entries: 0.. -->
+				</cbs-uselist>
+				<frer-policy xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config"/>
+				<frer-uselist xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config">
+					<!-- # entries: 0.. -->
+				</frer-uselist>
+				<tas-sched-list xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config">
+					<index/>
+					<streamid/>
+					<bridge-sched>
+						<bridge-name/>
+						<bridge-port>
+							<!-- # entries: 0.. -->
+						</bridge-port>
+					</bridge-sched>
+					<gate-parameter-table>
+						<queue-max-sdu-table>
+							<traffic-class/>
+							<queue-max-sdu></queue-max-sdu>
+							<transmission-overrun></transmission-overrun>
+						</queue-max-sdu-table>
+						<gate-enabled></gate-enabled>
+						<admin-gate-states></admin-gate-states>
+						<oper-gate-states/>
+						<admin-control-list>
+							<gate-control-entry>
+								<index/>
+								<operation-name/>
+								<time-interval-value/>
+								<gate-states-value/>
+							</gate-control-entry>
+						</admin-control-list>
+						<oper-control-list>
+							<gate-control-entry>
+								<index/>
+								<operation-name/>
+								<time-interval-value/>
+								<gate-states-value/>
+							</gate-control-entry>
+						</oper-control-list>
+						<admin-cycle-time>
+							<numerator/>
+							<denominator/>
+						</admin-cycle-time>
+						<oper-cycle-time>
+							<numerator/>
+							<denominator/>
+						</oper-cycle-time>
+						<admin-cycle-time-extension/>
+						<oper-cycle-time-extension/>
+						<admin-base-time>
+							<seconds/>
+							<nanoseconds/>
+						</admin-base-time>
+						<oper-base-time>
+							<seconds/>
+							<nanoseconds/>
+						</oper-base-time>
+						<config-change/>
+						<config-change-time>
+							<seconds/>
+							<nanoseconds/>
+						</config-change-time>
+						<tick-granularity/>
+						<current-time>
+							<seconds/>
+							<nanoseconds/>
+						</current-time>
+						<config-pending/>
+						<config-change-error/>
+						<supported-list-max/>
+						<supported-cycle-max>
+							<numerator/>
+							<denominator/>
+						</supported-cycle-max>
+						<supported-interval-max/>
+					</gate-parameter-table>
+				</tas-sched-list>
+				<latency-parameters xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config">
+					<internal-processing/>
+					<wire-propagation/>
+					<media-access-delay/>
+				</latency-parameters>
+			</cuc>
+		</domain>
+	</cnc-config>
+</data>

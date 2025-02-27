@@ -74,6 +74,7 @@ struct simpledb_data{
 	struct ub_list dblist;
 	CB_THREAD_MUTEX_T dbmutex;
 	CB_SEM_T relwait_sem;
+	bool dblock;
 };
 
 struct simpledb_range{
@@ -95,7 +96,7 @@ UB_SD_GETMEM_DEF(SIMPLEDB_INSTMEM, (int)sizeof(simpledb_data_t),
 // 1250 data items must be enough for most of applications.
 // to save memory, the number can be smaller.
 #ifndef SIMPLEDB_DBDATANUM
-#define	SIMPLEDB_DBDATANUM 1250u
+#define	SIMPLEDB_DBDATANUM 1600u
 #endif
 #define SIMPLEDB_LISTNODE simpledb_listnode
 UB_SD_GETMEM_DEF(SIMPLEDB_DBDATAINST, sizeof(dbdata_t),
@@ -517,6 +518,24 @@ int simpledb_put(simpledb_data_t *sdbd, simpledb_keydata_t *kd, void *value,
 	res=onedb_put(&sdbd->dblist, kd, value, vlen, flags);
 	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
 	return res;
+}
+
+int simpledb_lock(simpledb_data_t *sdbd)
+{
+	CB_THREAD_MUTEX_LOCK(&sdbd->dbmutex);
+	sdbd->dblock=true;
+	return 0;
+}
+
+void simpledb_unlock(simpledb_data_t *sdbd)
+{
+	if(!sdbd->dblock){
+		UB_LOG(UBL_WARN, "%s:not locked\n", __func__);
+		return;
+	}
+	sdbd->dblock=false;
+	CB_THREAD_MUTEX_UNLOCK(&sdbd->dbmutex);
+	return;
 }
 
 int simpledb_get(simpledb_data_t *sdbd, simpledb_keydata_t *kd,

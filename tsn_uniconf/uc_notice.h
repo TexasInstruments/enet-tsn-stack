@@ -52,8 +52,7 @@
 
 #include <tsn_unibase/unibase.h>
 #include <tsn_combase/cb_thread.h>
-#include "yangs/yang_db_access.h"
-
+#include "hal/uc_hwal.h"
 
 #define UC_NOTICE_PUT uc_notice_put
 
@@ -107,6 +106,8 @@ void uc_notice_close(uc_notice_data_t *ucntd, uint8_t callmode);
  */
 int uc_nc_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 			 uint8_t *aps, void **kvs, uint8_t *kss);
+int uc_nc_askaction_key_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
+			     uint8_t *key, uint32_t ksize);
 
 /**
  * @brief 'uniconf' made some update on DB, and want to be signaled to
@@ -164,5 +165,17 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
  */
 int uc_nc_get_notice_act(uc_notice_data_t *ucntd, uc_dbald *dbald, const char *semname,
 			 void *key, uint32_t *ksize);
+
+
+/**
+ * @brief wait for completing UC_ASKACTION_REG item
+ * @return -1:fail(timed out), 0:not in deleting process
+ * @note when a item in UC_ASKACTION_REG is deleted,
+ *       e.g. "uc_nc_notice_deregister_all", uniconf will get event
+ *       and scan all items. It possibly makes spurious events on uc_client side.
+ *       calling this function can avoid such events.
+ */
+int uc_nc_wait_deleting(uc_dbald *dbald, int32_t tout_ms);
+
 
 #endif

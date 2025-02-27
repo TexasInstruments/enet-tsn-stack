@@ -73,7 +73,17 @@ enum {
 	XL4_RTIME_DATA,
 	UC_LAST_DB_ACCESS,
 	UC_PREFIX_NAMESPACE,
+	UC_MIRROR,
+	UC_NEEDACTION_REG,
+	UC_STATIC_WORK,
 	XL4_DATA_ENUM_END,
+};
+
+#define UC_MIRROR_DEVICE 0
+#define UC_MIRROR_DEVICE_STR "uc-mirror-device"
+
+enum {
+	UC_STATIC_ACTREG_DELETING=1,
 };
 
 /*
@@ -151,10 +161,22 @@ extern uint8_t uint8_t XL4_EXTMOD_XL4GPTP_func(uc_dbald *dbald);
 int yang_node_uniconf_init(uc_dbald *dbald);
 
 /**
+ * @brief get xl4data node enums from a string
+ * @param astr	node string
+ */
+uint8_t yang_node_get_xl4data_enum(const char *astr);
+
+/**
+ * @brief get node string from a xl4data node enum
+ * @param xl4data node enum to resolve
+ */
+const char *yang_node_get_xl4data_string(uint8_t anum);
+
+/**
  * @brief get node enums from a string
  * @param dbald	DB access pointer
  * @param astr	node string, "/Aaa/Bbb/Ccc" or "Aaa/Bbb/Ccc" or "Aaa" format
- * @param anums	return resolved enum for nodes
+ * @param anums	return resolved enum for nodes, must be terminated with 255u
  * @param maxele	this number of elements is available in 'anums'
  * @return -1:error, >=0: number of elements in anums
  * @note "/Aaa/Bbb/Ccc" case, the module name is resolved in this funcion.

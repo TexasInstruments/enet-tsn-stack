@@ -1,0 +1,250 @@
+module: ieee802-dot1q-cnc-config
+  +--rw cnc-config
+     +--rw domain* [domain-id]
+        +--rw domain-id      string
+        +--rw cnc-enabled?   boolean
+        +--rw cuc* [cuc-id]
+           +--rw cuc-id                       string
+           +--rw stream* [stream-id]
+           |  +--rw stream-id              tsn:stream-id-type
+           |  +--ro stream-status?         enumeration
+           |  +--rw talker
+           |  |  +--rw stream-rank
+           |  |  |  +--rw rank?   uint8
+           |  |  +--rw end-station-interfaces* [mac-address interface-name]
+           |  |  |  +--rw mac-address                   string
+           |  |  |  +--rw interface-name                string
+           |  |  |  +--rw xl4cnc:accept?                uint8
+           |  |  |  +--rw xl4cnc:status?                end-station-status
+           |  |  |  +--rw xl4cnc:station-name?          dot1q-types:name-type
+           |  |  |  +--rw xl4cnc:accumulated-latency?   uint32
+           |  |  |  +--rw xl4cnc:update-accept?         boolean
+           |  |  +--rw data-frame-specification* [index]
+           |  |  |  +--rw index                          uint8
+           |  |  |  +--rw (field)?
+           |  |  |     +--:(ieee802-mac-addresses)
+           |  |  |     |  +--rw ieee802-mac-addresses
+           |  |  |     |     +--rw destination-mac-address?   string
+           |  |  |     |     +--rw source-mac-address?        string
+           |  |  |     +--:(ieee802-vlan-tag)
+           |  |  |        +--rw ieee802-vlan-tag
+           |  |  |           +--rw priority-code-point?   uint8
+           |  |  |           +--rw vlan-id?               uint16
+           |  |  +--rw traffic-specification
+           |  |  |  +--rw interval
+           |  |  |  |  +--rw numerator?     uint32
+           |  |  |  |  +--rw denominator?   uint32
+           |  |  |  +--rw max-frames-per-interval?   uint16
+           |  |  |  +--rw max-frame-size?            uint16
+           |  |  |  +--rw transmission-selection?    uint8
+           |  |  |  +--rw time-aware!
+           |  |  |     +--rw earliest-transmit-offset?   uint32
+           |  |  |     +--rw latest-transmit-offset?     uint32
+           |  |  |     +--rw jitter?                     uint32
+           |  |  +--rw user-to-network-requirements
+           |  |  |  +--rw num-seamless-trees?   uint8
+           |  |  |  +--rw max-latency?          uint32
+           |  |  +--rw interface-capabilities
+           |  |  |  +--rw vlan-tag-capable?           boolean
+           |  |  |  +--rw cb-stream-iden-type-list*   uint32
+           |  |  |  +--rw cb-sequence-type-list*      uint32
+           |  |  +--ro accumulated-latency?            uint32
+           |  |  +--ro interface-configuration
+           |  |     +--ro interface-list* [mac-address interface-name]
+           |  |        +--ro mac-address       string
+           |  |        +--ro interface-name    string
+           |  |        +--ro config-list* [index]
+           |  |           +--ro index                          uint8
+           |  |           +--ro (config-value)?
+           |  |              +--:(ieee802-mac-addresses)
+           |  |              |  +--ro ieee802-mac-addresses
+           |  |              |     +--ro destination-mac-address?   string
+           |  |              |     +--ro source-mac-address?        string
+           |  |              +--:(ieee802-vlan-tag)
+           |  |              |  +--ro ieee802-vlan-tag
+           |  |              |     +--ro priority-code-point?   uint8
+           |  |              |     +--ro vlan-id?               uint16
+           |  |              +--:(time-aware-offset)
+           |  |                 +--ro time-aware-offset?       uint32
+           |  +--rw listener* [index]
+           |  |  +--rw index                           uint32
+           |  |  +--rw end-station-interfaces* [mac-address interface-name]
+           |  |  |  +--rw mac-address                   string
+           |  |  |  +--rw interface-name                string
+           |  |  |  +--rw xl4cnc:accept?                uint8
+           |  |  |  +--rw xl4cnc:status?                end-station-status
+           |  |  |  +--rw xl4cnc:station-name?          dot1q-types:name-type
+           |  |  |  +--rw xl4cnc:accumulated-latency?   uint32
+           |  |  +--rw user-to-network-requirements
+           |  |  |  +--rw num-seamless-trees?   uint8
+           |  |  |  +--rw max-latency?          uint32
+           |  |  +--rw interface-capabilities
+           |  |  |  +--rw vlan-tag-capable?           boolean
+           |  |  |  +--rw cb-stream-iden-type-list*   uint32
+           |  |  |  +--rw cb-sequence-type-list*      uint32
+           |  |  +--ro accumulated-latency?            uint32
+           |  |  +--ro interface-configuration
+           |  |     +--ro interface-list* [mac-address interface-name]
+           |  |        +--ro mac-address       string
+           |  |        +--ro interface-name    string
+           |  |        +--ro config-list* [index]
+           |  |           +--ro index                          uint8
+           |  |           +--ro (config-value)?
+           |  |              +--:(ieee802-mac-addresses)
+           |  |              |  +--ro ieee802-mac-addresses
+           |  |              |     +--ro destination-mac-address?   string
+           |  |              |     +--ro source-mac-address?        string
+           |  |              +--:(ieee802-vlan-tag)
+           |  |              |  +--ro ieee802-vlan-tag
+           |  |              |     +--ro priority-code-point?   uint8
+           |  |              |     +--ro vlan-id?               uint16
+           |  |              +--:(time-aware-offset)
+           |  |                 +--ro time-aware-offset?       uint32
+           |  +--ro status-info
+           |  |  +--ro talker-status?     enumeration
+           |  |  +--ro listener-status?   enumeration
+           |  |  +--ro failure-code?      uint8
+           |  +--ro failed-interfaces* [mac-address interface-name]
+           |  |  +--ro mac-address       string
+           |  |  +--ro interface-name    string
+           |  +--rw xl4cnc:frer-enabled?   boolean
+           +---x remove_streams
+           |  +---w input
+           |  |  +---w stream-list* [stream-id]
+           |  |     +---w stream-id    tsn:stream-id-type
+           |  +--ro output
+           |     +--ro result?   string
+           +--rw xl4cnc:eventflags?           uint8
+           +--rw xl4cnc:accept-policy?        uint8
+           +--rw xl4cnc:accept-connectlist*   tsn:stream-id-type
+           +--rw xl4cnc:cbs-policy?           uint8
+           +--rw xl4cnc:cbs-uselist*          tsn:stream-id-type
+           +--rw xl4cnc:frer-policy?          uint8
+           +--rw xl4cnc:frer-uselist*         tsn:stream-id-type
+           +--rw xl4cnc:tas-sched-list* [index]
+           |  +--rw xl4cnc:index                   uint32
+           |  +--rw (xl4cnc:tas-sched-type)?
+           |  |  +--:(xl4cnc:apply-stream)
+           |  |  |  +--rw xl4cnc:streamid?         tsn:stream-id-type
+           |  |  +--:(xl4cnc:apply-bridge-port)
+           |  |     +--rw xl4cnc:bridge-sched* [bridge-name]
+           |  |        +--rw xl4cnc:bridge-name    dot1q-types:name-type
+           |  |        +--rw xl4cnc:bridge-port*   if:interface-ref
+           |  +--rw xl4cnc:gate-parameter-table
+           |     +--rw xl4cnc:queue-max-sdu-table* [traffic-class]
+           |     |  +--rw xl4cnc:traffic-class           dot1q-types:traffic-class-type
+           |     |  +--rw xl4cnc:queue-max-sdu?          uint32
+           |     |  +--ro xl4cnc:transmission-overrun?   yang:counter64
+           |     +--rw xl4cnc:gate-enabled?                 boolean
+           |     +--rw xl4cnc:admin-gate-states?            uint8
+           |     +--ro xl4cnc:oper-gate-states?             uint8
+           |     +--rw xl4cnc:admin-control-list
+           |     |  +--rw xl4cnc:gate-control-entry* [index]
+           |     |     +--rw xl4cnc:index                  uint32
+           |     |     +--rw xl4cnc:operation-name         identityref
+           |     |     +--rw xl4cnc:time-interval-value?   uint32
+           |     |     +--rw xl4cnc:gate-states-value      uint8
+           |     +--ro xl4cnc:oper-control-list
+           |     |  +--ro xl4cnc:gate-control-entry* [index]
+           |     |     +--ro xl4cnc:index                  uint32
+           |     |     +--ro xl4cnc:operation-name         identityref
+           |     |     +--ro xl4cnc:time-interval-value?   uint32
+           |     |     +--ro xl4cnc:gate-states-value      uint8
+           |     +--rw xl4cnc:admin-cycle-time
+           |     |  +--rw xl4cnc:numerator?     uint32
+           |     |  +--rw xl4cnc:denominator?   uint32
+           |     +--ro xl4cnc:oper-cycle-time
+           |     |  +--ro xl4cnc:numerator?     uint32
+           |     |  +--ro xl4cnc:denominator?   uint32
+           |     +--rw xl4cnc:admin-cycle-time-extension?   uint32
+           |     +--ro xl4cnc:oper-cycle-time-extension?    uint32
+           |     +--rw xl4cnc:admin-base-time
+           |     |  +--rw xl4cnc:seconds?       uint64
+           |     |  +--rw xl4cnc:nanoseconds?   uint32
+           |     +--ro xl4cnc:oper-base-time
+           |     |  +--ro xl4cnc:seconds?       uint64
+           |     |  +--ro xl4cnc:nanoseconds?   uint32
+           |     +--rw xl4cnc:config-change?                boolean
+           |     +--ro xl4cnc:config-change-time
+           |     |  +--ro xl4cnc:seconds?       uint64
+           |     |  +--ro xl4cnc:nanoseconds?   uint32
+           |     +--ro xl4cnc:tick-granularity?             uint32
+           |     +--ro xl4cnc:current-time
+           |     |  +--ro xl4cnc:seconds?       uint64
+           |     |  +--ro xl4cnc:nanoseconds?   uint32
+           |     +--ro xl4cnc:config-pending?               boolean
+           |     +--ro xl4cnc:config-change-error?          yang:counter64
+           |     +--rw xl4cnc:supported-list-max?           uint32
+           |     +--rw xl4cnc:supported-cycle-max
+           |     |  +--rw xl4cnc:numerator?     uint32
+           |     |  +--rw xl4cnc:denominator?   uint32
+           |     +--rw xl4cnc:supported-interval-max?       uint32
+           +--rw xl4cnc:latency-parameters
+              +--rw xl4cnc:internal-processing?   uint32
+              +--rw xl4cnc:wire-propagation?      uint32
+              +--rw xl4cnc:media-access-delay?    uint32
+
+  rpcs:
+    +---x compute_streams
+    |  +---w input
+    |  |  +---w domain* [domain-id]
+    |  |     +---w domain-id    -> /cnc-config/domain/domain-id
+    |  |     +---w cuc* [cuc-id]
+    |  |        +---w cuc-id         -> /cnc-config/domain/cuc/cuc-id
+    |  |        +---w stream-list* [stream-id]
+    |  |           +---w stream-id    -> /cnc-config/domain/cuc/stream/stream-id
+    |  +--ro output
+    |     +--ro result?   string
+    +---x compute_planned_and_modified_streams
+    |  +---w input
+    |  |  +---w domain* [domain-id]
+    |  |     +---w domain-id    string
+    |  |     +---w cuc* [cuc-id]
+    |  |        +---w cuc-id    string
+    |  +--ro output
+    |     +--ro result?   string
+    +---x compute_all_streams
+    |  +---w input
+    |  |  +---w domain* [domain-id]
+    |  |     +---w domain-id    string
+    |  |     +---w cuc* [cuc-id]
+    |  |        +---w cuc-id    string
+    |  +--ro output
+    |     +--ro result?   string
+    +---x request_domain_id
+    |  +---w input
+    |  |  +---w cuc-id?   string
+    |  +--ro output
+    |     +--ro result?   string
+    +---x request_free_stream_id
+       +---w input
+       |  +---w domain-id?   string
+       |  +---w cuc-id?      string
+       +--ro output
+          +--ro result?   string
+
+  notifications:
+    +---n compute_streams_completed
+    |  +--ro domain* [domain-id]
+    |     +--ro domain-id    string
+    |     +--ro cuc* [cuc-id]
+    |        +--ro cuc-id    string
+    |        +--ro stream* [stream-id]
+    |           +--ro stream-id       tsn:stream-id-type
+    |           +--ro failure-code?   uint8
+    +---n configure_streams_completed
+    |  +--ro domain* [domain-id]
+    |     +--ro domain-id    string
+    |     +--ro cuc* [cuc-id]
+    |        +--ro cuc-id    string
+    |        +--ro stream* [stream-id]
+    |           +--ro stream-id       tsn:stream-id-type
+    |           +--ro failure-code?   uint8
+    +---n remove_streams_completed
+       +--ro domain* [domain-id]
+          +--ro domain-id    string
+          +--ro cuc* [cuc-id]
+             +--ro cuc-id    string
+             +--ro stream* [stream-id]
+                +--ro stream-id       tsn:stream-id-type
+                +--ro failure-code?   uint8

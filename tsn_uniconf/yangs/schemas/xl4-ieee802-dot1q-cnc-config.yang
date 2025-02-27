@@ -1,0 +1,252 @@
+module xl4-ieee802-dot1q-cnc-config {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/xl4-ieee802-dot1q-cnc-config";
+  prefix xl4cnc;
+
+  import ieee802-dot1q-cnc-config {
+    prefix cnc;
+  }
+  import ieee802-dot1q-types {
+    prefix dot1q-types;
+  }
+  import ieee802-dot1q-tsn-types {
+    prefix tsn;
+    reference
+      "48.6.3 of IEEE Std 802.1Q";
+  }
+  import ietf-interfaces {
+    prefix if;
+  }
+  import ieee802-dot1q-sched {
+    prefix sched;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  contact
+    "URL: https://excelfore.com";
+  description
+    "This YANG module defines the Excelfore Deviations from IEEE std.";
+
+  revision 2023-04-25 {
+    description
+      "Initial revision.";
+    reference
+      "IEEE Std 801.1Q-2022
+       Excelfore xmrpd";
+  }
+
+  typedef end-station-status {
+    type enumeration {
+      enum init {
+        value 0;
+        description
+          "Initial status value. CNC has not yet configured the End-Station
+           interface.";
+      }
+      enum connected {
+        value 1;
+        description
+          "CNC has configured the End-Station interface successfully for
+           'connect' request.";
+      }
+      enum disconnected {
+        value 2;
+        description
+          "CNC has configured the End-Station interface successfully for
+           'disconnect' request.";
+      }
+      enum deleted {
+        value 3;
+        description
+          "CNC has configured the End-Station interface successfully for
+           'delete' request.";
+      }
+      enum operation-failed {
+        value 4;
+        description
+          "CNC was not able to successfully handle the request for some
+           reason.";
+      }
+    }
+  }
+
+  grouping end-station-interface-common {
+    leaf accept {
+      type uint8;
+      description
+        "Set if accept this talker/listner.
+         0:init
+         1:connect
+         2:disconnect
+         3:deleting";
+    }
+    leaf status {
+      type end-station-status;
+      description
+        "The status of end-station interface configuration.";
+    }
+    leaf station-name {
+      type dot1q-types:name-type;
+      description
+        "End station name ID";
+    }
+    leaf accumulated-latency {
+      type uint32;
+      description
+        "accumulated-latency provides the maximum estimated latency that a
+         single frame of the Stream can encounter in the end-station.
+
+         For Talker, this is the latency the frame will encounter on its way
+         to the initial bridge port.
+
+         For Listener, this is the latency the frame will encounter, upon
+         entering the end-station's ingress port up to the upper layer.";
+    }
+  }
+
+  augment "/cnc:cnc-config/cnc:domain/cnc:cuc" {
+    leaf eventflags {
+      type uint8;
+      description
+        "cuc events, bit0:taker-event, bit1:listner-event, bit3:other-event";
+    }
+    leaf accept-policy {
+      type uint8;
+      description
+        "Set the 'accept' policy.
+         0:use callback function(including HMI),
+         1:bypass HMI, accept='connect' for IEEE1722 stream in 'accept-connectlist',
+         2:bypass HMI, accept='connect',
+         3:bypass HMI, accept='disconnect'";
+    }
+    leaf-list accept-connectlist {
+      type tsn:stream-id-type;
+      description
+        "stream-id list to use cbs";
+    }
+    leaf cbs-policy {
+      type uint8;
+      description
+        "set the CBS using policy
+         0: No CBS is used,
+         1: Use CBS for IEEE1722 streams in cbs-uselist
+         2: Ask the callback function(including HMI),
+         3: Use CBS for the all IEEE1722 streams";
+    }
+    leaf-list cbs-uselist {
+      type tsn:stream-id-type;
+      description
+        "stream-id list to use cbs";
+    }
+    leaf frer-policy {
+      type uint8;
+      description
+        "set the FRER using policy
+         0: No FRER is used,
+         1: Use FRER for IEEE1722 stream in frer-uselist
+         2: Ask the callback function(including HMI)";
+    }
+    leaf-list frer-uselist {
+      type tsn:stream-id-type;
+      description
+        "stream-id list to use frer";
+    }
+    list tas-sched-list {
+      key "index";
+      leaf index {
+        type uint32;
+      }
+      choice tas-sched-type {
+        description
+          "Type of tas-sched";
+        case apply-stream {
+          leaf streamid {
+            type tsn:stream-id-type;
+          }
+        }
+        case apply-bridge-port {
+          list bridge-sched {
+            key "bridge-name";
+            leaf bridge-name {
+              type dot1q-types:name-type;
+            }
+            leaf-list bridge-port {
+              type if:interface-ref;
+            }
+          }
+        }
+      }
+      uses sched:sched-parameters;
+    }
+    container latency-parameters {
+      description
+        "User known latencies available in the network. These values are use
+         by CNC to estimate the accumulated latency along the stream path.
+         All of the values are in nanoseconds unit.";
+      leaf internal-processing {
+        type uint32;
+        description
+          "The worst-case time required by the Bridge to transfer a
+           received frame from the input port to the output queue";
+      }
+      leaf wire-propagation {
+        type uint32;
+        description
+          "The time required for the first bit of the frame to propagate from
+           the output port to the receiving device.";
+      }
+      leaf media-access-delay {
+        type uint32;
+        description
+          "the time required to wait for the media to become available for
+           transmission.";
+      }
+    }
+  }
+
+  augment "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream" {
+    leaf frer-enabled {
+      type boolean;
+      description
+        "enable FRER when there are redundant connections";
+    }
+  }
+
+  augment "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:talker/cnc:end-station-interfaces" {
+    uses end-station-interface-common;
+    leaf update-accept {
+      type boolean;
+      description
+        "cuc uses this for a sign to push 'accept' to cnc";
+    }
+  }
+
+  augment "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:listener/cnc:end-station-interfaces" {
+    uses end-station-interface-common;
+  }
+
+  deviation "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:talker/cnc:data-frame-specification/cnc:field/cnc:ipv4-tuple" {
+    deviate not-supported;
+  }
+
+  deviation "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:talker/cnc:data-frame-specification/cnc:field/cnc:ipv6-tuple" {
+    deviate not-supported;
+  }
+
+  deviation "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:talker/cnc:interface-configuration/cnc:interface-list/cnc:config-list/cnc:config-value/cnc:ipv4-tuple" {
+    deviate not-supported;
+  }
+
+  deviation "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:talker/cnc:interface-configuration/cnc:interface-list/cnc:config-list/cnc:config-value/cnc:ipv6-tuple" {
+    deviate not-supported;
+  }
+
+  deviation "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:listener/cnc:interface-configuration/cnc:interface-list/cnc:config-list/cnc:config-value/cnc:ipv4-tuple" {
+    deviate not-supported;
+  }
+
+  deviation "/cnc:cnc-config/cnc:domain/cnc:cuc/cnc:stream/cnc:listener/cnc:interface-configuration/cnc:interface-list/cnc:config-list/cnc:config-value/cnc:ipv6-tuple" {
+    deviate not-supported;
+  }
+}

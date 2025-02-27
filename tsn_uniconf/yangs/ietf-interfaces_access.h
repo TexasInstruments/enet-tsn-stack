@@ -53,6 +53,24 @@
 #include "yang_db_access.h"
 #include "ietf-interfaces.h"
 
+void ydbi_get_dbpara_ifk3vk0(yang_db_item_access_t *ydbia, char *brname,
+			  char* name, uint8_t k1, uint8_t k2, uint8_t k3, bool status,
+			  bool ismirror);
+
+int ydbi_get_item_ifk3vk0m(yang_db_item_access_t *ydbia, void **rval,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  bool status);
+
+int ydbi_rel_item_ifk3vk0m(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status);
+
+int ydbi_set_item_ifk3vk0m(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status,
+			  void *value, uint32_t vsize, uint8_t notice);
+
+int ydbi_del_item_ifk3vk0m(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status);
+
 int ydbi_get_item_ifk3vk0(yang_db_item_access_t *ydbia, void **rval,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status);
 
@@ -65,6 +83,28 @@ int ydbi_set_item_ifk3vk0(yang_db_item_access_t *ydbia,
 
 int ydbi_del_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status);
+
+void ydbi_get_dbpara_ifk4vk1(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, uint8_t k4,
+			  void *kv1, uint32_t kvs1, bool status, bool ismirror);
+
+int ydbi_get_item_ifk4vk1m(yang_db_item_access_t *ydbia, void **rval,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status);
+
+int ydbi_rel_item_ifk4vk1m(yang_db_item_access_t *ydbia,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status);
+
+int ydbi_set_item_ifk4vk1m(yang_db_item_access_t *ydbia,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status,
+			  void *value, uint32_t vsize, uint8_t notice,
+			  uint8_t onhw);
+
+int ydbi_del_item_ifk4vk1m(yang_db_item_access_t *ydbia,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status);
 
 int ydbi_get_item_ifk4vk1(yang_db_item_access_t *ydbia, void **rval,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3,

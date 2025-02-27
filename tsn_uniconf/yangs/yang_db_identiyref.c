@@ -65,7 +65,7 @@ const yang_identity_map_t network_protocol[] = {
     { "ptp-tt", "otn"       , 0x0007 }, /**< Optical Transport Network (OTN) */
     { "ptp-tt", "unknown"   , 0xFFFE }  /**< Unknown */
 };
-const uint32_t network_protocol_num = sizeof(network_protocol)/sizeof(network_protocol[0]);
+#define network_protocol_num sizeof(network_protocol)/sizeof(network_protocol[0])
 
 const yang_identity_map_t clock_class[] = {
     { "ptp-tt", "cc-primary-sync"                      , 6U   },
@@ -79,7 +79,7 @@ const yang_identity_map_t clock_class[] = {
     { "ptp-tt", "cc-default"                           , 248U },
     { "ptp-tt", "cc-slave-only"                        , 255U }
 };
-const uint32_t clock_class_num = sizeof(clock_class)/sizeof(clock_class[0]);
+#define clock_class_num sizeof(clock_class)/sizeof(clock_class[0])
 
 const yang_identity_map_t clock_accuracy[] = {
     { "ptp-tt", "ca-time-accurate-to-1000-fs", 0x17 },
@@ -110,7 +110,7 @@ const yang_identity_map_t clock_accuracy[] = {
     { "ptp-tt", "ca-time-accurate-to-10-s"   , 0x30 },
     { "ptp-tt", "ca-time-accurate-to-gt-10-s", 0x31 }
 };
-const uint32_t clock_accuracy_num = sizeof(clock_accuracy)/sizeof(clock_accuracy[0]);
+#define clock_accuracy_num sizeof(clock_accuracy)/sizeof(clock_accuracy[0])
 
 const yang_identity_map_t time_source[] = {
     { "ptp-tt", "atomic-clock"       , 0x10 },
@@ -123,14 +123,14 @@ const yang_identity_map_t time_source[] = {
     { "ptp-tt", "other"              , 0x90 },
     { "ptp-tt", "internal-oscillator", 0xA0 }
 };
-const uint32_t time_source_num = sizeof(time_source)/sizeof(time_source[0]);
+#define time_source_num sizeof(time_source)/sizeof(time_source[0])
 
 const yang_identity_map_t gate_operation[] = {
     { "dot1q-types", "set-gate-states"       , 0x0 },
     { "dot1q-types", "set-and-hold-mac"      , 0x1 },
     { "dot1q-types", "set-and-release-mac"   , 0x2 }
 };
-const uint32_t gate_operation_num = sizeof(gate_operation)/sizeof(gate_operation[0]);
+#define gate_operation_num sizeof(gate_operation)/sizeof(gate_operation[0])
 
 const yang_identity_map_t map_type[] = {
     { "x509c2n", "specified"       , 0x01 },
@@ -140,14 +140,14 @@ const yang_identity_map_t map_type[] = {
     { "x509c2n", "san-any"         , 0x05 },
     { "x509c2n", "common-name"     , 0x06 }
 };
-const uint32_t map_type_num = sizeof(map_type)/sizeof(map_type[0]);
+#define map_type_num sizeof(map_type)/sizeof(map_type[0])
 
 const yang_identity_map_t addr_family_map[] = {
     { "rt", "ipv4"       , 1 },
     { "rt", "ipv6"       , 2 },
     { "rt", "nsap"       , 3 }
 };
-const uint32_t addr_family_map_num = sizeof(addr_family_map)/sizeof(addr_family_map[0]);
+#define addr_family_map_num sizeof(addr_family_map)/sizeof(addr_family_map[0])
 
 const yang_identity_map_t datastore[] = {
     { "ds", "running"         , 0x0 },
@@ -158,7 +158,7 @@ const yang_identity_map_t datastore[] = {
     { "ds", "dynamic"         , 0x5 },
     { "ds", "operational"     , 0x6 }
 };
-const uint32_t datastore_num = sizeof(datastore)/sizeof(datastore[0]);
+#define datastore_num sizeof(datastore)/sizeof(datastore[0])
 
 const yang_identity_map_t schema_format[] = {
     { "ncm", "xsd"     , 0x0 },
@@ -167,16 +167,19 @@ const yang_identity_map_t schema_format[] = {
     { "ncm", "rng"     , 0x3 },
     { "ncm", "rnc"     , 0x4 }
 };
-const uint32_t schema_format_num = sizeof(schema_format)/sizeof(schema_format[0]);
+#define schema_format_num sizeof(schema_format)/sizeof(schema_format[0])
 
 const yang_identity_map_t transport[] = {
-    { "ncm", "netconf-ssh"             , 0x0 },
-    { "ncm", "netconf-soap-over-beep"  , 0x1 },
-    { "ncm", "netconf-soap-over-https" , 0x2 },
-    { "ncm", "netconf-beep"            , 0x3 },
-    { "ncm", "netconf-tls"             , 0x4 }
+    { "ncm",       "netconf-ssh"             , 0x0 },
+    { "ncm",       "netconf-soap-over-beep"  , 0x1 },
+    { "ncm",       "netconf-soap-over-https" , 0x2 },
+    { "ncm",       "netconf-beep"            , 0x3 },
+    { "ncm",       "netconf-tls"             , 0x4 },
+    { "xl4cfguni", "uniconf-udp"             , 0x5 },
+    { "xl4cfguni", "uniconf-direct"          , 0x6 },
+    { "xl4cfguni", "uniconf-udpbin"          , 0x7 }
 };
-const uint32_t transport_num = sizeof(transport)/sizeof(transport[0]);
+#define transport_num sizeof(transport)/sizeof(transport[0])
 
 /*-----------------------------------------------------------------------------
  * List of Identity Reference Tables
@@ -190,6 +193,7 @@ const yang_identityref_t yang_identityref_list[] = {
     { gate_operation,   gate_operation_num,   "operation"        },
     { map_type,         map_type_num,         "map-type"         },
     { addr_family_map,  addr_family_map_num,  "address-family"   },
+    { addr_family_map,  addr_family_map_num,  "address-subtype"  },
     { datastore,        datastore_num,        "datastore"        },
     { schema_format,    schema_format_num,    "format"           },
     { transport,        transport_num,        "transport"        },
@@ -200,7 +204,7 @@ const yang_identityref_t yang_identityref_list[] = {
  * Static APIs
  *----------------------------------------------------------------------------*/
 
-static  int yang_identityref_get_tblidx(char *hints)
+static  int yang_identityref_get_tblidx(const char *hints)
 {
     int ret=-1;
     int i;
@@ -219,7 +223,8 @@ static  int yang_identityref_get_tblidx(char *hints)
  * External APIs
  *----------------------------------------------------------------------------*/
 
-uint32_t yang_identityref_getval(char *identity_str, char *hints)
+uint32_t yang_identityref_getval(const char *identity_str, int eslen,
+				 const char *hints)
 {
     uint32_t identity_val = INVALID_IDENTIY_VALUE;
     int tblidx=yang_identityref_get_tblidx(hints);
@@ -230,7 +235,7 @@ uint32_t yang_identityref_getval(char *identity_str, char *hints)
     const yang_identity_map_t *reftbl = yang_identityref_list[tblidx].reftbl;
     uint32_t i;
     for (i = 0; i < yang_identityref_list[tblidx].refnum; i++) {
-        if (!strcmp(identity_str, reftbl[i].name)){
+	    if (!memcmp(identity_str, reftbl[i].name, eslen)){
             identity_val=reftbl[i].value;
             break;
         }
@@ -238,7 +243,7 @@ uint32_t yang_identityref_getval(char *identity_str, char *hints)
     return identity_val;
 }
 
-char* yang_identityref_getstr(uint32_t identity_val, char *hints)
+char* yang_identityref_getstr(uint32_t identity_val, const char *hints)
 {
     char* identity_str=NULL;
     int tblidx=yang_identityref_get_tblidx(hints);
@@ -257,7 +262,7 @@ char* yang_identityref_getstr(uint32_t identity_val, char *hints)
     return identity_str;
 }
 
-char* yang_identityref_getns(uint32_t identity_val, char *hints)
+char* yang_identityref_getns(uint32_t identity_val, const char *hints)
 {
     char* identity_nsprefix=NULL;
     int tblidx=yang_identityref_get_tblidx(hints);
@@ -275,4 +280,3 @@ char* yang_identityref_getns(uint32_t identity_val, char *hints)
     }
     return identity_nsprefix;
 }
-

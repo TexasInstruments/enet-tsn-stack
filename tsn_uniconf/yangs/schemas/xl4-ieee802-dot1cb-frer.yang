@@ -1,0 +1,87 @@
+module xl4-ieee802-dot1cb-frer {
+  yang-version 1.1;
+  namespace "urn:ieee:std:802.1Q:yang:xl4-ieee802-dot1cb-frer";
+  prefix xl4cb-frer;
+
+  import ieee802-dot1cb-stream-identification {
+    prefix dot1cb-sid;
+  }
+  import ieee802-dot1cb-frer {
+    prefix dot1cb-frer;
+  }
+  import ietf-interfaces {
+    prefix if;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-generation/dot1cb-frer:direction-out-facing" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:direction-out-facing" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:port" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:algorithm" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:history-length" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:reset-timeout" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:invalid-sequence-value" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:take-no-sequence" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:individual-recovery" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:latent-error-detection" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-recovery/dot1cb-frer:latent-error-detection-parameters" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:sequence-identification" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:stream-split" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-frer:frer/dot1cb-frer:autoconfiguration" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-frer:auto-configured" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1cb-sid:stream-identity/dot1cb-frer:lan-path-id" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:statistics/dot1cb-frer:frer/dot1cb-frer:per-port-counters" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:statistics/dot1cb-frer:frer/dot1cb-frer:per-port-per-stream-counters" {
+    deviate not-supported;
+  }
+}

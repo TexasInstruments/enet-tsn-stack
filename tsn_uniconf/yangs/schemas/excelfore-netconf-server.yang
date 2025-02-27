@@ -1,0 +1,208 @@
+module excelfore-netconf-server {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/excelfore-netconf-server";
+  prefix xl4nconf;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ietf-interfaces {
+    prefix if;
+  }
+  import ietf-x509-cert-to-name {
+    prefix x509c2n;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  description
+    "This YANG module defines the Excelfore Netconf Server Configurations.";
+
+  revision 2023-08-07 {
+    description
+      "Initial creation.";
+    reference
+      "Excelfore NETCONF Server Specification";
+  }
+
+  typedef transport-status {
+    type enumeration {
+      enum offline {
+        value 0;
+        description
+          "NETCONF server is NOT accepting and processing client
+           messages in this transport.";
+      }
+      enum online {
+        value 1;
+        description
+          "NETCONF server is accepting and processing client
+           messages in this transport.";
+      }
+    }
+  }
+
+  container nconf-server {
+    description
+      "Top-level container for Excelfore NETCONF server configuration.";
+    leaf underlying-interface {
+      type if:interface-ref;
+      description
+        "Reference to the configured underlying IETF YANG
+         interface that is used by this NETCONF server.";
+    }
+    leaf address {
+      type inet:host;
+      config false;
+      description
+        "The IP address or hostname of this NETCONF server.";
+    }
+    container ssh {
+      leaf port {
+        type inet:port-number;
+        description
+          "Specifies the TCP ports that the SSH server will accept connections
+           from.
+           Note: This port must be configured and enabled in the SSH server
+           configuration itself (e.g. '/etc/ssh/sshd_config' in linux).";
+        default "830";
+        reference
+          "RFC 6242: NETCONF over SSH";
+      }
+      container subsystem {
+        leaf ipc-type {
+          description
+            "Select the type of IPC that the SSH subsystem application
+             and the NETCONF server daemon will use to exchange
+             messages.";
+          type enumeration {
+            enum local-tcp {
+              value 0;
+              description
+                "Use Localhost TCP stream socket for IPC between the
+                 SSH subsystem application and the NETCONF server
+                 daemon";
+            }
+            enum unix-domain-socket {
+              value 1;
+              description
+                "Use Unix Domain Socket for IPC between the SSH subsystem
+                 application and the NETCONF server daemon.";
+            }
+          }
+          default "local-tcp";
+        }
+        leaf tcp-port {
+          when "../ipc-type = 'xl4nconf:local-tcp'";
+          type inet:port-number;
+          description
+            "Specifies the TCP ports that the x4nconf daemon will listen
+             and accept connections from the SSH subsystem application.
+             Not used if 'use-unix-domain-socket' was enabled";
+          default "10830";
+        }
+        leaf socket-name {
+          when "../ipc-type = 'xl4nconf:unix-domain-socket'";
+          type string {
+            length "1 .. max";
+          }
+          description
+            "Unix Domain Socket Name. Used only when ipc-type is set to
+             'unix-domain-socket'";
+        }
+      }
+      leaf status {
+        type transport-status;
+        config false;
+        description
+          "Current status of NETCONF server's SSH Tranport.";
+      }
+    }
+    container tls {
+      leaf port {
+        type inet:port-number;
+        description
+          "Specifies the TCP port to listen for NETCONF over TLS messages.";
+        default "6513";
+        reference
+          "RFC 7589: NETCONF over TLS";
+      }
+      leaf server-cert {
+        type string {
+          length "1 .. max";
+        }
+        mandatory true;
+        config false;
+        description
+          "Path to the SSL server X.509 certificate in pem format
+           used for the NETCONF over TLS protocol.";
+      }
+      leaf server-key {
+        type string {
+          length "1 .. max";
+        }
+        mandatory true;
+        config false;
+        description
+          "Path to the SSL server X.509 certificate key in pem format
+           used for the NETCONF over TLS protocol.";
+      }
+      leaf ca-cert {
+        type string {
+          length "1 .. max";
+        }
+        mandatory true;
+        config false;
+        description
+          "Path to the Certificate Authority (CA) X.509 certificate in pem
+           format used for authenticating client when using the NETCONF over
+           TLS protocol.";
+      }
+      uses x509c2n:cert-to-name {
+        refine "cert-to-name" {
+          description
+            "TLS Certificate's Fingerprint to NETCONF username mapping list,
+             used by NETCONF server to determine NETCONF client's access
+             rights.
+
+             If fingerprint is not found in the mapping list, NETCONF client
+             is considered non-administrator users.";
+        }
+      }
+      leaf status {
+        type transport-status;
+        config false;
+        description
+          "Current status of NETCONF server's TLS Tranport.";
+      }
+    }
+    list admin-users {
+      key "id";
+      config false;
+      description
+        "List of NETCONF usernames with administrator access to device configs.
+
+         When NETCONF username is not found in this list it is considered to
+         have non-administrator access (i.e. Can only read configuration and
+         status data).
+
+         When list is empty, NETCONF server assumes that all NETCONF clients
+         that successfully authenticated by SSH and/or TLS authentication
+         mechanism have administrator access";
+      leaf id {
+        type uint8 {
+          range "0..5";
+        }
+        description
+          "The id specifies the order in which the entries in the list are
+           searched. Entries with lower numbers are searched first.";
+      }
+      leaf name {
+        type string;
+        mandatory true;
+        description
+          "The NETCONF username granted with administrator access.";
+      }
+    }
+  }
+}

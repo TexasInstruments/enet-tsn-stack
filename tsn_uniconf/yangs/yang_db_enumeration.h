@@ -57,6 +57,7 @@
 /*-----------------------------------------------------------------------------
  * External APIs
  *----------------------------------------------------------------------------*/
-uint32_t yang_enumeration_getval(char *enumeration_str, char *hints);
-char* yang_enumeration_getstr(uint32_t enumeration_val, char *hints);
-char* yang_enumeration_getns(uint32_t enumeration_val, char *hints);
+uint32_t yang_enumeration_getval(const char *enumeration_str, int eslen,
+				 const char *hints);
+char* yang_enumeration_getstr(uint32_t enumeration_val, const char *hints);
+char* yang_enumeration_getns(uint32_t enumeration_val, const char *hints);

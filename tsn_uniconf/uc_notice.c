@@ -100,7 +100,8 @@
  */
 
 #include <errno.h>
-#include "uc_notice.h"
+#include <tsn_combase/combase.h>
+#include "yangs/yang_db_access.h"
 #include "yangs/yang_modules.h"
 #include "yangs/yang_node.h"
 
@@ -111,6 +112,7 @@ typedef struct putnotice_data {
 	UC_NOTICE_SIG_T *putnotice_sem;
 	int actcounter;
 	int refcounter;
+	bool sigmark;
 }putnotice_data_t;
 
 struct uc_notice_data {
@@ -130,6 +132,12 @@ enum {
  * 'semname' and 'putnotice_sem' use it, set the fragment size is around half.
  */
 UB_SD_GETMEM_DEF(UC_NOTICE_PUT, 20, (UB_ESARRAY_DFNUM*2));
+
+UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
+
+extern int uc_dbal_checkdb(uc_dbald *dbald);
+static void uc_nu_clear_deleting(uc_dbald *dbald);
+static int uc_nc_set_deleting(uc_dbald *dbald);
 
 static void delete_putsemaphore(bool fromthread, putnotice_data_t *pnd)
 {
@@ -265,7 +273,7 @@ typedef enum {
 	PUTNOTICE_DEC_DELETE, // decrement refcounter, if it becomes 0 delete it
 	PUTNOTICE_FORCE_DELETE // delete anyway
 } putnotice_action_t;
-// return 0:action done, 1:action not done, -1:error
+// return 0:action done, 1:action not done, -1:error, 2:need to create a semaphore
 static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *semname,
 					 putnotice_action_t action, UC_NOTICE_SIG_T **sem)
 {
@@ -318,17 +326,8 @@ static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *se
 		}
 	}
 	if((res==1) && (action==PUTNOTICE_INC_ADD)){
-		if(sem){
-			*sem=create_new_putsemaphore(ucntd->fromthread, ucntd->putnotice_list,
-						     semname, true, 0);
-			refcounter=1;
-			res=0;
-		}else{
-			UB_LOG(UBL_ERROR, "%s:need to add new semaphore, but no return value\n",
-			       __func__);
-			res=-1;
-		}
-
+		refcounter=1;
+		res=2;
 	}
 	UB_LOG(UBL_DEBUG, "%s:semname=\"%s\", refcount=%d %s\n",
 	       __func__, semname, refcounter, msg);
@@ -340,18 +339,23 @@ static int find_semname_in_putnoticelist(uc_notice_data_t *ucntd, const char *se
 	return res;
 }
 
-static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete_flg)
+#define FIND_SEMNAME false
+#define DELETE_SEMNAME true
+static int find_delete_semname_in_db(uc_dbald *dbald, const char *semname, bool delete_flg)
 {
 	uc_range *range;
 	uint8_t key1[2]={XL4_DATA_RO, UC_NOTICE_REG};
 	uint8_t key2[2]={XL4_DATA_RO, UC_NOTICE_REG+1};
 	uint8_t *nkey;
+	uint8_t *dnkey;
 	uint32_t nksize;
 	uint32_t snsize=strlen(semname);
 	int count=0;
 	void *vdata;
 	uint32_t vsize;
 	uint8_t action;
+	bool first_del=true;
+
 	range=uc_get_range(dbald, key1, 2, key2, 2);
 	if(!range){return -1;}
 	while(true){
@@ -375,6 +379,17 @@ static int find_semname_in_db(uc_dbald *dbald, const char *semname, bool delete_
 						  &action, vsize)!=0){
 					UB_LOG(UBL_ERROR, "%s:can't delete\n", __func__);
 				}
+				if(!first_del){continue;}
+				// the first delete item makes ASKACTION to uniconf
+				dnkey=UB_SD_GETMEM(UC_NOTICE_PUT, nksize);
+				if(ub_assert_fatal(dnkey!=NULL, __func__, NULL)){return -1;}
+				uc_nc_set_deleting(dbald);
+				memcpy(dnkey, nkey, nksize);
+				dnkey[1]=UC_ASKACTION_REG;
+				action=UC_ASKACTION_NOHW;
+				uc_dbal_create(dbald, dnkey, nksize, &action, vsize);
+				UB_SD_RELMEM(UC_NOTICE_PUT, dnkey);
+				first_del=false;
 			}
 		}
 	}
@@ -425,13 +440,14 @@ static void proc_refactcounter(bool fromthread, ub_esarray_cstd_t *putnotice_lis
 		if(pnd->refcounter==0){
 			UB_LOG(UBL_DEBUG, "%s:%s refcounter=0, delete this\n", __func__,
 			       pnd->semname);
+			delete_putsemaphore(fromthread, pnd);
 			ub_esarray_del_index(putnotice_list, i);
 			i--;
 			en--;
 			continue;
 		}
 		if(pnd->actcounter!=0){
-			UB_LOG(UBL_DEBUG, "%s:%s actcounter=%d\n", __func__,
+			UB_TLOG(UBL_DEBUG, "%s:%s actcounter=%d\n", __func__,
 			       pnd->semname, pnd->actcounter);
 			if(uc_notice_sig_post(fromthread, pnd->putnotice_sem)!=0){
 				UB_LOG(UBL_ERROR, "%s:error in sem_post, %s\n", __func__,
@@ -452,13 +468,14 @@ static void nu_clear_refcounter(bool fromthread, ub_esarray_cstd_t *putnotice_li
 		pnd=(putnotice_data_t*)ub_esarray_get_ele(putnotice_list, i);
 		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return;}
 		pnd->refcounter=0;
+		pnd->sigmark=false;
 		UB_LOG(UBL_DEBUGV, "%s:%s cleared\n", __func__, pnd->semname);
 	}
 	return;
 }
 
 static void nu_increment_refcounter(bool fromthread,
-				   ub_esarray_cstd_t *putnotice_list, char *semname)
+				    ub_esarray_cstd_t *putnotice_list, char *semname)
 {
 	int i, en;
 	putnotice_data_t *pnd;
@@ -468,8 +485,8 @@ static void nu_increment_refcounter(bool fromthread,
 		if(ub_assert_fatal(pnd!=NULL, __func__, "pnd is NULL")){return;}
 		if(!strcmp(pnd->semname, semname)){
 			pnd->refcounter++;
-			UB_LOG(UBL_DEBUGV, "%s:semname=%s, refcounter=%d\n", __func__,
-			       semname, pnd->refcounter);
+			UB_LOG(UBL_DEBUGV, "%s:semname=%s, refcounter=%d, sigmark=%d\n",
+			       __func__, semname, pnd->refcounter, pnd->sigmark);
 			break;
 		}
 	}
@@ -543,7 +560,6 @@ erexit:
 		return NULL;
 	}
 	return &sucntd;
-
 }
 
 int uc_notice_start_events_thread(uc_notice_data_t *ucntd, uc_hwald *hwald)
@@ -608,12 +624,43 @@ static int askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	return res;
 }
 
+static int key_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
+			      uint8_t *key, uint32_t ksize, bool from_nc)
+{
+	uint8_t *ekey;
+	uint8_t d;
+	int sval;
+	ekey=UB_SD_GETMEM(YANGINIT_GEN_SMEM, ksize+2);
+	if(ub_assert_fatal(ekey!=NULL, __func__, NULL)){return -1;}
+	ekey[0]=XL4_DATA_RO;
+	ekey[1]=UC_ASKACTION_REG;
+	memcpy(&ekey[2], key, ksize);
+	d=from_nc?UC_ASKACTION_HW:UC_ASKACTION_NOHW;
+	if(uc_dbal_create(dbald, ekey, ksize+2, &d, 1)!=0){return -1;}
+	UB_SD_RELMEM(YANGINIT_GEN_SMEM, ekey);
+	uc_dbal_releasedb(dbald);
+	CB_THREAD_MUTEX_LOCK(&ntmutex);
+	if(uc_notice_sig_getvalue(ucntd->fromthread, ucntd->getnotice_sem, &sval)==0){
+		if(sval==0){
+			(void)uc_notice_sig_post(ucntd->fromthread, ucntd->getnotice_sem);
+		}
+	}
+	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
+	return 0;
+}
+
 // uc_client -> uniconf
 // a key is pushed to /XL4_DATA_RO/UC_ASKACTiON_REG/key, and signal the semaphore
 int uc_nc_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 			 uint8_t *aps, void **kvs, uint8_t *kss)
 {
 	return askaction_push(ucntd, dbald, aps, kvs, kss, true);
+}
+
+int uc_nc_askaction_key_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
+			     uint8_t *key, uint32_t ksize)
+{
+	return key_askaction_push(ucntd, dbald, key, ksize, true);
 }
 
 int uc_nu_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
@@ -628,6 +675,7 @@ int uc_nu_proc_asked_actions(uc_notice_data_t *ucntd,
 			     uc_dbald *dbald, uc_hwald *hwald, int tout_ms)
 {
 	int res;
+	if(uc_dbal_checkdb(dbald)!=0){return -1;}
 	uc_dbal_releasedb(dbald);
 	res=uc_notice_sig_check(ucntd->fromthread, ucntd->getnotice_sem, tout_ms, __func__);
 	if(res==0){
@@ -662,6 +710,8 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	uint8_t preap[3]={XL4_DATA_RO, UC_NOTICE_REG, 255};
 	putnotice_action_t paction;
 	uint8_t dbval;
+	int sval;
+	bool create_semaphore=false;
 	if(!aps || !kvs || !kss){return -1;}
 	for(i=0;;i++) {
 		if(kvs[i]==NULL){snindex=i-1; break;}
@@ -675,11 +725,9 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	switch(regval){
 	case UC_NOTICE_DBVAL_ADD:
 		paction=PUTNOTICE_INC_ADD;
-		dbpara.atype=YANG_DB_ACTION_CREATE;
 		break;
 	case UC_NOTICE_DBVAL_DEL:
 		paction=PUTNOTICE_DEC_DELETE;
-		dbpara.atype=YANG_DB_ACTION_DELETE;
 		break;
 	default:
 		return -1;
@@ -687,10 +735,15 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 
 	CB_THREAD_MUTEX_LOCK(&ntmutex);
 	res=find_semname_in_putnoticelist(ucntd, (const char*)kvs[snindex], paction, sem);
-	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
-	if(res!=0){return -1;}
-	if(!aps){return 0;} // only semaphore registration.
-	(void)memset(&dbpara, 0, sizeof(dbpara));
+	if(res==2){
+		create_semaphore=true;
+		res=0;
+	}
+	if(res!=0){
+		res=-1;
+		goto erexit;
+	}
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	dbpara.onhw=YANG_DB_ONHW_NOACTION;
 	dbpara.paps=preap;
 	dbpara.aps=aps;
@@ -702,7 +755,27 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	res=yang_db_action(dbald, NULL, &dbpara);
 	UB_TLOG(UBL_DEBUG, "%s:register semname='%s' to the DB, res=%d\n",
 		__func__, (char*)kvs[snindex], res);
-	return 0;
+	if(regval!=UC_NOTICE_DBVAL_DEL){
+		if(create_semaphore){
+			*sem=create_new_putsemaphore(ucntd->fromthread, ucntd->putnotice_list,
+						     kvs[snindex], true, 0);
+		}
+		res=0;
+		goto erexit;
+	}
+	// to delete push a notice to uniocnf
+	preap[1]=UC_ASKACTION_REG;
+	dbval=UC_ASKACTION_NOHW;
+	res=yang_db_action(dbald, NULL, &dbpara);
+	if(uc_notice_sig_getvalue(ucntd->fromthread, ucntd->getnotice_sem, &sval)==0){
+		if(sval==0){
+			(void)uc_notice_sig_post(ucntd->fromthread, ucntd->getnotice_sem);
+		}
+	}
+	res=0;
+erexit:
+	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
+	return res;
 }
 
 // mark UC_NOTICE_REG_REMOVE on all the registered items with 'semname'
@@ -710,13 +783,21 @@ int uc_nc_notice_deregister_all(uc_notice_data_t *ucntd, uc_dbald *dbald,
 				const char *semname)
 {
 	int res=-1;
+	int sval;
 	if(!dbald || !ucntd) return -1;
 	CB_THREAD_MUTEX_LOCK(&ntmutex);
 	if(find_semname_in_putnoticelist(ucntd, semname, PUTNOTICE_FORCE_DELETE, NULL)<0){
 		goto erexit;
 	}
-	res=find_semname_in_db(dbald, semname, true);
-	UB_LOG(UBL_DEBUG, "%s:deleted %d of items in DB\n", __func__, res);
+	res=find_delete_semname_in_db(dbald, semname, DELETE_SEMNAME);
+	UB_LOG(UBL_DEBUG, "%s:deleted %d of items on sem=%s\n", __func__, res, semname);
+	if(res>0){
+		if(uc_notice_sig_getvalue(ucntd->fromthread, ucntd->getnotice_sem, &sval)==0){
+			if(sval==0){
+				(void)uc_notice_sig_post(ucntd->fromthread, ucntd->getnotice_sem);
+			}
+		}
+	}
 	res=0;
 erexit:
 	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
@@ -727,7 +808,7 @@ erexit:
 int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 			 uint8_t *aps, void **kvs, uint8_t *kss)
 {
-	uint8_t key[UC_MAX_KEYSIZE];
+	uint8_t actkey[UC_MAX_KEYSIZE];
 	uint32_t ksize;
 	uc_range *range;
 	uint8_t key1[2]={XL4_DATA_RO, UC_NOTICE_REG};
@@ -742,6 +823,8 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	void *vdata;
 	uint32_t vsize;
 	uint8_t action=0xff;
+	bool delhappen=false;
+	bool sigmark;
 	// scan all in /XL4_DATA_RO/UC_NOTICE_REG
 	// get semname from the bottom at the key, then get semaphre and signal on it
 	range=uc_get_range(dbald, key1, 2, key2, 2);
@@ -749,7 +832,7 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 		UB_TLOG(UBL_DEBUG, "%s:no data in UC_NOTICE_REG\n", __func__);
 		return 0;
 	}
-	ksize=yang_db_create_key(NULL, aps, kvs, kss, key);
+	ksize=yang_db_create_key(NULL, aps, kvs, kss, actkey);
 	CB_THREAD_MUTEX_LOCK(&ntmutex);
 	nu_clear_refcounter(ucntd->fromthread, ucntd->putnotice_list);
 	while(ksize>0u){
@@ -762,19 +845,29 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 		// the registered key has 2-byte prefix and 'semname' at the end
 		// the end 'semname' is '1(size byte)+strlen+1'='semname[0]+1'
 		action=*((uint8_t*)vdata);
+		semname=(char*)yang_db_key_bottomp(nkey, nksize);
+		if(!semname){continue;}
 		if(action==UC_NOTICE_DBVAL_DEL){
 			if(uc_del_in_range(dbald, range, UC_DBAL_FORWARD)){break;}
 			action=0xff;
+			delhappen=true;
 			continue;
 		}
-		semname=(char*)yang_db_key_bottomp(nkey, nksize);
-		if(!semname){continue;}
+		csize=nksize-2u-((uint32_t)semname[0]+1u);
+		if(nksize>(uint32_t)UC_MAX_KEYSIZE){goto erexit;}
+		if((csize<=ksize) && (memcmp(&nkey[2], actkey, csize)==0)){
+			// set sigmark if UC_NOTICE_REG item matches to prior part of
+			// actkey(UC_ASKACTION_REG item).
+			// full match is not required, so that multiple pushed item can
+			// make a signal to registered uc_client
+			sigmark=true;
+		}else{
+			sigmark=false;
+		}
 		nu_increment_refcounter(ucntd->fromthread, ucntd->putnotice_list,
 					&semname[1]);
-		csize=nksize-2u-((uint32_t)semname[0]+1u);
-		if(csize>ksize){continue;}
-		if(memcmp(&nkey[2], key, csize)!=0){continue;}
-		if(nksize>(uint32_t)UC_MAX_KEYSIZE){goto erexit;}
+		if(!sigmark){continue;}
+
 		memcpy(rkey, nkey, nksize);
 		// 'nkey' data may be changed in the next DB action(uc_dbal_create),
 		// the same 'semname' should be in the copied contents.
@@ -784,7 +877,7 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 		rkey[1]=UC_NOTICE_ACT;
 		(void)uc_dbal_create(dbald, rkey, nksize, &d, 1);
 		semname=&semname[1]; // the first position is the size, skip it
-		UB_LOG(UBL_DEBUG, "%s:action on semname:%s\n", __func__, semname);
+		UB_TLOG(UBL_DEBUG, "%s:action on semname:%s\n", __func__, semname);
 		res=incremant_actcounter(ucntd->fromthread, ucntd->putnotice_list, semname);
 		if(res==-2){
 			UB_LOG(UBL_INFO, "%s:delete likely zombie semname:%s\n",
@@ -797,6 +890,7 @@ int uc_nu_putnotice_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	res=0;
 erexit:
 	uc_get_range_release(dbald, range);
+	if(delhappen){uc_nu_clear_deleting(dbald);}
 	CB_THREAD_MUTEX_UNLOCK(&ntmutex);
 	return res;
 }
@@ -840,4 +934,37 @@ int uc_nc_get_notice_act(uc_notice_data_t *ucntd, uc_dbald *dbald, const char *s
 	// It must be true.  Check the DB implementation.
 	(void)uc_dbal_del(dbald, nkey, nksize);
 	return 0;
+}
+
+int uc_nc_wait_deleting(uc_dbald *dbald, int32_t tout_ms)
+{
+	uint8_t key[3]={XL4_DATA_RO, UC_STATIC_WORK, UC_STATIC_ACTREG_DELETING};
+	void *value;
+	uint32_t vsize=0;
+	int toutus=tout_ms*1000;
+	int sltime=UB_MAX(toutus/10, 1000);
+
+	while(true){
+		if(uc_dbal_get(dbald, key, 3, &value, &vsize)!=0){break;}
+		uc_dbal_get_release(dbald, key, 3, value, vsize);
+		if(toutus<=0){return -1;}
+		uc_dbal_releasedb(dbald);
+		CB_USLEEP(sltime);
+		toutus-=sltime;
+	}
+	return 0;
+}
+
+static void uc_nu_clear_deleting(uc_dbald *dbald)
+{
+	uint8_t key[3]={XL4_DATA_RO, UC_STATIC_WORK, UC_STATIC_ACTREG_DELETING};
+	(void)uc_dbal_del(dbald, key, 3);
+	return;
+}
+
+static int uc_nc_set_deleting(uc_dbald *dbald)
+{
+	uint8_t key[3]={XL4_DATA_RO, UC_STATIC_WORK, UC_STATIC_ACTREG_DELETING};
+	uint8_t value=0;
+	return uc_dbal_create(dbald, key, 3, &value, 1);
 }

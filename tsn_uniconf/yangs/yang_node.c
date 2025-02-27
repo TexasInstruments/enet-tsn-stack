@@ -48,13 +48,24 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 #include <tsn_unibase/unibase.h>
+#include "../uc_notice.h"
 #include "yang_node.h"
-#include "yang_db_runtime.h"
+#include "yang_db_access.h"
 
 UB_SD_GETMEM_DEF_EXTERN(YANGINIT_GEN_SMEM);
 
+#ifdef UC_RUNCONF
 extern const char *yang_static_get_name_by_id(uc_dbald *dbald, uint8_t nameid, uint8_t ap);
-extern int yang_static_get_id_by_name(uc_dbald *dbald, const char *name, uint8_t ap);
+#define YANG_STATIC_GET_NAME_BY_ID yang_static_get_name_by_id
+#else
+#define YANG_STATIC_GET_NAME_BY_ID(...) NULL
+#endif
+
+extern uint8_t get_onenode_enum(uc_dbald *dbald, uint8_t *aps, const char *nstr,
+				uc_range **range, int *anumdepth, int level);
+
+extern int set_init_aps(uc_dbald *dbald, const char *astr, uint8_t *aps,
+			int maxele, int *thispi, int anumdepth);
 
 const char *xl4data_enum_strings[XL4_DATA_ENUM_END]={
 	"yang-value-types",
@@ -68,72 +79,11 @@ const char *xl4data_enum_strings[XL4_DATA_ENUM_END]={
 	"xl4-rtime-reg",
 	"xl4-rtime-data",
 	"uc-last-db-access",
+	"uc-prefix-namespace",
+	"uc-mirror",
+	"uc-needaction-reg",
+	"uc-static-work",
 };
-
-static const char *xl4data_get_string(uint8_t anum)
-{
-	if(anum>=XL4_DATA_ENUM_END){return NULL;}
-	return xl4data_enum_strings[anum];
-}
-
-static uc_range *get_xl4_enum_range(uc_dbald *dbald, uint8_t *anums)
-{
-	uint8_t keys1[7];
-	uint8_t keys2[7];
-	uint32_t ksize=0;
-
-	keys1[0]=XL4_DATA_RW;
-	keys1[1]=XL4_ENUM_TABLE;
-	if(anums[0]==XL4_DATA_RW){
-		return NULL;
-	}else if(anums[0]==XL4_EXTMOD_RW){
-		// XL4_EXTMOD_RW is for external non-yang modules
-		keys1[2]=XL4_EXTMOD_RW;
-		keys1[3]=anums[1];
-		keys1[4]=255u;
-		keys1[5]=1;
-		keys1[6]=0;
-		ksize=7;
-	}else{
-		// for external yang modules
-		keys1[2]=anums[0];
-		keys1[3]=255u;
-		keys1[4]=1;
-		keys1[5]=0;
-		ksize=6;
-	}
-	memcpy(keys2, keys1, ksize);
-	keys2[ksize-1]=255u;
-	return uc_get_range(dbald, keys1, ksize, keys2, ksize);
-}
-
-static int get_enum_in_range(uc_dbald *dbald, uc_range *range, const char *p)
-{
-	uint8_t *nkey;
-	uint32_t nksize;
-	char *vdata;
-	uint32_t vsize;
-	if(dbald==NULL){return -1;}
-	uc_move_top_in_range(dbald, range);
-	while(true){
-		if(uc_get_keyvalue_in_range(dbald, range, (void**)&nkey, &nksize,
-					    (void**)&vdata, &vsize,
-					    UC_DBAL_FORWARD)!=0){break;}
-		if(strcmp(vdata, p)==0){
-			return nkey[nksize-1];
-		}
-	}
-	return -1;
-}
-
-static uint8_t xl4data_node_get_enum(const char *astr)
-{
-	int i;
-	for(i=0;i<XL4_DATA_ENUM_END;i++){
-		if(!strcmp(astr, xl4data_enum_strings[i])){return i;}
-	}
-	return 0xff;
-}
 
 #define REG_NEXTID 0u
 static int get_next_nameid(uc_dbald *dbald, uint8_t ap, bool add, const char *name)
@@ -175,8 +125,9 @@ static int get_next_nameid(uc_dbald *dbald, uint8_t ap, bool add, const char *na
 		       __func__, name);
 		return -1;
 	}
-	UB_LOG(UBL_INFO, "%s:a new %s=%s, enum=%d\n",
+	UB_LOG(UBL_DEBUG, "%s:a new %s=%s, enum=%d\n",
 	       __func__, mtype, name, nameid-1);
+	(void)mtype;
 	return 	nameid-1;
 }
 
@@ -207,7 +158,7 @@ static int setget_id_by_name(uc_dbald *dbald, const char *name, uint8_t ap, bool
 		nameid=*((uint8_t *)dbpara.value);
 		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
 		(void)yang_db_action(dbald, NULL, &dbpara);
-		UB_LOG(UBL_DEBUG, "%s:get id=%d from name=%s\n",
+		UB_LOG(UBL_DEBUGV, "%s:get id=%d from name=%s\n",
 		       __func__, nameid, name);
 		return nameid;
 	}
@@ -256,135 +207,163 @@ static const char *get_name_by_id(uc_dbald *dbald, uint8_t nameid, uint8_t ap)
 
 int yang_node_uniconf_init(uc_dbald *dbald)
 {
+	uint8_t anums[1]={255};
 	if(dbald==NULL){return -1;}
 	if(setget_id_by_name(dbald, "xl4-data", UC_YANGMOD_REG, true)!=0){return -1;}
+	if(yang_node_get_node_enums(dbald, "/xl4-data", anums, 1)!=1){return -1;}
+	if(anums[0]!=0){return -1;}
 	if(setget_id_by_name(dbald, "xl4-extmod", UC_YANGMOD_REG, true)!=1){return -1;}
 	// yang module id start from '2'
 	return 0;
 }
 
+uint8_t yang_node_get_xl4data_enum(const char *astr)
+{
+	int i;
+	for(i=0;i<XL4_DATA_ENUM_END;i++){
+		if(!strcmp(astr, xl4data_enum_strings[i])){return i;}
+	}
+	return 0xff;
+}
+
+const char *yang_node_get_xl4data_string(uint8_t anum)
+{
+	if(anum>=XL4_DATA_ENUM_END){return NULL;}
+	return xl4data_enum_strings[anum];
+}
+
 int yang_node_get_node_enums(uc_dbald *dbald, const char *astr, uint8_t *anums, int maxele)
 {
-	uint8_t aps[2]={0,0};
-	uint8_t ap0;
-	const char *q, *p=astr;
 	char *nstr=NULL;
-	const char *pnstr;
-	int nstrc=0;
-	int ec=0;
+	char *q;
 	int i;
-	bool dbcall;
 	uc_range *range=NULL;
-	int res;
-	int ecode=0;
-	if(!astr || !*astr || !anums || !maxele){return -1;}
-	if(*p=='/'){
-		// if astr starts with '/', "/Aaa/Bbb/Ccc" p is the point of 'B'
-		// "Aaa" is a module name
-        	p++;
-		q=strchr(p, '/');
-		if(q!=NULL){
-			nstrc=q-p+1;
-			nstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, nstr, nstrc);
-			memcpy(nstr, p, nstrc-1);
-			nstr[nstrc-1]=0;
-			q++;
-			pnstr=nstr;
-		}else{
-			pnstr=p;
-		}
-		anums[0]=yang_node_mod_get_enum(dbald, pnstr);
-		p=q;
-		ec++;
+	int thispi=0;
+	int slen;
+	int anumi=0;
+	int anumdepth, level;
+	uint8_t aps[UC_MAX_AP_DEPTH+1];
+	if(astr[0]=='/'){
+		anumdepth=0;
+		level=0;
 	}else{
-		// if astr doesn't start with '/', "Aaa/Bbb/Ccc", p is the point of A
-		// anums[0] must be set before calling this funciton
-	}
-	ap0=anums[0];
-	for(i=ec;i<maxele && (p!=NULL);i++){
-		dbcall=false;
-		q=strchr(p, '/');
-		if(q!=NULL){
-			if(nstrc<q-p+1){
-				nstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, nstr, q-p+1);
-			}
-			nstrc=q-p+1;
-			memcpy(nstr, p, nstrc-1);
-			nstr[nstrc-1]=0;
-			q++;
-			pnstr=nstr;
-		}else{
-			pnstr=p;
-			q=NULL;
-		}
-		switch(ap0){
-		case XL4_DATA_RW:
-			anums[i]=xl4data_node_get_enum(pnstr);
-			break;
-		case XL4_EXTMOD_RW:
-			if(i==ec){
-				aps[0]=XL4_EXTMOD_RW;
-				if(q==NULL){
-					if(maxele==1){
-						// "Aaa" must be a module name
-						anums[0]=yang_node_extmod_get_enum(dbald, pnstr);
-						if(anums[0]!=0xffu){
-							ecode=1;
-							break;
-						}
-						ecode=-1;
-						break;
-					}
-					// "Aaa" must be a node name,
-					// anums[1] must be defined before calling this
-					aps[1]=anums[1];
-					dbcall=true;
-				}else{
-					// "Aaa" must be a module name
-					anums[i]=yang_node_extmod_get_enum(dbald, pnstr);
-					aps[1]=anums[i];
-				}
-			}else{
-				dbcall=true;
-			}
-			break;
-		default:
-			if(i==ec){
-				aps[0]=ap0;
-			}
-			res=yang_static_get_id_by_name(dbald, pnstr, aps[0]);
-			if(res>=0){
-				anums[i]=res;
-			}else{
-				dbcall=true;
-			}
-		}
-		if(ecode!=0){break;}
-		if(!dbcall){
-			p=q;
-			continue;
-		}
-		if(range==NULL){
-			range=get_xl4_enum_range(dbald, aps);
-			if(range==NULL){
-				UB_LOG(UBL_ERROR, "%s:no data in the range\n", __func__);
-				ecode=-1;
+		for(i=0;i<maxele;i++){
+			aps[i]=anums[i];
+			if(aps[i]==255u){break;}
+			if(i==UC_MAX_AP_DEPTH){
 				break;
 			}
 		}
-		res=get_enum_in_range(dbald, range, p);
-		if(res<0){
-			UB_LOG(UBL_ERROR, "%s:no name in the DB, p=%s\n", __func__, p);
-			ecode=-1;
-			break;
+		aps[0]&=0x7f;
+		anumdepth=i;
+		level=i;
+	}
+	// anumdepth is depth of preset nodes, start from '1', max is '5'
+	anumdepth=set_init_aps(dbald, astr, aps, UC_MAX_AP_DEPTH, &thispi, anumdepth);
+	aps[anumdepth]=255u; // terminate with 255
+	UB_LOG(UBL_DEBUGV, "%s:astr=%s, anumdepth=%d\n", __func__, astr, anumdepth);
+	thispi=0;
+	while(astr[thispi]!=0){
+		if(astr[thispi]=='/'){
+			thispi++;
 		}
-		anums[i]=res;
-		p=q;
+		q=strchr(&astr[thispi], '/');
+		if(q!=NULL){
+			slen=q-&astr[thispi];
+		}else{
+			slen=strlen(&astr[thispi]);
+		}
+		nstr=(char*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, nstr, slen+1);
+		memcpy(nstr, &astr[thispi], slen);
+		nstr[slen]=0;
+		anums[anumi]=get_onenode_enum(dbald, aps, nstr, &range, &anumdepth,
+					      level);
+		if(anums[anumi]==255u){break;}
+		anumi++;
+		if(anumi>=maxele){break;}
+		thispi+=slen;
+		level++;
 	}
 	if(nstr!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, nstr);}
-	if(ecode!=0){return ecode;}
-	if(i<maxele){anums[i]=255;}
-	return i;
+	if(range!=NULL){uc_get_range_release(dbald, range);}
+	if(anumi<maxele){anums[anumi]=255u;}
+	return anumi;
+}
+
+static const char *get_regnode_string(uc_dbald *dbald, int level,
+				      uint8_t *aps, uint8_t *anums,
+				      int *relbstr, uint32_t *bsize)
+{
+	const char *bstr;
+
+	if((anums[0]==XL4_EXTMOD_RW) || (anums[0]==XL4_EXTMOD_RO)){
+		if(level==0){
+			return "xl4-extmod";
+		}else if(level==1){
+			bstr=get_name_by_id(dbald, anums[1], XL4_EXTMOD_REG);
+			if(bstr==NULL){
+				return NULL;
+			}
+			aps[2]=XL4_EXTMOD_RW;
+			aps[3]=anums[level];
+			aps[4]=255u;
+			aps[5]=1u;
+			return bstr;
+		}else{
+			aps[6]=anums[level];
+			if(uc_dbal_get(dbald, aps, 7, (void**)&bstr, bsize)!=0){
+				UB_LOG(UBL_WARN,
+				       "%s:no node string in DB,  mod=%d, node=%d\n",
+				       __func__, anums[1], anums[level]);
+				return NULL;
+			}
+			*relbstr=7;
+			return bstr;
+		}
+	}else{
+		if(level==0){
+			bstr=get_name_by_id(dbald, anums[0]&~0x80, UC_YANGMOD_REG);
+			if(bstr==NULL){
+				// this is error
+				return NULL;
+			}
+			aps[2]=anums[0]&0x7f;
+			return bstr;
+		}else{
+			bstr=YANG_STATIC_GET_NAME_BY_ID(dbald, anums[level], aps[2]);
+			if(bstr!=NULL){
+				return bstr;
+			}
+			aps[3]=255;
+			aps[4]=1;
+			aps[5]=anums[level];
+			if(uc_dbal_get(dbald, aps, 6, (void**)&bstr, bsize)!=0){
+				UB_LOG(UBL_WARN,
+				       "%s:no node string in DB,  mod=%d, node=%d\n",
+				       __func__, anums[0], anums[level]);
+				return NULL;
+			}
+			*relbstr=6;
+			return bstr;
+		}
+	}
+}
+
+// level > 1
+static const char *xl4data_get_ext_string(uc_dbald *dbald, int level,
+					  uint8_t *aps, uint8_t *anums,
+					  int *relbstr, uint32_t *bsize)
+{
+	switch(anums[1]){
+	default:
+		return NULL;
+	case UC_MIRROR:
+		if(level==2){
+			return UC_MIRROR_DEVICE_STR;
+		}
+		return get_regnode_string(dbald, level-3, aps,
+					  &anums[3], relbstr, bsize);
+	}
 }
 
 int yang_node_get_node_string(uc_dbald *dbald, char **rstr, uint8_t *anums)
@@ -397,6 +376,7 @@ int yang_node_get_node_string(uc_dbald *dbald, char **rstr, uint8_t *anums)
 	int relbstr=0;
 	int res=-1;
 	char estr[8];
+	if(dbald==NULL){return -1;}
         *rstr=NULL;
 	for(i=0;i<UC_MAX_AP_DEPTH;i++){
 		if(anums[i]==255u){break;}
@@ -410,80 +390,25 @@ int yang_node_get_node_string(uc_dbald *dbald, char **rstr, uint8_t *anums)
 		case XL4_DATA_RO:
 			if(i==0){
 				bstr="xl4-data";
+			}else if(i==1){
+				bstr=yang_node_get_xl4data_string(anums[i]);
 			}else{
-				bstr=xl4data_get_string(anums[i]);
-				if(bstr==NULL){
-					res=1;
-					break;
-				}
+				bstr=xl4data_get_ext_string(dbald, i, aps, anums,
+							    &relbstr, &bsize);
+			}
+			if(bstr==NULL){
+				res=1;
+				break;
 			}
 			bsize=strlen(bstr)+1;
 			break;
-		case XL4_EXTMOD_RW:
-		case XL4_EXTMOD_RO:
-			if(dbald==NULL){
-				res=-1;
-				break;
-			}
-			if(i==0){
-				bstr="xl4-extmod";
-				bsize=strlen(bstr)+1;
-			}else if(i==1){
-				bstr=get_name_by_id(dbald, anums[1], XL4_EXTMOD_REG);
-				if(bstr==NULL){
-					res=1;
-					break;
-				}
-				bsize=strlen(bstr)+1;
-				aps[2]=XL4_EXTMOD_RW;
-				aps[3]=anums[i];
-				aps[4]=255u;
-				aps[5]=1u;
-			}else{
-				aps[6]=anums[i];
-				if(uc_dbal_get(dbald, aps, 7, (void**)&bstr, &bsize)!=0){
-					UB_LOG(UBL_WARN,
-					       "%s:no node string in DB,  mod=%d, node=%d\n",
-					       __func__, anums[1], anums[i]);
-					res=1;
-					break;
-				}
-				relbstr=7;
-				break;
-			}
-			break;
 		default:
-			if(dbald==NULL){
-				res=-1;
+			bstr=get_regnode_string(dbald, i, aps, anums, &relbstr, &bsize);
+			if(bstr==NULL){
+				res=1;
 				break;
 			}
-			if(i==0){
-				bstr=get_name_by_id(dbald, anums[0]&~0x80, UC_YANGMOD_REG);
-				if(bstr==NULL){
-					res=-1;
-					break;
-				}
-				bsize=strlen(bstr)+1;
-				aps[2]=anums[0]&0x7f;
-			}else{
-				bstr=yang_static_get_name_by_id(dbald, anums[i], aps[2]);
-				if(bstr!=NULL){
-					bsize=strlen(bstr)+1;
-					break;
-				}
-				aps[3]=255;
-				aps[4]=1;
-				aps[5]=anums[i];
-				if(uc_dbal_get(dbald, aps, 6, (void**)&bstr, &bsize)!=0){
-					UB_LOG(UBL_WARN,
-					       "%s:no node string in DB,  mod=%d, node=%d\n",
-					       __func__, anums[0], anums[i]);
-					res=1;
-					break;
-				}
-				relbstr=6;
-				break;
-			}
+			bsize=strlen(bstr)+1;
 			break;
 		}
 		if(res==1){

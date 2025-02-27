@@ -1,0 +1,60 @@
+module xl4-ieee802-dot1ab-lldp {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/xl4lldp";
+  prefix xl4lldp;
+
+  import ieee802-dot1ab-lldp {
+    prefix dot1ab-lldp;
+  }
+  import ietf-routing {
+    prefix rt;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  contact
+    "URL: https://excelfore.com";
+  description
+    "This YANG module defines the Deviations of the Excelfore LLDP
+     implementation to the IEEE 802.1AB standard. It is meant to be
+     used with that the IEEE 802.1AB standard yang file.";
+
+  revision 2023-09-18 {
+    description
+      "Initial revision.";
+    reference
+      "ieee802-dot1ab-lldp (rev. 2022-03-15)";
+  }
+
+  deviation "/dot1ab-lldp:lldp/dot1ab-lldp:notification-interval" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1ab-lldp:lldp/dot1ab-lldp:port/dot1ab-lldp:notification-interval" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1ab-lldp:lldp/dot1ab-lldp:port/dot1ab-lldp:notification-enable" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1ab-lldp:remote-table-change/dot1ab-lldp:remote-insert" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1ab-lldp:remote-table-change/dot1ab-lldp:remote-delete" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1ab-lldp:remote-table-change/dot1ab-lldp:remote-drops" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1ab-lldp:remote-table-change/dot1ab-lldp:remote-ageouts" {
+    deviate not-supported;
+  }
+
+  deviation "/rt:routing-state" {
+    deviate not-supported;
+  }
+}

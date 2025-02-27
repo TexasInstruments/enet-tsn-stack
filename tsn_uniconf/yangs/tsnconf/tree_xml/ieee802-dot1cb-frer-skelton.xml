@@ -1,0 +1,19 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<frer xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-frer">
+		<sequence-generation>
+			<index/>
+			<stream>
+				<!-- # entries: 1.. -->
+			</stream>
+			<reset/>
+		</sequence-generation>
+		<sequence-recovery>
+			<index/>
+			<stream>
+				<!-- # entries: 1.. -->
+			</stream>
+			<reset></reset>
+		</sequence-recovery>
+	</frer>
+</data>

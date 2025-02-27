@@ -1,0 +1,29 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+	<stream-identity xmlns="urn:ieee:std:802.1Q:yang:ieee802-dot1cb-stream-identification">
+		<index/>
+		<handle/>
+		<in-facing>
+			<input-port>
+				<!-- # entries: 0.. -->
+			</input-port>
+			<output-port>
+				<!-- # entries: 0.. -->
+			</output-port>
+		</in-facing>
+		<out-facing>
+			<input-port>
+				<!-- # entries: 0.. -->
+			</input-port>
+			<output-port>
+				<!-- # entries: 0.. -->
+			</output-port>
+		</out-facing>
+		<null-stream-identification>
+			<destination-mac/>
+			<tagged/>
+			<vlan/>
+		</null-stream-identification>
+		<config-status xmlns="http://excelfore.com/ns/xl4-ieee802-dot1cb-stream-identification"/>
+	</stream-identity>
+</data>

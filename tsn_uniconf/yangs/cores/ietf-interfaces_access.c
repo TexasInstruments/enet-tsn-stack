@@ -49,6 +49,7 @@
 */
 #include <tsn_unibase/unibase.h>
 #include <tsn_combase/combase.h>
+#include "yang_node.h"
 #include "yang_modules.h"
 #include "yang_db_access.h"
 #include "ietf-interfaces.h"
@@ -59,50 +60,75 @@ extern uint8_t IETF_INTERFACES_func(uc_dbald *dbald);
 #define IETF_INTERFACES_RO_Y (IETF_INTERFACES_func(ydbia->dbald)|0x80u)
 
 static void set_dpara_k3vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
-			    char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
+			    char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			    bool status, bool ismirror)
 {
+	uint8_t apsidx=0u, kvsidx=0u;
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
-	dbpara->aps[0] = status?IETF_INTERFACES_RO:IETF_INTERFACES_RW;
-	dbpara->aps[1] = IETF_INTERFACES_INTERFACES;
-	dbpara->aps[2] = IETF_INTERFACES_INTERFACE;
-	dbpara->aps[3] = k1;
-	dbpara->aps[4] = k2;
-	dbpara->aps[5] = k3;
-	dbpara->aps[6] = 255u;
-	dbpara->kvs[0]=name;
-	if(name){dbpara->kss[0]=strlen(name)+1u;}
-	dbpara->kvs[1]=NULL;
+	if(ismirror && NULL!=brname) {
+		dbpara->aps[apsidx++]=XL4_DATA_RW;
+		dbpara->aps[apsidx++]=UC_MIRROR;
+		dbpara->aps[apsidx++]=UC_MIRROR_DEVICE;
+	}
+	dbpara->aps[apsidx++] = status?IETF_INTERFACES_RO:IETF_INTERFACES_RW;
+	dbpara->aps[apsidx++] = IETF_INTERFACES_INTERFACES;
+	dbpara->aps[apsidx++] = IETF_INTERFACES_INTERFACE;
+	dbpara->aps[apsidx++] = k1;
+	dbpara->aps[apsidx++] = k2;
+	dbpara->aps[apsidx++] = k3;
+	dbpara->aps[apsidx++] = 255u;
+	if(ismirror && NULL!=brname) {
+		dbpara->kvs[kvsidx]=(void*)brname;
+		dbpara->kss[kvsidx++]=strlen(brname)+1u;
+	}
+	dbpara->kvs[kvsidx]=name;
+	if(name){dbpara->kss[kvsidx++]=strlen(name)+1u;}
+	dbpara->kvs[kvsidx]=NULL;
+	dbpara->kss[kvsidx++]=0u;
 }
 
 static void set_dpara_k4vk1(uc_dbald *dbald, yang_db_access_para_t *dbpara,
-			    char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			    char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
 			    uint8_t k4, void *kv1, uint32_t kvs1, bool status,
-			    uint8_t onhw)
+			    bool ismirror, uint8_t onhw)
 {
+	uint8_t apsidx=0u, kvsidx=0u;
 	dbpara->onhw=onhw;
-	dbpara->aps[0] = status?IETF_INTERFACES_RO:IETF_INTERFACES_RW;
-	dbpara->aps[1] = IETF_INTERFACES_INTERFACES;
-	dbpara->aps[2] = IETF_INTERFACES_INTERFACE;
-	dbpara->aps[3] = IETF_INTERFACES_BRIDGE_PORT;
-	dbpara->aps[4] = k1;
-	dbpara->aps[5] = k2;
-	dbpara->aps[6] = k3;
-	dbpara->aps[7] = k4;
-	dbpara->aps[8] = 255u;
-	dbpara->kvs[0]=name;
-	if(name){dbpara->kss[0]=strlen(name)+1u;}
-	dbpara->kvs[1]=kv1;
-	dbpara->kss[1]=kvs1;
-	dbpara->kvs[2]=NULL;
+	if(ismirror) {
+		dbpara->aps[apsidx++]=XL4_DATA_RW;
+		dbpara->aps[apsidx++]=UC_MIRROR;
+		dbpara->aps[apsidx++]=UC_MIRROR_DEVICE;
+	}
+	dbpara->aps[apsidx++] = status?IETF_INTERFACES_RO:IETF_INTERFACES_RW;
+	dbpara->aps[apsidx++] = IETF_INTERFACES_INTERFACES;
+	dbpara->aps[apsidx++] = IETF_INTERFACES_INTERFACE;
+	dbpara->aps[apsidx++] = IETF_INTERFACES_BRIDGE_PORT;
+	dbpara->aps[apsidx++] = k1;
+	dbpara->aps[apsidx++] = k2;
+	dbpara->aps[apsidx++] = k3;
+	dbpara->aps[apsidx++] = k4;
+	dbpara->aps[apsidx++] = 255u;
+	if(ismirror) {
+		dbpara->kvs[kvsidx]=(void*)brname;
+		if(brname){dbpara->kss[kvsidx++]=strlen(brname)+1u;}
+	}
+	dbpara->kvs[kvsidx]=name;
+	if(name){dbpara->kss[kvsidx++]=strlen(name)+1u;}
+	dbpara->kvs[kvsidx]=kv1;
+	dbpara->kss[kvsidx++]=kvs1;
+	dbpara->kvs[kvsidx]=NULL;
+	dbpara->kss[kvsidx++]=0u;
 }
 
 // vk_sz indicates how many bytes used to encode the parameter `vk`.
 // when the vk_sz is equal to 0, the value of `vk` shall not be used by this
 // function.
 static void set_dpara_knvk1(uc_dbald *dbald, yang_db_access_para_t *dbpara,
-			    char *name, uint32_t vk, uint8_t vk_sz,
+			    char *name, uint32_t vk1, uint8_t vk_sz,
 			    uint8_t kn[], uint8_t kn_sz, bool status)
 {
+	static uint32_t vk;
+	vk=vk1;
 	dbpara->onhw=YANG_DB_ONHW_NOACTION;
 	dbpara->aps[0]=status?IETF_INTERFACES_RO:IETF_INTERFACES_RW;
 	dbpara->aps[1]=IETF_INTERFACES_INTERFACES;
@@ -187,11 +213,60 @@ int ydbi_del_item_ifknvk1(yang_db_item_access_t *ydbia,
 	return err;
 }
 
+void ydbi_get_dbpara_ifk3vk0(yang_db_item_access_t *ydbia, char* brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status,
+			  bool ismirror)
+{
+	return set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+	                       status, ismirror);
+}
+
+int ydbi_get_item_ifk3vk0m(yang_db_item_access_t *ydbia, void **rval,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  bool status)
+{
+	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+	                status, YDBI_MIRROR);
+	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
+}
+
+int ydbi_rel_item_ifk3vk0m(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
+{
+	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+	                status, YDBI_MIRROR);
+	return ydbi_rel_foot(ydbia, __func__);
+}
+
+int ydbi_set_item_ifk3vk0m(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status,
+			  void *value, uint32_t vsize, uint8_t notice)
+{
+	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+	                status, YDBI_MIRROR);
+	ydbia->dbpara.value=value;
+	ydbia->dbpara.vsize=vsize;
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
+}
+
+int ydbi_del_item_ifk3vk0m(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
+{
+	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+	                status, YDBI_MIRROR);
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
+}
+
 int ydbi_get_item_ifk3vk0(yang_db_item_access_t *ydbia, void **rval,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3, status,
+	                YDBI_NON_MIRROR);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
@@ -199,7 +274,8 @@ int ydbi_rel_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3, status,
+	                YDBI_NON_MIRROR);
 	return ydbi_rel_foot(ydbia, __func__);
 }
 
@@ -208,7 +284,8 @@ int ydbi_set_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  void *value, uint32_t vsize, uint8_t notice)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3, status,
+	                YDBI_NON_MIRROR);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -218,7 +295,60 @@ int ydbi_del_item_ifk3vk0(yang_db_item_access_t *ydbia,
 			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3, status);
+	set_dpara_k3vk0(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3, status,
+	                YDBI_NON_MIRROR);
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
+}
+
+void ydbi_get_dbpara_ifk4vk1(yang_db_item_access_t *ydbia, char *brname,
+			  char *name, uint8_t k1, uint8_t k2, uint8_t k3, uint8_t k4,
+			  void *kv1, uint32_t kvs1, bool status, bool ismirror)
+{
+	return set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2,
+			k3, k4, kv1, kvs1, status, ismirror, YANG_DB_ONHW_NOACTION);
+}
+
+int ydbi_get_item_ifk4vk1m(yang_db_item_access_t *ydbia, void **rval,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
+{
+	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_MIRROR, YANG_DB_ONHW_NOACTION);
+	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
+}
+
+int ydbi_rel_item_ifk4vk1m(yang_db_item_access_t *ydbia,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
+{
+	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_MIRROR, YANG_DB_ONHW_NOACTION);
+	return ydbi_rel_foot(ydbia, __func__);
+}
+
+int ydbi_set_item_ifk4vk1m(yang_db_item_access_t *ydbia,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status,
+			  void *value, uint32_t vsize, uint8_t notice,
+			  uint8_t onhw)
+{
+	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_MIRROR, onhw);
+	ydbia->dbpara.value=value;
+	ydbia->dbpara.vsize=vsize;
+	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
+}
+
+int ydbi_del_item_ifk4vk1m(yang_db_item_access_t *ydbia,
+			  char *brname, char *name, uint8_t k1, uint8_t k2, uint8_t k3,
+			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
+{
+	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, brname, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_MIRROR, YANG_DB_ONHW_NOACTION);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
@@ -227,8 +357,8 @@ int ydbi_get_item_ifk4vk1(yang_db_item_access_t *ydbia, void **rval,
 			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
 {
 	if(ydbi_get_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
-			k4, kv1, kvs1, status, YANG_DB_ONHW_NOACTION);
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_NON_MIRROR, YANG_DB_ONHW_NOACTION);
 	return ydbi_get_foot(ydbia, __func__, rval, UBL_INFO);
 }
 
@@ -237,8 +367,8 @@ int ydbi_rel_item_ifk4vk1(yang_db_item_access_t *ydbia,
 			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
 {
 	if(ydbi_rel_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
-			k4, kv1, kvs1, status, YANG_DB_ONHW_NOACTION);
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_NON_MIRROR, YANG_DB_ONHW_NOACTION);
 	return ydbi_rel_foot(ydbia, __func__);
 }
 
@@ -249,8 +379,8 @@ int ydbi_set_item_ifk4vk1(yang_db_item_access_t *ydbia,
 			  uint8_t onhw)
 {
 	if(ydbi_set_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
-			k4, kv1, kvs1, status, onhw);
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_NON_MIRROR, onhw);
 	ydbia->dbpara.value=value;
 	ydbia->dbpara.vsize=vsize;
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, notice);
@@ -261,8 +391,8 @@ int ydbi_del_item_ifk4vk1(yang_db_item_access_t *ydbia,
 			  uint8_t k4, void *kv1, uint32_t kvs1, bool status)
 {
 	if(ydbi_del_head(ydbia, __func__)!=0){return -1;}
-	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, name, k1, k2, k3,
-			k4, kv1, kvs1, status, YANG_DB_ONHW_NOACTION);
+	set_dpara_k4vk1(ydbia->dbald, &ydbia->dbpara, NULL, name, k1, k2, k3,
+			k4, kv1, kvs1, status, YDBI_NON_MIRROR, YANG_DB_ONHW_NOACTION);
 	return ydbi_set_foot(ydbia, __func__, UBL_INFO, YDBI_NO_NOTICE);
 }
 
@@ -352,13 +482,16 @@ int ydbi_get_ifupdown_ucnotice(yang_db_item_access_t *ydbia, char *netdev,
 		       __func__, res, vsize);
 		return -1;
 	}
-	if(*((uint32_t*)value)==1){
+	res=(int)ub_int64_from_non_aligned(value, vsize, NULL);
+
+	if(res==1){
 		*ifupdown=1;
 	}else{
 		*ifupdown=0;
 	}
 	if(key[5]<=CB_MAX_NETDEVNAME){
 		memcpy(netdev, &key[6], key[5]);
+		res=0;
 	}else{
 		res=-1;
 	}

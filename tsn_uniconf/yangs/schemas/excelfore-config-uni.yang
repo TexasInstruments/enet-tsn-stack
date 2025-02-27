@@ -1,0 +1,177 @@
+module excelfore-config-uni {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/excelfore-config-uni";
+  prefix xl4cfguni;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import ieee802-dot1q-types {
+    prefix dot1q-types;
+  }
+  import ietf-netconf-monitoring {
+    prefix ncm;
+  }
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  description
+    "This YANG module defines the Excelfore's User/Network Interface (UNI) for
+     exchanging of information between CUC and CNC.
+
+     This modules not only contains contains configuration related to TSN but
+     also other non-TSN related configurations needed by CUC and CNC to be able
+     to properly configure Excelfore's TSN Network application and services.";
+
+  revision 2024-03-15 {
+    description
+      "Initial creation.";
+    reference
+      "Excelfore User/Network Interface (UNI) Specification";
+  }
+
+  identity uniconf-udp {
+    base ncm:transport;
+    description
+      "Access DB through Excelfore UNICONF monitor app (uniconfmon) via UDP
+       with our own protocol.";
+    reference
+      "Excelfore UNICONF Specification";
+  }
+
+  identity uniconf-direct {
+    base ncm:transport;
+    description
+      "Access DB directly via Excelfore UNICONF APIs.";
+    reference
+      "Excelfore UNICONF Specification";
+  }
+
+  container xl4-uni {
+    description
+      "Top-level container for the Excelfore UNI module.";
+    list domain {
+      key "domain-id";
+      description
+        "List of Configuration Domains.
+         The 'domain-id' used as key for this list correspond to the
+         same domain-id in dot1q-tsn-config-uni";
+      leaf domain-id {
+        type string;
+        description
+          "The Domain ID is a unique identifier of a Configuration
+           Domain. It is used to identify the Configuration Domain a CUC
+           belongs to.";
+        reference
+          "46.2.2.1 of IEEE Std 802.1Qdj";
+      }
+      leaf-list event-bridges {
+        type string;
+        description
+          "bridge name list which has new events with ieee802-dot1q-cnc-config";
+      }
+      list nconf-servers {
+        key "name";
+        description
+          "List of NETCONF servers in the network.";
+        leaf name {
+          type dot1q-types:name-type;
+          description
+            "bridge name of the NETCONF server instance.";
+        }
+        leaf address {
+          type inet:host;
+          description
+            "IP address or hostname of the NETCONF server instance.";
+        }
+        leaf port {
+          type inet:port-number;
+          description
+            "IP port, if this doesn't exist use the default of each transport";
+        }
+        leaf transport {
+          type identityref {
+            base ncm:transport;
+          }
+          description
+            "Identifies the transport for each session, e.g.,
+             'netconf-ssh', 'netconf-tls', etc.";
+        }
+        leaf role {
+          config false;
+          type uint8;
+          description
+            "Flag to indicate the role of this NETCONF Server in the
+             configuration network.
+
+             When value is 0 or not set, this server is considered to be
+             an end-station, either a Talker/Listener or any device that
+             are not managed by CUC/CNC.
+
+             The following are the available roles and their corresponding bit
+             positions:
+               bit0: When set, this server is a bridge that can be configured by CNC.
+               bit1: When set, this server is where CUC is enabled and running.
+               bit2: When set, this server is where CNC is enabled and running.
+               bit3~7: Reserved for future use.";
+        }
+      }
+      list nconf-clients {
+        key "name";
+        description
+          "List of NETCONF clients in the network.";
+        leaf name {
+          type dot1q-types:name-type;
+          description
+            "bridge name of the NETCONF client instance.";
+        }
+        leaf cert {
+          type string {
+            length "1 .. max";
+          }
+          mandatory true;
+          config false;
+          description
+            "Path to the SSL server X.509 certificate in pem format
+             used for the NETCONF over TLS protocol.";
+        }
+        leaf key {
+          type string {
+            length "1 .. max";
+          }
+          mandatory true;
+          config false;
+          description
+            "Path to the SSL server X.509 certificate key in pem format
+             used for the NETCONF over TLS protocol.";
+        }
+        leaf ca-cert {
+          type string {
+            length "1 .. max";
+          }
+          mandatory true;
+          config false;
+          description
+            "Path to the Certificate Authority (CA) X.509 certificate in pem
+             format used for authenticating the server when using the NETCONF
+             over TLS protocol.";
+        }
+      }
+      container mac-address-pool {
+        leaf top-address {
+          type yang:mac-address;
+          description
+            "the start MAC address of the pool";
+        }
+        leaf busy-bitmap {
+          type uint64;
+          description
+            "bit N=1 means the address of 'top-address+N' is busy.";
+        }
+      }
+    }
+  }
+}

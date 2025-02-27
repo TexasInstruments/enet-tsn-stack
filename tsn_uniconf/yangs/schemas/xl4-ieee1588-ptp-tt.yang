@@ -1,0 +1,440 @@
+module xl4-ieee1588-ptp-tt {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/xl4gptp";
+  prefix xl4gptp;
+
+  import ieee1588-ptp-tt {
+    prefix ptp;
+  }
+  import ieee802-dot1as-gptp {
+    prefix dot1as-gptp;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  contact
+    "URL: https://excelfore.com";
+  description
+    "This YANG module defines the Deviations of the Excelfore gPTP
+     implementation to the IEEE 802.1AS standard. It is meant to be
+     used with that the IEEE 1588 and 802.1AS standard yang files.";
+
+  revision 2024-08-21 {
+    description
+      "adjsut to the change ieee802-dot1as-gptp -> ieee802-dot1as-gptp";
+    reference
+      "ieee802-dot1as-gptp.yang (rev. 2024-06-23)
+       ieee1588-ptp-tt.yang (rev. 2023-08-14)
+       Excelfore gPTP (ver. 1.2.6)";
+  }
+
+  typedef hexuint16 {
+    type string {
+      pattern '0x[0-9a-fA-F]{4}';
+    }
+    description
+      "16-bit unsigned integer represented in hexadecimal format";
+    reference
+      "Excelfore gPTP Specification";
+  }
+
+  augment "/ptp:ptp" {
+    description
+      "Contains all YANG nodes for the PTP data sets with
+       Augementations and Deviations for Excelfore gPTP
+       implementation.";
+    leaf-list instance-domain-map {
+      type hexuint16;
+      description
+        "Mapping of instance-index to domain number.
+         Format:
+         +---------------------------------+
+         | 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 |
+         +---------------------------------+
+         | gptp instance  |  domain-number |
+         +---------------------------------+";
+      reference
+        "Excelfore gPTP Specification";
+    }
+  }
+
+  augment "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port" {
+    container port-clock {
+      leaf adjrate {
+        type int32;
+        config false;
+        description
+          "adjustment rate on this port clock in ppb unit.";
+      }
+      leaf ptpdev-name {
+        type string {
+          length "0..64";
+        }
+        description
+          "When this value is configured, the specified device will be used as
+           the PTP clock mapped to the configured underlying interface. In other,
+           words, the configured device name will override and will take priority
+           over the system-mapped clock to the interface.";
+        default "";
+      }
+    }
+  }
+
+  augment "/ptp:ptp/ptp:instances/ptp:instance" {
+    container clock-state {
+      config false;
+      leaf gmstate {
+        type enumeration {
+          enum unsync {
+            value 0;
+            description
+              "the local clock is not synchronized to GM clock";
+          }
+          enum unstable {
+            value 1;
+            description
+              "the local clock is synchronized to GM clock, not yet stable";
+          }
+          enum stable {
+            value 2;
+            description
+              "the local clock is synchronized to GM clock, and stable";
+          }
+        }
+      }
+      leaf gmstate_ts64 {
+        type int64;
+        description
+          "timestamp when gmstate is updated.";
+      }
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:default-ds/ptp:two-step-flag" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:default-ds/ptp:domain-number" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:default-ds/ptp:sdo-id" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:default-ds/ptp:max-steps-removed" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:default-ds/ptp:instance-enable" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:default-ds/ptp:instance-type" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:current-ds" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:current-ds/ptp:mean-path-delay" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:current-ds/ptp:synchronization-uncertain" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:current-ds/dot1as-gptp:gm-change-count" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:current-ds/dot1as-gptp:time-of-last-gm-change" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:current-ds/dot1as-gptp:time-of-last-phase-change" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds/ptp:parent-stats" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds/ptp:observed-parent-offset-scaled-log-variance" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds/ptp:observed-parent-clock-phase-change-rate" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds/dot1as-gptp:cumulative-rate-ratio" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds/ptp:protocol-address" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:parent-ds/ptp:synchronization-uncertain" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:current-utc-offset" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:current-utc-offset-valid" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:leap59" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:leap61" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:time-traceable" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:frequency-traceable" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:ptp-timescale" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:time-properties-ds/ptp:time-source" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:description-ds" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:time-transmitter-only" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:peer-mean-path-delay" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:delay-asymmetry" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-log-announce-interval" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-log-sync-interval" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:log-sync-interval" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:delay-mechanism" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-log-pdelay-req-interval" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-log-gptp-cap-interval" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:initial-compute-neighbor-rate-ratio" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:current-compute-neighbor-rate-ratio" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-compute-neighbor-rate-ratio" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:mgt-compute-neighbor-rate-ratio" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:initial-compute-mean-link-delay" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:current-compute-mean-link-delay" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-compute-mean-link-delay" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:mgt-compute-mean-link-delay" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:version-number" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/ptp:minor-version-number" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:nup" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:ndown" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:initial-one-step-tx-oper" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:use-mgt-one-step-tx-oper" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:mgt-one-step-tx-oper" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:port-ds/dot1as-gptp:sync-locked" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:port-statistics-ds" {
+    deviate replace {
+      config false;
+    }
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:port-statistics-ds/dot1as-gptp:rx-packet-discard-count" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:port-statistics-ds/dot1as-gptp:sync-receipt-timeout-count" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:port-statistics-ds/dot1as-gptp:announce-receipt-timeout-count" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:port-statistics-ds/dot1as-gptp:pdelay-allowed-lost-exceeded-count" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:port-statistics-ds/dot1as-gptp:tx-one-step-sync-count" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/dot1as-gptp:asymmetry-measurement-mode-ds" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:description-port-ds" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:communication-cap-port-ds" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:instances/ptp:instance/ptp:ports/ptp:port/ptp:common-services-port-ds" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:transparent-clock-default-ds" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:transparent-clock-ports" {
+    deviate not-supported;
+  }
+
+  deviation "/ptp:ptp/ptp:common-services" {
+    deviate not-supported;
+  }
+}

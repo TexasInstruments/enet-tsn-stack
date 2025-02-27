@@ -81,7 +81,7 @@ extern const yang_identityref_t yang_identityref_list[];
  * External APIs
  *----------------------------------------------------------------------------*/
 
-uint32_t yang_identityref_getval(char *identity_str, char *hints);
-char* yang_identityref_getstr(uint32_t identity_val, char *hints);
-char* yang_identityref_getns(uint32_t identity_val, char *hints);
-
+uint32_t yang_identityref_getval(const char *identity_str, int eslen,
+				 const char *hints);
+char* yang_identityref_getstr(uint32_t identity_val, const char *hints);
+char* yang_identityref_getns(uint32_t identity_val, const char *hints);

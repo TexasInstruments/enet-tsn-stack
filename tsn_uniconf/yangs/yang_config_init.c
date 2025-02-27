@@ -51,25 +51,14 @@
 #include "../uc_dbal.h"
 #include "../hal/uc_hwal.h"
 extern int yang_config_coresinit(uc_dbald *dbald, uc_hwald *hwald);
-extern int yang_nconf_config_coresinit(uc_dbald *dbald);
-extern int yang_config_cuncinit(uc_dbald *dbald, uc_hwald *hwald);
-extern int yang_nconf_config_cuncinit(uc_dbald *dbald);
+extern int yang_config_tsnconfinit(uc_dbald *dbald, uc_hwald *hwald);
 // YANG_CONFIG_INIT
 int yang_config_init(uc_dbald *dbald, uc_hwald *hwald)
 {
 	int res=0;
 	res|=yang_config_coresinit(dbald, hwald);
-	res|=yang_config_cuncinit(dbald, hwald);
+	res|=yang_config_tsnconfinit(dbald, hwald);
 	// MODULES_INIT_DONE
-	return res;
-}
-
-int yang_nconf_config_init(uc_dbald *dbald)
-{
-	int res=0;
-	res|=yang_nconf_config_coresinit(dbald);
-	res|=yang_nconf_config_cuncinit(dbald);
-	// NCONF_INIT_DONE
 	return res;
 }
 

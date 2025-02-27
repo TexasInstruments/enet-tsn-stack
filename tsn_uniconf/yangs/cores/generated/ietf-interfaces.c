@@ -87,12 +87,12 @@ int ietf_interfaces_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0003_ietf-interfaces/interfaces/interface/bridge-port/traffic-class/pqueue-map
 	//0004_ietf-interfaces/interfaces/interface/bridge-port/traffic-class
 	//0005_ietf-interfaces/interfaces/interface/bridge-port/transmission-selection-algorithm-table/transmission-selection-algorithm-map
-	//0006_ietf-interfaces/interfaces/interface/bridge-port/address
+	//0006_ietf-interfaces/interfaces/interface/bridge-port/transmission-selection-algorithm-table
 	//0007_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/queue-max-sdu-table
 	//0008_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-control-list/gate-control-entry
-	//0009_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-control-list
+	//0009_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-control-list
 	//0010_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-control-list/gate-control-entry
-	//0011_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
+	//0011_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-control-list
 	//0012_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
 	//0013_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-cycle-time
 	//0014_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-base-time

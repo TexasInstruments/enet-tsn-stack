@@ -66,6 +66,8 @@ typedef struct ucman_data {
 	UC_NOTICE_SIG_T *ucmanstart;
 	const char *hwmod;
 	uint16_t ucmon_thread_port;
+	const uint8_t *ucinit;
+	int ucinit_size;
 } ucman_data_t;
 
 /*
@@ -81,6 +83,29 @@ int uniconf_ready(const char *dbname, uint8_t callmode, int tout_ms);
 void uniconf_remove_dbfile(const char *dname);
 
 void uniconf_cleanup_status(uc_dbald *dbald);
+#ifdef HAVE_SYS_STAT_H
+/*
+ * this is a helper function for unit tests to find "ucinit.bconf"
+ */
+#include <sys/stat.h>
+
+static inline const char *uniconf_find_bconf(const char *bdir)
+{
+	const char *ucinit_bconf="/tsn_uniconf/ucinit.bconf";
+	const char *sdirs[]={bdir, "/usr/share", "/usr/local/share"};
+	static char bconfpath[64];
+	struct stat sf;
+	int i;
+	for(i=0;i<3;i++){
+		if(sdirs[i]==NULL){continue;}
+		sprintf(bconfpath, "%s%s", sdirs[i], ucinit_bconf);
+		if(!stat(bconfpath, &sf) &&
+		   (sf.st_mode & (S_IRUSR|S_IRGRP|S_IROTH))){return bconfpath;}
+	}
+	return NULL;
+}
+
+#endif //HAVE_SYS_STAT_H
 
 #ifdef __cplusplus
 }

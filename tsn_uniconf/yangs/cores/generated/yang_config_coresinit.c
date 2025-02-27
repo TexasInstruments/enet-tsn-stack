@@ -50,58 +50,31 @@
 #include "../../../uc_dbal.h"
 #include "../../../hal/uc_hwal.h"
 #include "ietf-interfaces.h"
-#include "ietf-interfaces_runconf.h"
 #include "ieee1588-ptp-tt.h"
-#include "ieee1588-ptp-tt_runconf.h"
 #include "ieee802-dot1q-bridge.h"
-#include "ieee802-dot1q-bridge_runconf.h"
 #include "excelfore-tsn-remote.h"
-#include "excelfore-tsn-remote_runconf.h"
+#include "excelfore-aed.h"
 #include "excelfore-netconf-server.h"
-#include "excelfore-netconf-server_runconf.h"
 #include "ietf-netconf-monitoring.h"
-#include "ietf-netconf-monitoring_runconf.h"
 #include "ietf-yang-library.h"
-#include "ietf-yang-library_runconf.h"
-#include "ietf-interfaces_nconf.h"
-#include "ieee1588-ptp-tt_nconf.h"
-#include "ieee802-dot1q-bridge_nconf.h"
-#include "excelfore-tsn-remote_nconf.h"
-#include "excelfore-netconf-server_nconf.h"
-#include "ietf-netconf-monitoring_nconf.h"
-#include "ietf-yang-library_nconf.h"
 // YANG_CONFIG_INIT
 int yang_config_coresinit(uc_dbald *dbald, uc_hwald *hwald)
 {
 	int res=0;
 	res|=ietf_interfaces_config_init(dbald, hwald);
-	res|=ietf_interfaces_runconf_config_init(dbald, hwald);
 	res|=ieee1588_ptp_tt_config_init(dbald, hwald);
-	res|=ieee1588_ptp_tt_runconf_config_init(dbald, hwald);
 	res|=ieee802_dot1q_bridge_config_init(dbald, hwald);
-	res|=ieee802_dot1q_bridge_runconf_config_init(dbald, hwald);
 	res|=excelfore_tsn_remote_config_init(dbald, hwald);
-	res|=excelfore_tsn_remote_runconf_config_init(dbald, hwald);
+	res|=excelfore_aed_config_init(dbald, hwald);
+#ifdef UC_NETCONF
 	res|=excelfore_netconf_server_config_init(dbald, hwald);
-	res|=excelfore_netconf_server_runconf_config_init(dbald, hwald);
+#endif
+#ifdef UC_NETCONF
 	res|=ietf_netconf_monitoring_config_init(dbald, hwald);
-	res|=ietf_netconf_monitoring_runconf_config_init(dbald, hwald);
+#endif
+#ifdef UC_NETCONF
 	res|=ietf_yang_library_config_init(dbald, hwald);
-	res|=ietf_yang_library_runconf_config_init(dbald, hwald);
+#endif
 	// MODULES_INIT_DONE
-	return res;
-}
-
-int yang_nconf_config_coresinit(uc_dbald *dbald)
-{
-	int res=0;
-	res|=ietf_interfaces_nconf_config_init(dbald);
-	res|=ieee1588_ptp_tt_nconf_config_init(dbald);
-	res|=ieee802_dot1q_bridge_nconf_config_init(dbald);
-	res|=excelfore_tsn_remote_nconf_config_init(dbald);
-	res|=excelfore_netconf_server_nconf_config_init(dbald);
-	res|=ietf_netconf_monitoring_nconf_config_init(dbald);
-	res|=ietf_yang_library_nconf_config_init(dbald);
-	// NCONF_INIT_DONE
 	return res;
 }

@@ -1,0 +1,268 @@
+module xl4-ietf-interfaces {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/xl4interfaces";
+  prefix xl4if;
+
+  import ietf-interfaces {
+    prefix if;
+  }
+  import ieee802-dot1q-bridge {
+    prefix dot1q;
+  }
+  import ieee802-dot1q-types {
+    prefix dot1qtypes;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  contact
+    "URL: https://excelfore.com";
+  description
+    "This YANG module defines the Deviations of the Excelfore interfaces
+     implementation from IEEE ietf-interfaces";
+
+  revision 2023-03-25 {
+    description
+      "Added Deviation Statements and support latest ietf-interfaces yang
+       specification";
+    reference
+      "ietf-interfaces.yang (rev. 2018-02-20)
+       ieee802-dot1q-bridge.yang (rev. 2022-10-29)";
+  }
+  revision 2022-12-28 {
+    description
+      "Initial revision.";
+    reference
+      "ietf-interfaces.yang (rev. 2014-05-08)";
+  }
+
+  augment "/if:interfaces/if:interface" {
+    leaf duplex {
+      type enumeration {
+        enum full {
+          value 1;
+          description
+            "Full duplex.";
+        }
+        enum half {
+          value 2;
+          description
+            "Half duplex.";
+        }
+        enum unknown {
+          value 3;
+          description
+            "Link is currently disconnected or initializing.";
+        }
+      }
+      config false;
+      description
+        "Operational duplex mode of the Ethernet interface.";
+    }
+    leaf discon-workaround-time {
+      type uint32;
+      description
+        "guard time in msec for Intel NIC disconnection workaround";
+    }
+  }
+
+  augment "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:traffic-class" {
+    list tc-data {
+      key "tc";
+      leaf tc {
+        type dot1qtypes:traffic-class-type;
+      }
+      leaf lqueue {
+        config false;
+        type uint8 {
+          range "0..7";
+        }
+        description
+          "traffic Class to logical queue map";
+      }
+      leaf admin-idleslope {
+        type int64;
+      }
+      leaf oper-idleslope {
+        config false;
+        type int64;
+      }
+      leaf max-interference-size {
+        config false;
+        type uint32;
+      }
+      leaf max-frame-size {
+        config false;
+        type uint32;
+      }
+    }
+    leaf cbs-enabled {
+      type uint8;
+      description
+        "0:disable,1:enable,2:disable-complete,3:enable-complete";
+    }
+    leaf number-of-pqueues {
+      config false;
+      type uint8;
+      description
+        "number of physical queues";
+    }
+    list pqueue-map {
+      config false;
+      key "pqueue";
+      leaf pqueue {
+        type uint8;
+      }
+      leaf lqueue {
+        type int8;
+        description
+          "assigned logical queueu on this physical queue.
+                 set -1 for no assignment.";
+      }
+    }
+  }
+
+  deviation "/if:interfaces/if:interface/if:description" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:type" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:link-up-down-trap-enable" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:admin-status" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:last-change" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:higher-layer-if" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:lower-layer-if" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/if:statistics" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:port-type" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:pcp-selection" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:pcp-decoding-table" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:pcp-encoding-table" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:use-dei" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:drop-encoding" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:service-access-priority-selection" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:service-access-priority" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:traffic-class/dot1q:traffic-class-map" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:acceptable-frame" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:enable-ingress-filtering" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:enable-restricted-vlan-registration" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:enable-vid-translation-table" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:enable-egress-vid-translation-table" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:protocol-group-vid-set" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:admin-point-to-point" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:protocol-based-vlan-classification" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:max-vid-set-entries" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:port-number" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:capabilities" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:type-capabilties" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:external" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:oper-point-to-point" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:media-dependent-overhead" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:statistics" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:vid-translations" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces/if:interface/dot1q:bridge-port/dot1q:egress-vid-translations" {
+    deviate not-supported;
+  }
+
+  deviation "/if:interfaces-state" {
+    deviate not-supported;
+  }
+}

@@ -1,0 +1,108 @@
+module xl4-ieee802-dot1q-bridge {
+  yang-version 1.1;
+  namespace "http://excelfore.com/ns/xl4-ieee802-dot1q-bridge";
+  prefix xl4dot1q;
+
+  import ieee802-dot1q-bridge {
+    prefix dot1q;
+  }
+
+  organization
+    "Excelfore Japan K.K.";
+  contact
+    "URL: https://excelfore.com";
+  description
+    "This YANG module defines the Excelfore Deviations from IEEE std.";
+
+  revision 2023-04-25 {
+    description
+      "Initial revision.";
+    reference
+      "IEEE Std 801.1Q-2022
+       Excelfore xmrpd";
+  }
+
+  augment "/dot1q:bridges/dot1q:bridge" {
+    leaf control-status {
+      type enumeration {
+        enum init {
+          description
+            "Initial status value, no ongoing operation/registration.";
+        }
+        enum busy {
+          description
+            "There is an ongoing bridge registration that needs some
+             time to finished.";
+        }
+        enum success {
+          description
+            "Last bridge registration succeed";
+        }
+        enum failed {
+          description
+            "Last bridge registration failed";
+        }
+      }
+      description
+        "Status flag to control bridge configuration sequence.
+         Uper layer should initialized this flag before bridge configuration,
+         and wait until status becomes success or failed.";
+    }
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:bridge-type" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:type" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:capabilities" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:filtering-database/dot1q:aging-time" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:permanent-database/dot1q:filtering-entry/dot1q:port-map" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:version" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:override-default-pvid" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:protocol-template" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:max-msti" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:protocol-group-database" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:vid-to-fid-allocation" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:fid-to-vid-allocation" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-vlan/dot1q:vid-to-fid" {
+    deviate not-supported;
+  }
+
+  deviation "/dot1q:bridges/dot1q:bridge/dot1q:component/dot1q:bridge-mst" {
+    deviate not-supported;
+  }
+}

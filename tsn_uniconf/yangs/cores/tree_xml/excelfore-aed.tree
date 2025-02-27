@@ -1,0 +1,10 @@
+module: excelfore-aed
+  +--rw instance* [instance-index]
+     +--rw instance-index    uint8
+     +--rw aed-event* [stream-type]
+        +--rw stream-type    uint8
+        +--rw stream* [stream-index]
+           +--rw stream-index    uint8
+           +--ro port?           dot1q-types:name-type
+           +--ro status?         enumeration
+           +--ro timestamp?      uint64

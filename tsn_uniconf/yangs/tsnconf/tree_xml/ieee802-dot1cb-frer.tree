@@ -1,0 +1,13 @@
+module: ieee802-dot1cb-frer
+  +--rw frer
+     +--rw sequence-generation* [index]
+     |  +--rw index     uint32
+     |  +--rw stream*   -> /dot1cb-sid:stream-identity/handle
+     |  +--rw reset?    boolean
+     +--rw sequence-recovery* [index]
+        +--rw index     uint32
+        +--rw stream*   -> /dot1cb-sid:stream-identity/handle
+        +--rw reset?    boolean
+
+  augment /if:interfaces/if:interface/if:statistics:
+    +--ro frer

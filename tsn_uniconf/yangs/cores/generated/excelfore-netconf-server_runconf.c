@@ -86,6 +86,8 @@ const char *excelfore_netconf_server_enum_strings[]={
 };
 const uint8_t excelfore_netconf_server_enum_max=23;
 
+#ifdef GENERATE_INITCONFIG
+
 static int prefix_namespace_init(uc_dbald *dbald)
 {
 	if(yang_node_set_prefix_namespace(dbald, "xl4nconf",
@@ -131,14 +133,14 @@ int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwal
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = EXCELFORE_NETCONF_SERVER_TCP_PORT;
-	vtype=YANG_VTYPE_INET_PORT_NUMBER;
+	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = EXCELFORE_NETCONF_SERVER_SOCKET_NAME;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	//0001_excelfore-netconf-server/nconf-server/ssh
 	aps[3] = EXCELFORE_NETCONF_SERVER_PORT;
-	vtype=YANG_VTYPE_INET_PORT_NUMBER;
+	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[0] = EXCELFORE_NETCONF_SERVER_RO;
 	aps[3] = EXCELFORE_NETCONF_SERVER_STATUS;
@@ -149,7 +151,7 @@ int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwal
 	aps[2] = EXCELFORE_NETCONF_SERVER_TLS;
 	aps[3] = EXCELFORE_NETCONF_SERVER_CERT_TO_NAME;
 	aps[4] = EXCELFORE_NETCONF_SERVER_FINGERPRINT;
-	vtype=YANG_VTYPE_X509C2N_TLS_FINGERPRINT;
+	vtype=YANG_VTYPE_TLS_FINGERPRINT;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = EXCELFORE_NETCONF_SERVER_MAP_TYPE;
 	vtype=YANG_VTYPE_IDENTITYREF;
@@ -163,7 +165,7 @@ int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwal
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0003_excelfore-netconf-server/nconf-server/tls
 	aps[3] = EXCELFORE_NETCONF_SERVER_PORT;
-	vtype=YANG_VTYPE_INET_PORT_NUMBER;
+	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[0] = EXCELFORE_NETCONF_SERVER_RO;
 	aps[3] = EXCELFORE_NETCONF_SERVER_SERVER_CERT;
@@ -190,11 +192,11 @@ int excelfore_netconf_server_runconf_config_init(uc_dbald *dbald, uc_hwald *hwal
 	//0005_excelfore-netconf-server/nconf-server
 	aps[0] = EXCELFORE_NETCONF_SERVER_RW;
 	aps[2] = EXCELFORE_NETCONF_SERVER_UNDERLYING_INTERFACE;
-	vtype=YANG_VTYPE_IF_INTERFACE_REF;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
 	aps[0] = EXCELFORE_NETCONF_SERVER_RO;
 	aps[2] = EXCELFORE_NETCONF_SERVER_ADDRESS;
-	vtype=YANG_VTYPE_INET_HOST;
+	vtype=YANG_VTYPE_UNION;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
 	aps[1] = EXCELFORE_NETCONF_SERVER_VALUEKEY;
 	vtype=YANG_VTYPE_UINT8;
@@ -204,3 +206,4 @@ erexit:
 	return res;
 }
 
+#endif

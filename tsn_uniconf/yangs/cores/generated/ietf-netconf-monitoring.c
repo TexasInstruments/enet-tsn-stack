@@ -84,13 +84,13 @@ int ietf_netconf_monitoring_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0000_ietf-netconf-monitoring/netconf-state/capabilities
 	//0001_ietf-netconf-monitoring/netconf-state/datastores/datastore/locks/global-lock
 	//0002_ietf-netconf-monitoring/netconf-state/datastores/datastore/locks/partial-lock
-	//0003_ietf-netconf-monitoring/netconf-state/schemas
+	//0003_ietf-netconf-monitoring/netconf-state/datastores/datastore/locks
 	//0004_ietf-netconf-monitoring/netconf-state/datastores/datastore
-	//0005_ietf-netconf-monitoring/netconf-state/schemas
+	//0005_ietf-netconf-monitoring/netconf-state/datastores
 	//0006_ietf-netconf-monitoring/netconf-state/schemas/schema
-	//0007_ietf-netconf-monitoring/netconf-state/sessions
+	//0007_ietf-netconf-monitoring/netconf-state/schemas
 	//0008_ietf-netconf-monitoring/netconf-state/sessions/session
-	//0009_ietf-netconf-monitoring/netconf-state/statistics
+	//0009_ietf-netconf-monitoring/netconf-state/sessions
 	//0010_ietf-netconf-monitoring/netconf-state/statistics
 	if(kvs[0]!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, kvs[0]);}
 	kvs[0] = NULL;

@@ -151,26 +151,28 @@ const char *ietf_interfaces_enum_strings[]={
 };
 const uint8_t ietf_interfaces_enum_max=84;
 
+#ifdef GENERATE_INITCONFIG
+
 static int prefix_namespace_init(uc_dbald *dbald)
 {
 	if(yang_node_set_prefix_namespace(dbald, "sched-bridge",
 		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-sched-bridge")!=0){
 		return -1;
 	}
-	if(yang_node_set_prefix_namespace(dbald, "xl4if",
-		"http://excelfore.com/ns/xl4interfaces")!=0){
-		return -1;
-	}
 	if(yang_node_set_prefix_namespace(dbald, "preempt-bridge",
 		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-preemption-bridge")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "dot1q",
+		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
 		return -1;
 	}
 	if(yang_node_set_prefix_namespace(dbald, "if",
 		"urn:ietf:params:xml:ns:yang:ietf-interfaces")!=0){
 		return -1;
 	}
-	if(yang_node_set_prefix_namespace(dbald, "dot1q",
-		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
+	if(yang_node_set_prefix_namespace(dbald, "xl4if",
+		"http://excelfore.com/ns/xl4interfaces")!=0){
 		return -1;
 	}
 	return 0;
@@ -292,28 +294,28 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[3] = IETF_INTERFACES_BRIDGE_PORT;
 	aps[4] = IETF_INTERFACES_PRIORITY_REGENERATION;
 	aps[5] = IETF_INTERFACES_PRIORITY0;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY1;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY2;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY3;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY4;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY5;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY6;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_PRIORITY7;
-	vtype=YANG_VTYPE_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_INTERFACES_VALUEKEY;
 	aps[4] = IETF_INTERFACES_NAME;
@@ -327,28 +329,28 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY0;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY1;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY2;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY3;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY4;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY5;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY6;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY7;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	//0002_ietf-interfaces/interfaces/interface/bridge-port/traffic-class/tc-data
 	aps[0] = IETF_INTERFACES_RO;
@@ -373,7 +375,7 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[0] = IETF_INTERFACES_RW;
 	aps[6] = IETF_INTERFACES_VALUEKEY;
 	aps[7] = IETF_INTERFACES_TC;
-	vtype=YANG_VTYPE_DOT1QTYPES_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0003_ietf-interfaces/interfaces/interface/bridge-port/traffic-class/pqueue-map
 	aps[0] = IETF_INTERFACES_RO;
@@ -403,9 +405,9 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_VALUEKEY;
 	aps[7] = IETF_INTERFACES_TRAFFIC_CLASS;
-	vtype=YANG_VTYPE_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0006_ietf-interfaces/interfaces/interface/bridge-port/address
+	//0006_ietf-interfaces/interfaces/interface/bridge-port/transmission-selection-algorithm-table
 	//0007_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/queue-max-sdu-table
 	aps[4] = IETF_INTERFACES_GATE_PARAMETER_TABLE;
 	aps[5] = IETF_INTERFACES_QUEUE_MAX_SDU_TABLE;
@@ -414,12 +416,12 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IETF_INTERFACES_RO;
 	aps[6] = IETF_INTERFACES_TRANSMISSION_OVERRUN;
-	vtype=YANG_VTYPE_YANG_COUNTER64;
+	vtype=YANG_VTYPE_UINT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IETF_INTERFACES_RW;
 	aps[6] = IETF_INTERFACES_VALUEKEY;
 	aps[7] = IETF_INTERFACES_TRAFFIC_CLASS;
-	vtype=YANG_VTYPE_DOT1Q_TYPES_TRAFFIC_CLASS_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0008_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-control-list/gate-control-entry
 	aps[5] = IETF_INTERFACES_ADMIN_CONTROL_LIST;
@@ -437,7 +439,7 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = IETF_INTERFACES_INDEX;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
-	//0009_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-control-list
+	//0009_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-control-list
 	//0010_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-control-list/gate-control-entry
 	aps[0] = IETF_INTERFACES_RO;
 	aps[5] = IETF_INTERFACES_OPER_CONTROL_LIST;
@@ -454,7 +456,7 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[8] = IETF_INTERFACES_INDEX;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
-	//0011_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
+	//0011_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/oper-control-list
 	//0012_ietf-interfaces/interfaces/interface/bridge-port/gate-parameter-table/admin-cycle-time
 	aps[0] = IETF_INTERFACES_RW;
 	aps[5] = IETF_INTERFACES_ADMIN_CYCLE_TIME;
@@ -547,7 +549,7 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IETF_INTERFACES_CONFIG_CHANGE_ERROR;
-	vtype=YANG_VTYPE_YANG_COUNTER64;
+	vtype=YANG_VTYPE_UINT64;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IETF_INTERFACES_RW;
 	aps[5] = IETF_INTERFACES_SUPPORTED_LIST_MAX;
@@ -560,28 +562,28 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[4] = IETF_INTERFACES_FRAME_PREEMPTION_PARAMETERS;
 	aps[5] = IETF_INTERFACES_FRAME_PREEMPTION_STATUS_TABLE;
 	aps[6] = IETF_INTERFACES_PRIORITY0;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY1;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY2;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY3;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY4;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY5;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY6;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IETF_INTERFACES_PRIORITY7;
-	vtype=YANG_VTYPE_FRAME_PREEMPTION_STATUS_ENUM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	//0021_ietf-interfaces/interfaces/interface/bridge-port/frame-preemption-parameters
 	aps[0] = IETF_INTERFACES_RO;
@@ -600,20 +602,20 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0022_ietf-interfaces/interfaces/interface/bridge-port
 	aps[0] = IETF_INTERFACES_RW;
 	aps[4] = IETF_INTERFACES_BRIDGE_NAME;
-	vtype=YANG_VTYPE_LEAFREF;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_INTERFACES_COMPONENT_NAME;
-	vtype=YANG_VTYPE_LEAFREF;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_INTERFACES_PVID;
-	vtype=YANG_VTYPE_DOT1QTYPES_VLAN_INDEX_TYPE;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IETF_INTERFACES_DEFAULT_PRIORITY;
-	vtype=YANG_VTYPE_DOT1QTYPES_PRIORITY_TYPE;
+	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IETF_INTERFACES_RO;
 	aps[4] = IETF_INTERFACES_ADDRESS;
-	vtype=YANG_VTYPE_IEEE_MAC_ADDRESS;
+	vtype=YANG_VTYPE_MAC_ADDRESS;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	//0023_ietf-interfaces/interfaces/interface
 	aps[0] = IETF_INTERFACES_RW;
@@ -628,10 +630,10 @@ int ietf_interfaces_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_INT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_INTERFACES_PHYS_ADDRESS;
-	vtype=YANG_VTYPE_YANG_PHYS_ADDRESS;
+	vtype=YANG_VTYPE_PHYS_ADDRESS;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_INTERFACES_SPEED;
-	vtype=YANG_VTYPE_YANG_GAUGE64;
+	vtype=YANG_VTYPE_UINT64;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IETF_INTERFACES_DUPLEX;
 	vtype=YANG_VTYPE_ENUMERATION;
@@ -649,3 +651,4 @@ erexit:
 	return res;
 }
 
+#endif
