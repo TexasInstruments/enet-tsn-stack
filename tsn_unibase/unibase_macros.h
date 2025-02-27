@@ -307,7 +307,7 @@
  * When cond is equal to true, no error. Otherwise, compilation error is raised.
  * e.g. UB_STATIC_ASSERT(uint8_t == 1, Uint8InvalidSize)
  */
-#define UB_STATIC_ASSERT(cond, error) typedef char type[(cond) ? 1 : -1]
+#define UB_STATIC_ASSERT(cond, msg) typedef char msg[(cond) ? 1 : -1]
 
 /**
  * @brief call the cbfunc with an internal mutex protection.

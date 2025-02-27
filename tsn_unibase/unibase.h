@@ -215,6 +215,25 @@ uint64_t ub_mt_gettime64(void);
  */
 uint64_t ub_gptp_gettime64(void);
 
+/**
+ * @brief copy non-aligned srcval to aligned destval for integer size from 1,2,4,8 bytes
+ * @param srcval	source data poiter
+ * @param destval	destination data poiter
+ * @param vsize	integer data size must be one of 1,2,4,8.
+ * @return 0:okay, -1:error
+ */
+int ub_non_aligned_intsubst(void *srcval, void *destval, int vsize);
+
+/**
+ * @brief evalute non-aligned value as integer, return result as int64_t number.
+ * @param value	source data poiter
+ * @param vsize	integer data size must be one of 1,2,4,8.
+ * @param error 0:okay, -1:error, no return when error=NULL.
+ * @return evaluated number, -1 with any errors.
+ */
+int64_t ub_int64_from_non_aligned(void *value, int vsize, int *error);
+uint64_t ub_uint64_from_non_aligned(void *value, int vsize, int *error);
+
 #ifdef __cplusplus
 }
 #endif

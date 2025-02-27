@@ -158,3 +158,72 @@ int ub_func_private_mutex_unlock(void)
 	if(ubcd.threadding){return ubcd.cbset.mutex_unlock(ubcd.func_mutex);}
 	return -1;
 }
+
+int ub_non_aligned_intsubst(void *srcval, void *destval, int vsize)
+{
+	if(((vsize!=8) && (vsize!=4) && (vsize!=2) && (vsize!=1)) ||
+	   (srcval==NULL) || (destval==NULL)){return-1;}
+	memcpy(destval, srcval, vsize);
+	return 0;
+}
+
+union cast_int_dif_size{
+	int64_t v64;
+	int32_t v32;
+	int16_t v16;
+	int8_t v8;
+	uint64_t uv64;
+	uint32_t uv32;
+	uint16_t uv16;
+	uint8_t uv8;
+};
+
+int64_t ub_int64_from_non_aligned(void *value, int vsize, int *error)
+{
+	union cast_int_dif_size dv;
+	int res;
+	res=ub_non_aligned_intsubst(value, &dv, vsize);
+	if(res!=0){
+		UB_LOG(UBL_ERROR, "%s:not integer? size=%d\n",
+		       __func__, vsize);
+		if(error!=NULL){*error=res;}
+		return -1;
+	}
+	if(error!=NULL){*error=0;}
+	switch(vsize){
+	case 1:
+		return (int64_t)dv.v8;
+	case 2:
+		return (int64_t)dv.v16;
+	case 4:
+		return (int64_t)dv.v32;
+	case 8:
+		return dv.v64;
+	}
+	return -1;
+}
+
+uint64_t ub_uint64_from_non_aligned(void *value, int vsize, int *error)
+{
+	union cast_int_dif_size dv;
+	int res;
+	res=ub_non_aligned_intsubst(value, &dv, vsize);
+	if(res!=0){
+		UB_LOG(UBL_ERROR, "%s:not integer? size=%d\n",
+		       __func__, vsize);
+		if(error!=NULL){*error=res;}
+		return (uint64_t)-1;
+	}
+	if(error!=NULL){*error=0;}
+	switch(vsize){
+	case 1:
+		return (uint64_t)dv.uv8;
+	case 2:
+		return (uint64_t)dv.uv16;
+	case 4:
+		return (uint64_t)dv.uv32;
+	case 8:
+		return dv.uv64;
+	}
+	return (uint64_t)-1;
+}

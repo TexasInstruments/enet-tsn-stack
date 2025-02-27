@@ -119,10 +119,12 @@ typedef int ub_dbgmsg_level_t;
 #define UB_LOG_IS_COMPILED(level) (UB_LOG_COMPILE_LEVEL >= level)
 
 #define UB_LOG_HELPER(level, tstype, ...)			\
-	{								\
-		char coutstr[UB_CHARS_IN_LINE];				\
-		(void)snprintf(coutstr, UB_CHARS_IN_LINE, __VA_ARGS__);	\
-		(void)ub_log_print(UB_LOGCAT, tstype, level, coutstr);	\
+	{ \
+		if(ub_dlog_on(UB_LOGCAT, level) || ub_clog_on(UB_LOGCAT, level)) { \
+			char coutstr[UB_CHARS_IN_LINE]; \
+			(void)snprintf(coutstr, UB_CHARS_IN_LINE, __VA_ARGS__); \
+			(void)ub_log_print(UB_LOGCAT, tstype, level, coutstr); \
+		} \
 	}
 
 #if UB_LOG_IS_COMPILED(UBL_DEBUGV)

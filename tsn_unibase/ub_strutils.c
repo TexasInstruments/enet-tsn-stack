@@ -127,6 +127,10 @@ uint8_t *ub_smac2bmac(const char *smac, ub_macaddr_t bmac)
 	int i;
 	int j;
 	i=ub_hexstr2barray(smac, bmac, ':', 6);
+	if(i==1){
+		// check IEEE_MAC_ADDRESS
+		i=ub_hexstr2barray(smac, bmac, '-', 6);
+	}
 	if(i<6){
 		//if smac is less than 6 bytes, fill 0 for lacking parts
 		for(j=i;j<6;j++){bmac[j]=0;}
@@ -151,6 +155,14 @@ uint8_t *ub_ssid2bsid(const char *ssid, ub_streamid_t bsid)
 	int i;
 	int j;
 	i=ub_hexstr2barray(ssid, bsid, ':', 8);
+	if(i==1){
+		//check TSN_STREAM_ID format
+		i=ub_hexstr2barray(ssid, bsid, '-', 6);
+		if(i==6){
+			i=ub_hexstr2barray(&ssid[6], &bsid[18], '-', 2);
+			i+=6;
+		}
+	}
 	if(i<8){
 		//if ssid is less than 8 bytes, fill 0 for lacking parts
 		for(j=i;j<8;j++){bsid[j]=0;}
@@ -203,12 +215,13 @@ static const char* hex_lookup = "0123456789abcdef";
 char* ub_bytearray2str(char * dest, const unsigned char* bytes, int len)
 {
 	int j = 0;
+	int i = 0;
 
 	if (!dest || !bytes || (len == 0)){return NULL;}
 
 	(void)memset(dest, 0, len * 3);
 	// Convert each byte to a 2-character hexadecimal string, with a comma after each byte
-	for (int i = 0; i < len; i++)
+	for (i = 0; i < len; i++)
 	{
 		dest[j] = hex_lookup[(bytes[i] & (uint8_t)0xF0) >> 4];
 		j++;

@@ -173,7 +173,15 @@ void ub_log_init(const char *ns)
 			break;
 		}
 		v=log_one_category(&ns[nsp], &ubcd.logmsgd[cat_index], NULL);
-		if(v<0){continue;}
+		if(v<0){
+			char *next_comma=strstr(&ns[nsp], ",");
+			if (next_comma)
+			{
+				v=(int)(next_comma-&ns[nsp]);
+				nsp+=v;
+				continue;
+			} else {break;} // no more ',', break
+		}
 		if(!strcmp(ubcd.logmsgd_ovrd.category_name,
 			   ubcd.logmsgd[cat_index].category_name)){
 			memcpy(&ubcd.logmsgd[cat_index], &ubcd.logmsgd_ovrd,
