@@ -614,6 +614,11 @@ static void *waiting_for_pdelay_interval_timer_proc(md_pdelay_req_data_t *sm)
 	RCVD_PDELAY_RESP_FOLLOWUP = false;
 	sm->thisSM->lostResponses = 0;
 	sm->thisSM->multiResponses = 0;
+	sm->is2011BackwardCompatible = 
+			( (RCVD_PDELAY_RESP_PTR->head.majorSdoId_messageType & 0xF0)==0x10 &&
+			RCVD_PDELAY_RESP_PTR->head.domainNumber ==0x00 &&
+			(RCVD_PDELAY_RESP_FOLLOWUP_PTR->head.majorSdoId_messageType & 0xF0)==0x10 &&
+			RCVD_PDELAY_RESP_FOLLOWUP_PTR->head.domainNumber ==0x00 ) ? true:false;
 	if(sm->ppg->forAllDomain->asymmetryMeasurementMode){return NULL;}
 	if(sm->ppg->forAllDomain->computeNeighborRateRatio){
 		sm->ppg->forAllDomain->neighborRateRatio = computePdelayRateRatio(sm,
@@ -806,6 +811,7 @@ void md_pdelay_req_sm_init(md_pdelay_req_data_t **sm,
 	}else{
 		(*sm)->thisSM->portEnabled0 = (*sm)->ppg->ptpPortEnabled;
 	}
+	(*sm)->is2011BackwardCompatible=true; // not receive any msg can be considered as true
 }
 
 int md_pdelay_req_sm_close(md_pdelay_req_data_t **sm)
@@ -821,7 +827,7 @@ void md_pdelay_req_sm_txts(md_pdelay_req_data_t *sm, event_data_txts_t *edtxts,
 	int pi;
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d, received seqID=%d\n",
 	       __func__, sm->portIndex, edtxts->seqid);
-	if(md_abnormal_timestamp(PDELAY_REQ, sm->portIndex-1, -1)!=0){return;}
+	if(md_abnormal_timestamp(PDELAY_REQ, sm->portIndex-1, -1, edtxts)!=0){return;}
 	if(((sm->state!=SEND_PDELAY_REQ) && (sm->state!=INITIAL_SEND_PDELAY_REQ))){
 		UB_LOG(UBL_WARN,"%s:TxTS is not expected, state=%d, received seqID=%d\n",
 		       __func__, sm->state, edtxts->seqid);
@@ -837,7 +843,9 @@ void md_pdelay_req_sm_txts(md_pdelay_req_data_t *sm, event_data_txts_t *edtxts,
 				YDBI_CONFIG)?1:sm->portIndex;
 	(void)gptpclock_tsconv(GPTPINSTNUM, &edtxts->ts64, pi, 0,
 			       sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
-	sm->t1ts64=edtxts->ts64;
+	sm->t1ts64=edtxts->ts64 + sm->ppg->egressLatency.scaledNanoseconds;
+	UB_LOG(UBL_DEBUGV, "%s:ts64=%"PRIu64", egressLatency=%"PRId64", t1ts64=%"PRIu64"\n",
+	       __func__, edtxts->ts64, sm->ppg->egressLatency.scaledNanoseconds, sm->t1ts64);
 	sm->thisSM->rcvdMDTimestampReceive = true;
 	(void)md_pdelay_req_sm(sm, cts64);
 }
@@ -854,7 +862,9 @@ void md_pdelay_req_sm_recv_resp(md_pdelay_req_data_t *sm, event_data_recv_t *edr
 	tsec = ntohl(RCVD_PDELAY_RESP_PTR->requestReceiptTimestamp.seconds_lsb_nl);
 	tns = ntohl(RCVD_PDELAY_RESP_PTR->requestReceiptTimestamp.nanoseconds_nl);
 	sm->t2ts64 = ((uint64_t)tsec * (uint64_t)UB_SEC_NS) + (uint64_t)tns;
-	sm->t4ts64 = edrecv->ts64;
+	sm->t4ts64 = edrecv->ts64 - sm->ppg->ingressLatency.scaledNanoseconds;
+	UB_LOG(UBL_DEBUGV, "%s:ts64=%"PRIu64", ingressLatency=%"PRId64", t4ts64=%"PRIu64"\n",
+	       __func__, edrecv->ts64, sm->ppg->ingressLatency.scaledNanoseconds, sm->t4ts64);
 
 	/* IEEE1588-2019 SlaveMasterDelay calculation (J.2 Timestamping monitoring, p. 409)
 	 * SlaveMasterDelay is computed as follows:
@@ -867,7 +877,6 @@ void md_pdelay_req_sm_recv_resp(md_pdelay_req_data_t *sm, event_data_recv_t *edr
 	*/
 	slaveMasterDelay = edrecv->ts64 - RCVD_PDELAY_RESP_PTR->head.correctionField_nll - sm->t1ts64;
 	PERFMON_CPMDR_ADD(sm->ptasg->perfmonClockDS, CPMDR_slaveMasterDelay, slaveMasterDelay);
-
 	(void)md_pdelay_req_sm(sm, cts64);
 }
 

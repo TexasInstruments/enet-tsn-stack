@@ -70,6 +70,7 @@ struct md_pdelay_req_data{
 	uint64_t mock_txts64;
 	uint64_t prev_t1ts64;
 	uint64_t prev_t2ts64;
+	bool is2011BackwardCompatible;
 };
 
 typedef struct md_pdelay_req_data md_pdelay_req_data_t;

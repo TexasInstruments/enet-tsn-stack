@@ -79,12 +79,13 @@ void updateStateDisabledTree(port_state_selection_data_t *sm)
 	/* 10.3.12.2.1 ... sets all elements of selectedState to DisablePort
 	   and lastGmPriority to all ones, set pathTrace to thisClock */
 	int i;
+	uint32_t port_state=DisabledPort;
 	for(i=0;i<XL4_DATA_ABS_MAX_NETDEVS;i++){
 		SELECTED_STATE[i] = DisabledPort;
 		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
 					    IEEE1588_PTP_TT_PORT_STATE, i,
 					    sm->domainIndex, YDBI_STATUS,
-					    &SELECTED_STATE[i], sizeof(uint8_t),
+					    &port_state, sizeof(uint32_t),
 					    YDBI_NO_NOTICE);
 	}
 	(void)memset(&LAST_GM_PRIORITY, 1, sizeof(UInteger224));
@@ -202,6 +203,7 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 	Enumeration2 oldState;
 	void *rval=NULL;
 	bool gmchange=false;
+	uint32_t port_state;
 
 	gmPathPriority=(UInteger224*)
 		UB_SD_GETMEM(GPTP_SMALL_ALLOC, sizeof(UInteger224)*(uint32_t)sm->max_ports);
@@ -288,10 +290,11 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 			       "state %s -> %s\n",
 			       __func__, sm->domainIndex, i, PTPPortState_debug[oldState],
 			       PTPPortState_debug[SELECTED_STATE[i]]);
+			port_state=SELECTED_STATE[i];
 			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
 						    IEEE1588_PTP_TT_PORT_STATE, i,
 						    sm->domainIndex, YDBI_STATUS,
-						    &SELECTED_STATE[i], sizeof(uint8_t),
+						    &port_state, sizeof(uint32_t),
 						    YDBI_NO_NOTICE);
 			if(oldState==(uint8_t)SlavePort){
 				(void)gptpclock_set_gmsync(GPTPINSTNUM,
@@ -339,10 +342,11 @@ static void *updtStatesTree(port_state_selection_data_t *sm, int64_t cts64)
 		       "state %s -> %s\n",
 		       __func__, sm->domainIndex, PTPPortState_debug[oldState],
 		       PTPPortState_debug[SELECTED_STATE[0]]);
+		port_state=SELECTED_STATE[0];
 		gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
 					    IEEE1588_PTP_TT_PORT_STATE, 0,
 					    sm->domainIndex, YDBI_STATUS,
-					    &SELECTED_STATE[0], sizeof(uint8_t),
+					    &port_state, sizeof(uint32_t),
 					    YDBI_NO_NOTICE);
 		if(SELECTED_STATE[0] == (uint8_t)SlavePort){
 			/* we are GM and the clock doesn't have to sync to the other,
@@ -430,6 +434,7 @@ static port_state_selection_state_t allstate_condition(port_state_selection_data
 static void *init_bridge_proc(port_state_selection_data_t *sm, int64_t cts64)
 {
 	int i;
+	uint32_t port_state;
 	int static_slave=gptpgcfg_get_intitem(
 		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_STATIC_PORT_STATE_SLAVE_PORT,
 		YDBI_CONFIG);
@@ -441,10 +446,11 @@ static void *init_bridge_proc(port_state_selection_data_t *sm, int64_t cts64)
 			}else{
 				SELECTED_STATE[i] = MasterPort;
 			}
+			port_state=SELECTED_STATE[i];
 			gptpgcfg_set_yang_port_item(GPTPINSTNUM, IEEE1588_PTP_TT_PORT_DS,
 						    IEEE1588_PTP_TT_PORT_STATE, i,
 						    sm->domainIndex, YDBI_STATUS,
-						    &SELECTED_STATE[i], sizeof(uint8_t),
+						    &port_state, sizeof(uint32_t),
 						    YDBI_NO_NOTICE);
 		}
 		sm->ptasg->gmPresent = true;

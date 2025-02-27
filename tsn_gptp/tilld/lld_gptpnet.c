@@ -233,14 +233,14 @@ static int onenet_activate(gptpnet_data_t *gpnet, int ndevIndex)
 	uint64_t speed=0;
 
 	ndev->nlstatus.up=0;
-	YDBI_GET_ITEM_VSUBST(uint8_t*, ifk1vk0, ndev->nlstatus.up, value,
-				 ndev->nlstatus.devname, IETF_INTERFACES_OPER_STATUS, YDBI_STATUS);
+	YDBI_GET_ITEM_INTSUBST(ifk1vk0, ndev->nlstatus.up, value,
+			       ndev->nlstatus.devname, IETF_INTERFACES_OPER_STATUS, YDBI_STATUS);
 	ndev->nlstatus.duplex=1;
-	YDBI_GET_ITEM_VSUBST(uint32_t*, ifk1vk0, ndev->nlstatus.duplex, value,
-				 ndev->nlstatus.devname, IETF_INTERFACES_DUPLEX, YDBI_STATUS);
+	YDBI_GET_ITEM_INTSUBST(ifk1vk0, ndev->nlstatus.duplex, value,
+			       ndev->nlstatus.devname, IETF_INTERFACES_DUPLEX, YDBI_STATUS);
 
-	YDBI_GET_ITEM_VSUBST(uint64_t*, ifk1vk0, speed, value,
-				 ndev->nlstatus.devname, IETF_INTERFACES_SPEED, YDBI_STATUS);
+	YDBI_GET_ITEM_INTSUBST(ifk1vk0, speed, value,
+			       ndev->nlstatus.devname, IETF_INTERFACES_SPEED, YDBI_STATUS);
 	ndev->nlstatus.speed=speed/1000000u;
 	if(ndev->nlstatus.speed == 0u){ndev->nlstatus.up = false;}
 	UB_LOG(UBL_INFO, "%s:%s status=%d, duplex=%d, speed=%dMbps\n", __func__,
@@ -676,6 +676,7 @@ static int gptpnet_notice_check(gptpnet_data_t *gpnet, int64_t ts64)
 	return 0;
 
 }
+
 static int gptpnet_link_check(gptpnet_data_t *gpnet, int64_t ts64)
 {
 	int res;

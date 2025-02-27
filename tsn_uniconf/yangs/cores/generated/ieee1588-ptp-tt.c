@@ -94,18 +94,19 @@ int ieee1588_ptp_tt_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0010_ieee1588-ptp-tt/ptp/instances/instance/performance-monitoring-ds
 	//0011_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-ds/port-identity
 	//0012_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-ds
-	//0013_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list-peer-delay
-	//0014_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list
-	//0015_ieee1588-ptp-tt/ptp/instances/instance/ports/port/external-port-config-port-ds
-	//0016_ieee1588-ptp-tt/ptp/instances/instance/ports/port/external-port-config-port-ds
-	//0017_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-statistics-ds
-	//0018_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-clock
-	//0019_ieee1588-ptp-tt/ptp/instances/instance/ports/port
-	//0020_ieee1588-ptp-tt/ptp/instances/instance/clock-state
-	//0021_ieee1588-ptp-tt/ptp/instances/instance/clock-state
-	//0022_ieee1588-ptp-tt/ptp/instances/instance
-	//0023_ieee1588-ptp-tt/ptp/instance-domain-map
-	//0024_ieee1588-ptp-tt/ptp
+	//0013_ieee1588-ptp-tt/ptp/instances/instance/ports/port/timestamp-correction-port-ds
+	//0014_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list-peer-delay
+	//0015_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list
+	//0016_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds
+	//0017_ieee1588-ptp-tt/ptp/instances/instance/ports/port/external-port-config-port-ds
+	//0018_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-statistics-ds
+	//0019_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-clock
+	//0020_ieee1588-ptp-tt/ptp/instances/instance/ports/port
+	//0021_ieee1588-ptp-tt/ptp/instances/instance/ports
+	//0022_ieee1588-ptp-tt/ptp/instances/instance/clock-state
+	//0023_ieee1588-ptp-tt/ptp/instances/instance
+	//0024_ieee1588-ptp-tt/ptp/instances
+	//0025_ieee1588-ptp-tt/ptp
 	if(kvs[0]!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, kvs[0]);}
 	kvs[0] = NULL;
 	dbpara.atype=YANG_DB_ACTION_CREATE;

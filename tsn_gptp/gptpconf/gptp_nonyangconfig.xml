@@ -147,19 +147,19 @@
 			<SKIP_FREQADJ_COUNT_MAX type="uint8">2</SKIP_FREQADJ_COUNT_MAX>
 
 			<!-- 1: use the quick sync algorithm, 0: no use
-           - By default the quick sync algorithm is disabled for backward compatible,
-           the phase offset and frequency adjustments are applied simultaneously.
-           However, the interaction between these adjustments can extend the time required to
-           achieve optimal synchronization.
-           - When the quick sync algorithm is enabled, frequency adjustment is applied first.
-           Once frequency adjustment stabilizes, the phase offset is then applied.
-           Stability is achieved when the PPB difference between two adjustment intervals remains
-           within the @ref FREQ_OFFSET_STABLE_PPB range for three consecutive intervals.
-           Phase offset is applied only when frequency adjustment is stable.
-           If the PPB difference exceeds @ref FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB,
-           the frequency adjustment enters an unstable state, delaying the phase offset
-           application until stability is restored. This approach minimizes the interaction
-           between frequency and phase adjustments, leading to faster synchronization. -->
+					 - By default the quick sync algorithm is disabled for backward compatible,
+					 the phase offset and frequency adjustments are applied simultaneously.
+					 However, the interaction between these adjustments can extend the time required to
+					 achieve optimal synchronization.
+					 - When the quick sync algorithm is enabled, frequency adjustment is applied first.
+					 Once frequency adjustment stabilizes, the phase offset is then applied.
+					 Stability is achieved when the PPB difference between two adjustment intervals remains
+					 within the @ref FREQ_OFFSET_STABLE_PPB range for three consecutive intervals.
+					 Phase offset is applied only when frequency adjustment is stable.
+					 If the PPB difference exceeds @ref FREQ_OFFSET_TIMELEAP_MAX_JUMP_PPB,
+					 the frequency adjustment enters an unstable state, delaying the phase offset
+					 application until stability is restored. This approach minimizes the interaction
+					 between frequency and phase adjustments, leading to faster synchronization. -->
 			<QUICK_SYNC_ALGO type="uint8">0</QUICK_SYNC_ALGO>
 
 			<!-- switch active domain automatically to stable domain
@@ -260,11 +260,11 @@
 				...
 			 -->
 			<SUPPORT_RUNTIME_NOTICE_CHECK type="int8">0</SUPPORT_RUNTIME_NOTICE_CHECK>
-			<!-- set to 1, in case of tsn_gptpd will support tx message interval request 
-				Once this flag is enabled, gptp will listen for the change of TX_MESSAGE_INTERVAL_REQ 
-				and send message interval request, with the values are set in: 
+			<!-- set to 1, in case of tsn_gptpd will support tx message interval request
+				Once this flag is enabled, gptp will listen for the change of TX_MESSAGE_INTERVAL_REQ
+				and send message interval request, with the values are set in:
 				10.6.4.3 Message interval request TLV definition
-				MESSAGE_INTERVAL_REQ_LOGSYNC 
+				MESSAGE_INTERVAL_REQ_LOGSYNC
 				MESSAGE_INTERVAL_REQ_LOGANNOUNCE
 				MESSAGE_INTERVAL_REQ_LOGLINKDELAY
 

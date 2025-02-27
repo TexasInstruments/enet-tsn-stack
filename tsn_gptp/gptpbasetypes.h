@@ -239,14 +239,14 @@ typedef struct ExtendedTimestamp {
  * @brief the type of source of time used by a ClockMaster(802.1AS, 8.6.2.7 timeSource)
  */
 typedef enum {
-        ATOMIC_CLOCK         = 0x10,
-        GPS                  = 0x20,
-        TERRESTRIAL_RADIO    = 0x30,
-        PTP                  = 0x40,
-        NTP                  = 0x50,
-        HAND_SET             = 0x60,
-        OTHER                = 0x90,
-        INTERNAL_OSCILLATOR  = 0xA0,
+	ATOMIC_CLOCK         = 0x10,
+	GPS                  = 0x20,
+	TERRESTRIAL_RADIO    = 0x30,
+	PTP                  = 0x40,
+	NTP                  = 0x50,
+	HAND_SET             = 0x60,
+	OTHER                = 0x90,
+	INTERNAL_OSCILLATOR  = 0xA0,
 } TimeSource;
 
 // 14.8.3 portState, (from IEEE 1588 Table-8)

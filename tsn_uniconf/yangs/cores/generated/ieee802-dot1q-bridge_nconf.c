@@ -135,6 +135,35 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 	};
 
+	kvs[0]=(void*)"xl4-ietf-interfaces";
+	kss[0]=20;
+	kvs[1]=(void*)"2023-03-25";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=0;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"http://excelfore.com/ns/xl4interfaces";
+		dbpara.vsize=38;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
 	kvs[0]=(void*)"xl4-ieee802-dot1q-bridge";
 	kss[0]=25;
 	kvs[1]=(void*)"2023-04-25";
@@ -159,6 +188,64 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
 		dbpara.value=(void*)"http://excelfore.com/ns/xl4-ieee802-dot1q-bridge";
 		dbpara.vsize=49;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
+	kvs[0]=(void*)"ieee802-types";
+	kss[0]=14;
+	kvs[1]=(void*)"2023-10-22";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ieee:std:802.1Q:yang:ieee802-types";
+		dbpara.vsize=39;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
+	kvs[0]=(void*)"ietf-yang-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-types";
+		dbpara.vsize=44;
 		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 		aps[3]=IETF_YANG_LIBRARY_FEATURE;
 		dbpara.atype=YANG_DB_ACTION_APPEND;
@@ -204,11 +291,69 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 	};
 
+	kvs[0]=(void*)"iana-if-type";
+	kss[0]=13;
+	kvs[1]=(void*)"2014-05-08";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:iana-if-type";
+		dbpara.vsize=41;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
+	kvs[0]=(void*)"ieee802-dot1q-types";
+	kss[0]=20;
+	kvs[1]=(void*)"2023-10-26";
+	kss[1]=11;
+	kvs[2]=NULL;
+	aps[3]=IETF_YANG_LIBRARY_CONFORMANCE_TYPE;
+	aps[4]=255u;
+	dbpara.atype=YANG_DB_ACTION_READ;
+	res=1;
+	if(yang_db_action(dbald, NULL, &dbpara)==0){
+		res=*((uint32_t*)dbpara.value);
+		dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
+		yang_db_action(dbald, NULL, &dbpara);
+		// if res==0, this item was already registered
+	}
+	if(res==1){
+		res=1;
+		dbpara.value=&res;
+		dbpara.vsize=4;
+		dbpara.atype=YANG_DB_ACTION_CREATE;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_NAMESPACE;
+		dbpara.value=(void*)"urn:ieee:std:802.1Q:yang:ieee802-dot1q-types";
+		dbpara.vsize=45;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		aps[3]=IETF_YANG_LIBRARY_FEATURE;
+		dbpara.atype=YANG_DB_ACTION_APPEND;
+	};
+
 	dbpara.atype=YANG_DB_ACTION_CREATE;
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"b584b394945823ef2a6bb2565850cb02cff6dcd2";
+	dbpara.value=(void*)"20511dc2701ef0db84d48ace5cb6384b2acc9e03";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
@@ -221,10 +366,28 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	dbpara.atype=YANG_DB_ACTION_APPEND;
 
+	nvalue=(void*)"urn:ietf:params:netconf:base:1.0";
+	nvsize=33;
+	dbpara.value=nvalue;
+	dbpara.vsize=nvsize;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"urn:ietf:params:netconf:base:1.1";
+	nvsize=33;
+	dbpara.value=nvalue;
+	dbpara.vsize=nvsize;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
 	nvalue=(void*)"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge?module=ieee802-dot1q-bridge&revision=2023-10-26&features=ingress-filtering,extended-filtering-services,port-and-protocol-based-vlan,flow-filtering,simple-bridge-port,flexible-bridge-port&deviations=xl4-ietf-interfaces,xl4-ieee802-dot1q-bridge";
 	nvsize=289;
 	dbpara.value=nvalue;
 	dbpara.vsize=73;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"http://excelfore.com/ns/xl4interfaces?module=xl4-ietf-interfaces&revision=2023-03-25&features=";
+	nvsize=95;
+	dbpara.value=nvalue;
+	dbpara.vsize=64;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
 
 	nvalue=(void*)"http://excelfore.com/ns/xl4-ieee802-dot1q-bridge?module=xl4-ieee802-dot1q-bridge&revision=2023-04-25&features=";
@@ -233,11 +396,46 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 	dbpara.vsize=80;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
 
+	nvalue=(void*)"urn:ieee:std:802.1Q:yang:ieee802-types?module=ieee802-types&revision=2023-10-22";
+	nvsize=80;
+	dbpara.value=nvalue;
+	dbpara.vsize=59;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-types?module=ietf-yang-types&revision=2013-07-15";
+	nvsize=87;
+	dbpara.value=nvalue;
+	dbpara.vsize=66;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
 	nvalue=(void*)"urn:ietf:params:xml:ns:yang:ietf-interfaces?module=ietf-interfaces&revision=2018-02-20&deviations=xl4-ietf-interfaces";
 	nvsize=118;
 	dbpara.value=nvalue;
 	dbpara.vsize=66;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"urn:ietf:params:xml:ns:yang:iana-if-type?module=iana-if-type&revision=2014-05-08";
+	nvsize=81;
+	dbpara.value=nvalue;
+	dbpara.vsize=60;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	nvalue=(void*)"urn:ieee:std:802.1Q:yang:ieee802-dot1q-types?module=ieee802-dot1q-types&revision=2023-10-26";
+	nvsize=92;
+	dbpara.value=nvalue;
+	dbpara.vsize=71;
+	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
+
+	aps[2]=IETF_NETCONF_MONITORING_DATASTORES;
+	aps[3]=IETF_NETCONF_MONITORING_DATASTORE;
+	aps[4]=IETF_NETCONF_MONITORING_DUMMY;
+	res=0; //hard coded with 'running/name'=0(netconf_datastore_type)
+	kvs[0]=&res;
+	kss[0]=4;
+	kvs[1]=NULL;
+	dbpara.value=(void*)"";
+	dbpara.vsize=1;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
 	// ieee802-dot1q-bridge ietf-netconf-monitoring schemas
 	aps[2]=IETF_NETCONF_MONITORING_SCHEMAS;
@@ -248,9 +446,10 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 	kss[0]=21;
 	kvs[1]=(void*)"2023-10-26";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge";
 	dbpara.vsize=46;
@@ -259,14 +458,34 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"xl4-ietf-interfaces";
+	kss[0]=20;
+	kvs[1]=(void*)"2023-03-25";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"http://excelfore.com/ns/xl4interfaces";
+	dbpara.vsize=38;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	kvs[0]=(void*)"xl4-ieee802-dot1q-bridge";
 	kss[0]=25;
 	kvs[1]=(void*)"2023-04-25";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"http://excelfore.com/ns/xl4-ieee802-dot1q-bridge";
 	dbpara.vsize=49;
@@ -275,6 +494,79 @@ int ieee802_dot1q_bridge_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ieee802-types";
+	kss[0]=14;
+	kvs[1]=(void*)"2023-10-22";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ieee:std:802.1Q:yang:ieee802-types";
+	dbpara.vsize=39;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ietf-yang-types";
+	kss[0]=16;
+	kvs[1]=(void*)"2013-07-15";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:ietf-yang-types";
+	dbpara.vsize=44;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"iana-if-type";
+	kss[0]=13;
+	kvs[1]=(void*)"2014-05-08";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ietf:params:xml:ns:yang:iana-if-type";
+	dbpara.vsize=41;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
+
+	kvs[0]=(void*)"ieee802-dot1q-types";
+	kss[0]=20;
+	kvs[1]=(void*)"2023-10-26";
+	kss[1]=11;
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
+	kvs[2]=&res;
+	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
+	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
+	dbpara.value=(void*)"urn:ieee:std:802.1Q:yang:ieee802-dot1q-types";
+	dbpara.vsize=45;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	aps[4]=IETF_NETCONF_MONITORING_LOCATION;
+	dbpara.value=(void*)"NETCONF";
+	dbpara.vsize=8;
+	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	return 0;
 }

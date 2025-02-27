@@ -198,7 +198,7 @@ typedef struct MDPTPMsgAnnounce {
 } __attribute__((packed)) MDPTPMsgAnnounce;
 
 
-// 10.6.4 Message interval request TLV, gPTP-capable TLV and gPTP-capable interval 
+// 10.6.4 Message interval request TLV, gPTP-capable TLV and gPTP-capable interval
 // request has same tlvType, lengthField, organizationId and organizationSubType_nb
 typedef enum
 {
@@ -337,7 +337,7 @@ typedef struct MDPdelayRespSM {
 
 // 11.2.19 SyncIntervalSetting state machine
 typedef struct SyncIntervalSettingSM {
-	bool rcvdSignalingMsg1;
+	bool rcvdSignalingMsg3;
 	PTPMsgIntervalRequestTLV *rcvdSignalingPtr;
 } SyncIntervalSettingSM;
 

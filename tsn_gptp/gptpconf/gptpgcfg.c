@@ -50,15 +50,16 @@
 #include <limits.h>
 #include <stdint.h>
 #include <tsn_unibase/unibase.h>
+#include <tsn_combase/combase.h>
 #include <tsn_uniconf/yangs/yang_db_access.h>
 #include <tsn_uniconf/yangs/yang_modules.h>
 #include <tsn_uniconf/yangs/ietf-interfaces.h>
 #include <tsn_uniconf/yangs/ietf-interfaces_access.h>
 #include <tsn_uniconf/yangs/ieee1588-ptp-tt.h>
 #include <tsn_uniconf/yangs/ieee1588-ptp-tt_access.h>
-#include <tsn_uniconf/yangs/yang_db_runtime.h>
 #include <tsn_uniconf/yangs/yang_node.h>
 #include <tsn_uniconf/uc_notice.h>
+#include <tsn_uniconf/uc_binconf.h>
 #include "gptpgcfg.h"
 #include "xl4-extmod-xl4gptp_runconf.h"
 #include "../mind.h"
@@ -74,33 +75,11 @@ extern uint8_t IEEE1588_PTP_TT_func(uc_dbald *dbald);
 #define IEEE1588_PTP_TT_RW_G IEEE1588_PTP_TT_func(gycd->dbald)
 #define IEEE1588_PTP_TT_RO_Y (IEEE1588_PTP_TT_func(ydbia->dbald)|0x80u)
 
+extern int uc_dbal_setproc(uc_dbald *dbald, const char *name, int64_t pvalue);
+
 /****************************************
  * layer independent functions
  ****************************************/
-
-static int get_int_from_value(void *value, int vsize, int64_t *rval)
-{
-	switch(vsize){
-	case 1:
-		*rval=*((int8_t*)value);
-		break;
-	case 2:
-		*rval=*((int16_t*)value);
-		break;
-	case 4:
-		*rval=*((int32_t*)value);
-		break;
-	case 8:
-		*rval=*((int64_t*)value);
-		break;
-	default:
-		UB_LOG(UBL_ERROR, "%s:not integer? size=%d\n",
-		       __func__, vsize);
-		return -1;
-	}
-	return 0;
-}
-
 static uint8_t ydbi_instIndex;
 static void set_dpara_k1vk0(uc_dbald *dbald, yang_db_access_para_t *dbpara,
 			    uint8_t instIndex, uint8_t k1, bool status)
@@ -175,7 +154,7 @@ int gptpgcfg_get_intitem(uint8_t gptpInstanceIndex, uint8_t confitem, bool statu
 	vsize=ydbi_get_item_nyptk1vk0(ydbi_access_handle(), &value,
 				      gptpInstanceIndex, confitem, status);
 	if(vsize>0){
-		(void)get_int_from_value(value, vsize, &res);
+		res=ub_int64_from_non_aligned(value, vsize, NULL);
 		ydbi_get_item_release(ydbi_access_handle(), YDBI_REL_LOCK);
 	}
 	return res;
@@ -212,7 +191,7 @@ int gptpgcfg_trigger_msg_interval_request(uint8_t gptpInstanceIndex, int8_t logS
 int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIndex, int tout_ms)
 {
 	int gdi;
-	uint8_t port_state=0;
+	uint32_t port_state=0;
 	void *value;
 	uint16_t pindex=0;
 	// read port_state of port=0, domain=0
@@ -220,10 +199,10 @@ int gptpgcfg_wait_gptpready(yang_db_item_access_t *ydbia, uint8_t gptpInstanceIn
 	while(true){
 		gdi=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstanceIndex, 0);
 		if(gdi>=0){
-			YDBI_GET_ITEM_VSUBST(uint8_t*, ptk4vk1, port_state, value, gdi,
-					     IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
-					     IEEE1588_PTP_TT_PORT_DS, IEEE1588_PTP_TT_PORT_STATE,
-					     &pindex, sizeof(uint16_t), YDBI_STATUS);
+			YDBI_GET_ITEM_INTSUBST(ptk4vk1, port_state, value, gdi,
+					       IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT,
+					       IEEE1588_PTP_TT_PORT_DS, IEEE1588_PTP_TT_PORT_STATE,
+					       &pindex, sizeof(uint16_t), YDBI_STATUS);
 			if(port_state==MasterPort||port_state==PassivePort||
 			   port_state==SlavePort){
 				res=0;
@@ -382,7 +361,8 @@ static int instance_domain_Init(gptpgcfg_data_t *gycd, uint8_t gptpInstanceIndex
 		       255};
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ, YANG_DB_ONHW_NOACTION,
 				      NULL, aps, NULL, NULL, NULL, 0};
-	uint16_t *mapv;
+	uint16_t mapv;
+	uint8_t *mapvb;
 	int i,n;
 	int num=0;
 	gycd->max_domain=gptpgcfg_get_intitem(gptpInstanceIndex,
@@ -400,12 +380,13 @@ static int instance_domain_Init(gptpgcfg_data_t *gycd, uint8_t gptpInstanceIndex
 	if(ub_assert_fatal(gycd->instance_domain_map!=NULL, __func__, NULL)){return -1;}
 
 	if(yang_db_action(gycd->dbald, NULL, &dbpara)==0){
-		mapv=(uint16_t *)dbpara.value;
+		mapvb=(uint8_t *)dbpara.value;
 		n=dbpara.vsize/sizeof(uint16_t);
 		for(i=0;i<n;i++){
-			if((gptpInstanceIndex==(mapv[i]>>8u)) &&
-			   ((mapv[i]&0xffu)<gycd->max_domain)){
-				gycd->instance_domain_map[mapv[i]&0xffu]=i;
+			ub_non_aligned_intsubst(&mapvb[i*2], &mapv, sizeof(uint16_t));
+			if((gptpInstanceIndex==(mapv>>8u)) &&
+			   ((mapv&0xffu)<gycd->max_domain)){
+				gycd->instance_domain_map[mapv&0xffu]=i;
 				num++;
 			}
 		}
@@ -456,13 +437,13 @@ static void gptp_nonyang_init_notice(gptpgcfg_data_t * gycd)
 	uint8_t kss[3];
 	uc_dbald *dbald = gycd->dbald;
 	uc_notice_data_t *ucntd = gycd->ucntd;
-	
+
 	kvs[0]=&ydbi_instIndex;
 	kss[0]=sizeof(uint8_t);
 	kvs[1] = (char*)gycd->nyangsemname;
 	kss[1] = strlen(gycd->nyangsemname)+1;
 	kvs[2] = NULL;
-	
+
 	uint8_t non_yang_mon_items [] =
 	{
 		XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ,
@@ -477,24 +458,23 @@ static void gptp_nonyang_init_notice(gptpgcfg_data_t * gycd)
 	for (i=0; i<(int)(sizeof(non_yang_mon_items)/sizeof(uint8_t)); i++)
 	{
 		aps[3]=non_yang_mon_items[i];
-		if(uc_nc_notice_register(ucntd, dbald, aps, kvs, kss, UC_NOTICE_DBVAL_ADD, 
-								(gycd->nonyangsem==NULL) ? &gycd->nonyangsem : NULL) )
+		if(uc_nc_notice_register(ucntd, dbald, aps, kvs, kss, UC_NOTICE_DBVAL_ADD,
+					 (gycd->nonyangsem==NULL) ? &gycd->nonyangsem : NULL) )
 		{
 			UB_LOG(UBL_ERROR, "%s: uc_nc_notice_register failed \n", __func__);
 			break;
 		}
 	}
 
-	UB_LOG(UBL_INFO, "%s: done, semname=%s, gptpInstance:%d\n", __func__, gycd->semname, ydbi_instIndex);
+	UB_LOG(UBL_INFO, "%s: done, semname=%s, gptpInstance:%d\n",
+	       __func__, gycd->semname, ydbi_instIndex);
 }
-
 
 int gptpgcfg_init(const char *dbname, const char **confnames,
 		uint8_t gptpInstanceIndex, bool ucthread,
 		int (*nonconfile_cb)(uint8_t gptpInstanceIndex))
 {
 	gptpgcfg_data_t *gycd;
-	yang_db_runtime_dataq_t *ydrd;
 	int res;
 	uint8_t sinst;
 	if((gptpInstanceIndex<gycdl_num) && gycdl[gptpInstanceIndex]){
@@ -504,8 +484,9 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 	}
 
 	if(gycdl_num<=gptpInstanceIndex){
-		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(GPTP_YANCONF_MEM, gycdl,
-							sizeof(gptpgcfg_data_t*)*(gptpInstanceIndex+1u));
+		gycdl=(gptpgcfg_data_t**)UB_SD_REGETMEM(
+			GPTP_YANCONF_MEM, gycdl,
+			sizeof(gptpgcfg_data_t*)*(gptpInstanceIndex+1u));
 		if(ub_assert_fatal(gycdl, __func__, "realloc")){return -1;}
 		uint8_t i;
 		for(i=gycdl_num;i<=gptpInstanceIndex;i++){
@@ -521,6 +502,9 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 	gycdl[gptpInstanceIndex]=gycd;
 	gycd->dbald=uc_dbal_open(dbname, "w", gycd->callmode);
 	if(!gycd->dbald){goto erexit;}
+	if(!ucthread){
+		uc_dbal_setproc(gycd->dbald, "gptp2", (int64_t)CB_GETPID());
+	}
 	if(gptp_nonyang_init(gycd->dbald)!=0){goto erexit;}
 	gycd->ucntd=uc_notice_init(gycd->callmode, dbname);
 	if(!gycd->ucntd){goto erexit;}
@@ -535,10 +519,11 @@ int gptpgcfg_init(const char *dbname, const char **confnames,
 				res=0;
 			}
 		}else{
-			ydrd=UC_RUNCONF_INIT(gycd->dbald, NULL);
-			if(!ydrd){goto erexit;}
-			res=UC_RUNCONF_READFILE(ydrd, *confnames);
-			UC_RUNCONF_CLOSE(ydrd);
+			UC_READ_CONF_BCONF_FILE(gycd->dbald, *confnames, res);
+			if(res!=0){
+				UB_LOG(UBL_ERROR, "%s:can't read conf file=%s\n",
+				       __func__, *confnames);
+			}
 		}
 		if(res!=0){goto erexit;}
 		confnames++;
@@ -595,7 +580,7 @@ static int port_intitem_one(uint32_t dbinstanceIndex,
 			    IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT, confitem0, confitem1,
 			    &pindex, sizeof(uint16_t), status);
 	if(vsize>0){
-		res=get_int_from_value(value, vsize, rval);
+		*rval=ub_int64_from_non_aligned(value, vsize, &res);
 		ydbi_get_item_release(ydbi_access_handle(), YDBI_REL_LOCK);
 	}
 	if(res==0) {return 0;}
@@ -605,7 +590,7 @@ static int port_intitem_one(uint32_t dbinstanceIndex,
 				    IEEE1588_PTP_TT_PORTS, IEEE1588_PTP_TT_PORT, confitem0, confitem1,
 				    &pirep, sizeof(uint16_t), status);
 		if(vsize>0){
-			res=get_int_from_value(value, vsize, rval);
+			*rval=ub_int64_from_non_aligned(value, vsize, &res);
 			ydbi_get_item_release(ydbi_access_handle(), YDBI_REL_LOCK);
 		}
 	}
@@ -667,6 +652,18 @@ int64_t gptpgcfg_get_yang_portds_int64item(uint8_t gptpInstanceIndex, uint8_t co
 	return rval;
 }
 
+int64_t gptpgcfg_get_yang_tscorrection_int64item(uint8_t gptpInstanceIndex, uint8_t confitem,
+						 uint16_t pindex, uint8_t domainIndex, bool status)
+{
+	int64_t rval;
+	if(get_yang_port_intitem(gptpInstanceIndex,
+				 IEEE1588_PTP_TT_TIMESTAMP_CORRECTION_PORT_DS,
+				 confitem, pindex, domainIndex, status, &rval)!=0){
+		return LLONG_MAX;
+	}
+	return rval;
+}
+
 int gptpgcfg_set_yang_port_item(uint8_t gptpInstanceIndex, uint8_t confitem1, uint8_t confitem2,
 				uint16_t pindex, uint8_t domainIndex, bool status,
 				void *value, int vsize, bool notice)
@@ -682,6 +679,40 @@ int gptpgcfg_set_yang_port_item(uint8_t gptpInstanceIndex, uint8_t confitem1, ui
 			     confitem1, confitem2,
 			     &pindex, sizeof(uint16_t), status,
 			     value, vsize, notice);
+}
+
+int gptpgcfg_set_yang_item(uint8_t gptpInstanceIndex,
+			      uint8_t confitem0, uint8_t confitem1, uint8_t confitem2,
+			      uint8_t domainIndex, bool status,
+				  void *value, int vsize, bool notice)
+{
+	uint32_t dbinstanceIndex;
+	gptpgcfg_data_t *gycd;
+	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
+	gycd=gycdl[gptpInstanceIndex];
+	if(domainIndex>=gycd->max_domain){return -1;}
+	dbinstanceIndex=gycd->instance_domain_map[domainIndex];
+
+	return YDBI_SET_ITEM(ptk3vk0, dbinstanceIndex,
+				confitem0, confitem1, confitem2, status,
+				value, vsize, notice);
+}
+
+int gptpgcfg_set_yang_defaultds_item(uint8_t gptpInstanceIndex,
+			      uint8_t confitem0, uint8_t confitem1, 
+			      uint8_t domainIndex, bool status,
+			      void *value, int vsize, bool notice)
+{
+	uint32_t dbinstanceIndex;
+	gptpgcfg_data_t *gycd;
+	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
+	gycd=gycdl[gptpInstanceIndex];
+	if(domainIndex>=gycd->max_domain){return -1;}
+	dbinstanceIndex=gycd->instance_domain_map[domainIndex];
+
+	return YDBI_SET_ITEM(ptk3vk0, dbinstanceIndex,
+				IEEE1588_PTP_TT_DEFAULT_DS, confitem0, confitem1, status,
+				value, vsize, notice);
 }
 
 int gptpgcfg_set_clock_state_item(uint8_t gptpInstanceIndex, uint8_t confitem,
@@ -724,7 +755,7 @@ int gptpgcfg_get_yang_intitem(uint8_t gptpInstanceIndex,
 				    confitem0, confitem1, confitem2, status);
 		if(vsize<=0){goto erexit;}
 	}
-	(void)get_int_from_value(value, vsize, &rval);
+	rval=ub_int64_from_non_aligned(value, vsize, NULL);
 	ydbi_get_item_release(ydbia, YDBI_REL_LOCK);
 erexit:
 	return rval;
@@ -814,7 +845,7 @@ int gptpgcfg_nonyang_notice_check(uint8_t gptpInstanceIndex)
 			gptpInstanceIndex, XL4_EXTMOD_XL4GPTP_TRIGGER_MESSAGE_INTERVAL_REQ,
 			YDBI_CONFIG);
 
-	if (is_tx_signaling==0) { return 0;} 
+	if (is_tx_signaling==0) { return 0;}
 	else {
 		UB_LOG(UBL_INFO, "%s:Received request to send message interval request signaling\n",__func__);
 		int8_t reset_tx_flag=0;
@@ -837,6 +868,8 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	const char *emes="";
 	int res;
 	bool thread_mode;
+	uint32_t opstatus;
+	uint64_t speed;
 
 	if((gptpInstanceIndex>=gycdl_num) || !gycdl[gptpInstanceIndex]){return -1;}
 	gycd=gycdl[gptpInstanceIndex];
@@ -856,6 +889,7 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	}
 
 	res=uc_dbal_get(gycd->dbald, key, ksize, &value, &vsize);
+	if(res==0){res=ub_non_aligned_intsubst(value, &opstatus, 4);}
 	if(res!=0){
 		emes="can't read oper-status";
 		goto erexit;
@@ -865,25 +899,26 @@ int gptpgcfg_link_check(uint8_t gptpInstanceIndex, gptpnet_data_netlink_t *edtnl
 	// force to truncate ifname to XL4_DATA_ABS_MAX_NETDEVS
 	key[6+sizeof(edtnl->devname)-1]=0;
 	memcpy(edtnl->devname, &key[6], strlen(&key[6])+1);
-	if(*((uint32_t*)value)==1){edtnl->up=true;}
+	if(opstatus==1){edtnl->up=true;}
 	(void)uc_dbal_get_release(gycd->dbald, key, ksize, value, vsize);
 
 	key[3]=IETF_INTERFACES_SPEED;
 	res=uc_dbal_get(gycd->dbald, key, ksize, &value, &vsize);
+	if(res==0){res=ub_non_aligned_intsubst(value, &speed, 8);}
 	if(res!=0){
 		emes="can't read speed";
 		goto erexit;
 	}
-	edtnl->speed=(uint32_t)(*((uint64_t*)value)/1000000);
+	edtnl->speed=(uint32_t)(speed/1000000);
 	(void)uc_dbal_get_release(gycd->dbald, key, ksize, value, vsize);
 
 	key[3]=IETF_INTERFACES_DUPLEX;
 	res=uc_dbal_get(gycd->dbald, key, ksize, &value, &vsize);
+	if(res==0){res=ub_non_aligned_intsubst(value, &edtnl->duplex, 4);}
 	if(res!=0){
 		emes="can't read duplex";
 		goto erexit;
 	}
-	edtnl->duplex=*((uint32_t*)value);
 	(void)uc_dbal_get_release(gycd->dbald, key, ksize, value, vsize);
 erexit:
 	if(res!=0){

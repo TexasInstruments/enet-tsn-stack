@@ -285,6 +285,16 @@ void pp_glb_init(uint8_t gptpInstanceIndex, PerPortGlobal **ppglb,
 		gptp_port_perfmon_dr_reset((*ppglb)->perfmonDS, PERFMON_ALL_DR,
 			  domainIndex, portIndex, ub_mt_gettime64());
 	}
+	(*ppglb)->ingressLatency.scaledNanoseconds = gptpgcfg_get_yang_tscorrection_int64item(
+		gptpInstanceIndex, IEEE1588_PTP_TT_INGRESS_LATENCY, 
+		portIndex, domainIndex, YDBI_CONFIG);
+	(*ppglb)->egressLatency.scaledNanoseconds = gptpgcfg_get_yang_tscorrection_int64item(
+		gptpInstanceIndex, IEEE1588_PTP_TT_EGRESS_LATENCY,
+		portIndex, domainIndex, YDBI_CONFIG);
+
+	UB_LOG(UBL_DEBUGV, "%s: gptpInstanceIndex=%d, domainIndex=%d, portIndex=%d, ptpPortEnabled=%d, ingressLatency=% "PRId64", egressLatency=% "PRId64"\n",
+		__func__, gptpInstanceIndex, domainIndex, portIndex, (*ppglb)->ptpPortEnabled,
+		(*ppglb)->ingressLatency.scaledNanoseconds, (*ppglb)->egressLatency.scaledNanoseconds);
 }
 
 void pp_glb_close(PerPortGlobal **ppglb, int domainIndex)

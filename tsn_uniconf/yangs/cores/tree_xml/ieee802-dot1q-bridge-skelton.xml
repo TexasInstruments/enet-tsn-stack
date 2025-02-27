@@ -107,6 +107,7 @@
 					</vlan>
 				</bridge-vlan>
 			</component>
+			<control-status xmlns="http://excelfore.com/ns/xl4-ieee802-dot1q-bridge"/>
 		</bridge>
 	</bridges>
 </data>

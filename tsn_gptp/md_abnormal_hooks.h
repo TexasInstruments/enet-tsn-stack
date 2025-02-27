@@ -53,13 +53,33 @@
 #include "gptpnet.h"
 
 typedef enum {
-	MD_ABN_EVENT_NONE, // no event happens
-	MD_ABN_EVENT_SKIP, // skip a message, sequenceID has no skip
-	MD_ABN_EVENT_DUP, // send the same message twice
-	MD_ABN_EVENT_BADSEQN, // add eventpara on sequenceID.
-			      // if eventpara==0 invert lower 8 bits of SequenceID
-	MD_ABN_EVENT_NOTS, // make No Timestamp error
-	MD_ABN_EVENT_SENDER, // make send error
+	MD_ABN_EVENT_NONE = 0,
+	/*!< No event happens */
+	MD_ABN_EVENT_SKIP,
+	/*!< Skip sending a message, sequenceID would not skip */
+	MD_ABN_EVENT_DUP,
+	/*!< Send a message twice. */
+	MD_ABN_EVENT_BADSEQN,
+	/*!< Manipulate next sequenceID. If eventpara1==0, invert lower 8 bits of
+	 * sequenceID, otherwise, add value of eventpara1 to sequenceID. */
+	MD_ABN_EVENT_TXTSMISSING,
+	/*!< Make missing tx timestamp error. */
+	MD_ABN_EVENT_SENDERR,
+	/*!< Make sending error. */
+	MD_ABN_EVENT_TXTSBADFIFO,
+	/*!< Simulate bad tx timestamp FIFO. FIFO is per device (not per port).
+	 * All message types would be affected, msgtype parameter of event is
+	 * not used and ignored.
+	 * eventpara1 indicates how many dummy entries will be added into the FIFO
+	 * maximum of 15 dummy entries can be registered.
+	 * eventpara2 would be the value of the dummy timestamp entries.
+	 * Only one event of this type can be registered. */
+	MD_ABN_EVENT_TXTSOFFSET,
+	/*!< Add offset to tx timestamp.
+	 * eventpara1 indicates the sequenceID to match to which event would tx
+	 * timestamp offset would be applied. The value of -1 indicates that tx
+	 * timestamp offset would be applied regardless of sequenceID.
+	 * eventpara2 would be the value of the offset to be applied. */
 } md_abn_event_type;
 
 typedef struct md_abn_event {
@@ -70,16 +90,23 @@ typedef struct md_abn_event {
 	float eventrate; // 0.0 to 1.0: possibility of happening of the event
 	int repeat; // 0:repeat forever, 1:one time, 2:two times, ...
 	int interval; // 0:every time, 1: ever other time, 2: ever two times, ...
-	int eventpara; // integer parameter for the event
+	int eventpara1; // integer parameter for the event
+	int64_t eventpara2; // int64 parameter for the event
 } md_abn_event_t;
 
 typedef enum {
-	MD_ABN_EVENTP_NONE,
+	MD_ABN_EVENTP_NONE = 0,
 	MD_ABN_EVENTP_SKIP,
 	MD_ABN_EVENTP_DUPLICATE,
-	MD_ABN_EVENTP_MANUPULATE,
-	MD_ABN_EVENTP_SENDER,
+	MD_ABN_EVENTP_MANIPULATE,
+	MD_ABN_EVENTP_SENDERR,
 } md_abn_eventp_t;
+
+typedef enum {
+	MD_ABN_EVENTP_TXTS_NONE = 0,
+	MD_ABN_EVENTP_TXTS_MANIPULATE = (1<<0),
+	MD_ABN_EVENTP_TXTS_ERR = (1<<1),
+} md_abn_eventp_txts_t;
 
 /**
  * @brief initialize and activate 'md_abnormal_gptpnet_send_hook' operation.
@@ -102,9 +129,9 @@ int md_abnormal_register_event(md_abn_event_t *event);
 int md_abnormal_deregister_all_events(void);
 
 /**
- * @brief deregister all of abnormal events with 'msgtype'
+ * @brief deregister all of abnormal events with 'eventtype'
  */
-int md_abnormal_deregister_msgtype_events(PTPMsgType msgtype);
+int md_abnormal_deregister_event(md_abn_event_type eventtype);
 
 /**
  * @brief inject abnomal send events by calling this function just before 'gptpnet_send'
@@ -125,9 +152,9 @@ static inline int gptpnet_send_whook(gptpnet_data_t *gpnet, int ndevIndex, uint1
 	case MD_ABN_EVENTP_DUPLICATE:
 		(void)gptpnet_send(gpnet, ndevIndex, length);
 		return gptpnet_send(gpnet, ndevIndex, length);
-	case MD_ABN_EVENTP_MANUPULATE:
+	case MD_ABN_EVENTP_MANIPULATE:
 		break;
-	case MD_ABN_EVENTP_SENDER:
+	case MD_ABN_EVENTP_SENDERR:
 	default:
 		return -1;
 	}
@@ -138,8 +165,10 @@ static inline int gptpnet_send_whook(gptpnet_data_t *gpnet, int ndevIndex, uint1
  * @brief check if the timestamp should be abandoned by an abnormal event
  * @param ndevIndex	index of a network device
  * @param domainNumber	domain Number
+ * @param edtxts timestamp data
  * @result 0:no abnormal event, 1:hit with a registered abnormal event
  */
-int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber);
+int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber,
+    event_data_txts_t *edtxts);
 
 #endif

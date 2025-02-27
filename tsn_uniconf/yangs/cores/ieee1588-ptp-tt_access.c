@@ -169,14 +169,16 @@ int ydbi_gptpinstdomain2dbinst_pt(yang_db_item_access_t *ydbia, uint8_t gptpInst
 		       255};
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ, YANG_DB_ONHW_NOACTION,
 				      NULL, aps, NULL, NULL, NULL, 0};
-	uint16_t *mapv;
+	uint16_t mapv;
+	uint8_t *mapvb;
 	int i, n;
 	int res=-1;
 	if(yang_db_action(ydbia->dbald, NULL, &dbpara)!=0){return -1;}
-	mapv=(uint16_t *)dbpara.value;
+	mapvb=(uint8_t *)dbpara.value;
 	n=dbpara.vsize/sizeof(uint16_t);
 	for(i=0;i<n;i++){
-		if((gptpInstance==(mapv[i]>>8u)) && ((mapv[i]&0xffu)==domainIndex)){
+		ub_non_aligned_intsubst(&mapvb[i*2], &mapv, sizeof(uint16_t));
+		if((gptpInstance==(mapv>>8u)) && ((mapv&0xffu)==domainIndex)){
 			res=i;
 			break;
 		}
@@ -190,18 +192,21 @@ int ydbi_gptpinstdomain2dbinst_pt(yang_db_item_access_t *ydbia, uint8_t gptpInst
 int ydbi_dbinst2gptpinstdomain_pt(yang_db_item_access_t *ydbia, uint16_t instIndex,
 		      uint8_t *gptpInstance, uint8_t *domainIndex)
 {
-	uint8_t aps[]={IEEE1588_PTP_TT_RW_Y, IEEE1588_PTP_TT_PTP, IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP,
-		       255};
+	uint8_t aps[]={IEEE1588_PTP_TT_RW_Y, IEEE1588_PTP_TT_PTP,
+		IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP,
+		255};
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ, YANG_DB_ONHW_NOACTION,
 				      NULL, aps, NULL, NULL, NULL, 0};
-	uint16_t *mapv;
+	uint8_t *mapvb;
+	uint16_t mapv;
 	int n;
 	if(yang_db_action(ydbia->dbald, NULL, &dbpara)!=0){return -1;}
-	mapv=(uint16_t *)dbpara.value;
+	mapvb=(uint8_t *)dbpara.value;
 	n=dbpara.vsize/sizeof(uint16_t);
 	if(instIndex>=n){return -1;}
-	*gptpInstance=mapv[instIndex]>>8u;
-	*domainIndex=mapv[instIndex]&0xff;
+	ub_non_aligned_intsubst(&mapvb[instIndex*2], &mapv, sizeof(uint16_t));
+	*gptpInstance=mapv>>8u;
+	*domainIndex=mapv&0xff;
 	dbpara.atype=YANG_DB_ACTION_READ_RELEASE;
 	(void)yang_db_action(ydbia->dbald, NULL, &dbpara);
 	return 0;
@@ -450,6 +455,62 @@ int ydbi_get_asCapable_ucnotice(yang_db_item_access_t *ydbia, uint8_t *gptpInsta
 	return res;
 }
 
+int ydbi_set_gmsync_ucnotice(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
+				uint8_t domainIndex, UC_NOTICE_SIG_T **sem,
+				const char *semname)
+{
+	int32_t instIndex;
+	void *kvs[3]={&instIndex, (char*)semname, NULL};
+	uint8_t kss[2]={sizeof(uint32_t), 0};
+	uint8_t aps[7]={IEEE1588_PTP_TT_RO_Y, IEEE1588_PTP_TT_PTP, IEEE1588_PTP_TT_INSTANCES,
+			IEEE1588_PTP_TT_INSTANCE, IEEE1588_PTP_TT_CLOCK_STATE, IEEE1588_PTP_TT_GMSTATE, 255};
+
+	instIndex=ydbi_gptpinstdomain2dbinst_pt(ydbia, gptpInstance, domainIndex);
+	if(instIndex<0){return -1;}
+	kss[1]=strlen(semname)+1;
+	return uc_nc_notice_register(ydbia->ucntd, ydbia->dbald, aps, kvs, kss,
+				     UC_NOTICE_DBVAL_ADD, sem);
+}
+
+// this delete all of registeration with the same semname by ydbi_set_ucnotice
+int ydbi_clear_gmsync_ucnotice(yang_db_item_access_t *ydbia, const char *semname)
+{
+	return uc_nc_notice_deregister_all(ydbia->ucntd, ydbia->dbald, semname);
+}
+
+int ydbi_get_gmsync_ucnotice(yang_db_item_access_t *ydbia, uint8_t *gptpInstance,
+				uint8_t *domainIndex, uint32_t *gmState,
+				const char *semname)
+{
+	uint32_t ksize, esize, vsize=0;
+	uint8_t key[UC_MAX_KEYSIZE];
+	int res;
+	void *value;
+	uint32_t instIndex;
+
+	res=uc_nc_get_notice_act(ydbia->ucntd, ydbia->dbald, semname, key, &ksize);
+	if(res){
+		UB_LOG(UBL_DEBUG, "%s:no data, res=%d\n", __func__, res);
+		return -1;
+	}
+	esize=7+sizeof(uint32_t)+1; // this calculation is by our key data spec
+	if(ksize!=esize){
+		UB_LOG(UBL_ERROR, "%s:ksize=%d != %d\n", __func__, ksize, esize);
+		return -1;
+	}
+	res=uc_dbal_get(ydbia->dbald, key, ksize, &value, &vsize);
+	if(res || (vsize!=4) ){
+		UB_LOG(UBL_ERROR, "%s:no value OR wrong vsize, res=%d, vsize=%d\n",
+		       __func__, res, vsize);
+		return -1;
+	}
+	*gmState=*((uint32_t*)value);
+	instIndex=*((uint32_t*)&key[esize-sizeof(uint32_t)]);
+	res=ydbi_dbinst2gptpinstdomain_pt(ydbia, instIndex, gptpInstance, domainIndex);
+	uc_dbal_get_release(ydbia->dbald, key, ksize, value, vsize);
+	return res;
+}
+
 int ydbi_set_perfmon_clock_item(yang_db_item_access_t *ydbia, uint8_t gptpInstance,
                                 uint8_t domainIndex, uint16_t index, uint8_t confitem,
                                 void *value, uint32_t vsize)
@@ -641,7 +702,8 @@ int ydbi_get_1588ptp_instance(uc_dbald *dbald, uint8_t ap0, const char *ginst_di
 	yang_db_access_para_t dbpara={YANG_DB_ACTION_READ,
 				      YANG_DB_ONHW_NOACTION,
 				      NULL, aps, NULL, NULL, NULL, 0};
-	uint16_t *mapv;
+	uint16_t mapv;
+	uint8_t *mapvb;
 	int i, n, x=-1;
 
 	if((ap0!=IEEE1588_PTP_TT_RW) && (ap0!=IEEE1588_PTP_TT_RO)){return -1;}
@@ -654,10 +716,11 @@ int ydbi_get_1588ptp_instance(uc_dbald *dbald, uint8_t ap0, const char *ginst_di
 
 	d=strtol(&astr[1], NULL, 0);
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){goto erexit;}
-	mapv=(uint16_t *)dbpara.value;
+	mapvb=(uint8_t *)dbpara.value;
 	n=dbpara.vsize/sizeof(uint16_t);
 	for(i=0;i<n;i++){
-		if((g==(mapv[i]>>8u)) && (d==(mapv[i]&0xffu))){
+		ub_non_aligned_intsubst(&mapvb[i*2], &mapv, sizeof(uint16_t ));
+		if((g==(mapv>>8u)) && (d==(mapv&0xffu))){
 			x=i;
 			break;
 		}

@@ -244,21 +244,35 @@ int xl4gptp_config_add(uc_dbald *dbald, uc_hwald *hwald)
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_MEAN_LINK_DELAY_THRESH;
-	res=yang_value_conv(YANG_VTYPE_PTP_TIME_INTERVAL, "0x27100000",
+	res=yang_value_conv(YANG_VTYPE_INT64, "0x27100000",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
-	//0003_ieee1588-ptp-tt/ptp/instances/instance/ports/port
+	//0003_ieee1588-ptp-tt/ptp/instances/instance/ports/port/timestamp-correction-port-ds
+	aps[6] = IEEE1588_PTP_TT_TIMESTAMP_CORRECTION_PORT_DS;
+	aps[7] = IEEE1588_PTP_TT_INGRESS_LATENCY;
+	res=yang_value_conv(YANG_VTYPE_INT64, "0x0",
+		&dbpara.value, &vsize, NULL);
+	if(res<0){goto erexit;}
+	dbpara.vsize=res;
+	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
+	aps[7] = IEEE1588_PTP_TT_EGRESS_LATENCY;
+	res=yang_value_conv(YANG_VTYPE_INT64, "0x0",
+		&dbpara.value, &vsize, NULL);
+	if(res<0){goto erexit;}
+	dbpara.vsize=res;
+	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
+	//0004_ieee1588-ptp-tt/ptp/instances/instance/ports/port
 	aps[6] = IEEE1588_PTP_TT_UNDERLYING_INTERFACE;
 	aps[7] = 255;
-	res=yang_value_conv(YANG_VTYPE_IF_INTERFACE_REF, "cbeth0",
+	res=yang_value_conv(YANG_VTYPE_STRING, "cbeth0",
 		&dbpara.value, &vsize, NULL);
 	if(res<0){goto erexit;}
 	dbpara.vsize=res;
 	if(yang_db_action(dbald, hwald, &dbpara)!=0){goto erexit;}
-	//0004_ieee1588-ptp-tt/ptp/instances/instance
-	//0005_ieee1588-ptp-tt/ptp
+	//0005_ieee1588-ptp-tt/ptp/instances/instance
+	//0006_ieee1588-ptp-tt/ptp
 	if(kvs[0]!=NULL){UB_SD_RELMEM(YANGINIT_GEN_SMEM, kvs[0]);kvs[0]=NULL;}
 	aps[2] = IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP;
 	aps[3] = 255;

@@ -331,6 +331,10 @@ struct PerPortGlobal {
 
 	// IEEE1588-2019 J.5 Data set for performance monitoring
 	PerfMonPortDS *perfmonDS;
+
+	// 8.4.3 ingress/egress latency
+	TimeInterval ingressLatency;
+	TimeInterval egressLatency;
 };
 
 // 10.2.6 SiteSyncSync state machine

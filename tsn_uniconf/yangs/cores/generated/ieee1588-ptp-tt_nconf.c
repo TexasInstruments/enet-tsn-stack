@@ -105,6 +105,9 @@ int ieee1588_ptp_tt_nconf_config_init(uc_dbald *dbald)
 		dbpara.value=(void*)"performance-monitoring";
 		dbpara.vsize=23;
 		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+		dbpara.value=(void*)"timestamp-correction";
+		dbpara.vsize=21;
+		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 		aps[3]=IETF_YANG_LIBRARY_DEVIATION;
 		aps[4]=IETF_YANG_LIBRARY_DUMMY;
 		res=0;
@@ -113,7 +116,7 @@ int ieee1588_ptp_tt_nconf_config_init(uc_dbald *dbald)
 		dbpara.atype=YANG_DB_ACTION_CREATE;
 		kvs[2]=(void*)"xl4-ieee1588-ptp-tt";
 		kss[2]=20;
-		kvs[3]=(void*)"2022-11-25";
+		kvs[3]=(void*)"2024-08-21";
 		kss[3]=11;
 		if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 	};
@@ -122,7 +125,7 @@ int ieee1588_ptp_tt_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	aps[2]=IETF_YANG_LIBRARY_MODULE_SET_ID;
 	aps[3]=255u;
-	dbpara.value=(void*)"8edc7e484fe79baf260efef0c0d059050db52397";
+	dbpara.value=(void*)"64be3eaa925f761f7fd0bc7f741cc34f03f6af2d";
 	dbpara.vsize=41;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
 
@@ -135,8 +138,8 @@ int ieee1588_ptp_tt_nconf_config_init(uc_dbald *dbald)
 	kvs[0]=NULL;
 	dbpara.atype=YANG_DB_ACTION_APPEND;
 
-	nvalue=(void*)"urn:ieee:std:1588:yang:ieee1588-ptp-tt?module=ieee1588-ptp-tt&revision=2023-08-14&features=external-port-config,performance-monitoring&deviations=xl4-ieee1588-ptp-tt";
-	nvsize=166;
+	nvalue=(void*)"urn:ieee:std:1588:yang:ieee1588-ptp-tt?module=ieee1588-ptp-tt&revision=2023-08-14&features=external-port-config,performance-monitoring,timestamp-correction&deviations=xl4-ieee1588-ptp-tt";
+	nvsize=187;
 	dbpara.value=nvalue;
 	dbpara.vsize=61;
 	if(yang_db_leaflist_capupdate(dbald, NULL, &dbpara, nvalue, nvsize)!=0){return -1;}
@@ -150,9 +153,10 @@ int ieee1588_ptp_tt_nconf_config_init(uc_dbald *dbald)
 	kss[0]=16;
 	kvs[1]=(void*)"2023-08-14";
 	kss[1]=11;
-	res=yang_identityref_getval("yang", "format");
+	res=yang_identityref_getval("yang", strlen("yang"), "format");
 	kvs[2]=&res;
 	kss[2]=4;
+	dbpara.atype=YANG_DB_ACTION_CREATE;
 	aps[4]=IETF_NETCONF_MONITORING_NAMESPACE;
 	dbpara.value=(void*)"urn:ieee:std:1588:yang:ieee1588-ptp-tt";
 	dbpara.vsize=39;
@@ -161,6 +165,7 @@ int ieee1588_ptp_tt_nconf_config_init(uc_dbald *dbald)
 	dbpara.value=(void*)"NETCONF";
 	dbpara.vsize=8;
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return -1;}
+	dbpara.atype=YANG_DB_ACTION_APPEND;
 
 	return 0;
 }

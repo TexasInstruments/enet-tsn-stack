@@ -81,15 +81,14 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 {
 	int64_t offset=0;
 	double delay;
+	uint64_t correctionField_nll;
 	sm->mdSyncReceive.domainIndex =
 		md_domain_number2index(RCVD_SYNC_PTR->head.domainNumber);
 	sm->mdSyncReceive.seqid = ntohs(RCVD_SYNC_PTR->head.sequenceId_ns);
-	sm->mdSyncReceive.followUpCorrectionField.nsec =
-		(UB_NTOHLL((uint64_t)RCVD_SYNC_PTR->head.correctionField_nll)>>16);
+	correctionField_nll = UB_NTOHLL((uint64_t)RCVD_SYNC_PTR->head.correctionField_nll);
 
 	if(TWO_STEP_FLAG!=0u){
-		sm->mdSyncReceive.followUpCorrectionField.nsec +=
-			(UB_NTOHLL((uint64_t)RCVD_FOLLOWUP_PTR->head.correctionField_nll)>>16);
+		correctionField_nll+=UB_NTOHLL((uint64_t)RCVD_FOLLOWUP_PTR->head.correctionField_nll);
 		sm->mdSyncReceive.preciseOriginTimestamp.seconds.lsb =
 			(uint64_t)ntohl(RCVD_FOLLOWUP_PTR->preciseOriginTimestamp.seconds_lsb_nl);
 		sm->mdSyncReceive.preciseOriginTimestamp.seconds.msb =
@@ -148,6 +147,9 @@ static MDSyncReceive *setMDSyncReceive(md_sync_receive_data_t *sm)
 			      ntohl(RCVD_SYNC_ONESETP_PTR->FUpInfoTLV.scaledLastGmFreqChange_nl),
 			      -41);
 	}
+
+	sm->mdSyncReceive.followUpCorrectionField.nsec = (int64_t)((correctionField_nll)>>16);
+	sm->mdSyncReceive.followUpCorrectionField.subns = (uint16_t)correctionField_nll;
 
 	memcpy(sm->mdSyncReceive.sourcePortIdentity.clockIdentity,
 	       RCVD_SYNC_PTR->head.sourcePortIdentity.clockIdentity,
@@ -429,7 +431,9 @@ void *md_sync_receive_sm_recv_sync(md_sync_receive_data_t *sm, event_data_recv_t
 	if(ub_assert_fatal(size <= (int)(sizeof(sm->u.recSync)/sizeof(uint8_t)), __func__, NULL)){return NULL;}
 	memcpy(&sm->u.recSync, edrecv->recbptr, size);
 	RCVD_SYNC_PTR = &sm->u.recSync;
-	sm->syncEventIngressTimestamp = edrecv->ts64;
+	sm->syncEventIngressTimestamp = edrecv->ts64 - sm->ppg->ingressLatency.scaledNanoseconds;
+	UB_LOG(UBL_DEBUGV, "rts=%"PRIu64", ingressLatency=%"PRIu64", edrecv->ts64=%"PRIu64"\n",
+	       sm->syncEventIngressTimestamp, sm->ppg->ingressLatency.scaledNanoseconds, edrecv->ts64);
 	return md_sync_receive_sm(sm, cts64);
 }
 

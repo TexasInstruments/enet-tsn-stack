@@ -126,6 +126,8 @@ const char *xl4_extmod_xl4gptp_enum_strings[]={
 };
 const uint8_t xl4_extmod_xl4gptp_enum_max=64;
 
+#ifdef GENERATE_INITCONFIG
+
 static int enumstring_init(uc_dbald *dbald, uint8_t modid)
 {
 	uint8_t apsd[7]={XL4_DATA_RW, XL4_ENUM_TABLE,};
@@ -342,3 +344,4 @@ erexit:
 	return res;
 }
 
+#endif

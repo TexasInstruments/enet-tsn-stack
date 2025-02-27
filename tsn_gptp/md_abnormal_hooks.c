@@ -47,12 +47,13 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
 */
+#include <stdint.h>
 #include <stdlib.h>
 #include <tsn_unibase/unibase.h>
 #include "mdeth.h"
 #include "md_abnormal_hooks.h"
-#include "gptpcommon.h"
 #include "gptpnet.h"
+#include "gptpcommon.h"
 
 extern char *PTPMsgType_debug[16];
 
@@ -64,6 +65,7 @@ typedef struct event_data {
 
 typedef struct md_abnormal_data {
 	ub_esarray_cstd_t *events;
+	ub_esarray_cstd_t *tsfifo;
 } md_abnormal_data_t;
 
 #define MD_EVENT_ARRAY_EXPUNIT 2
@@ -115,23 +117,56 @@ static md_abn_eventp_t proc_event(event_data_t *event, uint8_t *dbuf, bool domai
 		return MD_ABN_EVENTP_DUPLICATE;
 	case MD_ABN_EVENT_BADSEQN:
 		if(!event_happen(event)){break;}
-		if(event->evd.eventpara==0){
+		if(event->evd.eventpara1==0){
 			dbuf[31]^=0xff; //invert lower 8 bits of SequenceID
 		}else{
 			uint16_t n,m;
 			memcpy(&m, &dbuf[30], 2);
-			n=ntohs(m)+event->evd.eventpara;
+			n=ntohs(m)+event->evd.eventpara1;
 			m=htons(n);
 			memcpy(&dbuf[30], &m, 2);
 		}
-		return MD_ABN_EVENTP_MANUPULATE;
-	case MD_ABN_EVENT_SENDER:
+		return MD_ABN_EVENTP_MANIPULATE;
+	case MD_ABN_EVENT_SENDERR:
 		if(!event_happen(event)){break;}
-		return MD_ABN_EVENTP_SENDER;
+		return MD_ABN_EVENTP_SENDERR;
 	default:
 		break;
 	}
 	return MD_ABN_EVENTP_NONE;
+}
+
+static md_abn_eventp_txts_t proc_txts_event(event_data_t *event, PTPMsgType msgtype, int ndevIndex,
+                                       int domainNumber, event_data_txts_t *edtxts)
+{
+	int64_t *nts;
+	switch(event->evd.eventtype){
+	case MD_ABN_EVENT_TXTSMISSING:
+		if(!event_happen(event)){break;}
+		if(event->evd.msgtype!=msgtype){break;}
+		if(event->evd.ndevIndex!=ndevIndex){break;}
+		if((event->evd.eventpara1!=-1)&&(event->evd.eventpara1!=edtxts->seqid)){break;}
+		return MD_ABN_EVENTP_TXTS_ERR;
+	case MD_ABN_EVENT_TXTSBADFIFO:
+		if(!event_happen(event)){break;}
+		nts=(int64_t *)ub_esarray_get_newele(gmdabnd->tsfifo);
+		*nts=edtxts->ts64;
+		nts=(int64_t *)ub_esarray_get_ele(gmdabnd->tsfifo, 0);
+		edtxts->ts64=*nts;
+		(void)ub_esarray_del_index(gmdabnd->tsfifo, 0);
+		return MD_ABN_EVENTP_TXTS_MANIPULATE;
+	case MD_ABN_EVENT_TXTSOFFSET:
+		if(!event_happen(event)){break;}
+		if(event->evd.msgtype!=msgtype){break;}
+		if(event->evd.ndevIndex!=ndevIndex){break;}
+		if(event->evd.eventpara1!=-1){}
+		if((event->evd.eventpara1!=-1)&&(event->evd.eventpara1!=edtxts->seqid)){break;}
+		edtxts->ts64+=event->evd.eventpara2;
+		return MD_ABN_EVENTP_TXTS_MANIPULATE;
+	default:
+		break;
+	}
+	return MD_ABN_EVENTP_TXTS_NONE;
 }
 
 void md_abnormal_init(void)
@@ -143,29 +178,78 @@ void md_abnormal_init(void)
 	(void)memset(gmdabnd, 0, sizeof(md_abnormal_data_t));
 	gmdabnd->events=ub_esarray_init(MD_EVENT_ARRAY_EXPUNIT, sizeof(event_data_t),
 					MD_EVENT_ARRAY_MAXUNIT);
+
+	gmdabnd->tsfifo=ub_esarray_init(MD_EVENT_ARRAY_EXPUNIT, sizeof(int64_t),
+					MD_EVENT_ARRAY_MAXUNIT);
 	return;
 }
 
 void md_abnormal_close(void)
 {
 	if(!gmdabnd){return;}
+	if(gmdabnd->tsfifo!=NULL){ub_esarray_close(gmdabnd->tsfifo);}
 	if(gmdabnd->events!=NULL){ub_esarray_close(gmdabnd->events);}
 	UB_SD_RELMEM(GPTP_SMALL_ALLOC, gmdabnd);
 	gmdabnd=NULL;
 	return;
 }
 
+static int check_new_event_entry(md_abn_event_t *event){
+	int i;
+	int elen;
+	event_data_t *nevent;
+
+	switch(event->eventtype){
+	case MD_ABN_EVENT_TXTSBADFIFO:
+		// check if already registered
+		elen=ub_esarray_ele_nums(gmdabnd->events);
+		for(i=0;i<elen;i++) {
+			nevent=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
+			if(nevent && (nevent->evd.eventtype==event->eventtype)){
+				return -1;
+			}
+		}
+		if(event->eventpara1<=0){ return -1;} // eventpara1 must be greater than 0
+		if(event->eventpara1>MD_EVENT_ARRAY_MAXUNIT-1){ return -1; } // limit eventpara1
+		event->msgtype=MANAGEMENT; // ignored, set to anything not particular
+		break;
+	default:
+		break;
+	}
+
+	if(event->msgtype>(PTPMsgType)15){return -1;}
+	return 0;
+}
+
+static int proc_post_event_register(md_abn_event_t *event){
+	int i;
+	int64_t *nts;
+	switch(event->eventtype){
+	case MD_ABN_EVENT_TXTSBADFIFO:
+		event->msgtype=MANAGEMENT; // ignored, set to anything not particular
+		for(i=0;i<event->eventpara1;i++){
+			nts=(int64_t *)ub_esarray_get_newele(gmdabnd->tsfifo);
+			*nts=event->eventpara2;
+		}
+		break;
+	default:
+		break;
+	}
+	return 0;
+}
+
 int md_abnormal_register_event(md_abn_event_t *event)
 {
 	event_data_t *nevent;
 	if(!gmdabnd){return -1;}
-	if(event->msgtype>(PTPMsgType)15){return -1;}
+	if(check_new_event_entry(event)) {return -1;}
+
 	nevent=(event_data_t *)ub_esarray_get_newele(gmdabnd->events);
 	if(!nevent){return -1;}
 	(void)memset(nevent, 0, sizeof(event_data_t));
 	memcpy(&nevent->evd, event, sizeof(md_abn_event_t));
 	UB_LOG(UBL_INFO, "%s:dn=%d, ni=%d, msgtype=%s, eventtype=%d,"
-	       "eventrate=%f, repeat=%d interval=%d eventpara=%d\n",__func__,
+	       "eventrate=%f, repeat=%d interval=%d eventpara1=%d eventpara2=%"PRId64"\n",__func__,
 	       event->domainNumber,
 	       event->ndevIndex,
 	       PTPMsgType_debug[event->msgtype],
@@ -173,7 +257,9 @@ int md_abnormal_register_event(md_abn_event_t *event)
 	       event->eventrate,
 	       event->repeat,
 	       event->interval,
-	       event->eventpara);
+	       event->eventpara1,
+	       event->eventpara2);
+	if(proc_post_event_register(event)) {return -1;}
 	return 0;
 }
 
@@ -183,23 +269,33 @@ int md_abnormal_deregister_all_events(void)
 	int elen;
 	if(!gmdabnd){return -1;}
 	UB_LOG(UBL_DEBUG, "%s:\n",__func__);
+
+	elen=ub_esarray_ele_nums(gmdabnd->tsfifo);
+	for(i=elen-1;i>=0;i--){(void)ub_esarray_del_index(gmdabnd->tsfifo, i);}
+
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=elen-1;i>=0;i--){(void)ub_esarray_del_index(gmdabnd->events, i);}
+
 	return 0;
 }
 
-int md_abnormal_deregister_msgtype_events(PTPMsgType msgtype)
+
+int md_abnormal_deregister_event(md_abn_event_type eventtype)
 {
-	int i;
+	int i, j;
 	event_data_t *event;
-	int elen;
+	int elen, tselen;
 	if(!gmdabnd){return -1;}
-	if(msgtype>(PTPMsgType)15){return -1;}
-	UB_LOG(UBL_DEBUG, "%s:msgtype=%s\n",__func__, PTPMsgType_debug[msgtype]);
+	UB_LOG(UBL_DEBUG, "%s:eventtype=%d\n",__func__, eventtype);
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=elen-1;i>=0;i--) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
-		if(event && (event->evd.msgtype==msgtype)){
+		if(event && (event->evd.eventtype==eventtype)){
+			// clear tsfifo if MD_ABN_EVENT_TXTSBADFIFO event is deregistered
+			if(eventtype==MD_ABN_EVENT_TXTSBADFIFO){
+				tselen=ub_esarray_ele_nums(gmdabnd->tsfifo);
+				for(j=tselen-1;j>=0;j--){(void)ub_esarray_del_index(gmdabnd->tsfifo, j);}
+			}
 			(void)ub_esarray_del_index(gmdabnd->events, i);
 		}
 	}
@@ -256,26 +352,22 @@ md_abn_eventp_t md_abnormal_gptpnet_send_hook(gptpnet_data_t *gpnet, int ndevInd
 	return res;
 }
 
-int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber)
+int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber,
+                          event_data_txts_t *edtxts)
 {
 	int i, elen;
 	event_data_t *event;
+	md_abn_eventp_txts_t res=MD_ABN_EVENTP_TXTS_NONE;
 
 	if(!gmdabnd){return 0;}
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=0;i<elen;i++) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
 		if(!event){continue;}
-		if(event->evd.msgtype!=msgtype){continue;}
-		if(event->evd.ndevIndex!=ndevIndex){continue;}
-		if(event->evd.eventtype!=MD_ABN_EVENT_NOTS){continue;}
-		if((domainNumber>=0) && (event->evd.domainNumber!=domainNumber)){continue;}
-		if(event_happen(event)!=0){
-			UB_LOG(UBL_DEBUG, "%s:%s timestamp must be abandoned\n",
-			       __func__, PTPMsgType_debug[msgtype]);
-			return 1;
-		}
-		return 0;
+		res|=proc_txts_event(event, msgtype, ndevIndex, domainNumber, edtxts);
+	}
+	if(res&MD_ABN_EVENTP_TXTS_ERR){
+		return -1;
 	}
 	return 0;
 }

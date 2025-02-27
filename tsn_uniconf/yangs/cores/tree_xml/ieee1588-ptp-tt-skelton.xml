@@ -23,24 +23,24 @@
 					</current-time>
 					<external-port-config-enable/>
 					<max-steps-removed/>
-					<gm-capable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<current-utc-offset xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<current-utc-offset-valid xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<leap59 xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<leap61 xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<time-traceable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<frequency-traceable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<ptp-timescale xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<time-source xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
+					<gm-capable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<current-utc-offset xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<current-utc-offset-valid xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<leap59 xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<leap61 xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<time-traceable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<frequency-traceable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<ptp-timescale xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<time-source xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
 				</default-ds>
 				<current-ds>
 					<steps-removed/>
 					<offset-from-time-transmitter/>
 					<mean-delay/>
-					<last-gm-phase-change xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<last-gm-freq-change xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<gm-timebase-indicator xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-					<time-of-last-freq-change xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
+					<last-gm-phase-change xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<last-gm-freq-change xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<gm-timebase-indicator xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+					<time-of-last-freq-change xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
 				</current-ds>
 				<parent-ds>
 					<parent-port-identity>
@@ -117,42 +117,46 @@
 							<minor-version-number/>
 							<delay-asymmetry/>
 							<port-enable/>
-							<is-measuring-delay xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<as-capable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<mean-link-delay-thresh xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<neighbor-rate-ratio xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<initial-log-announce-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<current-log-announce-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-log-announce-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<initial-log-sync-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<current-log-sync-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-log-sync-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<sync-receipt-timeout xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<sync-receipt-timeout-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<initial-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<current-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<mgt-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<initial-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<current-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<mgt-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-compute-rate-ratio xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-compute-mean-link-delay xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<allowed-lost-responses xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<allowed-faults xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<gptp-cap-receipt-timeout xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<one-step-receive xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<one-step-transmit xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<initial-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<current-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<use-mgt-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<mgt-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp"/>
-							<pdelay-truncated-timestamps xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp">
+							<is-measuring-delay xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<as-capable xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<mean-link-delay-thresh xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<neighbor-rate-ratio xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<initial-log-announce-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<current-log-announce-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-log-announce-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<initial-log-sync-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<current-log-sync-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-log-sync-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<sync-receipt-timeout xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<sync-receipt-timeout-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<initial-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<current-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<mgt-log-pdelay-req-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<initial-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<current-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<mgt-log-gptp-cap-interval xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-compute-neighbor-rate-ratio xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-compute-mean-link-delay xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<allowed-lost-responses xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<allowed-faults xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<gptp-cap-receipt-timeout xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<one-step-receive xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<one-step-transmit xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<initial-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<current-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<use-mgt-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<mgt-one-step-tx-oper xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp"/>
+							<pdelay-truncated-timestamps xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp">
 								<!-- # entries: 0.. -->
 							</pdelay-truncated-timestamps>
 						</port-ds>
+						<timestamp-correction-port-ds>
+							<egress-latency/>
+							<ingress-latency/>
+						</timestamp-correction-port-ds>
 						<performance-monitoring-port-ds>
 							<record-list-peer-delay>
 								<index/>
@@ -187,7 +191,7 @@
 						<external-port-config-port-ds>
 							<desired-state/>
 						</external-port-config-port-ds>
-						<port-statistics-ds xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp">
+						<port-statistics-ds xmlns="urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp">
 							<rx-sync-count/>
 							<rx-one-step-sync-count/>
 							<rx-follow-up-count/>
@@ -210,6 +214,7 @@
 				</ports>
 				<clock-state xmlns="http://excelfore.com/ns/xl4gptp">
 					<gmstate/>
+					<gmstate_ts64/>
 				</clock-state>
 			</instance>
 		</instances>

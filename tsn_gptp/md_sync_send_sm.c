@@ -173,6 +173,7 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 	int64_t dts;
 	uint64_t cf;
 	int64_t tsync_ts_threshold;
+	uint64_t residence_time;
 
 	sdata=gptpnet_get_sendbuf(sm->gpnetd, sm->portIndex-1);
 	(void)memset(sdata, 0, ssize);
@@ -184,10 +185,14 @@ static int setFollowUp_txFollowUp(md_sync_send_data_t *sm, uint64_t cts64)
 		cf = sm->sync_ts - RCVD_MDSYNC_PTR->upstreamTxTime.nsec;
 		// we assume cf<1sec
 	}else{
-		head.correctionField = ((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.nsec<<16u);
-		head.correctionField += (RCVD_MDSYNC_PTR->rateRatio *
-					 ((sm->sync_ts -
-					   RCVD_MDSYNC_PTR->upstreamTxTime.nsec)<<16));
+		// 11.2.15.2.3 setFollowUp() followUpCorrectionField is set equal to the sum of the following:
+		// 1) followUpCorrectionField of the most recently received MDSyncSend
+		head.correctionField = ((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.nsec<<16u) +
+								((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.subns);
+		// 2) The quantity of rateRatio * (syncEventEgressTimestamp - upstreamTxTime)
+		residence_time = RCVD_MDSYNC_PTR->rateRatio *
+					 (sm->sync_ts - RCVD_MDSYNC_PTR->upstreamTxTime.nsec);
+		head.correctionField += (residence_time<<16) + (uint64_t) ((uint16_t)residence_time);
 		cf=0;
 	}
 
@@ -234,7 +239,8 @@ static int setSyncOneStep(md_sync_send_data_t *sm, uint64_t cts64)
 		// RCVD_MDSYNC_PTR->rateRatio * (sync_ts - upstreamTxTime) must be added
 		// on correctionField
 		correctionField =
-			((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.nsec<<16u);
+			((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.nsec<<16u) + 
+			((uint64_t)RCVD_MDSYNC_PTR->followUpCorrectionField.subns);
 		cf=0;
 	}
 	ld=UB_HTONLL((uint64_t)correctionField);
@@ -490,13 +496,16 @@ void md_sync_send_sm_txts(md_sync_send_data_t *sm, event_data_txts_t *edtxts,
 	int pi;
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d, seqID=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex, edtxts->seqid);
-	if(md_abnormal_timestamp(SYNC, sm->portIndex-1, sm->ptasg->domainIndex)!=0){return;}
+	if(md_abnormal_timestamp(SYNC, sm->portIndex-1, sm->ptasg->domainIndex, edtxts)!=0){return;}
 	RCVD_MDTIMESTAMP_RECEIVE = true;
 	pi=gptpgcfg_get_intitem(
 		GPTPINSTNUM, XL4_EXTMOD_XL4GPTP_SINGLE_CLOCK_MODE,
 		YDBI_CONFIG)?1:sm->portIndex;
 	(void)gptpclock_tsconv(GPTPINSTNUM, &edtxts->ts64, pi, 0,
 			 sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
-	sm->sync_ts=edtxts->ts64;
+	sm->sync_ts=edtxts->ts64 + sm->ppg->egressLatency.scaledNanoseconds;
+
+	UB_LOG(UBL_DEBUGV, "sync_ts=%"PRIu64", egressLatency=%"PRIu64", edtxts->ts64=%"PRIu64"\n",
+	       sm->sync_ts, sm->ppg->egressLatency.scaledNanoseconds, edtxts->ts64);
 	(void)md_sync_send_sm(sm, cts64);
 }

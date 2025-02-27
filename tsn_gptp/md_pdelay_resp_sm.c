@@ -347,6 +347,7 @@ void md_pdelay_resp_sm_init(md_pdelay_resp_data_t **sm,
 	}else{
 		(*sm)->thisSM->portEnabled1 = (*sm)->ppg->ptpPortEnabled;
 	}
+	(*sm)->is2011BackwardCompatible=true; // not receive any msg can be considered as true
 }
 
 int md_pdelay_resp_sm_close(md_pdelay_resp_data_t **sm)
@@ -373,6 +374,8 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 			       __func__, sm->portIndex, majorSdoId);
 			return 0;
 	}
+	sm->is2011BackwardCompatible= (majorSdoId==0x10 &&
+		sm->thisSM->rcvdPdelayReqPtr->head.domainNumber == 0x00)?true:false;
 
 	recsqid=ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns);
 	if(sm->last_seqid >= 0){
@@ -388,8 +391,10 @@ int md_pdelay_resp_sm_recv_req(md_pdelay_resp_data_t *sm, event_data_recv_t *edr
 	PERFMON_PPMDR_INC(sm->ppg->perfmonDS, pDelayReqRx);
 	sm->last_seqid=recsqid;
 	sm->thisSM->rcvdPdelayReq = true;
-	sm->ts2=edrecv->ts64;
+	sm->ts2=edrecv->ts64 - sm->ppg->ingressLatency.scaledNanoseconds;
 
+	UB_LOG(UBL_DEBUGV, "%s:ts64=%"PRIu64", ingressLatency=%"PRId64", ts2=%"PRIu64"\n",
+	       __func__, edrecv->ts64, sm->ppg->ingressLatency.scaledNanoseconds, sm->ts2);
 	return md_pdelay_resp_sm(sm, cts64);
 }
 
@@ -399,7 +404,7 @@ void md_pdelay_resp_sm_txts(md_pdelay_resp_data_t *sm, event_data_txts_t *edtxts
 	int pi;
 	UB_LOG(UBL_DEBUGV, "%s:portIndex=%d, received seqID=%d\n",
 	       __func__, sm->portIndex, edtxts->seqid);
-	if(md_abnormal_timestamp(PDELAY_RESP, sm->portIndex-1, -1)!=0){return;}
+	if(md_abnormal_timestamp(PDELAY_RESP, sm->portIndex-1, -1, edtxts)!=0){return;}
 	if((sm->state!=SENT_PDELAY_RESP_WAITING_FOR_TIMESTAMP) ||
 	   (edtxts->seqid != ntohs(sm->thisSM->rcvdPdelayReqPtr->head.sequenceId_ns))){
 		UB_TLOG(UBL_WARN, "%s:TxTS is not expected, seqid expected=%d, received=%d\n",
@@ -412,7 +417,9 @@ void md_pdelay_resp_sm_txts(md_pdelay_resp_data_t *sm, event_data_txts_t *edtxts
 				YDBI_CONFIG)?1:sm->portIndex;
 	(void)gptpclock_tsconv(GPTPINSTNUM, &edtxts->ts64, pi, 0,
 			       sm->ptasg->thisClockIndex, sm->ptasg->domainIndex);
-	sm->ts3=edtxts->ts64;
+	sm->ts3=edtxts->ts64 + sm->ppg->egressLatency.scaledNanoseconds;
+	UB_LOG(UBL_DEBUGV, "%s:ts64=%"PRIu64", egressLatency=%"PRId64", ts3=%"PRIu64"\n",
+	       __func__, edtxts->ts64, sm->ppg->egressLatency.scaledNanoseconds, sm->ts3);
 	sm->thisSM->rcvdMDTimestampReceive = true;
 	(void)md_pdelay_resp_sm(sm, cts64);
 }

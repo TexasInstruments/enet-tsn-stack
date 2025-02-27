@@ -149,106 +149,112 @@ const char *ieee1588_ptp_tt_enum_strings[]={
 	"minor-version-number", 		// 86(0x56)
 	"delay-asymmetry", 		// 87(0x57)
 	"port-enable", 		// 88(0x58)
-	"performance-monitoring-port-ds", 		// 89(0x59)
-	"record-list-peer-delay", 		// 90(0x5a)
-	"average-mean-link-delay", 		// 91(0x5b)
-	"min-mean-link-delay", 		// 92(0x5c)
-	"max-mean-link-delay", 		// 93(0x5d)
-	"stddev-mean-link-delay", 		// 94(0x5e)
-	"announce-tx", 		// 95(0x5f)
-	"announce-rx", 		// 96(0x60)
-	"announce-foreign-rx", 		// 97(0x61)
-	"sync-tx", 		// 98(0x62)
-	"sync-rx", 		// 99(0x63)
-	"follow-up-tx", 		// 100(0x64)
-	"follow-up-rx", 		// 101(0x65)
-	"delay-req-tx", 		// 102(0x66)
-	"delay-req-rx", 		// 103(0x67)
-	"delay-resp-tx", 		// 104(0x68)
-	"delay-resp-rx", 		// 105(0x69)
-	"pdelay-req-tx", 		// 106(0x6a)
-	"pdelay-req-rx", 		// 107(0x6b)
-	"pdelay-resp-tx", 		// 108(0x6c)
-	"pdelay-resp-rx", 		// 109(0x6d)
-	"pdelay-resp-follow-up-tx", 		// 110(0x6e)
-	"pdelay-resp-follow-up-rx", 		// 111(0x6f)
-	"external-port-config-port-ds", 		// 112(0x70)
-	"desired-state", 		// 113(0x71)
-	// augmented by ieee802-dot1as-ptp
-	"gm-capable",		// 114(0x72)
-	"last-gm-phase-change",		// 115(0x73)
-	"last-gm-freq-change",		// 116(0x74)
-	"gm-timebase-indicator",		// 117(0x75)
-	"time-of-last-freq-change",		// 118(0x76)
-	"is-measuring-delay",		// 119(0x77)
-	"as-capable",		// 120(0x78)
-	"mean-link-delay-thresh",		// 121(0x79)
-	"neighbor-rate-ratio",		// 122(0x7a)
-	"initial-log-announce-interval",		// 123(0x7b)
-	"current-log-announce-interval",		// 124(0x7c)
-	"use-mgt-log-announce-interval",		// 125(0x7d)
-	"initial-log-sync-interval",		// 126(0x7e)
-	"current-log-sync-interval",		// 127(0x7f)
-	"use-mgt-log-sync-interval",		// 128(0x80)
-	"sync-receipt-timeout",		// 129(0x81)
-	"sync-receipt-timeout-interval",		// 130(0x82)
-	"initial-log-pdelay-req-interval",		// 131(0x83)
-	"current-log-pdelay-req-interval",		// 132(0x84)
-	"use-mgt-log-pdelay-req-interval",		// 133(0x85)
-	"mgt-log-pdelay-req-interval",		// 134(0x86)
-	"initial-log-gptp-cap-interval",		// 135(0x87)
-	"current-log-gptp-cap-interval",		// 136(0x88)
-	"use-mgt-log-gptp-cap-interval",		// 137(0x89)
-	"mgt-log-gptp-cap-interval",		// 138(0x8a)
-	"use-mgt-compute-rate-ratio",		// 139(0x8b)
-	"use-mgt-compute-mean-link-delay",		// 140(0x8c)
-	"allowed-lost-responses",		// 141(0x8d)
-	"allowed-faults",		// 142(0x8e)
-	"gptp-cap-receipt-timeout",		// 143(0x8f)
-	"one-step-tx-oper",		// 144(0x90)
-	"one-step-receive",		// 145(0x91)
-	"one-step-transmit",		// 146(0x92)
-	"initial-one-step-tx-oper",		// 147(0x93)
-	"current-one-step-tx-oper",		// 148(0x94)
-	"use-mgt-one-step-tx-oper",		// 149(0x95)
-	"mgt-one-step-tx-oper",		// 150(0x96)
-	"pdelay-truncated-timestamps",		// 151(0x97)
-	"port-statistics-ds",		// 152(0x98)
-	"rx-sync-count",		// 153(0x99)
-	"rx-one-step-sync-count",		// 154(0x9a)
-	"rx-follow-up-count",		// 155(0x9b)
-	"rx-pdelay-req-count",		// 156(0x9c)
-	"rx-pdelay-resp-count",		// 157(0x9d)
-	"rx-pdelay-resp-follow-up-count",		// 158(0x9e)
-	"rx-announce-count",		// 159(0x9f)
-	"tx-sync-count",		// 160(0xa0)
-	"tx-follow-up-count",		// 161(0xa1)
-	"tx-pdelay-req-count",		// 162(0xa2)
-	"tx-pdelay-resp-count",		// 163(0xa3)
-	"tx-pdelay-resp-follow-up-count",		// 164(0xa4)
-	"tx-announce-count",		// 165(0xa5)
+	"timestamp-correction-port-ds", 		// 89(0x59)
+	"egress-latency", 		// 90(0x5a)
+	"ingress-latency", 		// 91(0x5b)
+	"performance-monitoring-port-ds", 		// 92(0x5c)
+	"record-list-peer-delay", 		// 93(0x5d)
+	"average-mean-link-delay", 		// 94(0x5e)
+	"min-mean-link-delay", 		// 95(0x5f)
+	"max-mean-link-delay", 		// 96(0x60)
+	"stddev-mean-link-delay", 		// 97(0x61)
+	"announce-tx", 		// 98(0x62)
+	"announce-rx", 		// 99(0x63)
+	"announce-foreign-rx", 		// 100(0x64)
+	"sync-tx", 		// 101(0x65)
+	"sync-rx", 		// 102(0x66)
+	"follow-up-tx", 		// 103(0x67)
+	"follow-up-rx", 		// 104(0x68)
+	"delay-req-tx", 		// 105(0x69)
+	"delay-req-rx", 		// 106(0x6a)
+	"delay-resp-tx", 		// 107(0x6b)
+	"delay-resp-rx", 		// 108(0x6c)
+	"pdelay-req-tx", 		// 109(0x6d)
+	"pdelay-req-rx", 		// 110(0x6e)
+	"pdelay-resp-tx", 		// 111(0x6f)
+	"pdelay-resp-rx", 		// 112(0x70)
+	"pdelay-resp-follow-up-tx", 		// 113(0x71)
+	"pdelay-resp-follow-up-rx", 		// 114(0x72)
+	"external-port-config-port-ds", 		// 115(0x73)
+	"desired-state", 		// 116(0x74)
+	// augmented by ieee802-dot1as-gptp
+	"gm-capable",		// 117(0x75)
+	"last-gm-phase-change",		// 118(0x76)
+	"last-gm-freq-change",		// 119(0x77)
+	"gm-timebase-indicator",		// 120(0x78)
+	"time-of-last-freq-change",		// 121(0x79)
+	"is-measuring-delay",		// 122(0x7a)
+	"as-capable",		// 123(0x7b)
+	"mean-link-delay-thresh",		// 124(0x7c)
+	"neighbor-rate-ratio",		// 125(0x7d)
+	"initial-log-announce-interval",		// 126(0x7e)
+	"current-log-announce-interval",		// 127(0x7f)
+	"use-mgt-log-announce-interval",		// 128(0x80)
+	"initial-log-sync-interval",		// 129(0x81)
+	"current-log-sync-interval",		// 130(0x82)
+	"use-mgt-log-sync-interval",		// 131(0x83)
+	"sync-receipt-timeout",		// 132(0x84)
+	"sync-receipt-timeout-interval",		// 133(0x85)
+	"initial-log-pdelay-req-interval",		// 134(0x86)
+	"current-log-pdelay-req-interval",		// 135(0x87)
+	"use-mgt-log-pdelay-req-interval",		// 136(0x88)
+	"mgt-log-pdelay-req-interval",		// 137(0x89)
+	"initial-log-gptp-cap-interval",		// 138(0x8a)
+	"current-log-gptp-cap-interval",		// 139(0x8b)
+	"use-mgt-log-gptp-cap-interval",		// 140(0x8c)
+	"mgt-log-gptp-cap-interval",		// 141(0x8d)
+	"use-mgt-compute-neighbor-rate-ratio",		// 142(0x8e)
+	"use-mgt-compute-mean-link-delay",		// 143(0x8f)
+	"allowed-lost-responses",		// 144(0x90)
+	"allowed-faults",		// 145(0x91)
+	"gptp-cap-receipt-timeout",		// 146(0x92)
+	"one-step-tx-oper",		// 147(0x93)
+	"one-step-receive",		// 148(0x94)
+	"one-step-transmit",		// 149(0x95)
+	"initial-one-step-tx-oper",		// 150(0x96)
+	"current-one-step-tx-oper",		// 151(0x97)
+	"use-mgt-one-step-tx-oper",		// 152(0x98)
+	"mgt-one-step-tx-oper",		// 153(0x99)
+	"pdelay-truncated-timestamps",		// 154(0x9a)
+	"port-statistics-ds",		// 155(0x9b)
+	"rx-sync-count",		// 156(0x9c)
+	"rx-one-step-sync-count",		// 157(0x9d)
+	"rx-follow-up-count",		// 158(0x9e)
+	"rx-pdelay-req-count",		// 159(0x9f)
+	"rx-pdelay-resp-count",		// 160(0xa0)
+	"rx-pdelay-resp-follow-up-count",		// 161(0xa1)
+	"rx-announce-count",		// 162(0xa2)
+	"tx-sync-count",		// 163(0xa3)
+	"tx-follow-up-count",		// 164(0xa4)
+	"tx-pdelay-req-count",		// 165(0xa5)
+	"tx-pdelay-resp-count",		// 166(0xa6)
+	"tx-pdelay-resp-follow-up-count",		// 167(0xa7)
+	"tx-announce-count",		// 168(0xa8)
 	// augmented by xl4gptp
-	"port-clock",		// 166(0xa6)
-	"adjrate",		// 167(0xa7)
-	"ptpdev-name",		// 168(0xa8)
-	"clock-state",		// 169(0xa9)
-	"gmstate",		// 170(0xaa)
-	"instance-domain-map",		// 171(0xab)
+	"port-clock",		// 169(0xa9)
+	"adjrate",		// 170(0xaa)
+	"ptpdev-name",		// 171(0xab)
+	"clock-state",		// 172(0xac)
+	"gmstate",		// 173(0xad)
+	"gmstate_ts64",		// 174(0xae)
+	"instance-domain-map",		// 175(0xaf)
 };
-const uint8_t ieee1588_ptp_tt_enum_max=172;
+const uint8_t ieee1588_ptp_tt_enum_max=176;
+
+#ifdef GENERATE_INITCONFIG
 
 static int prefix_namespace_init(uc_dbald *dbald)
 {
-	if(yang_node_set_prefix_namespace(dbald, "ptp-tt",
-		"urn:ieee:std:1588:yang:ieee1588-ptp-tt")!=0){
-		return -1;
-	}
-	if(yang_node_set_prefix_namespace(dbald, "dot1as-ptp",
-		"urn:ieee:std:802.1AS:yang:ieee802-dot1as-ptp")!=0){
-		return -1;
-	}
 	if(yang_node_set_prefix_namespace(dbald, "xl4gptp",
 		"http://excelfore.com/ns/xl4gptp")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "dot1as-gptp",
+		"urn:ieee:std:802.1AS:yang:ieee802-dot1as-gptp")!=0){
+		return -1;
+	}
+	if(yang_node_set_prefix_namespace(dbald, "ptp-tt",
+		"urn:ieee:std:1588:yang:ieee1588-ptp-tt")!=0){
 		return -1;
 	}
 	return 0;
@@ -271,7 +277,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_GM_CAPABLE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -281,7 +287,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_CURRENT_UTC_OFFSET;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -291,7 +297,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_CURRENT_UTC_OFFSET_VALID;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -301,7 +307,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_LEAP59;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -311,7 +317,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_LEAP61;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -321,7 +327,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_TIME_TRACEABLE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -331,7 +337,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_FREQUENCY_TRACEABLE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -341,7 +347,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_PTP_TIMESCALE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -351,7 +357,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_TIME_SOURCE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -361,7 +367,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_LAST_GM_PHASE_CHANGE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -371,7 +377,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_LAST_GM_FREQ_CHANGE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -381,7 +387,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_GM_TIMEBASE_INDICATOR;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -391,7 +397,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[5]=IEEE1588_PTP_TT_TIME_OF_LAST_FREQ_CHANGE;
 	apsd[6]=IEEE1588_PTP_TT_NSASC;
 	apsd[7]=255u;
-	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 8, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -403,7 +409,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_IS_MEASURING_DELAY;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -415,7 +421,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_AS_CAPABLE;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -427,7 +433,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_MEAN_LINK_DELAY_THRESH;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -439,7 +445,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_NEIGHBOR_RATE_RATIO;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -451,7 +457,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_INITIAL_LOG_ANNOUNCE_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -463,7 +469,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_CURRENT_LOG_ANNOUNCE_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -475,7 +481,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_USE_MGT_LOG_ANNOUNCE_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -487,7 +493,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_INITIAL_LOG_SYNC_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -499,7 +505,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_CURRENT_LOG_SYNC_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -511,7 +517,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_USE_MGT_LOG_SYNC_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -523,7 +529,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_SYNC_RECEIPT_TIMEOUT;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -535,7 +541,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_SYNC_RECEIPT_TIMEOUT_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -547,7 +553,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_INITIAL_LOG_PDELAY_REQ_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -559,7 +565,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_CURRENT_LOG_PDELAY_REQ_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -571,7 +577,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_USE_MGT_LOG_PDELAY_REQ_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -583,7 +589,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_MGT_LOG_PDELAY_REQ_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -595,7 +601,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_INITIAL_LOG_GPTP_CAP_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -607,7 +613,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_CURRENT_LOG_GPTP_CAP_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -619,7 +625,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_USE_MGT_LOG_GPTP_CAP_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -631,7 +637,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_MGT_LOG_GPTP_CAP_INTERVAL;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -640,10 +646,10 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[4]=IEEE1588_PTP_TT_PORTS;
 	apsd[5]=IEEE1588_PTP_TT_PORT;
 	apsd[6]=IEEE1588_PTP_TT_PORT_DS;
-	apsd[7]=IEEE1588_PTP_TT_USE_MGT_COMPUTE_RATE_RATIO;
+	apsd[7]=IEEE1588_PTP_TT_USE_MGT_COMPUTE_NEIGHBOR_RATE_RATIO;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -655,7 +661,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_USE_MGT_COMPUTE_MEAN_LINK_DELAY;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -667,7 +673,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_ALLOWED_LOST_RESPONSES;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -679,7 +685,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_ALLOWED_FAULTS;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -691,7 +697,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_GPTP_CAP_RECEIPT_TIMEOUT;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -703,7 +709,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_ONE_STEP_TX_OPER;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -715,7 +721,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_ONE_STEP_RECEIVE;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -727,7 +733,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_ONE_STEP_TRANSMIT;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -739,7 +745,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_INITIAL_ONE_STEP_TX_OPER;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -751,7 +757,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_CURRENT_ONE_STEP_TX_OPER;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -763,7 +769,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_USE_MGT_ONE_STEP_TX_OPER;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -775,7 +781,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_MGT_ONE_STEP_TX_OPER;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -787,7 +793,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[7]=IEEE1588_PTP_TT_PDELAY_TRUNCATED_TIMESTAMPS;
 	apsd[8]=IEEE1588_PTP_TT_NSASC;
 	apsd[9]=255u;
-	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 10, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -798,7 +804,7 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[6]=IEEE1588_PTP_TT_PORT_STATISTICS_DS;
 	apsd[7]=IEEE1588_PTP_TT_NSASC;
 	apsd[8]=255u;
-	if(uc_dbal_create(dbald, apsd, 9, (void*)"dot1as-ptp", 11)!=0){
+	if(uc_dbal_create(dbald, apsd, 9, (void*)"dot1as-gptp", 12)!=0){
 		return -1;
 	}
 	apsd[1]=IEEE1588_PTP_TT_PTP;
@@ -877,7 +883,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0002_ieee1588-ptp-tt/ptp/instances/instance/default-ds
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[5] = IEEE1588_PTP_TT_CLOCK_IDENTITY;
-	vtype=YANG_VTYPE_CLOCK_IDENTITY;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_NUMBER_PORTS;
 	vtype=YANG_VTYPE_UINT16;
@@ -942,28 +948,28 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_OFFSET_FROM_TIME_TRANSMITTER;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_MEAN_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_LAST_GM_PHASE_CHANGE;
-	vtype=YANG_VTYPE_SCALED_NS;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_LAST_GM_FREQ_CHANGE;
-	vtype=YANG_VTYPE_FLOAT64;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_GM_TIMEBASE_INDICATOR;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_TIME_OF_LAST_FREQ_CHANGE;
-	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0004_ieee1588-ptp-tt/ptp/instances/instance/parent-ds/parent-port-identity
 	aps[4] = IEEE1588_PTP_TT_PARENT_DS;
 	aps[5] = IEEE1588_PTP_TT_PARENT_PORT_IDENTITY;
 	aps[6] = IEEE1588_PTP_TT_CLOCK_IDENTITY;
-	vtype=YANG_VTYPE_CLOCK_IDENTITY;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_PORT_NUMBER;
 	vtype=YANG_VTYPE_UINT16;
@@ -992,7 +998,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	//0007_ieee1588-ptp-tt/ptp/instances/instance/parent-ds
 	aps[5] = IEEE1588_PTP_TT_GRANDMASTER_IDENTITY;
-	vtype=YANG_VTYPE_CLOCK_IDENTITY;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE1588_PTP_TT_GRANDMASTER_PRIORITY1;
 	vtype=YANG_VTYPE_UINT8;
@@ -1036,55 +1042,55 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_PM_TIME;
-	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_AVERAGE_TIME_TRANSMITTER_TIME_RECEIVER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MINIMUM_TIME_TRANSMITTER_TIME_RECEIVER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MAXIMUM_TIME_TRANSMITTER_TIME_RECEIVER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_STDDEV_TIME_TRANSMITTER_TIME_RECEIVER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_AVERAGE_TIME_RECEIVER_TIME_TRANSMITTER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MINIMUM_TIME_RECEIVER_TIME_TRANSMITTER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MAXIMUM_TIME_RECEIVER_TIME_TRANSMITTER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_STDDEV_TIME_RECEIVER_TIME_TRANSMITTER_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_AVERAGE_MEAN_PATH_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MINIMUM_MEAN_PATH_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MAXIMUM_MEAN_PATH_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_STDDEV_MEAN_PATH_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_AVERAGE_OFFSET_FROM_TIME_TRANSMITTER;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MINIMUM_OFFSET_FROM_TIME_TRANSMITTER;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_MAXIMUM_OFFSET_FROM_TIME_TRANSMITTER;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_STDDEV_OFFSET_FROM_TIME_TRANSMITTER;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE1588_PTP_TT_VALUEKEY;
 	aps[7] = IEEE1588_PTP_TT_INDEX;
@@ -1102,7 +1108,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[6] = IEEE1588_PTP_TT_PORT_DS;
 	aps[7] = IEEE1588_PTP_TT_PORT_IDENTITY;
 	aps[8] = IEEE1588_PTP_TT_CLOCK_IDENTITY;
-	vtype=YANG_VTYPE_CLOCK_IDENTITY;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PORT_NUMBER;
 	vtype=YANG_VTYPE_UINT16;
@@ -1116,7 +1122,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[6] = IEEE1588_PTP_TT_PORT_DS;
 	aps[7] = IEEE1588_PTP_TT_PORT_STATE;
-	vtype=YANG_VTYPE_PORT_STATE;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[7] = IEEE1588_PTP_TT_LOG_MIN_DELAY_REQ_INTERVAL;
@@ -1124,7 +1130,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[7] = IEEE1588_PTP_TT_MEAN_LINK_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[7] = IEEE1588_PTP_TT_LOG_ANNOUNCE_INTERVAL;
@@ -1138,7 +1144,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_INT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_DELAY_MECHANISM;
-	vtype=YANG_VTYPE_DELAY_MECHANISM;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[7] = IEEE1588_PTP_TT_LOG_MIN_PDELAY_REQ_INTERVAL;
@@ -1152,7 +1158,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_DELAY_ASYMMETRY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[7] = IEEE1588_PTP_TT_PORT_ENABLE;
@@ -1167,7 +1173,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[7] = IEEE1588_PTP_TT_MEAN_LINK_DELAY_THRESH;
-	vtype=YANG_VTYPE_PTP_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[7] = IEEE1588_PTP_TT_NEIGHBOR_RATE_RATIO;
@@ -1201,7 +1207,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[7] = IEEE1588_PTP_TT_SYNC_RECEIPT_TIMEOUT_INTERVAL;
-	vtype=YANG_VTYPE_USCALED_NS;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[7] = IEEE1588_PTP_TT_INITIAL_LOG_PDELAY_REQ_INTERVAL;
@@ -1233,7 +1239,7 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_INT8;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RO;
-	aps[7] = IEEE1588_PTP_TT_USE_MGT_COMPUTE_RATE_RATIO;
+	aps[7] = IEEE1588_PTP_TT_USE_MGT_COMPUTE_NEIGHBOR_RATE_RATIO;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_USE_MGT_COMPUTE_MEAN_LINK_DELAY;
@@ -1260,152 +1266,162 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_INITIAL_ONE_STEP_TX_OPER;
-	vtype=YANG_VTYPE_INT8;
+	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_CURRENT_ONE_STEP_TX_OPER;
-	vtype=YANG_VTYPE_INT8;
+	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_USE_MGT_ONE_STEP_TX_OPER;
 	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_MGT_ONE_STEP_TX_OPER;
-	vtype=YANG_VTYPE_INT8;
+	vtype=YANG_VTYPE_BOOLEAN;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_PDELAY_TRUNCATED_TIMESTAMPS;
-	vtype=YANG_VTYPE_UINT64;
+	vtype=YANG_VTYPE_UINT64_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0013_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list-peer-delay
+	//0013_ieee1588-ptp-tt/ptp/instances/instance/ports/port/timestamp-correction-port-ds
+	aps[0] = IEEE1588_PTP_TT_RW;
+	aps[6] = IEEE1588_PTP_TT_TIMESTAMP_CORRECTION_PORT_DS;
+	aps[7] = IEEE1588_PTP_TT_EGRESS_LATENCY;
+	vtype=YANG_VTYPE_INT64;
+	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	aps[7] = IEEE1588_PTP_TT_INGRESS_LATENCY;
+	vtype=YANG_VTYPE_INT64;
+	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
+	//0014_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list-peer-delay
+	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[6] = IEEE1588_PTP_TT_PERFORMANCE_MONITORING_PORT_DS;
 	aps[7] = IEEE1588_PTP_TT_RECORD_LIST_PEER_DELAY;
 	aps[8] = IEEE1588_PTP_TT_PM_TIME;
-	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_AVERAGE_MEAN_LINK_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_MIN_MEAN_LINK_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_MAX_MEAN_LINK_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_STDDEV_MEAN_LINK_DELAY;
-	vtype=YANG_VTYPE_TIME_INTERVAL;
+	vtype=YANG_VTYPE_INT64;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_VALUEKEY;
 	aps[9] = IEEE1588_PTP_TT_INDEX;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
-	//0014_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list
+	//0015_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds/record-list
 	aps[7] = IEEE1588_PTP_TT_RECORD_LIST;
 	aps[8] = IEEE1588_PTP_TT_PM_TIME;
-	vtype=YANG_VTYPE_YANG_TIMESTAMP;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_ANNOUNCE_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_ANNOUNCE_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_ANNOUNCE_FOREIGN_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_SYNC_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_SYNC_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_FOLLOW_UP_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_FOLLOW_UP_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_DELAY_REQ_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_DELAY_REQ_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_DELAY_RESP_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_DELAY_RESP_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PDELAY_REQ_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PDELAY_REQ_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PDELAY_RESP_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PDELAY_RESP_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PDELAY_RESP_FOLLOW_UP_TX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_PDELAY_RESP_FOLLOW_UP_RX;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE1588_PTP_TT_VALUEKEY;
 	aps[9] = IEEE1588_PTP_TT_INDEX;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 12, &vtype, 1)!=0){goto erexit;}
-	//0015_ieee1588-ptp-tt/ptp/instances/instance/ports/port/external-port-config-port-ds
-	//0016_ieee1588-ptp-tt/ptp/instances/instance/ports/port/external-port-config-port-ds
+	//0016_ieee1588-ptp-tt/ptp/instances/instance/ports/port/performance-monitoring-port-ds
+	//0017_ieee1588-ptp-tt/ptp/instances/instance/ports/port/external-port-config-port-ds
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[6] = IEEE1588_PTP_TT_EXTERNAL_PORT_CONFIG_PORT_DS;
 	aps[7] = IEEE1588_PTP_TT_DESIRED_STATE;
-	vtype=YANG_VTYPE_PORT_STATE;
+	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0017_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-statistics-ds
+	//0018_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-statistics-ds
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[6] = IEEE1588_PTP_TT_PORT_STATISTICS_DS;
 	aps[7] = IEEE1588_PTP_TT_RX_SYNC_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_RX_ONE_STEP_SYNC_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_RX_FOLLOW_UP_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_RX_PDELAY_REQ_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_RX_PDELAY_RESP_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_RX_PDELAY_RESP_FOLLOW_UP_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_RX_ANNOUNCE_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_TX_SYNC_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_TX_FOLLOW_UP_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_TX_PDELAY_REQ_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_TX_PDELAY_RESP_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_TX_PDELAY_RESP_FOLLOW_UP_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE1588_PTP_TT_TX_ANNOUNCE_COUNT;
-	vtype=YANG_VTYPE_YANG_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0018_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-clock
+	//0019_ieee1588-ptp-tt/ptp/instances/instance/ports/port/port-clock
 	aps[6] = IEEE1588_PTP_TT_PORT_CLOCK;
 	aps[7] = IEEE1588_PTP_TT_ADJRATE;
 	vtype=YANG_VTYPE_INT32;
@@ -1414,23 +1430,26 @@ int ieee1588_ptp_tt_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	aps[7] = IEEE1588_PTP_TT_PTPDEV_NAME;
 	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
-	//0019_ieee1588-ptp-tt/ptp/instances/instance/ports/port
+	//0020_ieee1588-ptp-tt/ptp/instances/instance/ports/port
 	aps[6] = IEEE1588_PTP_TT_UNDERLYING_INTERFACE;
-	vtype=YANG_VTYPE_IF_INTERFACE_REF;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
-	//0020_ieee1588-ptp-tt/ptp/instances/instance/clock-state
-	//0021_ieee1588-ptp-tt/ptp/instances/instance/clock-state
+	//0021_ieee1588-ptp-tt/ptp/instances/instance/ports
+	//0022_ieee1588-ptp-tt/ptp/instances/instance/clock-state
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[4] = IEEE1588_PTP_TT_CLOCK_STATE;
 	aps[5] = IEEE1588_PTP_TT_GMSTATE;
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
-	//0022_ieee1588-ptp-tt/ptp/instances/instance
-	//0023_ieee1588-ptp-tt/ptp/instance-domain-map
-	//0024_ieee1588-ptp-tt/ptp
+	aps[5] = IEEE1588_PTP_TT_GMSTATE_TS64;
+	vtype=YANG_VTYPE_INT64;
+	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
+	//0023_ieee1588-ptp-tt/ptp/instances/instance
+	//0024_ieee1588-ptp-tt/ptp/instances
+	//0025_ieee1588-ptp-tt/ptp
 	aps[0] = IEEE1588_PTP_TT_RW;
 	aps[2] = IEEE1588_PTP_TT_INSTANCE_DOMAIN_MAP;
-	vtype=YANG_VTYPE_HEXUINT16;
+	vtype=YANG_VTYPE_HEXUINT16_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 5, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE1588_PTP_TT_RO;
 	aps[1] = IEEE1588_PTP_TT_VALUEKEY;
@@ -1441,3 +1460,4 @@ erexit:
 	return res;
 }
 
+#endif

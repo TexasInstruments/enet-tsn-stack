@@ -262,6 +262,19 @@ int64_t gptpgcfg_get_yang_portds_int64item(uint8_t gptpInstanceIndex, uint8_t co
 					   uint16_t pindex, uint8_t domainIndex, bool status);
 
 /**
+ * @brief Get yang item within the tscorrection data set with int64 data type 
+ * 
+ * @param gptpInstanceIndex Index of the gptp instance to be configured
+ * @param confitem Configuration item to be retrieved
+ * @param pindex Port index to be configured within the gptp instance
+ * @param domainIndex Domain index to be configured within the gptp instance
+ * @param status YDBI_CONFIG:access a rw node, YDBI_STATUS: access a readonly node
+ * @return int64_t 
+ */
+int64_t gptpgcfg_get_yang_tscorrection_int64item(uint8_t gptpInstanceIndex, uint8_t confitem,
+						 uint16_t pindex, uint8_t domainIndex, bool status);
+
+/**
  * @brief Sets port specific Yang item
  *
  * @param gptpInstanceIndex Index of the gptp instance to be configured
@@ -279,6 +292,42 @@ int gptpgcfg_set_yang_port_item(uint8_t gptpInstanceIndex, uint8_t confitem1, ui
 				uint16_t pindex, uint8_t domainIndex, bool status,
 				void *value, int vsize, bool notice);
 
+/**
+ * @brief Set a yang item from gptp configuration
+ *
+ * @param gptpInstanceIndex Index of the gptp instance to be configured
+ * @param confitem0 Index 0 of Enum key of the yang item to be retrieved
+ * @param confitem1 Index 1 of Enum key of the yang item to be retrieved
+ * @param confitem2 Index 2 of Enum key of the yang item to be retrieved
+ * @param domainIndex Index of the gptp domain to be configured
+ * @param status YDBI_CONFIG:access a rw node, YDBI_STATUS: access a readonly node
+ * @param value Value to be set
+ * @param vsize Data size of the value to be set
+ * @param notice YDBI_PUSH_NOTICE: push notification, YDBI_NO_NOTICE: no notification
+ * @return int value of the yang item
+ */
+int gptpgcfg_set_yang_item(uint8_t gptpInstanceIndex,
+			      uint8_t confitem0, uint8_t confitem1, uint8_t confitem2,
+			      uint8_t domainIndex, bool status,
+				  void *value, int vsize, bool notice);
+/**
+ * @brief Sets port specific Yang item for item(s) after /default-ds/%s
+ *  For ex: /default-ds/priority1 (confitem1), in this case confitem2 set to 255
+ *        : /default-ds/clock-quality/clock-class (confitem1=clock-quality, confitem2=clock-class)
+ * @param gptpInstanceIndex Index of the gptp instance to be configured
+ * @param confitem1 Index 1 of Enum key of the yang item to be set
+ * @param confitem2 Index 2 of Enum key of the yang item to be set
+ * @param domainIndex Domain index to be configured within the gptp instance
+ * @param status YDBI_CONFIG:access a rw node, YDBI_STATUS: access a readonly node
+ * @param value Value to be set
+ * @param vsize Data size of the value to be set
+ * @param notice YDBI_PUSH_NOTICE: push notification, YDBI_NO_NOTICE: no notification
+ * @return int 0 on success, -1 on failure
+ */
+int gptpgcfg_set_yang_defaultds_item(uint8_t gptpInstanceIndex,
+			      uint8_t confitem, uint8_t confitem1, 
+			      uint8_t domainIndex, bool status,
+			      void *value, int vsize, bool notice);
 /**
  * @brief Sets clock state specific Yang item
  *

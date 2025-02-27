@@ -452,6 +452,14 @@ static int gptpclock_setoffset_od(gptpclock_data_t *gcd, oneclock_data_t *od)
 	return 0;
 }
 
+#define GPTP_GET_TS64(gptpIndex, domainIndex, ts64) do { \
+	if(gptpclock_get_gmsync(gptpIndex, domainIndex)){ \
+		ts64=gptpclock_getts64(gptpIndex, domainIndex, 0); \
+	}else{ \
+		ts64=ub_mt_gettime64();\
+	} \
+}while(0)
+
 #define PTPCLOCK_OPEN_TOUT 100 // msec
 /* It is okay to use ptpdev which doesn't belong to portIndex.
    In succh case, the mode shouldn't be SLAVE_MAIN  */
@@ -463,6 +471,7 @@ int gptpclock_add_clock(uint8_t gptpInstanceIndex, int clockIndex,
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
 	uint32_t state=0;
+	uint64_t ts64;
 	if(gcd==NULL){
 		UB_LOG(UBL_ERROR, "%s:no gcd[%d]\n", __func__, gptpInstanceIndex);
 		return -1;
@@ -476,9 +485,13 @@ int gptpclock_add_clock(uint8_t gptpInstanceIndex, int clockIndex,
 			return -1;
 		}
 	}
+	GPTP_GET_TS64(gptpInstanceIndex, domainIndex, ts64);
+	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_TT_GMSTATE_TS64,
+				      domainIndex, YDBI_STATUS,
+				      &ts64, sizeof(uint64_t), YDBI_NO_NOTICE);
 	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_TT_GMSTATE,
 				      domainIndex, YDBI_STATUS,
-				      &state, sizeof(uint32_t), YDBI_NO_NOTICE);
+				      &state, sizeof(uint32_t), YDBI_PUSH_NOTICE);
 
 	od = (oneclock_data_t *)ub_esarray_get_newele(gcd->clds);
 	if(!od) {
@@ -1070,6 +1083,7 @@ int gptpclock_set_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex, uint32_
 {
 	oneclock_data_t *od;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
+	uint64_t ts64;
 	GPTPCLOCK_FN_ENTRY(gcd, od, 0, domainIndex); // gmsync is only on clockIndex=0
 	if(od->pp->gmsync==gmstate){
 		// no change
@@ -1079,9 +1093,13 @@ int gptpclock_set_gmsync(uint8_t gptpInstanceIndex, uint8_t domainIndex, uint32_
 	       gptpInstanceIndex, domainIndex, gmstate);
 	od->pp->gmsync=gmstate;
 	(void)gptpclock_update_active_domain(gptpInstanceIndex);
+	GPTP_GET_TS64(gptpInstanceIndex, domainIndex, ts64);
+	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_TT_GMSTATE_TS64,
+				      domainIndex, YDBI_STATUS,
+				      &ts64, sizeof(uint64_t), YDBI_NO_NOTICE);
 	gptpgcfg_set_clock_state_item(gptpInstanceIndex, IEEE1588_PTP_TT_GMSTATE,
 				      od->domainIndex, YDBI_STATUS,
-				      &gmstate, sizeof(uint32_t), YDBI_NO_NOTICE);
+				      &gmstate, sizeof(uint32_t), YDBI_PUSH_NOTICE);
 	return 0;
 }
 

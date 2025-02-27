@@ -69,16 +69,7 @@ static bool is_rxPdelayMsgAre2011Compatible(uint8_t gptpInstanceIndex, PerTimeAw
 			  gptpsm_ptd_t *ptd)
 {
 	if (!ptd->mdpdreqd || !ptd->mdpdrespd) {return false;}
-	if ( (ptd->mdpdreqd->recPdelayResp.head.majorSdoId_messageType & 0xF0)==0x10 &&
-			ptd->mdpdreqd->recPdelayResp.head.domainNumber == 0x00 &&
-			(ptd->mdpdreqd->recPdelayRespFup.head.majorSdoId_messageType & 0xF0)==0x10 &&
-			ptd->mdpdreqd->recPdelayRespFup.head.domainNumber == 0x00 &&
-			(ptd->mdpdrespd->rcvdPdelayReq.head.majorSdoId_messageType & 0xF0)==0x10  &&
-			ptd->mdpdrespd->rcvdPdelayReq.head.domainNumber == 0x00 )
-	{
-		return true;
-	}
-	return false;
+	return (ptd->mdpdreqd->is2011BackwardCompatible && ptd->mdpdrespd->is2011BackwardCompatible);
 }
 static void set_asCapable(uint8_t gptpInstanceIndex, PerTimeAwareSystemGlobal *tasg,
 			  gptpsm_ptd_t *ptd)
@@ -471,8 +462,7 @@ static int gptpnet_cb_timeout(gptpman_data_t *gpmand, uint64_t cts64)
 				      &gpmand->tasds[di].ptds[pi]);
 			gpmand->tasds[di].tasglb->asCapableOrAll |=
 				gpmand->tasds[di].ptds[pi].ppglb->asCapable;
-			
-			// 
+
 			(void)gptp_capable_interval_setting_sm(gpmand->tasds[di].ptds[pi].gcinvsetd, cts64);
 
 			smret=gptp_capable_transmit_sm(gpmand->tasds[di].ptds[pi].gctransd, cts64);
@@ -724,7 +714,7 @@ static int gptpnet_cb(void *cb_data, int portIndex, gptpnet_event_t event,
 	uint64_t cts64=*event_ts64;
 	int res=0;
 
-	UB_TLOG(UBL_DEBUGV, "%s:index=%d event=%s\n",
+	UB_TLOG(UBL_DEBUGV, "%s:portIndex=%d event=%s\n",
 		__func__, portIndex, gptpnet_event_debug[event]);
 	cts64 = GPTP_ALIGN_TIME(cts64);
 	switch(event){

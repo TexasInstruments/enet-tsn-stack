@@ -39,6 +39,10 @@
 							<allowed-faults>9</allowed-faults>
 							<mean-link-delay-thresh>0x27100000</mean-link-delay-thresh>
 						</port-ds>
+						<timestamp-correction-port-ds>
+							<ingress-latency>0x0</ingress-latency>
+							<egress-latency>0x0</egress-latency>
+						</timestamp-correction-port-ds>	
 					</port>
 				</ports>
 			</instance>

@@ -67,6 +67,7 @@ struct md_pdelay_resp_data{
 	int cmlds_mode;
 	int last_seqid;
 	uint64_t mock_txts64;
+	bool is2011BackwardCompatible;
 };
 
 typedef struct md_pdelay_resp_data md_pdelay_resp_data_t;

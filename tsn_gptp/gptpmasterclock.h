@@ -82,7 +82,7 @@ int gptpmasterclock_gm_domainIndex(void);
 
 /**
  * @brief get 64-bit nsec unit ts of system wide gptp clock
- * @return 0 on success, -1 on error
+ * @return >=0 on success, -1 on error
  *
  */
 int64_t gptpmasterclock_getts64(void);

@@ -175,15 +175,15 @@ static int set_phase_offsetGM(clock_master_sync_receive_data_t *sm, int64_t dts,
 		if(dofg<(unsigned int)PHASE_STABLE_CRITERION){
 			sm->offsetGM_stable_count++;
 			if(sm->offsetGM_stable_count>=PHASE_OFFSET_STABLE_TRNS){
-			UB_LOG(UBL_INFO, "%s:domainIndex=%d, stable\n",
-			       __func__, sm->ptasg->domainIndex);
-			sm->offsetGM_stable=OFFSET_STABLE_ADJ;
-			sm->gmchange_ind=gptpclock_get_gmchange_ind(GPTPINSTNUM,
-								    sm->ptasg->domainIndex);
+				UB_LOG(UBL_INFO, "%s:domainIndex=%d, stable\n",
+					   __func__, sm->ptasg->domainIndex);
+				sm->offsetGM_stable=OFFSET_STABLE_ADJ;
+				sm->gmchange_ind=gptpclock_get_gmchange_ind(GPTPINSTNUM,
+															sm->ptasg->domainIndex);
 				sm->offsetGM_stable_count=0;
-			UB_LOG(UBL_DEBUG, "%s:gmchange_ind=%d\n",
-			       __func__, sm->gmchange_ind);
-		}
+				UB_LOG(UBL_DEBUG, "%s:gmchange_ind=%d\n",
+					   __func__, sm->gmchange_ind);
+			}
 		}else{
 			sm->offsetGM_stable_count=0;
 		}

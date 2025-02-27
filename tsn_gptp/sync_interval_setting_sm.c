@@ -100,13 +100,13 @@ static void *initialize_proc(sync_interval_setting_data_t *sm)
 
 	sm->ppg->currentLogSyncInterval = sm->ppg->initialLogSyncInterval;
 	sm->ppg->syncInterval.nsec = LOG_TO_NSEC(sm->ppg->initialLogSyncInterval);
-	sm->thisSM->rcvdSignalingMsg1 = false;
+	sm->thisSM->rcvdSignalingMsg3 = false;
 	return NULL;
 }
 
 static sync_interval_setting_state_t initialize_condition(sync_interval_setting_data_t *sm)
 {
-	if(sm->thisSM->rcvdSignalingMsg1){return SET_INTERVAL;}
+	if(sm->thisSM->rcvdSignalingMsg3){return SET_INTERVAL;}
 	return INITIALIZE;
 }
 
@@ -144,13 +144,13 @@ static void *set_interval_proc(sync_interval_setting_data_t *sm)
 			sm->ptasg->clockMasterSyncInterval.nsec=sm->ppg->syncInterval.nsec;
 		}
 	}
-	sm->thisSM->rcvdSignalingMsg1 = false;
+	sm->thisSM->rcvdSignalingMsg3 = false;
 	return NULL;
 }
 
 static sync_interval_setting_state_t set_interval_condition(sync_interval_setting_data_t *sm)
 {
-	if(sm->thisSM->rcvdSignalingMsg1){sm->last_state=REACTION;}
+	if(sm->thisSM->rcvdSignalingMsg3){sm->last_state=REACTION;}
 	return SET_INTERVAL;
 }
 
@@ -225,7 +225,7 @@ void *sync_interval_setting_SignalingMsg3(sync_interval_setting_data_t *sm,
 {
 	UB_LOG(UBL_DEBUGV, "%s:domainIndex=%d, portIndex=%d\n",
 	       __func__, sm->domainIndex, sm->portIndex);
-	sm->thisSM->rcvdSignalingMsg1 = true;
+	sm->thisSM->rcvdSignalingMsg3 = true;
 	sm->thisSM->rcvdSignalingPtr = rcvdSignalingPtr;
 	return sync_interval_setting_sm(sm, cts64);
 }

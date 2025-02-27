@@ -103,11 +103,19 @@ const char *ieee802_dot1q_bridge_enum_strings[]={
 	"vid", 		// 40(0x28)
 	"untagged-ports", 		// 41(0x29)
 	"egress-ports", 		// 42(0x2a)
+	// augmented by xl4-ieee802-dot1q-bridge
+	"control-status",		// 43(0x2b)
 };
-const uint8_t ieee802_dot1q_bridge_enum_max=43;
+const uint8_t ieee802_dot1q_bridge_enum_max=44;
+
+#ifdef GENERATE_INITCONFIG
 
 static int prefix_namespace_init(uc_dbald *dbald)
 {
+	if(yang_node_set_prefix_namespace(dbald, "xl4dot1q",
+		"http://excelfore.com/ns/xl4-ieee802-dot1q-bridge")!=0){
+		return -1;
+	}
 	if(yang_node_set_prefix_namespace(dbald, "dot1q",
 		"urn:ieee:std:802.1Q:yang:ieee802-dot1q-bridge")!=0){
 		return -1;
@@ -123,6 +131,14 @@ static int node_namespace_init(uc_dbald *dbald)
 	apsd[2]=IEEE802_DOT1Q_BRIDGE_NSASC;
 	apsd[3]=255u;
 	if(uc_dbal_create(dbald, apsd, 4, (void*)"dot1q", 6)!=0){
+		return -1;
+	}
+	apsd[1]=IEEE802_DOT1Q_BRIDGE_BRIDGES;
+	apsd[2]=IEEE802_DOT1Q_BRIDGE_BRIDGE;
+	apsd[3]=IEEE802_DOT1Q_BRIDGE_CONTROL_STATUS;
+	apsd[4]=IEEE802_DOT1Q_BRIDGE_NSASC;
+	apsd[5]=255u;
+	if(uc_dbal_create(dbald, apsd, 6, (void*)"xl4dot1q", 9)!=0){
 		return -1;
 	}
 	return 0;
@@ -155,21 +171,21 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE802_DOT1Q_BRIDGE_CONNECTION_IDENTIFIER;
-	vtype=YANG_VTYPE_PORT_NUMBER_TYPE;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[8] = IEEE802_DOT1Q_BRIDGE_PORT_REF;
-	vtype=YANG_VTYPE_PORT_NUMBER_TYPE;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[7] = IEEE802_DOT1Q_BRIDGE_DATABASE_ID;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_VIDS;
-	vtype=YANG_VTYPE_DOT1QTYPES_VID_RANGE_TYPE;
+	vtype=YANG_VTYPE_VID_RANGE_TYPE;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_ADDRESS;
-	vtype=YANG_VTYPE_IEEE_MAC_ADDRESS;
+	vtype=YANG_VTYPE_MAC_ADDRESS;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[5] = IEEE802_DOT1Q_BRIDGE_NAME;
@@ -177,7 +193,7 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[4] = IEEE802_DOT1Q_BRIDGE_NAME;
-	vtype=YANG_VTYPE_DOT1QTYPES_NAME_TYPE;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	//0001_ieee802-dot1q-bridge/bridges/bridge/component/filtering-database/filtering-entry/port-map/static-vlan-registration-entries
 	aps[3] = IEEE802_DOT1Q_BRIDGE_COMPONENT;
@@ -226,18 +242,18 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_ENUMERATION;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[8] = IEEE802_DOT1Q_BRIDGE_CONNECTION_IDENTIFIER;
-	vtype=YANG_VTYPE_PORT_NUMBER_TYPE;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[8] = IEEE802_DOT1Q_BRIDGE_PORT_REF;
-	vtype=YANG_VTYPE_PORT_NUMBER_TYPE;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 11, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[7] = IEEE802_DOT1Q_BRIDGE_DATABASE_ID;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_VIDS;
-	vtype=YANG_VTYPE_DOT1QTYPES_VID_RANGE_TYPE;
+	vtype=YANG_VTYPE_VID_RANGE_TYPE;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0009_ieee802-dot1q-bridge/bridges/bridge/component/filtering-database/vlan-registration-entry/port-map/static-vlan-registration-entries
 	aps[6] = IEEE802_DOT1Q_BRIDGE_PORT_MAP;
@@ -273,22 +289,22 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	//0016_ieee802-dot1q-bridge/bridges/bridge/component/filtering-database
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RO;
 	aps[5] = IEEE802_DOT1Q_BRIDGE_SIZE;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_STATIC_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_DYNAMIC_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_STATIC_VLAN_REGISTRATION_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_DYNAMIC_VLAN_REGISTRATION_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_MAC_ADDRESS_REGISTRATION_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0017_ieee802-dot1q-bridge/bridges/bridge/component/permanent-database/filtering-entry
 	aps[4] = IEEE802_DOT1Q_BRIDGE_PERMANENT_DATABASE;
@@ -302,40 +318,40 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_VIDS;
-	vtype=YANG_VTYPE_DOT1QTYPES_VID_RANGE_TYPE;
+	vtype=YANG_VTYPE_VID_RANGE_TYPE;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	aps[7] = IEEE802_DOT1Q_BRIDGE_ADDRESS;
-	vtype=YANG_VTYPE_IEEE_MAC_ADDRESS;
+	vtype=YANG_VTYPE_MAC_ADDRESS;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0018_ieee802-dot1q-bridge/bridges/bridge/component/permanent-database
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RO;
 	aps[5] = IEEE802_DOT1Q_BRIDGE_SIZE;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_STATIC_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	aps[5] = IEEE802_DOT1Q_BRIDGE_STATIC_VLAN_REGISTRATION_ENTRIES;
-	vtype=YANG_VTYPE_YANG_GAUGE32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 8, &vtype, 1)!=0){goto erexit;}
 	//0019_ieee802-dot1q-bridge/bridges/bridge/component/bridge-vlan/vlan
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RW;
 	aps[4] = IEEE802_DOT1Q_BRIDGE_BRIDGE_VLAN;
 	aps[5] = IEEE802_DOT1Q_BRIDGE_VLAN;
 	aps[6] = IEEE802_DOT1Q_BRIDGE_NAME;
-	vtype=YANG_VTYPE_DOT1QTYPES_NAME_TYPE;
+	vtype=YANG_VTYPE_STRING;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RO;
 	aps[6] = IEEE802_DOT1Q_BRIDGE_UNTAGGED_PORTS;
-	vtype=YANG_VTYPE_IF_INTERFACE_REF;
+	vtype=YANG_VTYPE_STRING_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[6] = IEEE802_DOT1Q_BRIDGE_EGRESS_PORTS;
-	vtype=YANG_VTYPE_IF_INTERFACE_REF;
+	vtype=YANG_VTYPE_STRING_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 9, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RW;
 	aps[6] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	aps[7] = IEEE802_DOT1Q_BRIDGE_VID;
-	vtype=YANG_VTYPE_DOT1QTYPES_VLAN_INDEX_TYPE;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 10, &vtype, 1)!=0){goto erexit;}
 	//0020_ieee802-dot1q-bridge/bridges/bridge/component/bridge-vlan
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RO;
@@ -348,7 +364,7 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IEEE802_DOT1Q_BRIDGE_ADDRESS;
-	vtype=YANG_VTYPE_IEEE_MAC_ADDRESS;
+	vtype=YANG_VTYPE_MAC_ADDRESS;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IEEE802_DOT1Q_BRIDGE_TRAFFIC_CLASS_ENABLED;
 	vtype=YANG_VTYPE_BOOLEAN;
@@ -358,23 +374,28 @@ int ieee802_dot1q_bridge_runconf_config_init(uc_dbald *dbald, uc_hwald *hwald)
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	aps[4] = IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT;
-	vtype=YANG_VTYPE_IF_INTERFACE_REF;
+	vtype=YANG_VTYPE_STRING_LEAF_LIST;
 	if(uc_dbal_create(dbald, apsd, 7, &vtype, 1)!=0){goto erexit;}
 	//0022_ieee802-dot1q-bridge/bridges/bridge
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RW;
 	aps[3] = IEEE802_DOT1Q_BRIDGE_ADDRESS;
-	vtype=YANG_VTYPE_IEEE_MAC_ADDRESS;
+	vtype=YANG_VTYPE_MAC_ADDRESS;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[0] = IEEE802_DOT1Q_BRIDGE_RO;
 	aps[3] = IEEE802_DOT1Q_BRIDGE_PORTS;
 	vtype=YANG_VTYPE_UINT16;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IEEE802_DOT1Q_BRIDGE_UP_TIME;
-	vtype=YANG_VTYPE_YANG_ZERO_BASED_COUNTER32;
+	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
 	aps[3] = IEEE802_DOT1Q_BRIDGE_COMPONENTS;
 	vtype=YANG_VTYPE_UINT32;
 	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IEEE802_DOT1Q_BRIDGE_RW;
+	aps[3] = IEEE802_DOT1Q_BRIDGE_CONTROL_STATUS;
+	vtype=YANG_VTYPE_ENUMERATION;
+	if(uc_dbal_create(dbald, apsd, 6, &vtype, 1)!=0){goto erexit;}
+	aps[0] = IEEE802_DOT1Q_BRIDGE_RO;
 	aps[1] = IEEE802_DOT1Q_BRIDGE_VALUEKEY;
 	vtype=YANG_VTYPE_UINT8;
 	if(uc_dbal_create(dbald, apsd, 4, &vtype, 1)!=0){goto erexit;}
@@ -383,3 +404,4 @@ erexit:
 	return res;
 }
 
+#endif
