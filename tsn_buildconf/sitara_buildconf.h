@@ -105,6 +105,17 @@
 #define UNICONF_SEM_NUM   3 // simpledb open, uc_notice_init, ydbi_access_init
 #define TSNAPP_SEM_NUM   1 // ucReadySem
 
+// Currently the UB_ESARRAY is used by uniconf, mrp, gptp.
+// Below estimation can cover all reservation for all applications's stack
+// User can reduce these definitions, eg:
+// - in case lldp running without needed of building gptp/mrp)
+// - in case gptp running without needed of building mrp)
+#define MAX_UB_ESARRAY_DFNUM 256
+#define MAX_UB_ESARRAY_INSTNUM 40
+
+#define UB_ESARRAY_DFNUM MAX_UB_ESARRAY_DFNUM
+#define UB_ESARRAY_INSTNUM MAX_UB_ESARRAY_INSTNUM
+
 #define CB_LLDTASK_INSTNUM (UNICONF_TASK_NUM + \
                             GPTP_TASK_NUM + \
                             AVTP_TASK_NUM + \
@@ -119,14 +130,6 @@
                             MRP_SEM_NUM + \
                             LLDP_SEM_NUM)
 
-#define UB_ESARRAY_DFNUM (GPTP_EASYARR_DFNUM + \
-                         MRP_EASYARR_DFNUM + \
-                         LLDP_EASYARR_DFNUM)
-
-#define UB_ESARRAY_INSTNUM (GPTP_EASYARR_INSNUM + \
-                         MRP_EASYARR_INSNUM + \
-                         LLDP_EASYARR_INSNUM)
-
 // To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
 // inside the combase.
 // Per system: uc_hwal_catch_events_thread (total: 1)
@@ -139,8 +142,11 @@
 #define COMBASE_NO_IPCSOCK
 #define UB_SD_STATIC
 #define UC_RUNCONF
-#define SIMPLEDB_DBDATANUM 1800
+#define GENERATE_INITCONFIG
+#define SIMPLEDB_DBDATANUM 2000
 #define DISABLE_FAT_FS
+#define YANGINIT_GEN_SNUM 1000
+#define YANGINIT_GEN_SSIZE 8
 #define CB_ETHERNET_NON_POSIX_H "tsn_combase/tilld/cb_lld_ethernet.h"
 #define CB_THREAD_NON_POSIX_H "tsn_combase/tilld/cb_lld_thread.h"
 #define CB_IPCSHMEM_NON_POSIX_H "tsn_combase/tilld/cb_lld_ipcshmem.h"

@@ -72,4 +72,8 @@
 // If zero-copy mode is enabled, set to 0 since no buffer is needed.
 #define AVTPC_RXDIRECT_ETHPKT_NUM 0
 
+// This define of maximum number of avtpc instance number, this flag is apply for client which
+// use diag feature or access to uniconf db, in our case, always set this to zero
+#define AVTPC_CONFIG_INST_NUM 0
+
 #endif //__AVTP_BUILDCONF_H_

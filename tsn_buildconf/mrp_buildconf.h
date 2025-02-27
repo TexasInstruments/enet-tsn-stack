@@ -54,10 +54,4 @@
 #define MRP_TASK_NUM   (1 + 1) // mrp app and xmrpd
 #define MRP_SEM_NUM    5 // ydbi_access_init, rx sem, mrp_extcontrol, link up/down,cbs register finish
 
-/// MRP is internally using many arrays to store streams data and also attribute's data
-/// MRP also depends on Uniconf which also required store data into array(s)
-#define MRP_EASYARR_DFNUM 128
-// MRP required more ARRAY instance than GPTP or LLDP due to attribute value can be increased per neighbor
-#define MRP_EASYARR_INSNUM 32
-
 #endif //__MRP_BUILDCONF_H_

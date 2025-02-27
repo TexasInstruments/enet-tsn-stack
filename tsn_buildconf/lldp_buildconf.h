@@ -53,13 +53,6 @@
 #define LLDP_TASK_NUM 1
 #define LLDP_SEM_NUM  4 // rx sem, link , monitor DB changes x2
 
-/// LLDP internally do not have any array/fragments.
-/// But LLDP depends on Uniconf which also required store data into array(s)
-/// Below configuration are reserved for uniconf usage in case of LLDP stack is build without gptp, avtp and mrp
-/// In case of gptp, mrp is also built, reduce these value to '0' is okay.
-#define LLDP_EASYARR_DFNUM 128
-#define LLDP_EASYARR_INSNUM 8
-
 // Each port can have 3 LLDP agents
 // Nearest bridge agent. Dest MAC 0x0180-C200-000E
 // Nearest customer bridge agent. Dest MAC 0x0180-C200-0000

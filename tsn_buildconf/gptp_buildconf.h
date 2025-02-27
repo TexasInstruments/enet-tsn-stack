@@ -55,12 +55,6 @@
 #define GPTP_TASK_NUM   1
 #define GPTP_SEM_NUM    4 // ydbi_access_init, ifup/down notice, rx sem, gptpready
 
-/// GPTP is internally using some array to store clock data and share memory (via combase)
-/// GPTP also depends on Uniconf which also required store data into array(s)
-/// Below configuration are reserved for uniconf usage in case of GPTP stack is build without lldp, avtp and mrp
-#define GPTP_EASYARR_DFNUM 128
-#define GPTP_EASYARR_INSNUM 8
-
 /* These macros are used in gptpcommon.h to alloc the static memory for gptp2d */
 #define GPTP_MAX_DOMAINS 1 /*GPTP max domain is 2*/
 #define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
@@ -78,11 +72,6 @@
 #else
     #error "Only support 2 domains"
 #endif
-
-#ifdef __aarch64__
-    #define CB_NOIPCSHMEM_DFSIZE 128
-#else
-    #define CB_NOIPCSHMEM_DFSIZE 64
-#endif
+#define CB_NOIPCSHMEM_DFSIZE 64
 
 #endif // __GPTP_BUILDCONF_H_
