@@ -381,7 +381,7 @@ static int find_delete_semname_in_db(uc_dbald *dbald, const char *semname, bool 
 				}
 				if(!first_del){continue;}
 				// the first delete item makes ASKACTION to uniconf
-				dnkey=UB_SD_GETMEM(UC_NOTICE_PUT, nksize);
+				dnkey=(uint8_t*)UB_SD_GETMEM(UC_NOTICE_PUT, nksize);
 				if(ub_assert_fatal(dnkey!=NULL, __func__, NULL)){return -1;}
 				uc_nc_set_deleting(dbald);
 				memcpy(dnkey, nkey, nksize);
@@ -630,7 +630,7 @@ static int key_askaction_push(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	uint8_t *ekey;
 	uint8_t d;
 	int sval;
-	ekey=UB_SD_GETMEM(YANGINIT_GEN_SMEM, ksize+2);
+	ekey=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, ksize+2);
 	if(ub_assert_fatal(ekey!=NULL, __func__, NULL)){return -1;}
 	ekey[0]=XL4_DATA_RO;
 	ekey[1]=UC_ASKACTION_REG;
@@ -758,7 +758,7 @@ int uc_nc_notice_register(uc_notice_data_t *ucntd, uc_dbald *dbald,
 	if(regval!=UC_NOTICE_DBVAL_DEL){
 		if(create_semaphore){
 			*sem=create_new_putsemaphore(ucntd->fromthread, ucntd->putnotice_list,
-						     kvs[snindex], true, 0);
+						     (const char*)kvs[snindex], true, 0);
 		}
 		res=0;
 		goto erexit;

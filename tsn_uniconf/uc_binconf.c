@@ -98,11 +98,11 @@ static uint32_t find_dif_points(uc_bcdata_t *ucbcd, uint32_t ksize, uint8_t *key
 uc_bcdata_t *uc_binconf_init(uint32_t chunk_size)
 {
 	uc_bcdata_t *ucbcd;
-	ucbcd=UB_SD_GETMEM(YANGINIT_GEN_SMEM, sizeof(uc_bcdata_t));
+	ucbcd=(uc_bcdata_t *)UB_SD_GETMEM(YANGINIT_GEN_SMEM, sizeof(uc_bcdata_t));
 	if(ub_assert_fatal(ucbcd!=NULL, __func__, NULL)){return NULL;}
 	memset(ucbcd, 0, sizeof(uc_bcdata_t));
 	ucbcd->chunk_size=chunk_size;
-	ucbcd->chunkdata=UB_SD_GETMEM(YANGINIT_GEN_SMEM, ucbcd->chunk_size);
+	ucbcd->chunkdata=(uint8_t*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, ucbcd->chunk_size);
 	if(ub_assert_fatal(ucbcd->chunkdata!=NULL, __func__, NULL)){
 		UB_SD_RELMEM(YANGINIT_GEN_SMEM, ucbcd);
 		return NULL;
@@ -380,7 +380,7 @@ static int read_bindata(uc_bcdata_t *ucbcd, uc_dbald *dbald,
 		bufp=buf;
 	}else{
 		rsize=bsize;
-		bufp=bdata;
+		bufp=(const uint8_t*)bdata;
 	}
 	uc_binconf_clean_lkey(ucbcd);
 	uc_binconf_clean_chunk(ucbcd);

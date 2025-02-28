@@ -357,14 +357,14 @@ int md_abnormal_timestamp(PTPMsgType msgtype, int ndevIndex, int domainNumber,
 {
 	int i, elen;
 	event_data_t *event;
-	md_abn_eventp_txts_t res=MD_ABN_EVENTP_TXTS_NONE;
+	uint8_t res=(uint8_t)MD_ABN_EVENTP_TXTS_NONE;
 
 	if(!gmdabnd){return 0;}
 	elen=ub_esarray_ele_nums(gmdabnd->events);
 	for(i=0;i<elen;i++) {
 		event=(event_data_t *)ub_esarray_get_ele(gmdabnd->events, i);
 		if(!event){continue;}
-		res|=proc_txts_event(event, msgtype, ndevIndex, domainNumber, edtxts);
+		res|=(uint8_t)proc_txts_event(event, msgtype, ndevIndex, domainNumber, edtxts);
 	}
 	if(res&MD_ABN_EVENTP_TXTS_ERR){
 		return -1;

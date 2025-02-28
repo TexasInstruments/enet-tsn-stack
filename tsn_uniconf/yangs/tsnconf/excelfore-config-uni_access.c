@@ -350,7 +350,7 @@ int ydbi_pop_event_bridges(yang_db_item_access_t *ydbia,
 	ub_strncpy(bridgename, (char*)ydbia->dbpara.value, UB_MIN(33, len));
 	ydbia->dbpara.value=&(((char*)ydbia->dbpara.value)[len]);
 	ydbia->dbpara.vsize-=len;
-	ndata=UB_SD_GETMEM(YANGINIT_GEN_SMEM, ydbia->dbpara.vsize);
+	ndata=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, ydbia->dbpara.vsize);
 	if(ub_assert_fatal(ndata!=NULL, __func__, NULL)){
 		res=-1;
 		goto erexit;

@@ -235,7 +235,7 @@ const char *yang_node_get_xl4data_string(uint8_t anum)
 int yang_node_get_node_enums(uc_dbald *dbald, const char *astr, uint8_t *anums, int maxele)
 {
 	char *nstr=NULL;
-	char *q;
+	const char *q;
 	int i;
 	uc_range *range=NULL;
 	int thispi=0;
@@ -267,7 +267,7 @@ int yang_node_get_node_enums(uc_dbald *dbald, const char *astr, uint8_t *anums, 
 		if(astr[thispi]=='/'){
 			thispi++;
 		}
-		q=strchr(&astr[thispi], '/');
+		q=(char*)strchr(&astr[thispi], '/');
 		if(q!=NULL){
 			slen=q-&astr[thispi];
 		}else{

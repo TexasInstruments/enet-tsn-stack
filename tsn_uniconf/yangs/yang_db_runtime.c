@@ -147,7 +147,7 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv, char *vstr,
 			ydrd->kvs[0]=UB_SD_REGETMEM(YANGINIT_GEN_SMEM,
 						    ydrd->kvs[0], strlen(kp)+1);
 			if(ub_assert_fatal(ydrd->kvs[0]!=NULL, __func__, NULL)){return -1;}
-			strcpy(ydrd->kvs[0], kp);
+			strcpy((char*)ydrd->kvs[0], kp);
 			ydrd->kss[0]=strlen(kp)+1;
 			ydrd->kpi[2]=1;
 			UB_LOG(UBL_DEBUGV, "%s:UC_MIRROR_DEVICE=%s\n",
@@ -822,7 +822,7 @@ int yang_db_runtime_iterate_fromline(yang_db_runtime_dataq_t *ydrd, uc_range **r
 			for(i=0;i<ksize;i++){
 				if(((uint8_t *)key)[i]==255){break;}
 			}
-			if(cmp_kvs(key, kvs, kss, i+1, ksize)){
+			if(cmp_kvs((uint8_t*)key, kvs, kss, i+1, ksize)){
 				continue;
 			}
 		}
@@ -845,7 +845,7 @@ int yang_db_runtime_iterate_fromline(yang_db_runtime_dataq_t *ydrd, uc_range **r
 		if(yang_db_runtime_getkeyvkstr(ydrd->dbald, key, ksize, &prstr)!=0){
 			continue;
 		}
-		vtype=yang_db_runtime_get_vtype(ydrd->dbald, key);
+		vtype=yang_db_runtime_get_vtype(ydrd->dbald, (uint8_t*)key);
 		if(vtype>=0 && qstr!=NULL){
 			*qstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, strlen(prstr)+1);
 			if(*qstr!=NULL){strcpy(*qstr, prstr);}
@@ -1571,7 +1571,7 @@ void yang_db_runtime_readdb_log(bool consoleprint, uc_dbald *dbald, const char *
 		NULL, aps, kvs, kss, NULL, 0};
 	int64_t v;
 	if(headmsg==NULL){headmsg="";}
-	vtype=yang_db_runtime_get_vtype(dbald, aps);
+	vtype=(yang_vtype_enum_t)yang_db_runtime_get_vtype(dbald, (uint8_t *)aps);
 	if(yang_db_action(dbald, NULL, &dbpara)!=0){return;}
 	switch(vtype){
 	case YANG_VTYPE_MAC_ADDRESS:
@@ -1598,7 +1598,7 @@ void yang_db_runtime_readdb_log(bool consoleprint, uc_dbald *dbald, const char *
 		break;
 	default:
 		UB_SELECT_PRINT(consoleprint, true, "%s unknown vtype=%d\n", headmsg, vtype);
-		ub_hexdump(consoleprint, true, dbpara.value, dbpara.vsize, 0);
+		ub_hexdump(consoleprint, true, (unsigned char*)dbpara.value, dbpara.vsize, 0);
 		break;
 	}
 	dbpara.atype=YANG_DB_ACTION_READ_RELEASE;

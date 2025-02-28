@@ -660,7 +660,7 @@ int qb_get_talker_port_prir(uc_dbald *dbald,
 		}
 		if(!skip){
 			*ppsize+=1;
-			*port_prir=UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *port_prir,
+			*port_prir=(dq_port_prir_t*)UB_SD_REGETMEM(YANGINIT_GEN_SMEM, *port_prir,
 						  *ppsize*sizeof(dq_port_prir_t));
 			if(ub_assert_fatal(*port_prir!=NULL, __func__, NULL)){break;}
 			ub_non_aligned_intsubst(akvs[5], &(*port_prir)[*ppsize-1].port,

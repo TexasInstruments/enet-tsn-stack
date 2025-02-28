@@ -174,7 +174,7 @@ void ub_log_init(const char *ns)
 		}
 		v=log_one_category(&ns[nsp], &ubcd.logmsgd[cat_index], NULL);
 		if(v<0){
-			char *next_comma=strstr(&ns[nsp], ",");
+			const char *next_comma=strstr(&ns[nsp], ",");
 			if (next_comma)
 			{
 				v=(int)(next_comma-&ns[nsp]);
