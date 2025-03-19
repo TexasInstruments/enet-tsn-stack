@@ -272,6 +272,7 @@ static void task_fxn(void* a0)
 
 static int cb_lld_task_destroy(cb_lld_task_t *cbtask)
 {
+	if (!cbtask) {return 0;}
 	TaskP_destruct(&cbtask->lldtask);
 	if (cbtask->stack_alloc != NULL) {
 		UB_SD_RELMEM(CB_LLDTASK_STACK_MMEM, cbtask->stack_alloc);

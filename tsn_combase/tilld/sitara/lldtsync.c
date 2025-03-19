@@ -214,10 +214,15 @@ void LLDTSyncClose(LLDTSync_t *hTSync)
 int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
 					  uint16_t seqId, uint8_t domain, uint64_t *ts)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (ts == NULL) || (drv == NULL)) {
+	if ((hTSync == NULL) || (ts == NULL)) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -236,10 +241,15 @@ int LLDTSyncGetRxTime(LLDTSync_t *hTSync, uint8_t rxPort, int msgType,
 int LLDTSyncGetTxTime(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
 					  uint16_t seqId, uint8_t domain, uint64_t *ts)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (ts == NULL) || (drv == NULL)) {
+	if ((hTSync == NULL) || (ts == NULL)) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -257,10 +267,15 @@ int LLDTSyncGetTxTime(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
 
 int LLDTSyncAdjFreq(LLDTSync_t *hTSync, int ppb)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (drv == NULL)) {
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -278,10 +293,15 @@ int LLDTSyncAdjFreq(LLDTSync_t *hTSync, int ppb)
 
 int LLDTSyncSetTime(LLDTSync_t *hTSync, uint64_t ts)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (drv == NULL)) {
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -299,10 +319,15 @@ int LLDTSyncSetTime(LLDTSync_t *hTSync, uint64_t ts)
 
 int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (ts == NULL) || (drv == NULL)) {
+	if ((hTSync == NULL) || (ts == NULL)) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -320,10 +345,15 @@ int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
 
 int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPorts)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (drv == NULL)) {
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -341,10 +371,15 @@ int LLDTSyncEnableTsEvent(LLDTSync_t *hTSync, uint32_t ports[], uint32_t numPort
 
 int LLDTSyncShiftTime(LLDTSync_t *hTSync, int64_t offset)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (drv == NULL)) {
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 
@@ -543,10 +578,15 @@ static int LLDTSyncShiftCptsTime(const LLDTSync_t *hTSync, int64_t offset)
 int LLDTsyncPhyWaitTxTs(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
 					  uint16_t seqId, uint8_t domain)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (drv == NULL)) {
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 

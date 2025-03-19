@@ -1392,8 +1392,9 @@ int yang_db_runtime_apkv2keyvkstr(uc_dbald *dbald, uint8_t *aps,
 	if(aps[0]==255){return -1;} // no aps
 	raps[0]=aps[0];
 	kvi=0;
-	*rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 8);
 	if(!rstr){return -1;}
+	*rstr=(char*)UB_SD_GETMEM(YANGINIT_GEN_SMEM, 8);
+	if(!(*rstr)){return -1;}
 	(*rstr)[0]=0;
 	rki=1;
 	for(ki=0;ki<255u;ki++){

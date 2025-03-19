@@ -347,7 +347,7 @@ static void DmaTxCloseRefcount(LLDEnet_t *hLLDEnet)
 	EnetDma_PktQ fqPktInfoQ;
 	EnetDma_PktQ cqPktInfoQ;
 	LLDEnetTxDma_t *hLLDTxDma = hLLDEnet->hLLDTxDma;
-	if(!hLLDTxDma->refCount){
+	if(!hLLDTxDma || !hLLDTxDma->refCount){
 		return;
 	}
 	hLLDTxDma->refCount--;

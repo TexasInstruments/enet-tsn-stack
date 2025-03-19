@@ -150,8 +150,10 @@ static md_abn_eventp_txts_t proc_txts_event(event_data_t *event, PTPMsgType msgt
 	case MD_ABN_EVENT_TXTSBADFIFO:
 		if(!event_happen(event)){break;}
 		nts=(int64_t *)ub_esarray_get_newele(gmdabnd->tsfifo);
+		if(!nts) {break;}
 		*nts=edtxts->ts64;
 		nts=(int64_t *)ub_esarray_get_ele(gmdabnd->tsfifo, 0);
+		if(!nts) {break;}
 		edtxts->ts64=*nts;
 		(void)ub_esarray_del_index(gmdabnd->tsfifo, 0);
 		return MD_ABN_EVENTP_TXTS_MANIPULATE;
@@ -229,6 +231,7 @@ static int proc_post_event_register(md_abn_event_t *event){
 		event->msgtype=MANAGEMENT; // ignored, set to anything not particular
 		for(i=0;i<event->eventpara1;i++){
 			nts=(int64_t *)ub_esarray_get_newele(gmdabnd->tsfifo);
+			if (!nts) {return -1;}
 			*nts=event->eventpara2;
 		}
 		break;

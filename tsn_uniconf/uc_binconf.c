@@ -416,7 +416,7 @@ int uc_binconf_read_bconffile(uc_dbald *dbald, const char *fname)
 {
 	int res;
 	uc_bcdata_t *ucbcd=uc_binconf_init(1024);
-	if(strstr(fname, ".bconf")==NULL){return -1;}
+	if(!ucbcd || strstr(fname, ".bconf")==NULL){return -1;}
 	res=read_bindata(ucbcd, dbald, fname, 0);
 	uc_binconf_close(ucbcd);
 	return res;

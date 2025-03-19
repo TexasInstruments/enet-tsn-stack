@@ -112,6 +112,7 @@ struct gptpnet_data {
 	uint32_t tout_interval;
 	bool supportRtNotice;
 	LLDTsyncTsSource tsSource;
+	bool bStopped;
 	CB_SEM_T statPktSem;
 	TaskP_Object procStatTaskObj;
 };
@@ -259,6 +260,7 @@ void gptpnet_statusFrameProcTask(void* args)
 	{
 		/*< Wait for Status packets. */
 		CB_SEM_WAIT(&gpnet->statPktSem);
+		if (gpnet->bStopped) {break;}
 
 		/*< Read from the ready Queue. */
 		int numStatusFrames = cb_lld_process_status_frames(gpnet->lldsock);
@@ -763,6 +765,12 @@ int gptpnet_eventloop(gptpnet_data_t *gpnet, bool *stoploop)
 	while (!*stoploop) {
 		gptpnet_catch_event(gpnet);
 		if (ub_fatalerror()) {return -1;}
+	}
+
+	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY) {
+		gpnet->bStopped=true;
+		// to break gptpnet_statusFrameProcTask
+		CB_SEM_POST(&gpnet->statPktSem);
 	}
 	return 0;
 }
