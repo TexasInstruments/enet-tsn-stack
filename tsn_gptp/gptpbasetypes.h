@@ -48,6 +48,11 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ *
+ *	@defgroup gptp  Functions
+ *	@ingroup TSN_GPTP
+*/
+/**
  * @addtogroup gptp
  * @{
  * @file gptpbasetypes.h

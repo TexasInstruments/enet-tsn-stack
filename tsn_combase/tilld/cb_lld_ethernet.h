@@ -48,6 +48,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_COMBASE_MODULE
  * @defgroup lld_ethernet TI ENET LLD ethernet specific
  * @{
  * @file cb_lld_ethernet.h

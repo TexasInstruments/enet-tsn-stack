@@ -48,6 +48,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
 */
 /**
+ * @ingroup TSN_COMBASE_MODULE
  * @defgroup lld_thread TI ENET LLD thread specific
  * @{
  * @file cb_lld_thread.h
