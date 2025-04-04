@@ -242,7 +242,7 @@ int yang_node_get_node_enums(uc_dbald *dbald, const char *astr, uint8_t *anums, 
 	int slen;
 	int anumi=0;
 	int anumdepth, level;
-	uint8_t aps[UC_MAX_AP_DEPTH+1];
+	uint8_t aps[UC_MAX_AP_DEPTH+1]={0};
 	if(astr[0]=='/'){
 		anumdepth=0;
 		level=0;

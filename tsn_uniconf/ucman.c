@@ -139,7 +139,7 @@ void *uniconf_main(void *ptr)
 				goto erexit;
 			}
 		}else{
-			if(UC_RUNCONF_READFILE(ydrd, ucmd->configfiles[i])!=0){
+			if(!ydrd || UC_RUNCONF_READFILE(ydrd, ucmd->configfiles[i])!=0){
 				goto erexit;
 			}
 		}

@@ -259,7 +259,7 @@ void gptpnet_statusFrameProcTask(void* args)
 {
 	gptpnet_data_t *gpnet = (gptpnet_data_t *)args;
 
-	while (1)
+	while (!gpnet->bStopped)
 	{
 		/*< Wait for Status packets. */
 		CB_SEM_WAIT(&gpnet->statPktSem);

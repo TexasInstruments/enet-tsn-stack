@@ -159,7 +159,7 @@ uint8_t *ub_ssid2bsid(const char *ssid, ub_streamid_t bsid)
 		//check TSN_STREAM_ID format
 		i=ub_hexstr2barray(ssid, bsid, '-', 6);
 		if(i==6){
-			i=ub_hexstr2barray(&ssid[6], &bsid[18], '-', 2);
+			i=ub_hexstr2barray(&ssid[18], &bsid[6], '-', 2);
 			i+=6;
 		}
 	}
