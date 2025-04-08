@@ -132,9 +132,8 @@
 
 // To configure CB_LLDTASK_STACK_INSTNUM for the tasks which its stack is created
 // inside the combase.
-// Per system: uc_hwal_catch_events_thread (total: 1)
 // Avtp RX: alwas 1 (even if there are multiple interfaces tilld0,1,..)
-#define CB_LLDTASK_STACK_INSTNUM 2
+#define CB_LLDTASK_STACK_INSTNUM 1
 
 /// Below params are for tsn-stack internal usage
 #define COMBASE_NO_INET

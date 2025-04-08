@@ -66,9 +66,13 @@ extern int gptpgcfg_nonyang_notice_check(uint8_t gptpInstanceIndex);
 static int ndev_index_to_macport(gptpnet_data_t *gpnet, int ndev_index);
 
 #define STATUS_FRAME_PROCESS_STACK_SIZE (2*1024)
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
+	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
+	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
+	defined(SOC_AM62AX) || defined(SOC_AM62X)
 static uint8_t gStatusFrameProcessTaskStack[STATUS_FRAME_PROCESS_STACK_SIZE] __attribute__((aligned(32)));
 #endif
+
 typedef struct {
 	int ndev_index;
 	uint8_t msgtype;
@@ -115,9 +119,12 @@ struct gptpnet_data {
 	LLDTsyncTsSource tsSource;
 	bool bStopped;
 	CB_SEM_T statPktSem;
-	#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
+	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
+	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
+	defined(SOC_AM62AX) || defined(SOC_AM62X)
 	TaskP_Object procStatTaskObj;
-	#endif
+#endif
 };
 
 static int push_txts_info(txts_queue_t *q, txts_info_t *in)
@@ -276,7 +283,10 @@ void gptpnet_statusFrameProcTask(void* args)
 	}
 }
 
-#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
+	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
+	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
+	defined(SOC_AM62AX) || defined(SOC_AM62X)
 int gptpnet_createStatusFrameProcTask(gptpnet_data_t *gpnet)
 {
 	TaskP_Params taskParams;
@@ -388,15 +398,16 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 		UB_LOG(UBL_ERROR,"%s:failed to enable tsevent!\n", __func__);
 		goto error;
 	}
-
-	#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
+	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
+	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
+	defined(SOC_AM62AX) || defined(SOC_AM62X)
 	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
 	{
 		/**< Create RX task to handle status frames. */
 		gptpnet_createStatusFrameProcTask(gpnet);
 	}
-	#endif
-
+#endif
 	UB_LOG(UBL_INFO,"%s:Open lldtsync OK!\n", __func__);
 
 	return gpnet;
@@ -422,13 +433,16 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 	UB_LOG(UBL_DEBUGV, "%s:\n",__func__);
 	if (!gpnet) {return -1;}
 	gptpgcfg_remove_netdevs(gpnet->gptpInstanceIndex);
-	#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || defined(SOC_AM62AX) || defined(SOC_AM62X)
+#if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
+	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
+	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
+	defined(SOC_AM62AX) || defined(SOC_AM62X)
 	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
 	{
 		/* Destroy the task. */
 		TaskP_destruct(&gpnet->procStatTaskObj);
 	}
-	#endif
+#endif
 	if (gpnet->lldsock) {
 		cb_rawsock_close(gpnet->lldsock);
 		gpnet->lldsock = NULL;

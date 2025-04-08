@@ -88,7 +88,6 @@ struct uc_hwald {
 	uc_dbald *dbald;
 	uc_notice_data_t *ucntd;
 	uint8_t operating_tc;
-	CB_THREAD_T catch_event;
 	cbl_query_thread_data_t cqtd;
 	bool ietf_interfaces_initdone;
 	bool dot1q_bridge_initdone;
@@ -1475,10 +1474,7 @@ void uc_hwal_close(uc_hwald *hwald)
 			hwald->ietf_interfaces_initdone=false;
 		}
 	}
-	if(hwald->cqtd.running){
-		hwald->cqtd.running=false;
-		CB_THREAD_JOIN(hwald->catch_event, NULL);
-	}
+	cbl_deregister_network_status_signal(&hwald->cqtd);
 	combase_link_close(hwald->hwctx);
 	UB_SD_RELMEM(UC_HWAL_NLINST, hwald);
 }
@@ -1571,15 +1567,12 @@ erexit:
 	return 0;
 }
 
-int uc_hwal_catch_events_thread(uc_hwald *hwald, CB_SEM_T *sigp)
+int uc_hwal_register_network_status_signal(uc_hwald *hwald, CB_SEM_T *sigp)
 {
-	cb_tsn_thread_attr_t attr;
 	if(hwald->cqtd.running){return 0;}
 	hwald->cqtd.cbld=hwald->hwctx;
 	hwald->cqtd.sigp=sigp;
-	cb_tsn_thread_attr_init(&attr, 0, 0, "uniconf_hwal_thread");
-	return CB_THREAD_CREATE(&hwald->catch_event, &attr, cbl_query_thread,
-							&hwald->cqtd);
+	return cbl_register_network_status_signal(&hwald->cqtd);
 }
 
 int uc_hwal_detect_notice(uc_hwald *hwald, uc_notice_data_t *ucntd)

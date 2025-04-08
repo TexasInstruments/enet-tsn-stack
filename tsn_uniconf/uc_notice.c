@@ -565,7 +565,7 @@ erexit:
 int uc_notice_start_events_thread(uc_notice_data_t *ucntd, uc_hwald *hwald)
 {
 	if(hwald==NULL){return 0;}
-	return uc_hwal_catch_events_thread(hwald, (CB_SEM_T *)ucntd->getnotice_sem);
+	return uc_hwal_register_network_status_signal(hwald, (CB_SEM_T *)ucntd->getnotice_sem);
 }
 
 void uc_notice_close(uc_notice_data_t *ucntd, uint8_t callmode)

@@ -460,6 +460,11 @@ void cb_lld_reset_port_stats(CB_SOCKET_T sfd, int port);
  */
 int cb_lld_process_status_frames(CB_SOCKET_T sfd);
 
+/**
+ * @brief Nofity link change event through cbl_query_thread_data_t signal
+ */
+void cb_lld_notify_linkchange(void);
+
 #ifdef __cplusplus
 }
 #endif

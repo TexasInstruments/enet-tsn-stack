@@ -218,6 +218,7 @@ typedef struct cbl_preempt_params{
 } cbl_preempt_params_t;
 
 typedef struct cbl_query_thread_data{
+	CB_THREAD_T catch_event;
 	combase_link_data_t *cbld;
 	CB_SEM_T *sigp;
 	bool running;
@@ -280,17 +281,17 @@ void combase_link_close(combase_link_data_t *cbld);
 uint32_t cbl_get_capabilities(combase_link_data_t *cbld);
 
 /**
- * @brief notify link change
- * @param none
- *
+ * @brief register network status listening signal
+ * @param cbl_query_thread_data_t cbl_data
+ * @note don't process data inside the thread. just signal the semaphore by events.
+ *	If polling actions are needed, make periodic siganl on the semaphore.
+ *	The main thread should do polling.
  */
-void notify_linkchange(void);
+int cbl_register_network_status_signal(cbl_query_thread_data_t* cbl_data);
 
-/**
- * @brief catch HW events to process
- * @param cbl_query_thread_data_t pointer
- */
-void *cbl_query_thread(void *ptr);
+/// @brief deregister network status listening signal
+/// @param cbl_data cbl_query_thread_data_t
+void cbl_deregister_network_status_signal(cbl_query_thread_data_t* cbl_data);
 
 /**
  * @brief get query response

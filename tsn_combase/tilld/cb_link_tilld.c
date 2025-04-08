@@ -72,10 +72,6 @@ struct combase_link_data {
 UB_SD_GETMEM_DEF(CBL_DATA_INSTMEM, (int)sizeof(struct combase_link_data),
 		 CBL_DATA_INSTNUM);
 
-#ifndef USE_LINK_CHANGE_EVENT
-#define USE_LINK_CHANGE_EVENT (1)
-#endif /* USE_LINK_CHANGE_EVENT */
-
 cbl_query_thread_data_t *g_cqtd = NULL;
 
 combase_link_data_t *combase_link_init(cbl_cb_t event_cb, void *cb_arg,
@@ -237,53 +233,24 @@ int cbl_preempt_setup(combase_link_data_t *cbld, cbl_preempt_params_t *cpemp,
 	return (res == LLDENET_E_OK? 1: -1);
 }
 
-#if (USE_LINK_CHANGE_EVENT==0)
-static int check_linkstate_change(combase_link_data_t *cbld)
-{
-	int i;
-	uint32_t link_state = 0;
-
-	for (i = 0; i < cbld->numof_netdevs; i++) {
-		if (cb_lld_get_link_state(cbld->sock, cbld->netdevs[i], &link_state)) {
-			return -1;
-		}
-		if (cbld->netdev_opersts[i] != link_state){
-			return 1;
-		}
-	}
-	return 0;
-}
-#endif
-void notify_linkchange(void)
+void cb_lld_notify_linkchange(void)
 {
 	if (g_cqtd) {
 		combase_link_data_t *cbld=(combase_link_data_t *)g_cqtd->cbld;
 		cbld->linkchange_ts64 = ub_rt_gettime64();
-#if USE_LINK_CHANGE_EVENT
 		CB_SEM_POST(g_cqtd->sigp);
-#endif
 	}
 }
 
-void *cbl_query_thread(void *ptr)
+int cbl_register_network_status_signal(cbl_query_thread_data_t* cbl_data)
 {
-	g_cqtd=(cbl_query_thread_data_t *)ptr;
-#if (USE_LINK_CHANGE_EVENT==0)
-	cbl_query_thread_data_t *cqtd=(cbl_query_thread_data_t *)ptr;
-	combase_link_data_t *cbld=(combase_link_data_t *)cqtd->cbld;
-	int res;
-	if(!cbld){return NULL;}
-	cqtd->running=true;
-	while(cqtd->running){
-		CB_USLEEP(100000); /* 100msec polling should be okay */
-		res=check_linkstate_change(cbld);
-		if(res<=0){continue;}
-		if(cqtd->sigp!=NULL){
-				CB_SEM_POST( cqtd->sigp);
-		}
-	}
-#endif /* !USE_LINK_CHANGE_EVENT */
-	return NULL;
+	g_cqtd=(cbl_query_thread_data_t *)cbl_data;
+	return 0;
+}
+
+void cbl_deregister_network_status_signal(cbl_query_thread_data_t* cbl_data)
+{
+	// Do nothing
 }
 
 int cbl_bridge_open(combase_link_data_t *cbld, const char *bridgename,
