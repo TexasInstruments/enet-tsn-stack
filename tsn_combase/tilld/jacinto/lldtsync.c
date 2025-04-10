@@ -251,10 +251,15 @@ int LLDTSyncGetTime(LLDTSync_t *hTSync, uint64_t *ts)
 int LLDTsyncPhyWaitTxTs(LLDTSync_t *hTSync, uint8_t txPort, int msgType,
 					  uint16_t seqId, uint8_t domain)
 {
+	LLDTsync_driver* drv;
 	int retval = LLDENET_E_FAILURE;
-	LLDTsync_driver* drv = hTSync->tsyncDrv;
 
-	if ((hTSync == NULL) || (drv == NULL)) {
+	if (hTSync == NULL) {
+		return LLDENET_E_PARAM;
+	}
+
+	drv = hTSync->tsyncDrv;
+	if (drv == NULL) {
 		return LLDENET_E_PARAM;
 	}
 

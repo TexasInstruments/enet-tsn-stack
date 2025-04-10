@@ -1257,7 +1257,7 @@ static int dot1cb_frer_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_
 	}
 	res=YDBI_GET_ITEM(cbfr, vdata, *((uint32_t*)(kvs[0])), aps[2],
 			  IEEE802_DOT1CB_FRER_STREAM, YDBI_CONFIG);
-	if(res<csize){
+	if(res<csize || vdata==NULL){
 		UB_LOG(UBL_ERROR, "%s:no stream list [i=%u, u=%u, r=%d]\n", __func__,
 		       *((uint32_t*)(kvs[0])), aps[2], res);
 		return -1;
@@ -1304,7 +1304,7 @@ static int dot1cb_frer_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_
 				  IEEE802_DOT1CB_STREAM_IDENTIFICATION_NULL_STREAM_IDENTIFICATION,
 				  IEEE802_DOT1CB_STREAM_IDENTIFICATION_DESTINATION_MAC,
 				  YDBI_CONFIG);
-		if(res!=6){
+		if(res!=6 || vdata==NULL){
 			UB_LOG(UBL_ERROR, "%s:no dest mac\n", __func__);
 			continue;
 		}
@@ -1319,7 +1319,7 @@ static int dot1cb_frer_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_
 				  IEEE802_DOT1CB_STREAM_IDENTIFICATION_IN_FACING,
 				  IEEE802_DOT1CB_STREAM_IDENTIFICATION_INPUT_PORT,
 				  YDBI_CONFIG);
-		if(res<0){
+		if(res<0 || vdata==NULL){
 			UB_LOG(UBL_ERROR, "%s:no in-facing/input-port\n", __func__);
 			continue;
 		}
@@ -1346,7 +1346,7 @@ static int dot1cb_frer_writehw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_
 				  IEEE802_DOT1CB_STREAM_IDENTIFICATION_OUT_FACING,
 				  IEEE802_DOT1CB_STREAM_IDENTIFICATION_OUTPUT_PORT,
 				  YDBI_CONFIG);
-		if(res<0){
+		if(res<0 || vdata==NULL){
 			UB_LOG(UBL_ERROR, "%s:no out-facing/output-port\n", __func__);
 			continue;
 		}
@@ -1426,7 +1426,7 @@ static int dot1q_bridge_reghw(uc_hwald *hwald, uint8_t *aps, void **kvs, uint8_t
 		YDBI_GET_ITEM_PSUBST(qbk1vk0, port_names, rvsize, rvalue, (const char*)kvs[0], compindex,
 				     IEEE802_DOT1Q_BRIDGE_BRIDGE_PORT,
 				     YDBI_STATUS);
-		if(rvsize<=0){
+		if(rvsize<=0 || port_names==NULL){
 			UB_LOG(UBL_ERROR, "%s:'bridge-port' must be set first\n", __func__);
 			return -1;
 		}

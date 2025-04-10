@@ -1551,6 +1551,7 @@ int yang_db_runtime_proc_nodestring(yang_db_runtime_dataq_t *ydrd, bool reset,
 int yang_db_runtime_state_keyvkstr(yang_db_runtime_dataq_t *ydrd, char **rstr)
 {
 	uint8_t aps[UC_MAX_AP_DEPTH+2];
+	if ((ydrd->api+1)>(UC_MAX_AP_DEPTH+2)) {return -1;}
 	memcpy(aps, ydrd->aps, ydrd->api);
 	// appending '0' here is a strange action
 	// it is workaround to fix the issue in convxml2conf.c:convxml2conf_getconf
