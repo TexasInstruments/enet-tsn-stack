@@ -60,6 +60,10 @@
 #define GPTP_MEDIUM_EXTRA_SIZE 1642 /* Optimize to use minimal of memory */
 #define HAVE_GPTP_READY_NOTICE /*Once this flag is defined, avtp app need to wait for gptp ready signal*/
 
+// This is number of SIMPLEDB entries used by GPTP
+// Increase this number if the entries are not enough for your application.
+#define GPTP_SIMPLEDB_DBDATANUM (350)
+
 /// CB_NOIPCSHMEM_DFNUM and CB_NOIPCSHMEM_DFSIZE are used to reserve static memory for gptp clock share memory.
 /// The formula is:
 ///    gcd->shmsize = ((int)sizeof(gptp_clock_ppara_t)*max_domains) + (int)sizeof(gptp_master_clock_shm_head_t);

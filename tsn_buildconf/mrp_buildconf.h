@@ -54,4 +54,8 @@
 #define MRP_TASK_NUM   (1 + 1) // mrp app and xmrpd
 #define MRP_SEM_NUM    5 // ydbi_access_init, rx sem, mrp_extcontrol, link up/down,cbs register finish
 
+// This is number of SIMPLEDB entries used by MRP
+// Increase this number if the entries are not enough for your application.
+#define MRP_SIMPLEDB_DBDATANUM (170)
+
 #endif //__MRP_BUILDCONF_H_

@@ -63,17 +63,24 @@
 #define AVTP_SEM_NUM    2 // ydbi_access_init, rx sem
 
 // Defines the number of Ethernet buffers avtpd can allocate for RX packets when zero-copy mode is disabled
-// Set this to match the maximum number of Ethernet interfaces. 
+// Set this to match the maximum number of Ethernet interfaces.
 // If zero-copy mode is enabled, set to 0 since no buffer is needed.
 #define AVTP_ETHPKT_NUM 0
 
-// Defines the number of Ethernet buffers avtpc direct mode can allocate for RX packets when zero-copy mode is disabled. 
-// Set this to match the maximum number of Ethernet interfaces. 
+// Defines the number of Ethernet buffers avtpc direct mode can allocate for RX packets when zero-copy mode is disabled.
+// Set this to match the maximum number of Ethernet interfaces.
 // If zero-copy mode is enabled, set to 0 since no buffer is needed.
 #define AVTPC_RXDIRECT_ETHPKT_NUM 0
 
 // This define of maximum number of avtpc instance number, this flag is apply for client which
 // use diag feature or access to uniconf db, in our case, always set this to zero
 #define AVTPC_CONFIG_INST_NUM 0
+
+// This is number of SIMPLEDB entries used by AVTP
+// Increase this number if the entries are not enough for your application.
+#define AVTP_SIMPLEDB_DBDATANUM (50)
+
+// Avtp RX: alwas 1 (even if there are multiple interfaces tilld0,1,..)
+#define AVTP_RX_STACK_NUM (1)
 
 #endif //__AVTP_BUILDCONF_H_

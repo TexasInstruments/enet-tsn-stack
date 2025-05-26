@@ -87,4 +87,8 @@
 // - Remote organization info TLV
 #define MAX_RM_ORG_INFO_LEN  64
 
+// This is number of SIMPLEDB entries used by LLDP
+// Increase this number if the entries are not enough for your application.
+#define LLDP_SIMPLEDB_DBDATANUM (250)
+
 #endif // __LLDP_BUILDCONF_H_
