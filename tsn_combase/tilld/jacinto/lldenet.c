@@ -176,7 +176,7 @@ static int32_t DmaOpen(LLDEnetDma_t *hLLDma)
 	EnetAppUtils_assert(hDma != NULL);
 
 	/* Open the CPSW TX channel  */
-	EnetDma_initTxChParams(&cpswTxChCfg);
+	EnetUdma_initTxChParams(&cpswTxChCfg);
 
 	cpswTxChCfg.hUdmaDrv = hLLDma->hUdmaDrv;
 	cpswTxChCfg.notifyCb = LLDEnetTxNotifyCb;
@@ -204,7 +204,7 @@ static int32_t DmaOpen(LLDEnetDma_t *hLLDma)
 	EnetAppUtils_assert(status == ENET_SOK);
 
 	/* Open the CPSW RX flow  */
-	EnetDma_initRxChParams(&cpswRxFlowCfg);
+	EnetUdma_initRxFlowParams(&cpswRxFlowCfg);
 	cpswRxFlowCfg.hUdmaDrv = hLLDma->hUdmaDrv;
 	cpswRxFlowCfg.notifyCb = LLDEnetRxNotifyCb;
 	cpswRxFlowCfg.cbArg = hLLDma;
@@ -218,7 +218,7 @@ static int32_t DmaOpen(LLDEnetDma_t *hLLDma)
 	cpswRxFlowCfg.startIdx = hLLDma->rxFlowStartIdx;
 	cpswRxFlowCfg.flowIdx  = hLLDma->rxFlowIdx;
 
-	hLLDma->hRxFlow = EnetDma_openRxCh(hDma, &cpswRxFlowCfg);
+	hLLDma->hRxFlow = EnetUdma_openRxFlow(hDma, &cpswRxFlowCfg);
 	EnetAppUtils_assert(hLLDma->hRxFlow != NULL);
 
 	UB_LOG(UBL_INFO,"%s: Rx startIdx %d flowId %d\n",
@@ -246,7 +246,7 @@ static void DmaClose(LLDEnetDma_t *hLLDma)
 		UB_LOG(UBL_INFO,"%s: Rx startIdx %d flowId %d\n",
 			   __func__, hLLDma->rxFlowStartIdx, hLLDma->rxFlowIdx);
 
-		status = EnetDma_closeRxCh(hLLDma->hRxFlow, &fqPktInfoQ, &cqPktInfoQ);
+		status = EnetUdma_closeRxFlow(hLLDma->hRxFlow, &fqPktInfoQ, &cqPktInfoQ);
 		if (status == ENET_SOK) {
 			EnetAppUtils_freeRxFlow(hLLDEnet->hEnet, hLLDEnet->coreKey,
 						hLLDEnet->coreId, hLLDma->rxFlowIdx);
@@ -257,7 +257,7 @@ static void DmaClose(LLDEnetDma_t *hLLDma)
 			 * We need to release them here as well. */
 			EnetAppUtils_freePktInfoQ(&hLLDma->rxReadyQ);
 		} else {
-			UB_LOG(UBL_ERROR,"EnetDma_closeRxCh() failed to open: %d\n", status);
+			UB_LOG(UBL_ERROR,"EnetUdma_closeRxFlow() failed to open: %d\n", status);
 		}
 	}
 
