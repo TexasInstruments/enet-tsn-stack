@@ -69,7 +69,7 @@ static int ndev_index_to_macport(gptpnet_data_t *gpnet, int ndev_index);
 #if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
 	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
 	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
-	defined(SOC_AM62AX) || defined(SOC_AM62X)
+	defined(SOC_AM62AX) || defined(SOC_AM62X) || defined(SOC_AM62LX)
 static uint8_t gStatusFrameProcessTaskStack[STATUS_FRAME_PROCESS_STACK_SIZE] __attribute__((aligned(32)));
 #endif
 
@@ -122,7 +122,7 @@ struct gptpnet_data {
 #if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
 	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
 	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
-	defined(SOC_AM62AX) || defined(SOC_AM62X)
+	defined(SOC_AM62AX) || defined(SOC_AM62X) || defined(SOC_AM62LX)
 	TaskP_Object procStatTaskObj;
 #endif
 };
@@ -286,7 +286,7 @@ void gptpnet_statusFrameProcTask(void* args)
 #if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
 	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
 	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
-	defined(SOC_AM62AX) || defined(SOC_AM62X)
+	defined(SOC_AM62AX) || defined(SOC_AM62X) || defined(SOC_AM62LX)
 int gptpnet_createStatusFrameProcTask(gptpnet_data_t *gpnet)
 {
 	TaskP_Params taskParams;
@@ -401,7 +401,7 @@ gptpnet_data_t *gptpnet_init(uint8_t gptpInstanceIndex, gptpnet_cb_t cb_func,
 #if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
 	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
 	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
-	defined(SOC_AM62AX) || defined(SOC_AM62X)
+	defined(SOC_AM62AX) || defined(SOC_AM62X) || defined(SOC_AM62LX)
 	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
 	{
 		/**< Create RX task to handle status frames. */
@@ -436,7 +436,7 @@ int gptpnet_close(gptpnet_data_t *gpnet)
 #if defined(SOC_AM64X) || defined(SOC_AM243X) || defined(SOC_AM273) || \
 	defined(SOC_AM263X) || defined(SOC_AM263PX) || defined(SOC_AM261) || \
 	defined(SOC_AM62DX) || defined(SOC_AM275X) || defined(SOC_AM62PX) || \
-	defined(SOC_AM62AX) || defined(SOC_AM62X)
+	defined(SOC_AM62AX) || defined(SOC_AM62X) || defined(SOC_AM62LX)
 	if (gpnet->tsSource == LLDTSYNC_TS_SOURCE_PHY)
 	{
 		/* Destroy the task. */

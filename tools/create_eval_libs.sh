@@ -44,6 +44,7 @@ make -C ../eval_src/ -f makefile.yangemb_freertos.am62ax.r5f.ti-arm-clang PROFIL
 make -C ../eval_src/ -f makefile.yangemb_freertos.am62dx.r5f.ti-arm-clang PROFILE=release -s
 make -C ../eval_src/ -f makefile.yangemb_freertos.am62px.wkup-r5f.ti-arm-clang PROFILE=release -s
 make -C ../eval_src/ -f makefile.yangemb_freertos.am62x.a53.gcc-aarch64 PROFILE=release -s
+make -C ../eval_src/ -f makefile.yangemb_freertos.am62lx.a53.gcc-aarch64 PROFILE=release -s
 make -C ../eval_src/ -f makefile.yangemb_freertos.am64x.a53.gcc-aarch64 PROFILE=release -s
 
 ${CG_TOOL_ROOT}/bin/tiarmobjcopy --strip-unneeded ../eval_src/lib/yangemb-freertos.am243x.r5f.ti-arm-clang.release.lib
@@ -57,6 +58,7 @@ ${CG_TOOL_ROOT}/bin/tiarmobjcopy --strip-unneeded ../eval_src/lib/yangemb-freert
 ${CG_TOOL_ROOT}/bin/tiarmobjcopy --strip-unneeded ../eval_src/lib/yangemb-freertos.am62dx.r5f.ti-arm-clang.release.lib
 ${CG_TOOL_ROOT}/bin/tiarmobjcopy --strip-unneeded ../eval_src/lib/yangemb-freertos.am62px.wkup-r5f.ti-arm-clang.release.lib
 ${CGT_GCC_AARCH64_PATH}/bin/aarch64-none-elf-objcopy --strip-unneeded ../eval_src/lib/yangemb-freertos.am62x.a53.gcc-aarch64.release.lib
+${CGT_GCC_AARCH64_PATH}/bin/aarch64-none-elf-objcopy --strip-unneeded ../eval_src/lib/yangemb-freertos.am62lx.a53.gcc-aarch64.release.lib
 ${CGT_GCC_AARCH64_PATH}/bin/aarch64-none-elf-objcopy --strip-unneeded ../eval_src/lib/yangemb-freertos.am64x.a53.gcc-aarch64.release.lib
 
 mv ../eval_src/lib/yangemb-freertos.am243x.r5f.ti-arm-clang.release.lib ../eval_src/lib/yangemb-freertos.am243x.r5f.ti-arm-clang.lib 
@@ -70,6 +72,7 @@ mv ../eval_src/lib/yangemb-freertos.am62ax.r5f.ti-arm-clang.release.lib ../eval_
 mv ../eval_src/lib/yangemb-freertos.am62dx.r5f.ti-arm-clang.release.lib ../eval_src/lib/yangemb-freertos.am62dx.r5f.ti-arm-clang.lib
 mv ../eval_src/lib/yangemb-freertos.am62px.wkup-r5f.ti-arm-clang.release.lib ../eval_src/lib/yangemb-freertos.am62px.wkup-r5f.ti-arm-clang.lib
 mv ../eval_src/lib/yangemb-freertos.am62x.a53.gcc-aarch64.release.lib ../eval_src/lib/yangemb-freertos.am62x.a53.gcc-aarch64.lib
+mv ../eval_src/lib/yangemb-freertos.am62lx.a53.gcc-aarch64.release.lib ../eval_src/lib/yangemb-freertos.am62lx.a53.gcc-aarch64.lib
 mv ../eval_src/lib/yangemb-freertos.am64x.a53.gcc-aarch64.release.lib ../eval_src/lib/yangemb-freertos.am64x.a53.gcc-aarch64.lib
 
 mv ../eval_src/lib/tsn_l2-freertos.am243x.r5f.ti-arm-clang.release.lib ../eval_src/lib/tsn_l2-freertos.am243x.r5f.ti-arm-clang.lib
