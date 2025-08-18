@@ -80,6 +80,10 @@
 #define LLDENET_SUB_RX_NUM 4
 #endif //LLDENET_SUB_RX_NUM
 
+#ifndef LLDENET_MAX_SCATTER_FRAMES
+#define LLDENET_MAX_SCATTER_FRAMES 4
+#endif //LLDENET_MAX_SCATTER_FRAMES
+
 typedef struct {
 	int vlanId;
 	int ethType;

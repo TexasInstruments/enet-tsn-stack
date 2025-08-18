@@ -736,13 +736,16 @@ int LLDEnetSendScatter(LLDEnet_t *hLLDEnet, LLDEnetFrameScatter_t *frame)
 
 int LLDEnetSendMulti(LLDEnet_t *hLLDEnet, LLDEnetFrame_t *frames, uint32_t nFrames)
 {
-	if((frames==NULL) || (nFrames == 0)) {
+	if((frames==NULL) || (nFrames == 0) || (nFrames > LLDENET_MAX_SCATTER_FRAMES)) {
 		return LLDENET_E_PARAM;
 	}
-	LLDEnetFrameScatter_t scatterFrames[nFrames];
+	LLDEnetFrameScatter_t scatterFrames[LLDENET_MAX_SCATTER_FRAMES];
 	int i;
 
 	for (i = 0; i < nFrames; i++) {
+		if (frames[i].buf == NULL) {
+			return LLDENET_E_PARAM;
+		}
 		scatterFrames[i].nBufs = 1;
 		scatterFrames[i].buf[0] = frames[i].buf;
 		scatterFrames[i].size[0] = frames[i].size;
