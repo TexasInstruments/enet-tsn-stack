@@ -1,0 +1,24 @@
+[config]
+pr_commands = [
+    "/review",
+    "/improve --pr_code_suggestions.commitable_code_suggestions=true --pr_code_suggestions.suggestions_score_threshold=6"
+]
+
+handle_push_trigger = true
+push_trigger_ignore_bot_commits = true
+push_trigger_ignore_merge_commits = true
+push_trigger_wait_for_initial_review = true
+push_commands = [
+    "/describe",
+    "/review"
+]
+
+[ignore]
+# To add any new file type that needs to be ignored, append the type in the following list
+glob = [
+    '*.out',  # Compiled binaries
+    '*.html', # HTML files
+    '*.ppt*', # PPT files
+    '*.png',  # PNG files
+    '*.jpg',  # JPEG images
+]
