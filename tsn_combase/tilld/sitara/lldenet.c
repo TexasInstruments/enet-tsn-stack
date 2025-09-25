@@ -1014,20 +1014,35 @@ int LLDEnetGetLinkInfo(LLDEnet_t *hLLDEnet, uint8_t portNum,
 					   uint32_t *speed, uint32_t *duplex)
 {
 
-	Enet_MacPort phyInArgs;
 	EnetMacPort_LinkCfg phyOutArgs;
 	Enet_IoctlPrms prms;
 	int32_t status;
+	Enet_MacPort phyInArgs;
+	EnetPhy_GenericInArgs phyGenericInArgs;
 
 	if ((hLLDEnet == NULL) || (speed == NULL) || (duplex == NULL)) {
 		return LLDENET_E_PARAM;
 	}
 
+#if ENET_ENABLE_PER_ICSSG
 	/* Get port link state (speed & duplexity) from PHY */
 	phyInArgs = (Enet_MacPort)(ENET_MACPORT_NORM(portNum));
 	ENET_IOCTL_SET_INOUT_ARGS(&prms, &phyInArgs, &phyOutArgs);
 	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
 				ENET_PER_IOCTL_GET_PORT_LINK_CFG, &prms, status);
+	(void)phyGenericInArgs;
+
+#else
+	/* For CPSW, ENET_PER_IOCTL_GET_PORT_LINK_CFG ioctl has limitation with RMII/MII mode
+	 * as RgmiiStatus register is read to fetch the Link speed, duplexity.
+	 * It is suggested to use ENET_PHY_IOCTL_GET_LINK_MODE ioctl which reads the phy registers
+	 * to get the link speed, duplexity */
+	phyGenericInArgs.macPort = (Enet_MacPort)(ENET_MACPORT_NORM(portNum));
+	ENET_IOCTL_SET_INOUT_ARGS(&prms, &phyGenericInArgs, &phyOutArgs);
+	ENET_IOCTL(hLLDEnet->hEnet, hLLDEnet->coreId,
+			   ENET_PHY_IOCTL_GET_LINK_STATUS, &prms, status);
+	(void)phyInArgs;
+#endif
 	if (status != ENET_SOK) {
 		UB_LOG(UBL_ERROR,"Failed to get link info: %d\n", status);
 		return LLDENET_E_IOCTL;
