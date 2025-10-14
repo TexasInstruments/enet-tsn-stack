@@ -644,6 +644,7 @@ int cb_lld_sendto_scatter(CB_SOCKET_T sfd, LLDEnetFrameScatter_t *frame,
 	for(i=0; i<frame->nBufs; i++){
 		size+=frame->size[i];
 	}
+	frame->port = addr->macport;
 
 	result = LLDEnetSendScatter(sfd->lldenet, frame);
 	if (result != LLDENET_E_OK) {
