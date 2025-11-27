@@ -81,7 +81,7 @@
 #define THREAD_HIGH_STACK 0
 #define THREAD_NORM_STACK 0
 #else
-#define THREAD_HIGH_PRI 0
+#define THREAD_HIGH_PRI 16
 #define THREAD_NORM_PRI 0
 #define THREAD_HIGH_STACK 0
 #define THREAD_NORM_STACK 0
@@ -158,7 +158,7 @@ typedef struct avtp_traffic_shaper_prams{
  * @brief callback funtion type,called from the raw ethernet receiver thread
  */
 typedef int (*avtp_ethernet_rcv_cb_t)(uint8_t *data, int size,
-				      CB_ETHHDR_T *ethdr, void *cbdata, 
+				      CB_ETHHDR_T *ethdr, void *cbdata,
 					  uint16_t pcv, uint64_t rxts);
 
 /**

@@ -566,6 +566,7 @@ static int LLDTSyncShiftCptsTime(const LLDTSync_t *hTSync, int64_t offset)
 			break;
 		}
 		offset -= (int64_t)adjValInNsecs;
+		retval = LLDENET_E_OK;
 	}
 	#else
 	/* ICSSG Case, just return ok! */
