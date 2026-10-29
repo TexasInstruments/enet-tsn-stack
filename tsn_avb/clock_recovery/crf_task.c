@@ -224,7 +224,7 @@ static void *CrfTask_main(void *args)
         }
     }
 
-    if (status && !CrfTask_config.listener)
+    if (status && !(CrfTask_config.listener && params->skipRxRegistration))
     {
         retStatus = avtpc_crf_set_ccr(CrfTask_avtpcCrf, &CrfTask_config, &ccr);
         if (retStatus == 0)
