@@ -903,12 +903,9 @@ void ClockRecListener_onTick(ClockRec_Priv_t *inst, uint64_t mediaClockEdgeTs)
                 ClockRecListener_correctFrequency(inst);
             }
         }
-        else /* CLOCK_REC_STRATEGY_PHASE_NUDGE */
+        else /* CLOCK_REC_STRATEGY_UNDEFINED */
         {
-            if ((inst->params.correctionFlags & CLOCK_REC_CORRECT_PHASE) != 0U)
-            {
-                ClockRecListener_correctPhaseNudge(inst);
-            }
+            UB_LOG(UBL_ERROR, "Clock Recovery Strategy not set\r\n");
         }
 
         inst->ld.lastCorrectionTimeUs = nowUs;

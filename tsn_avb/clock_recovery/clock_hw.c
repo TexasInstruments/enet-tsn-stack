@@ -464,7 +464,16 @@ int32_t ClockHw_adjFreq(int32_t ppb)
     }
     else
     {
-        UB_LOG(UBL_WARN, "%s: Not Supported\r\n", __func__);
+        EnetPhy_AdjPtpFreqInArgs inArgs =
+        {
+            .macPort = ENET_MAC_PORT_1,   /* PHY on this port provides the codec clock */
+            .ppb = ppb,
+        };
+        Enet_IoctlPrms prms;
+
+        ENET_IOCTL_SET_IN_ARGS(&prms, &inArgs);
+        ENET_IOCTL(ClockHw_state.hEnet, ClockHw_state.coreId, \
+                    ENET_PHY_IOCTL_ADJ_PTP_FREQ, &prms, status);
     }
 
     return status;

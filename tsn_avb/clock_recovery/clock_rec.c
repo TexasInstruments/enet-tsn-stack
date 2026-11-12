@@ -475,9 +475,7 @@ int32_t ClockRec_init(ClockRec_InitParams params)
         {
             ClockRec_priv.params.tsPerAvtpdu = CLOCK_REC_DEFAULT_TS_PER_AVTPDU;
         }
-        ClockRec_priv.strategy = (params.clkSrc == CLOCK_REC_SOURCE_PHY) ?
-                                 CLOCK_REC_STRATEGY_PHASE_NUDGE :
-                                 CLOCK_REC_STRATEGY_FREQ_PID;
+        ClockRec_priv.strategy = CLOCK_REC_STRATEGY_FREQ_PID;
 
         ClockRec_priv.nMediaClockFreq   = (double)params.nominalFrequency;
         ClockRec_priv.nMediaClockPeriod = 1e9 / ClockRec_priv.nMediaClockFreq;

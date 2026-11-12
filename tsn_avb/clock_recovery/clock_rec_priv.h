@@ -65,8 +65,8 @@ extern "C" {
  * active. */
 typedef enum
 {
-    CLOCK_REC_STRATEGY_FREQ_PID = 0,   /* CDCE backend: ClockHw_adjFreq only */
-    CLOCK_REC_STRATEGY_PHASE_NUDGE      /* PHY backend: ClockHw_adjPhaseNs only */
+    CLOCK_REC_STRATEGY_UNDEFINED = -1,
+    CLOCK_REC_STRATEGY_FREQ_PID = 0,   /* PID strategy, for both Phase, Frequency. */
 } ClockRec_Strategy;
 
 /* Startup convergence staging, freq-PID strategy only. */
