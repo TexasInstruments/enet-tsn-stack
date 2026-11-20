@@ -1027,11 +1027,18 @@ static int adjust_GM_btw_domains(uint8_t gptpInstanceIndex, int domainIndex)
 
 int gptpclock_active_domain_switch(uint8_t gptpInstanceIndex, int domainIndex)
 {
+	int res=0;
 	gptpclock_data_t *gcd=gcdl[gptpInstanceIndex];
 	//domainIndex=-1:auto, domainIndex>=0:fix to the domain
-	gcd->active_domain_switch=domainIndex;
-	if((domainIndex<0) || (domainIndex>=gcd->shm->head.max_domains)){return 0;}
-	return switch_active_domain(gptpInstanceIndex, gcd->active_domain_switch);
+	if(domainIndex>=gcd->shm->head.max_domains){
+		res=-1;
+	}else{
+		gcd->active_domain_switch=domainIndex;
+		if(domainIndex>=0){
+			res=switch_active_domain(gptpInstanceIndex, gcd->active_domain_switch);
+		}
+	}
+	return res;
 }
 
 int gptpclock_active_domain_status(uint8_t gptpInstanceIndex)

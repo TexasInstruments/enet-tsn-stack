@@ -243,9 +243,12 @@ int gptpmasterclock_gm_domainIndex(void)
 int gptpmasterclock_gmchange_ind(void)
 {
 	int i;
+	int res=-1;
 	i= gptpmasterclock_gm_domainIndex();
-	if(i<0){return -1;}
-	return gmcd.shm->gcpp[i].gmchange_ind;
+	if((i>=0) && (i<gmcd.max_domains)){
+		res=gmcd.shm->gcpp[i].gmchange_ind;
+	}
+	return res;
 }
 
 int gptpmasterclock_get_max_domains(void)

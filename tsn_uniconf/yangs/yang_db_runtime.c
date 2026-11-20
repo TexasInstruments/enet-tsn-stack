@@ -219,6 +219,11 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv, char *vstr,
 	}
 	vsize=0;
 	tkpi=total_kpi(ydrd);
+	if((tkpi+1)>=UC_MAX_KV_DEPTH){
+		UB_LOG(UBL_ERROR, "%s:too many value-keys\n",
+		       __func__);
+		return -1;
+	}
 	if(*kp==0){
 		if(ydrd->kvs[tkpi]!=NULL){
 			UB_SD_RELMEM(YANGINIT_GEN_SMEM, ydrd->kvs[tkpi]);
@@ -248,11 +253,6 @@ static int proc_get_keyv(yang_db_runtime_dataq_t *ydrd, char *kv, char *vstr,
 			   __func__, "invalid kpi index")){return -1;}
 	ydrd->kpi[ydrd->api-1u]++; // key belongs to one upper node
 	tkpi++;
-	if(tkpi>=UC_MAX_KV_DEPTH){
-		UB_LOG(UBL_ERROR, "%s:too many value-keys\n",
-		       __func__);
-		return -1;
-	}
 	if(ydrd->kvs[tkpi]!=NULL){
 		UB_SD_RELMEM(YANGINIT_GEN_SMEM, ydrd->kvs[tkpi]);
 		ydrd->kvs[tkpi]=NULL;
